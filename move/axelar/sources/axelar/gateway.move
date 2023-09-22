@@ -54,8 +54,8 @@ module axelar::gateway {
     /// Emitted when a new message is sent from the SUI network.
     struct ContractCall has copy, drop {
         source: vector<u8>,
-        destination_chain: vector<u8>,
-        destination_address: vector<u8>,
+        destination_chain: String,
+        destination_address: String,
         payload: vector<u8>,
     }
 
@@ -168,8 +168,8 @@ module axelar::gateway {
     /// an immutable reference should be enough.
     public fun call_contract<T: store>(
         channel: &mut Channel<T>,
-        destination_chain: vector<u8>,
-        destination_address: vector<u8>,
+        destination_chain: String,
+        destination_address: String,
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {

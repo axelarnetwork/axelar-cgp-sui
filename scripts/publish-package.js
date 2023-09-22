@@ -2,7 +2,6 @@ require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
-const {BCS, fromHEX, toHEX, getSuiMoveConfig, BcsWriter} = require("@mysten/bcs");
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { execSync } = require('child_process');
@@ -41,6 +40,7 @@ async function publishPackage(packagePath, client, keypair) {
 		options: {
 			showEffects: true,
 			showObjectChanges: true,
+            showContent: true
 		},
 	});
 	if(publishTxn.effects?.status.status != 'success') throw new Error('Publish Tx failed');
@@ -102,7 +102,18 @@ if (require.main === module) {
             delete object.sender;
             delete object.owner;
             config[singleton] = object
+            const fields = (await client.getObject({
+                id: object.objectId,
+                options: {
+                    showContent: true,
+                }
+            })).data.content.fields;
+            for(const key in fields) {
+                if(key === 'id') continue;
+                object[key] = fields[key].fields.id.id;
+            }
         }
+        
         fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(config, null, 4));
 
         let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');

@@ -99,8 +99,8 @@ module axelar::validators {
 
         let (i, weight, operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
-
         while (i < total_signatures) {
+            
             let signature = *vector::borrow(&signatures, i);
             normalize_signature(&mut signature);
 
@@ -108,12 +108,13 @@ module axelar::validators {
             while (operator_index < operators_length && &signed_by != vector::borrow(&operators, operator_index)) {
                 operator_index = operator_index + 1;
             };
-
             // assert!(operator_index == operators_length, 0); // EMalformedSigners
 
             weight = weight + *vector::borrow(&weights, operator_index);
             if (weight >= threshold) { return true };
             operator_index = operator_index + 1;
+
+            i = i + 1;
         };
 
         abort ELowSignaturesWeight
@@ -147,7 +148,7 @@ module axelar::validators {
             vec_map::remove(epoch_for_hash, &new_operators_hash);
         };
         // clean up old epoch
-        if (epoch >= OLD_KEY_RETENTION) {
+        if (epoch >= OLD_KEY_RETENTION && vec_map::size(epoch_for_hash) > 0) {
             let old_epoch = epoch - OLD_KEY_RETENTION;
             let (_, epoch) = vec_map::get_entry_by_idx(epoch_for_hash, 0);
             if (*epoch <= old_epoch) {

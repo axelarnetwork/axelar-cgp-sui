@@ -1,4 +1,4 @@
-module axelar_sui_sample::test {
+module test::test_receive_call {
     use sui::object::{Self, UID};
     use sui::transfer;
     use axelar::channel::{Self, Channel, ApprovedCall};
