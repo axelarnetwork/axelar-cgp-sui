@@ -1,0 +1,5 @@
+node_modules
+move/**/build
+.env
+Move.lock
+info

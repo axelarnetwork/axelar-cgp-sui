@@ -1,0 +1,5 @@
+{
+    "singletons": [
+        "validators::AxelarValidators"
+    ]
+}

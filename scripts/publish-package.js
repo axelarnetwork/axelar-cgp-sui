@@ -1,0 +1,111 @@
+require('dotenv').config();
+const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
+const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
+const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
+const {BCS, fromHEX, toHEX, getSuiMoveConfig, BcsWriter} = require("@mysten/bcs");
+const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
+const { TransactionBlock } = require('@mysten/sui.js/transactions');
+const { execSync } = require('child_process');
+const fs = require('fs');
+const tmp = require('tmp');
+
+async function publishPackage(packagePath, client, keypair) {
+	// remove all controlled temporary objects on process exit
+    const address = keypair.getPublicKey().toSuiAddress();
+	tmp.setGracefulCleanup();
+
+	const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+	const { modules, dependencies } = JSON.parse(
+		execSync(
+			`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/' + packagePath} --install-dir ${tmpobj.name}`,
+			{ encoding: 'utf-8' },
+		),
+	);
+	const tx = new TransactionBlock();
+	const cap = tx.publish({
+		modules,
+		dependencies,
+	});
+
+	// Transfer the upgrade capability to the sender so they can upgrade the package later if they want.
+	tx.transferObjects([cap], tx.pure(address));
+    const coins = await client.getCoins({owner: address});
+    tx.setGasPayment(coins.data.map(coin => {
+        coin.objectId = coin.coinObjectId; 
+        return coin;
+    }));
+
+	const publishTxn = await client.signAndExecuteTransactionBlock({
+		transactionBlock: tx,
+		signer: keypair,
+		options: {
+			showEffects: true,
+			showObjectChanges: true,
+		},
+	});
+	if(publishTxn.effects?.status.status != 'success') throw new Error('Publish Tx failed');
+
+	const packageId = ((publishTxn.objectChanges?.filter(
+		(a) => a.type === 'published',
+	)) ?? [])[0].packageId.replace(/^(0x)(0+)/, '0x');
+
+	console.info(`Published package ${packageId} from address ${address}}`);
+
+	return { packageId, publishTxn };
+}
+
+module.exports = {
+    publishPackage,
+}
+
+function insertPublishedAt(toml, packageId) {
+    const lines = toml.split('\n');
+    const versionLineIndex = lines.findIndex(line => line.slice(0, 7) === 'version');
+    if(! (lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
+        lines.splice(versionLineIndex + 1, 0, '');
+    }
+    lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
+    return lines.join('\n');
+}
+
+if (require.main === module) {
+    const packagePath = process.argv[2];
+    const env = process.argv[3] || 'localnet';
+    
+    (async () => {
+        const privKey = 
+        Buffer.from(
+            process.env.SUI_PRIVATE_KEY,
+            "hex"
+        );
+        const keypair = Ed25519Keypair.fromSecretKey(privKey);
+        const address = keypair.getPublicKey().toSuiAddress();
+        // create a new SuiClient object pointing to the network you want to use
+        const client = new SuiClient({ url: getFullnodeUrl(env) });
+    
+        try {
+            await requestSuiFromFaucetV0({
+            // use getFaucetHost to make sure you're using correct faucet address
+            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+            host: getFaucetHost(env),
+            recipient: address,
+            });
+        } catch (e) {}
+    
+        const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
+        const info = require(`../move/${packagePath}/info.json`);
+        const config = {};
+        config.packageId = packageId;
+        for(const singleton of info.singletons) {
+            const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
+            delete object.type;
+            delete object.sender;
+            delete object.owner;
+            config[singleton] = object
+        }
+        fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(config, null, 4));
+
+        let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
+        fs.writeFileSync(`move/${packagePath}/Move.toml`, insertPublishedAt(toml, packageId));
+    })();
+}
