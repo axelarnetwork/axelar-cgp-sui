@@ -3,6 +3,7 @@ module test::test_receive_call {
     use sui::transfer;
     use axelar::channel::{Self, Channel, ApprovedCall};
     use sui::tx_context::{TxContext};
+    use sui::event;
   
     struct Empty has store {
   
@@ -16,10 +17,19 @@ module test::test_receive_call {
     struct Executed has copy, drop {
         data: vector<u8>,
     }
+
+    struct ReceiveCallData has copy, drop {
+        singleton_id: address,
+    }
   
     fun init(ctx: &mut TxContext) {
-       transfer::share_object(Singleton {
-            id: object::new(ctx),
+        let id = object::new(ctx);
+        let singleton_id = object::uid_to_address(&id);
+        event::emit( ReceiveCallData {
+            singleton_id,
+        });
+        transfer::share_object(Singleton {
+            id,
             channel: channel::create_channel<Empty>(Empty {}, ctx),
         });
     }

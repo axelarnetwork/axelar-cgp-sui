@@ -90,7 +90,7 @@ module axelar::channel {
         id: ID,
     }
 
-    struct ChannelDestroyed has copy, drop {
+    struct ChannelDestroyed<phantom T> has copy, drop {
         id: ID,
     }
 
@@ -117,8 +117,7 @@ module axelar::channel {
             linked_table::pop_back(&mut processed_call_approvals);
         };
         linked_table::destroy_empty(processed_call_approvals);
-        let idForEvent = object::uid_to_inner(&id);
-        event::emit(ChannelDestroyed { id: idForEvent });
+        event::emit(ChannelDestroyed<T> { id: object::uid_to_inner(&id) });
         object::delete(id);
         data
     }

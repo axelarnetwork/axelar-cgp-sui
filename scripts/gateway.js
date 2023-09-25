@@ -1,4 +1,4 @@
-
+require('dotenv').config();
 const {BCS, fromHEX, getSuiMoveConfig} = require("@mysten/bcs");
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const secp256k1 = require('secp256k1');
@@ -147,7 +147,7 @@ function approveContractCallInput(sourceChain, sourceAddress, destinationAddress
 
 function TransferOperatorshipInput(newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
     const privKey = Buffer.from(
-        "9027dcb35b21318572bda38641b394eb33896aa81878a4f0e7066b119a9ea000",
+        process.env.SUI_PRIVATE_KEY,
         "hex"
     );
 
@@ -176,7 +176,8 @@ function TransferOperatorshipInput(newOperators, newWeights, newThreshold, comma
 }
 
 async function approveContractCall(client, keypair, sourceChain, sourceAddress, destinationAddress, payloadHash) {
-    const input = approveContractCallInput(sourceChain, sourceAddress, destinationAddress, payloadHash);
+    const commandId = keccak256((new Date()).getTime());
+    const input = approveContractCallInput(sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
     const packageId = axelarInfo.packageId;
     const validators = axelarInfo['validators::AxelarValidators'];
 
@@ -194,6 +195,7 @@ async function approveContractCall(client, keypair, sourceChain, sourceAddress, 
             showObjectChanges: true,
         },
     });
+    return commandId;
 }
 
 async function transferOperatorship(client, keypair, newOperators, newWeights, newThreshold ) {
@@ -218,8 +220,52 @@ async function transferOperatorship(client, keypair, newOperators, newWeights, n
     console.log(approveTxn.effects.status);
 }
 
+async function executeContractCall(client, keypair, sourceChain, sourceAddress, destinationAddress, payload, commandId) {
+    const packageId = axelarInfo.packageId;
+    const validators = axelarInfo['validators::AxelarValidators'];
+    const test = axelarInfo['test_receive_call::Singleton'];
+    console.log(destinationAddress);
+    const channel = await client.getObject({id: destinationAddress.slice(2), options: {showFields: true}});
+    console.log(channel);
+    return;
+    
+    const payload_hash = arrayify(keccak256(payload));
+
+	const tx = new TransactionBlock(); 
+    const approvedCall = tx.moveCall({
+        target: `${packageId}::gateway::take_approved_call`,
+        arguments: [
+            tx.object(validators.objectId), 
+            tx.pure(commandId),
+            tx.pure(sourceChain),
+            tx.pure(sourceAddress),
+            tx.pure(destinationAddress),
+            tx.pure(String.fromCharCode(...arrayify(payload))),
+        ],
+        typeArguments: [],
+    });
+    tx.moveCall({
+        target: `${packageId}::test_receive_call::execute`,
+        arguments: [
+            tx.object(test.objectId),
+            approvedCall,
+        ],
+        typeArguments: []
+    });
+
+    const executeTxn = await client.signAndExecuteTransactionBlock({
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+}
+
 module.exports = {
     approveContractCall,
     transferOperatorship,
     getRandomOperators,
+    executeContractCall,
 }

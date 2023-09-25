@@ -1,25 +1,36 @@
-module axelar_sui_sample::dummy_its {
+module dummy_its::its {
   use std::string::{String};
   use std::ascii::{Self};
+  use std::option;
+  use std::type_name;
+  use std::string;
+  use std::vector;
+
   use sui::object::{Self, UID};
   use sui::address::{Self};
-  use sui::transfer;
-  use axelar::utils::{Self};
-  use axelar::channel::{Self, Channel, ApprovedCall};
+  use sui::transfer;  
   use sui::tx_context::{TxContext};
   use sui::coin::{Self, TreasuryCap, CoinMetadata, Coin};
   use sui::dynamic_field as df;
-  use std::string;
+  use sui::url::{Url};
+
+  use axelar::utils::{Self};
+  use axelar::channel::{Self, Channel, ApprovedCall};
+
+  use dummy_its::its_utils::{convert_value, get_module_from_symbol, hash_coin_info};
 
   const SELECTOR_SEND_TOKEN: u256 = 1;
   const SELECTOR_SEND_TOKEN_WITH_DATA: u256 = 2;
   const SELECTOR_DEPLOY_TOKEN_MANAGER: u256 = 3;
   const SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN: u256 = 4;
 
-
-  struct Empty has store {
-
-  }
+  const EUntrustedAddress: u64 = 0;
+  const EDecimalsMissmatch: u64 = 1;
+  const EIconUrlExists: u64 = 2;
+  const EWrongSelector: u64 = 3;
+  const EWrongDestination: u64 = 4;
+  const EValueMissmatch: u64 = 5;
+  const EWrongModuleName: u64 = 6;
 
   struct CoinData<phantom T> has store {
     cap: TreasuryCap<T>,
@@ -32,23 +43,33 @@ module axelar_sui_sample::dummy_its {
 
   struct ITS has key {
       id: UID,
-      channel: Channel<Empty>,
+      channel: Channel<ChannelData>,
       trusted_address: String,
+      registered_coins: UID,
+      registered_coin_types: UID,
+      unregistered_coins: UID,
+      unregistered_coin_types: UID,
   }
 
-  struct DUMMY_ITS has drop {
-
+  struct ChannelData has store {
+      get_call_object_ids: vector<address>
   }
 
-  fun init(_: DUMMY_ITS, ctx: &mut TxContext) {
+  fun init(ctx: &mut TxContext) {
     transfer::share_object(get_singleton_its(ctx));
   }
 
   fun get_singleton_its(ctx: &mut TxContext) : ITS {
+    let id = object::new(ctx);
+    let channel_data = ChannelData { get_call_object_ids: vector::singleton(object::uid_to_address(&id)) };
     ITS {
-      id: object::new(ctx),
+      id,
       trusted_address: string::utf8(x"00"),
-      channel: channel::create_channel<Empty>(Empty {}, ctx),
+      channel: channel::create_channel<ChannelData>(channel_data, ctx),
+      registered_coins: object::new(ctx),
+      registered_coin_types: object::new(ctx),
+      unregistered_coins: object::new(ctx),
+      unregistered_coin_types: object::new(ctx),
     }
   }
 
@@ -58,7 +79,15 @@ module axelar_sui_sample::dummy_its {
     }
   }
 
-  public fun registerCoin<T>(approved_call: ApprovedCall, its: &mut ITS, cap: TreasuryCap<T>, metadata: CoinMetadata<T>) {
+  public fun get_unregistered_coin_type(its: &ITS, symbol: &ascii::String, decimals: &u8): ascii::String {
+    *df::borrow<address, ascii::String>(&its.unregistered_coin_types, hash_coin_info(symbol, decimals))
+  }
+
+  public fun get_registered_coin_type(its: &ITS, tokenId: address): ascii::String {
+    *df::borrow<address, ascii::String>(&its.unregistered_coin_types, tokenId)
+  }
+
+  public fun registerCoin<T>(approved_call: ApprovedCall, its: &mut ITS) {
     //let data: &mut Empty;
     //let source_chain: String;
     let source_address: String;
@@ -68,30 +97,30 @@ module axelar_sui_sample::dummy_its {
         _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<Empty>(
+    ) = channel::consume_approved_call<ChannelData>(
         &mut its.channel,
         approved_call,
     );
-    assert!(&source_address == &its.trusted_address, 1);
-    let selector = utils::abi_decode_fixed(payload, 0);
+    assert!(&source_address == &its.trusted_address, EUntrustedAddress);
+    let selector = utils::abi_decode_fixed(&payload, 0);
 
-    assert!(selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, 1);
-    let tokenId = address::from_u256(utils::abi_decode_fixed(payload, 1));
+    assert!(selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN, EWrongSelector);
+    let tokenId = address::from_u256(utils::abi_decode_fixed(&payload, 1));
+
+    let decimals = (utils::abi_decode_fixed(&payload, 4) as u8);
+    let symbol = ascii::string(utils::abi_decode_variable(&payload, 3));
+    let coin_info_hash = hash_coin_info(&symbol, &decimals);
+    let coin_data = df::remove<address, CoinData<T>>(&mut its.unregistered_coins, coin_info_hash);
 
 
-    let name = string::utf8(utils::abi_decode_variable(payload, 2));
-    let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
-    let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
-
-    coin::update_name<T>(&cap, &mut metadata, name);
-    coin::update_symbol<T>(&cap, &mut metadata, symbol);
-    assert!(decimals == coin::get_decimals<T>(&metadata), 2);
+    let name = string::utf8(utils::abi_decode_variable(&payload, 2));
+    coin::update_name<T>(&coin_data.cap, &mut coin_data.metadata, name);
+    coin::update_description<T>(&coin_data.cap, &mut coin_data.metadata, string::utf8(b""));
       
-    df::add(&mut its.id, tokenId, CoinData{cap, metadata});
-  }
+    df::add(&mut its.registered_coins, tokenId, coin_data);
 
-  fun convert_value(value: u256): u64 {
-    (value as u64)
+    let coin_type = df::remove<address, ascii::String>(&mut its.unregistered_coin_types, coin_info_hash);
+    df::add(&mut its.registered_coin_types, tokenId, coin_type);
   }
 
   public fun receiveCoin<T>(approved_call: ApprovedCall, its: &mut ITS, ctx: &mut TxContext) {
@@ -104,19 +133,19 @@ module axelar_sui_sample::dummy_its {
         _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<Empty>(
+    ) = channel::consume_approved_call<ChannelData>(
         &mut its.channel,
         approved_call,
     );
-    assert!(&source_address == &its.trusted_address, 1);
-    let selector = utils::abi_decode_fixed(payload, 0);
+    assert!(&source_address == &its.trusted_address, EUntrustedAddress);
+    let selector = utils::abi_decode_fixed(&payload, 0);
     
-    assert!(selector == SELECTOR_SEND_TOKEN, 1);
-    let tokenId = address::from_u256(utils::abi_decode_fixed(payload, 1));
+    assert!(selector == SELECTOR_SEND_TOKEN, EWrongSelector);
+    let tokenId = address::from_u256(utils::abi_decode_fixed(&payload, 1));
       
-    let cap = &mut df::borrow_mut<address, CoinData<T>>(&mut its.id, tokenId).cap;
-    let destination_address = address::from_bytes(utils::abi_decode_variable(payload, 2));
-    let value = convert_value(utils::abi_decode_fixed(payload, 3));
+    let cap = &mut df::borrow_mut<address, CoinData<T>>(&mut its.registered_coins, tokenId).cap;
+    let destination_address = address::from_bytes(utils::abi_decode_variable(&payload, 2));
+    let value = convert_value(utils::abi_decode_fixed(&payload, 3));
     coin::mint_and_transfer<T>(cap, value, destination_address, ctx);
   }
 
@@ -130,24 +159,24 @@ module axelar_sui_sample::dummy_its {
         source_chain,
         source_address,
         payload,
-    ) = channel::consume_approved_call<Empty>(
+    ) = channel::consume_approved_call<ChannelData>(
         &mut its.channel,
         approved_call,
     );
-    assert!(&source_address == &its.trusted_address, 1);
-    let selector = utils::abi_decode_fixed(payload, 0);
+    assert!(&source_address == &its.trusted_address, EUntrustedAddress);
+    let selector = utils::abi_decode_fixed(&payload, 0);
     
-    assert!(selector == SELECTOR_SEND_TOKEN, 2);
-    let tokenId = address::from_u256(utils::abi_decode_fixed(payload, 1));
+    assert!(selector == SELECTOR_SEND_TOKEN, EWrongSelector);
+    let tokenId = address::from_u256(utils::abi_decode_fixed(&payload, 1));
       
-    let cap = df::borrow_mut<address, TreasuryCap<T>>(&mut its.id, tokenId);
-    let destination_address = address::from_u256(utils::abi_decode_fixed(payload, 2));
+    let cap = df::borrow_mut<address, TreasuryCap<T>>(&mut its.registered_coins, tokenId);
+    let destination_address = address::from_u256(utils::abi_decode_fixed(&payload, 2));
 
-    assert!(object::uid_to_address(&channel.id) == destination_address, 3);
+    assert!(object::uid_to_address(&channel.id) == destination_address, EWrongDestination);
 
-    let value = convert_value(utils::abi_decode_fixed(payload, 3));
-    let coin_source_address = utils::abi_decode_variable(payload, 4);
-    let data = utils::abi_decode_variable(payload, 5);
+    let value = convert_value(utils::abi_decode_fixed(&payload, 3));
+    let coin_source_address = utils::abi_decode_variable(&payload, 4);
+    let data = utils::abi_decode_variable(&payload, 5);
     let coin = coin::mint<T>(cap, value, ctx);
     (
       coin,
@@ -155,6 +184,48 @@ module axelar_sui_sample::dummy_its {
       coin_source_address,
       data,
     )
+  }
+
+  public fun give_coin_info<T>(its: &mut ITS, cap: TreasuryCap<T>, metadata: CoinMetadata<T>, symbol: ascii::String, decimals: u8) {
+    let type_name = type_name::get_module(&type_name::get<T>());
+    
+    assert!(option::is_none<Url>(&coin::get_icon_url<T>(&metadata)), EIconUrlExists);
+    assert!(&get_module_from_symbol(&symbol) == &type_name, EWrongModuleName);
+    assert!(decimals == coin::get_decimals<T>(&metadata), EDecimalsMissmatch);
+
+    coin::update_symbol<T>(&cap, &mut metadata, symbol);
+
+    let id = hash_coin_info(&symbol, &decimals);
+    df::add(&mut its.unregistered_coins, id, CoinData {
+      cap,
+      metadata
+    });
+
+    df::add(&mut its.unregistered_coin_types, id, type_name);
+  }
+
+  public fun get_call_info(payload: &vector<u8>, its: &ITS): ascii::String {
+    let selector = utils::abi_decode_fixed(payload, 0);
+    if(selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
+        let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
+        let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
+        let coin_type = get_unregistered_coin_type(its, &symbol, &decimals);
+        let v = b"{\"target\":\"0x";
+        vector::append(&mut v, *ascii::as_bytes(&type_name::get_address(&type_name::get<ITS>())));
+        vector::append(&mut v, b"::its::registerCoin\",\"arguments\":[\"contractCall\",\"obj:");
+        vector::append(&mut v, *ascii::as_bytes(&address::to_ascii_string(object::id_address(its))));
+        vector::append(&mut v, b"\"],\"typeArguments\":[\"");
+        vector::append(&mut v, *ascii::as_bytes(&coin_type));
+        vector::append(&mut v, b"\"]}");
+        return ascii::string(v)
+    } else if (selector == SELECTOR_SEND_TOKEN) {
+        let v = b"{\"target\":\"";
+        return ascii::string(v)
+    } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
+        let v = b"{\"target\":\"";
+        return ascii::string(v)
+    };
+    ascii::string(b"")
   }
 
   #[test_only]
@@ -222,14 +293,19 @@ module axelar_sui_sample::dummy_its {
   }
 
   #[test_only]
+  public fun get_singleton(ctx: &mut TxContext): ITS {
+    get_singleton_its(ctx)
+  }
+
+  #[test_only]
   fun register_coin(test: &mut Scenario, its: &mut ITS) {
-    use axelar_sui_sample::coin_registry::{Self, COIN_REGISTRY};
+    use dummy_its::coin_registry::{Self, COIN_REGISTRY};
     
     let payload = utils::abi_encode_start(9);
     utils::abi_encode_fixed(&mut payload, 0, SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN);
     utils::abi_encode_fixed(&mut payload, 1, TOKEN_ID);
     utils::abi_encode_variable(&mut payload, 2, b"Token Name");
-    utils::abi_encode_variable(&mut payload, 3, b"SYMBOL");
+    utils::abi_encode_variable(&mut payload, 3, b"COIN_REGISTRY");
     utils::abi_encode_fixed(&mut payload, 4, 18);
     utils::abi_encode_variable(&mut payload, 5, x"00");
     utils::abi_encode_variable(&mut payload, 6, x"03");
@@ -244,7 +320,9 @@ module axelar_sui_sample::dummy_its {
     ts::next_tx(test, @0x0);
     let treasuryCap = ts::take_from_sender<TreasuryCap<COIN_REGISTRY>>(test);
     let coinMetadata = ts::take_from_sender<CoinMetadata<COIN_REGISTRY>>(test);
-    registerCoin<COIN_REGISTRY>(call, its, treasuryCap, coinMetadata);
+    give_coin_info<COIN_REGISTRY>(its, treasuryCap, coinMetadata, ascii::string(b"COIN_REGISTRY"), 18);
+
+    registerCoin<COIN_REGISTRY>(call, its);
   }
   #[test]
   fun test_register_coin() {   
@@ -260,12 +338,11 @@ module axelar_sui_sample::dummy_its {
     ts::end(test);
   }
 
-
   #[test]
   fun test_receive_coin() {   
     use sui::test_scenario::{Self as ts, ctx};
     use sui::test_utils::{Self as tu};
-    use axelar_sui_sample::coin_registry::{COIN_REGISTRY};
+    use dummy_its::coin_registry::{COIN_REGISTRY};
 
     let test = ts::begin(@0x0);
     let its = get_singleton_its(ctx(&mut test));
@@ -293,7 +370,7 @@ module axelar_sui_sample::dummy_its {
     ts::next_tx(&mut test, receiver);
     let coin = ts::take_from_sender<Coin<COIN_REGISTRY>>(&mut test);
 
-    assert!(coin::value(&coin) == (amount as u64), 3);
+    assert!(coin::value(&coin) == (amount as u64), EValueMissmatch);
 
     ts::return_to_sender(&mut test, coin);
 
@@ -304,10 +381,12 @@ module axelar_sui_sample::dummy_its {
 }
 
 #[test_only]
-module axelar_sui_sample::coin_registry {
+module dummy_its::coin_registry {
   use sui::transfer;
   use sui::coin::{Self};
   use sui::tx_context::{Self, TxContext};
+  use std::option;
+  use sui::url::{Url};
 
   /// Type is named after the module but uppercased
   struct COIN_REGISTRY has drop {}
@@ -319,7 +398,7 @@ module axelar_sui_sample::coin_registry {
       b"TEST",
       b"Test Token",
       b"This is for testing",
-      std::option::some(sui::url::new_unsafe_from_bytes(b"a url")),
+      option::none<Url>(),
       ctx,
     );
 

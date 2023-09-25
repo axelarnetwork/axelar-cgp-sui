@@ -69,24 +69,24 @@ module axelar::utils {
         };
     }
 
-    public fun abi_decode_fixed(v: vector<u8>, pos: u64) : u256 {
+    public fun abi_decode_fixed(v: &vector<u8>, pos: u64) : u256 {
         let var : u256 = 0;
         let i = 0;
         while(i < 32) {
             var = var << 8;
-            var = var | (*vector::borrow<u8>(&v, i + 32 * pos) as u256);
+            var = var | (*vector::borrow<u8>(v, i + 32 * pos) as u256);
             i = i + 1;
         };
         var
     }
 
-    public fun abi_decode_variable(v: vector<u8>, pos: u64): vector<u8> {
+    public fun abi_decode_variable(v: &vector<u8>, pos: u64): vector<u8> {
         let start = (abi_decode_fixed(v, pos) as u64);
         let len = (abi_decode_fixed(v, start / 32) as u64);
         let var = vector::empty<u8>();
         let i = 0;
         while(i < len) {
-            vector::push_back<u8>(&mut var, *vector::borrow<u8>(&v, i + start + 32));
+            vector::push_back<u8>(&mut var, *vector::borrow<u8>(v, i + start + 32));
             i = i + 1;
         };
         var
@@ -134,10 +134,10 @@ module axelar::utils {
 
         assert!(&v == &RESULT, 1);
 
-        let fix1 = abi_decode_fixed(v, 0);
-        let var1 = abi_decode_variable(v, 1);
-        let fix2 = abi_decode_fixed(v, 2);
-        let var2 = abi_decode_variable(v, 3);
+        let fix1 = abi_decode_fixed(&v, 0);
+        let var1 = abi_decode_variable(&v, 1);
+        let fix2 = abi_decode_fixed(&v, 2);
+        let var2 = abi_decode_variable(&v, 3);
 
         
         assert!(&fix1 == &FIX1, 1);

@@ -69,7 +69,7 @@ function insertPublishedAt(toml, packageId) {
 }
 
 if (require.main === module) {
-    const packagePath = process.argv[2];
+    const packagePath = process.argv[2] || 'axelar';
     const env = process.argv[3] || 'localnet';
     
     (async () => {
@@ -96,21 +96,27 @@ if (require.main === module) {
         const info = require(`../move/${packagePath}/info.json`);
         const config = {};
         config.packageId = packageId;
+        console.log(publishTxn);
         for(const singleton of info.singletons) {
             const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
             delete object.type;
             delete object.sender;
             delete object.owner;
             config[singleton] = object
-            const fields = (await client.getObject({
+            const objectResponce = await client.getObject({
                 id: object.objectId,
                 options: {
                     showContent: true,
                 }
-            })).data.content.fields;
+            }); 
+            const fields = objectResponce.data.content.fields;
             for(const key in fields) {
                 if(key === 'id') continue;
-                object[key] = fields[key].fields.id.id;
+                if(fields[key].fields) {
+                    object[key] = fields[key].fields.id.id;
+                } else {
+                    object[key] = fields[key].id;
+                }
             }
         }
         
