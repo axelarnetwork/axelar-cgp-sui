@@ -41,9 +41,16 @@ module dummy_its::its {
     id: UID,
   }
 
+  struct ChannelType has key {
+    id: UID,
+    get_call_object_ids: vector<address>,
+  }
+
+  struct ChannelWitness has drop {}
+
   struct ITS has key {
       id: UID,
-      channel: Channel<ChannelData>,
+      channel: Channel<ChannelType>,
       trusted_address: String,
       registered_coins: UID,
       registered_coin_types: UID,
@@ -51,26 +58,28 @@ module dummy_its::its {
       unregistered_coin_types: UID,
   }
 
-  struct ChannelData has store {
-      get_call_object_ids: vector<address>
-  }
-
   fun init(ctx: &mut TxContext) {
-    transfer::share_object(get_singleton_its(ctx));
+    let (its, channel_type) = get_singleton_its(ctx);
+    transfer::share_object(its);
+    transfer::share_object(channel_type);
   }
 
-  fun get_singleton_its(ctx: &mut TxContext) : ITS {
+  fun get_singleton_its(ctx: &mut TxContext) : (ITS, ChannelType) {
     let id = object::new(ctx);
-    let channel_data = ChannelData { get_call_object_ids: vector::singleton(object::uid_to_address(&id)) };
-    ITS {
+    let channel_type = ChannelType {
+      id:  object::new(ctx),
+      get_call_object_ids: vector::singleton(object::uid_to_address(&id)),
+    };
+    let its = ITS {
       id,
+      channel: channel::create_channel<ChannelType, ChannelWitness>(&channel_type, ChannelWitness {} , ctx),
       trusted_address: string::utf8(x"00"),
-      channel: channel::create_channel<ChannelData>(channel_data, ctx),
       registered_coins: object::new(ctx),
       registered_coin_types: object::new(ctx),
       unregistered_coins: object::new(ctx),
       unregistered_coin_types: object::new(ctx),
-    }
+    };
+    (its, channel_type)
   }
 
   public fun create_coin_channel(ctx: &mut TxContext): CoinChannel {
@@ -94,10 +103,9 @@ module dummy_its::its {
     let payload: vector<u8>;
     (
         _,
-        _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelData>(
+    ) = channel::consume_approved_call<ChannelType>(
         &mut its.channel,
         approved_call,
     );
@@ -123,17 +131,16 @@ module dummy_its::its {
     df::add(&mut its.registered_coin_types, tokenId, coin_type);
   }
 
-  public fun receiveCoin<T>(approved_call: ApprovedCall, its: &mut ITS, ctx: &mut TxContext) {
+  public fun receive_coin<T>(approved_call: ApprovedCall, its: &mut ITS, ctx: &mut TxContext) {
     //let data: &mut Empty;
     //let source_chain: String;
     let source_address: String;
     let payload: vector<u8>;
     (
         _,
-        _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelData>(
+    ) = channel::consume_approved_call<ChannelType>(
         &mut its.channel,
         approved_call,
     );
@@ -149,17 +156,16 @@ module dummy_its::its {
     coin::mint_and_transfer<T>(cap, value, destination_address, ctx);
   }
 
-  public fun receiveCoinWithData<T>(approved_call: ApprovedCall, its: &mut ITS, channel: &CoinChannel, ctx: &mut TxContext): (Coin<T>, String, vector<u8>, vector<u8>) {
+  public fun receive_coin_with_data<T>(approved_call: ApprovedCall, its: &mut ITS, channel: &CoinChannel, ctx: &mut TxContext): (Coin<T>, String, vector<u8>, vector<u8>) {
     //let data: &mut Empty;
     let source_chain: String;
     let source_address: String;
     let payload: vector<u8>;
     (
-        _,
         source_chain,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelData>(
+    ) = channel::consume_approved_call<ChannelType>(
         &mut its.channel,
         approved_call,
     );
@@ -204,7 +210,7 @@ module dummy_its::its {
     df::add(&mut its.unregistered_coin_types, id, type_name);
   }
 
-  public fun get_call_info(payload: &vector<u8>, its: &ITS): ascii::String {
+  public fun get_call_info(payload: &vector<u8>, its: &ITS): vector<u8> {
     let selector = utils::abi_decode_fixed(payload, 0);
     if(selector == SELECTOR_DEPLOY_AND_REGISTER_STANDARDIZED_TOKEN) {
         let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
@@ -217,16 +223,17 @@ module dummy_its::its {
         vector::append(&mut v, b"\"],\"typeArguments\":[\"");
         vector::append(&mut v, *ascii::as_bytes(&coin_type));
         vector::append(&mut v, b"\"]}");
-        return ascii::string(v)
+        return v
     } else if (selector == SELECTOR_SEND_TOKEN) {
         let v = b"{\"target\":\"";
-        return ascii::string(v)
+        return v
     } else if (selector == SELECTOR_SEND_TOKEN_WITH_DATA) {
         let v = b"{\"target\":\"";
-        return ascii::string(v)
+        return v
     };
-    ascii::string(b"")
+    b""
   }
+
 
   #[test_only]
   use sui::test_scenario::{Self as ts, ctx, Scenario};
@@ -293,11 +300,6 @@ module dummy_its::its {
   }
 
   #[test_only]
-  public fun get_singleton(ctx: &mut TxContext): ITS {
-    get_singleton_its(ctx)
-  }
-
-  #[test_only]
   fun register_coin(test: &mut Scenario, its: &mut ITS) {
     use dummy_its::coin_registry::{Self, COIN_REGISTRY};
     
@@ -330,11 +332,12 @@ module dummy_its::its {
     use sui::test_utils::{Self as tu};
 
     let test = ts::begin(@0x0);
-    let its = get_singleton_its(ctx(&mut test));
+    let (its, channel_type) = get_singleton_its(ctx(&mut test));
 
     register_coin(&mut test, &mut its);
 
     tu::destroy(its);
+    tu::destroy(channel_type);
     ts::end(test);
   }
 
@@ -345,7 +348,7 @@ module dummy_its::its {
     use dummy_its::coin_registry::{COIN_REGISTRY};
 
     let test = ts::begin(@0x0);
-    let its = get_singleton_its(ctx(&mut test));
+    let (its, channel_type) = get_singleton_its(ctx(&mut test));
 
     register_coin(&mut test, &mut its);
 
@@ -365,7 +368,7 @@ module dummy_its::its {
     );
 
     ts::next_tx(&mut test, @0x0);
-    receiveCoin<COIN_REGISTRY>(call, &mut its, ctx(&mut test));
+    receive_coin<COIN_REGISTRY>(call, &mut its, ctx(&mut test));
 
     ts::next_tx(&mut test, receiver);
     let coin = ts::take_from_sender<Coin<COIN_REGISTRY>>(&mut test);
@@ -375,6 +378,7 @@ module dummy_its::its {
     ts::return_to_sender(&mut test, coin);
 
     tu::destroy(its);
+    tu::destroy(channel_type);
     ts::end(test);
   }
 

@@ -3,6 +3,8 @@
 
 module axelar::utils {
     use std::vector;
+    use std::ascii;
+    use std::type_name;
 
     use sui::bcs;
     use sui::hash;
@@ -107,6 +109,15 @@ module axelar::utils {
         vector::append<u8>(&mut data, bcs::to_bytes(weights));
         vector::append<u8>(&mut data, bcs::to_bytes(&threshold));
         hash::keccak256(&data)
+    }
+
+    public fun get_channel_witness_for<T>(): ascii::String {
+        let type_name = type_name::get<T>();
+        let v = *ascii::as_bytes(&type_name::get_address(&type_name));
+        vector::append(&mut v, b"::");
+        vector::append(&mut v, *ascii::as_bytes(&type_name::get_module(&type_name)));
+        vector::append(&mut v, b"::ChannelWitness");
+        ascii::string(v)
     }
 
 

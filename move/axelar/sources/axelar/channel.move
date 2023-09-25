@@ -3,10 +3,13 @@
 
 module axelar::channel {
     use std::string::String;
+    use std::type_name;
     use sui::linked_table::{Self, LinkedTable};
     use sui::object::{Self, UID, ID};
     use sui::tx_context::TxContext;
     use sui::event;
+
+    use axelar::utils::{get_channel_witness_for};
 
     friend axelar::validators;
 
@@ -43,6 +46,7 @@ module axelar::channel {
     const EWrongDestination: u64 = 0;
     /// For when message has already been processed and submitted twice.
     const EDuplicateMessage: u64 = 2;
+    const ENotChannelWitness: u64 = 3;
 
     const MAX_PROCESSED_APPROVAL_HISTORY: u64 = 100;
 
@@ -53,19 +57,14 @@ module axelar::channel {
     /// The `T` parameter allows wrapping a Capability or a piece of data into
     /// the channel to be used when the message is consumed (eg authorize a
     /// `mint` call using a stored `AdminCap`).
-    struct Channel<T: store> has store {
+    struct Channel<phantom T: key> has store {
         /// Unique ID of the target object which allows message targeting
         /// by comparing against `id_bytes`.
-        id: UID,
+        id: address,
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
         processed_call_approvals: LinkedTable<address, bool>,
-        /// Additional field to optionally use as metadata for the Channel
-        /// object improving identification and uniqueness of data.
-        /// Can store any struct that has `store` ability (including other
-        /// objects - eg Capabilities).
-        data: T
     }
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
@@ -87,39 +86,37 @@ module axelar::channel {
     // ====== Events ======
 
     struct ChannelCreated<phantom T> has copy, drop {
-        id: ID,
+        id: address,
     }
 
     struct ChannelDestroyed<phantom T> has copy, drop {
-        id: ID,
+        id: address,
     }
 
     /// Create new `Channel<T>` object. Anyone can create their own `Channel` to target
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel<T: store>(t: T, ctx: &mut TxContext): Channel<T> {
-        let uid = object::new(ctx);
-        let id = object::uid_to_inner(&uid);
+    public fun create_channel<T: key, W: drop>(t: &T, channelWitness: W, ctx: &mut TxContext): Channel<T> {
+        let id = object::id_address(t);
         event::emit(ChannelCreated<T> { id });
-        Channel {
-            id: uid,
+        assert!(&get_channel_witness_for<T>() == type_name::borrow_string(&type_name::get<W>()), ENotChannelWitness);
+        
+        Channel<T> {
+            id,
             processed_call_approvals: linked_table::new(ctx),
-            data: t
         }
     }
 
     /// Destroy a `Channel<T>` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
-    public fun destroy_channel<T: store>(self: Channel<T>): T {
-        let Channel { id, processed_call_approvals, data } = self;
+    public fun destroy_channel<T: key>(self: Channel<T>) {
+        let Channel { id, processed_call_approvals } = self;
         while (!linked_table::is_empty(&processed_call_approvals)) {
             linked_table::pop_back(&mut processed_call_approvals);
         };
         linked_table::destroy_empty(processed_call_approvals);
-        event::emit(ChannelDestroyed<T> { id: object::uid_to_inner(&id) });
-        object::delete(id);
-        data
+        event::emit(ChannelDestroyed<T> { id });
     }
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
@@ -145,10 +142,10 @@ module axelar::channel {
     ///
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
     /// and the `payload` to be used by the consuming application.
-    public fun consume_approved_call<T: store>(
+    public fun consume_approved_call<T: key>(
         t: &mut Channel<T>,
         approved_call: ApprovedCall
-    ): (&mut T, String, String, vector<u8>) {
+    ): (String, String, vector<u8>) {
         let ApprovedCall {
             cmd_id,
             target_id,
@@ -160,7 +157,7 @@ module axelar::channel {
         // Check if the message has already been processed.
         assert!(!linked_table::contains(&t.processed_call_approvals, cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
-        assert!(target_id == object::uid_to_address(&t.id), EWrongDestination);
+        assert!(target_id == t.id, EWrongDestination);
 
         linked_table::push_back(&mut t.processed_call_approvals, cmd_id, true);
         if (linked_table::length(&t.processed_call_approvals) > MAX_PROCESSED_APPROVAL_HISTORY) {
@@ -168,7 +165,6 @@ module axelar::channel {
         };
 
         (
-            &mut t.data,
             source_chain,
             source_address,
             payload,
@@ -176,7 +172,7 @@ module axelar::channel {
     }
 
     /// Get the bytes of the Channel address
-    public fun source_id<T: store>(self: &Channel<T>): vector<u8> {
+    public fun source_id<T: key>(self: &Channel<T>): vector<u8> {
         sui::bcs::to_bytes(&self.id)
     }
 
