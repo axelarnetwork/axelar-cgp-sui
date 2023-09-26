@@ -25,7 +25,7 @@ module test::test {
 
     struct ChannelType has key {
         id: UID,
-        get_call_object_ids: vector<address>,
+        get_call_info_object_ids: vector<address>,
     }
 
     struct ChannelWitness has drop {
@@ -33,9 +33,13 @@ module test::test {
     }
   
     fun init(ctx: &mut TxContext) {
-        let channel_type = ChannelType { id: object::new(ctx), get_call_object_ids: vector::empty() };
+        let singletonId = object::new(ctx);
+        let channel_type = ChannelType { 
+            id: object::new(ctx), 
+            get_call_info_object_ids: vector::singleton(object::uid_to_address(&singletonId)),
+        };
         transfer::share_object(Singleton {
-            id: object::new(ctx),
+            id: singletonId,
             channel: channel::create_channel<ChannelType, ChannelWitness>(&channel_type, ChannelWitness {}, ctx),
         });
         transfer::share_object(channel_type);

@@ -1,7 +1,7 @@
 [package]
 name = "Axelar"
 version = "0.0.1"
-published-at = "0xab9802a35a6f617a3ee8ffaf72dc23c966b3ff40c75329ae730025c67848e136"
+published-at = "0xe3bedf7a0f643a3ed7154aef850753d93f7a6588a6bb6e03907b8f6db79e82e1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }

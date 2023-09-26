@@ -12,6 +12,11 @@ const { approveContractCall } = require('./gateway');
 const { toPure } = require('./utils');
 
 
+function getCalInfoFunFromType(type) {
+    const lastCol = type.lastIndexOf(':');
+    return type.slice(0, lastCol + 1) + 'get_call_info';
+}
+
 (async () => {
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
@@ -34,12 +39,16 @@ const { toPure } = require('./utils');
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${packageId}::gateway::ContractCallApproved`,
     }}));
-    console.log(eventData.data.map(datum => datum.parsedJson.cmd_id));
     let event = eventData.data[0].parsedJson;
+
+    const callInfoObject = await client.getObject({id: event.target_id, options: {showContent: true}});
+    const callObjectIds = callInfoObject.data.content.fields.get_call_info_object_ids;
+    const infoTarget = getCalInfoFunFromType(callInfoObject.data.content.type);
+
     let tx = new TransactionBlock();
     tx.moveCall({
-        target: `${packageId}::test::get_call_info`,
-        arguments: [tx.pure(String.fromCharCode(...arrayify(payload))), tx.object(test.objectId)],
+        target: infoTarget,
+        arguments: [tx.pure(String.fromCharCode(...arrayify(payload))), ...callObjectIds.map(id => tx.object(id))],
     });
     const resp = await client.devInspectTransactionBlock({
         sender: keypair.getPublicKey().toSuiAddress(),
