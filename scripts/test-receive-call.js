@@ -3,11 +3,13 @@ require('dotenv').config();
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
+const {BCS, fromHEX, getSuiMoveConfig} = require("@mysten/bcs");
 const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
 const axelarInfo = require('../info/axelar.json');
 const { approveContractCall } = require('./gateway');
+const { toPure } = require('./utils');
 
 
 (async () => {
@@ -23,18 +25,33 @@ const { approveContractCall } = require('./gateway');
     
     const packageId = axelarInfo.packageId;
     const validators = axelarInfo['validators::AxelarValidators'];
-    const test = axelarInfo['test_receive_call::Singleton'];
+    const test = axelarInfo['test::Singleton'];
     
     const payload = '0x1234';
     const payload_hash = arrayify(keccak256(payload));
     await approveContractCall(client, keypair, 'Ethereum', '0x0', test.channel, payload_hash);
  
-    let event = (await client.queryEvents({query: {
+    const eventData = (await client.queryEvents({query: {
         MoveEventType: `${packageId}::gateway::ContractCallApproved`,
-    }})).data[0].parsedJson;
-    console.log(event)
-
-	const tx = new TransactionBlock(); 
+    }}));
+    console.log(eventData.data.map(datum => datum.parsedJson.cmd_id));
+    let event = eventData.data[0].parsedJson;
+    let tx = new TransactionBlock();
+    tx.moveCall({
+        target: `${packageId}::test::get_call_info`,
+        arguments: [tx.pure(String.fromCharCode(...arrayify(payload))), tx.object(test.objectId)],
+    });
+    const resp = await client.devInspectTransactionBlock({
+        sender: keypair.getPublicKey().toSuiAddress(),
+        transactionBlock: tx,
+        
+    });
+    const bcs_encoded_resp = resp.results[0].returnValues[0][0];
+    const bcs = new BCS(getSuiMoveConfig());
+    const decoded = bcs.de(BCS.STRING, new Uint8Array(bcs_encoded_resp));
+    const toCall = JSON.parse(decoded);
+    
+	tx = new TransactionBlock(); 
     const approvedCall = tx.moveCall({
         target: `${packageId}::gateway::take_approved_call`,
         arguments: [
@@ -47,16 +64,25 @@ const { approveContractCall } = require('./gateway');
         ],
         typeArguments: [],
     });
-    tx.moveCall({
-        target: `${packageId}::test_receive_call::execute`,
-        arguments: [
-            tx.object(test.objectId),
-            approvedCall,
-        ],
-        typeArguments: []
+
+    toCall.arguments = toCall.arguments.map(arg => {
+        if(typeof arg !== 'string') {
+            return tx.pure(arg);
+        }
+        if(arg == 'contractCall') {
+            return approvedCall;
+        }
+        if(arg.slice(0,4) === 'obj:') {
+            return tx.object(arg.slice(4));
+        }
+        if(arg.slice(0,5) === 'pure:') {
+            return tx.pure(arg.slice(5));
+        }
     });
 
-    const executeTxn = await client.signAndExecuteTransactionBlock({
+    tx.moveCall(toCall);
+
+    await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
         options: {
@@ -65,10 +91,10 @@ const { approveContractCall } = require('./gateway');
         },
     });
     event = (await client.queryEvents({query: {
-        MoveEventType: `${packageId}::test_receive_call::Executed`,
+        MoveEventType: `${packageId}::test::Executed`,
     }})).data[0].parsedJson;
     
     if ( hexlify(event.data) != payload ) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
-
+    console.log('Success!');
     
 })();

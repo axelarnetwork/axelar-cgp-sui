@@ -5,7 +5,7 @@ module axelar::channel {
     use std::string::String;
     use std::type_name;
     use sui::linked_table::{Self, LinkedTable};
-    use sui::object::{Self, UID, ID};
+    use sui::object;
     use sui::tx_context::TxContext;
     use sui::event;
 
@@ -97,7 +97,7 @@ module axelar::channel {
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel<T: key, W: drop>(t: &T, channelWitness: W, ctx: &mut TxContext): Channel<T> {
+    public fun create_channel<T: key, W: drop>(t: &T, _channel_witness: W, ctx: &mut TxContext): Channel<T> {
         let id = object::id_address(t);
         event::emit(ChannelCreated<T> { id });
         assert!(&get_channel_witness_for<T>() == type_name::borrow_string(&type_name::get<W>()), ENotChannelWitness);
@@ -172,8 +172,8 @@ module axelar::channel {
     }
 
     /// Get the bytes of the Channel address
-    public fun source_id<T: key>(self: &Channel<T>): vector<u8> {
-        sui::bcs::to_bytes(&self.id)
+    public fun source_id<T: key>(self: &Channel<T>): address {
+        self.id
     }
 
     // === Testing ===

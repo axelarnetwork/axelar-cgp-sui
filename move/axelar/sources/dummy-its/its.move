@@ -238,8 +238,6 @@ module dummy_its::its {
   #[test_only]
   use sui::test_scenario::{Self as ts, ctx, Scenario};
   #[test_only]
-  use sui::bcs::{Self};
-  #[test_only]
   const TEST_SENDER_ADDR: address = @0xA11CE;
   #[test_only]
   use axelar::utils::operators_hash;
@@ -276,7 +274,7 @@ module dummy_its::its {
         ctx(test)
     );
 
-    let channelId = bcs::peel_address(&mut bcs::new(channel::source_id(&its.channel)));
+    let channelId = channel::source_id(&its.channel);
     validators::add_approval_for_testing(
       &mut validators, 
       command_id,

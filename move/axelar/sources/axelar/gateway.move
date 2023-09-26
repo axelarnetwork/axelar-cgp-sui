@@ -33,6 +33,8 @@ module axelar::gateway {
     use std::vector;
 
     use sui::bcs;
+    use sui::hash;
+    use sui::address;
 
     use axelar::utils::to_sui_signed;
     use axelar::channel::{Self, Channel, ApprovedCall};
@@ -53,10 +55,11 @@ module axelar::gateway {
 
     /// Emitted when a new message is sent from the SUI network.
     struct ContractCall has copy, drop {
-        source: vector<u8>,
+        source_id: address,
         destination_chain: String,
         destination_address: String,
         payload: vector<u8>,
+        payload_hash: address,
     }
 
     struct ContractCallApproved has copy, drop {
@@ -173,10 +176,11 @@ module axelar::gateway {
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source: channel::source_id(channel),
+            source_id: channel::source_id(channel),
             destination_chain,
             destination_address,
             payload,
+            payload_hash: address::from_bytes(hash::keccak256(&payload)),
         })
     }
 

@@ -1,8 +1,7 @@
 {
     "singletons": [
         "validators::AxelarValidators",
-        "test_receive_call::Singleton",
-        "test_send_call::Singleton",
+        "test::Singleton",
         "its::ITS"
     ]
 }

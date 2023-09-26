@@ -22,7 +22,7 @@ const axelarInfo = require('../info/axelar.json');
     const client = new SuiClient({ url: getFullnodeUrl('localnet') });
     
     const packageId = axelarInfo.packageId;
-    const test = axelarInfo['test_send_call::Singleton'];
+    const test = axelarInfo['test::Singleton'];
     
     const destinationChain = 'Ethereum';
     const destinationAddress = '0x123456';
@@ -32,7 +32,7 @@ const axelarInfo = require('../info/axelar.json');
 	const tx = new TransactionBlock(); 
 
     tx.moveCall({
-        target: `${packageId}::test_send_call::send_call`,
+        target: `${packageId}::test::send_call`,
         arguments: [
             tx.object(test.objectId),
             tx.pure(destinationChain),
@@ -54,7 +54,7 @@ const axelarInfo = require('../info/axelar.json');
         MoveEventType: `${packageId}::gateway::ContractCall`,
     }})).data[0].parsedJson;
     console.log(event);
-    
-    if ( hexlify(event.source) != test.channel ) throw new Error(`Emmited payload missmatch: ${hexlify(event.source)} != ${test.channel}`);
+
+    if ( hexlify(event.source_id) != test.channel ) throw new Error(`Emmited payload missmatch: ${hexlify(event.source)} != ${test.channel}`);
     
 })();

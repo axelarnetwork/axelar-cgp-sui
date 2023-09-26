@@ -3,3 +3,4 @@ move/**/build
 .env
 Move.lock
 info
+.DS_STORE

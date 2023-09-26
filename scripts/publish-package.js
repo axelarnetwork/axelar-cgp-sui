@@ -82,7 +82,7 @@ if (require.main === module) {
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
         const client = new SuiClient({ url: getFullnodeUrl(env) });
-    
+        console.log(address);
         try {
             await requestSuiFromFaucetV0({
             // use getFaucetHost to make sure you're using correct faucet address
@@ -90,13 +90,14 @@ if (require.main === module) {
             host: getFaucetHost(env),
             recipient: address,
             });
-        } catch (e) {}
+        } catch (e) {
+            console.log(e);
+        }
     
         const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
         const info = require(`../move/${packagePath}/info.json`);
         const config = {};
         config.packageId = packageId;
-        console.log(publishTxn);
         for(const singleton of info.singletons) {
             const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
             delete object.type;
@@ -113,7 +114,7 @@ if (require.main === module) {
             for(const key in fields) {
                 if(key === 'id') continue;
                 if(fields[key].fields) {
-                    object[key] = fields[key].fields.id.id;
+                    object[key] = fields[key].fields.id.id || fields[key].fields.id;
                 } else {
                     object[key] = fields[key].id;
                 }
