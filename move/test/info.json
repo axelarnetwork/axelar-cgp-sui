@@ -1,0 +1,6 @@
+{
+    "singletons": [
+        "test::Singleton",
+        "its::ITS"
+    ]
+}

@@ -1,7 +1,5 @@
 {
     "singletons": [
-        "validators::AxelarValidators",
-        "test::Singleton",
-        "its::ITS"
+        "validators::AxelarValidators"
     ]
 }

@@ -68,6 +68,17 @@ function insertPublishedAt(toml, packageId) {
     return lines.join('\n');
 }
 
+function fillAddresses(toml, address) {
+    const lines = toml.split('\n');
+    const addressesIndex = lines.findIndex(line => line.slice(0, 11) === '[addresses]');
+    for(let i = addressesIndex + 1; i<lines.length; i++) {
+        const line = lines[i];
+        const eqIndex = line.indexOf('=');
+        lines[i] = line.slice(0, eqIndex+1) + ` "${address}"`;
+    }
+    return lines.join('\n');
+}
+
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
     const env = process.argv[3] || 'localnet';
@@ -93,6 +104,11 @@ if (require.main === module) {
         } catch (e) {
             console.log(e);
         }
+
+
+        let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
+        console.log(toml);
+        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
     
         const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
         const info = require(`../move/${packagePath}/info.json`);
@@ -123,7 +139,6 @@ if (require.main === module) {
         
         fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(config, null, 4));
 
-        let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, insertPublishedAt(toml, packageId));
+        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(insertPublishedAt(toml, packageId), packageId));
     })();
 }
