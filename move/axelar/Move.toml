@@ -7,4 +7,4 @@ published-at = "0x2111e373a0e0571088615373b0533ffa9f99e80b3f92b7f39022ee7e2a426e
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 [addresses]
-axelar = "0x2111e373a0e0571088615373b0533ffa9f99e80b3f92b7f39022ee7e2a426e3f"
+axelar = "0x0"
