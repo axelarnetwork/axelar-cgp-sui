@@ -93,7 +93,7 @@ if (require.main === module) {
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
         const client = new SuiClient({ url: getFullnodeUrl(env) });
-        console.log(address);
+
         try {
             await requestSuiFromFaucetV0({
             // use getFaucetHost to make sure you're using correct faucet address
@@ -107,7 +107,6 @@ if (require.main === module) {
 
 
         let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-        console.log(toml);
         fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
     
         const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
@@ -137,7 +136,9 @@ if (require.main === module) {
             }
         }
         
-        fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(config, null, 4));
+        const allConfigs = require(`../info/${packagePath}.json`) || {};
+        allConfigs[env] = config;
+        fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
 
         fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(insertPublishedAt(toml, packageId), packageId));
     })();

@@ -60,15 +60,15 @@ function getBcsForGateway() {
     return bcs;
 }
 
-function getOperators() {
-    if(!axelarInfo.activeOperators) {
+function getOperators(env) {
+    if(!axelarInfo[env].activeOperators) {
         return {
             privKeys: [], 
             weights: [], 
             threashold: 0,
         };
     }
-    return axelarInfo.activeOperators;
+    return axelarInfo[env].activeOperators;
 }
 
 function getRandomOperators(n = 5) {
@@ -90,8 +90,8 @@ function getRandomOperators(n = 5) {
     }
 }
 
-function getInputForMessage(message) {
-    const operators = getOperators();
+function getInputForMessage(env, message) {
+    const operators = getOperators(env);
 
     // get the public key in a compressed format
     const pubKeys = operators.privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
@@ -121,7 +121,7 @@ function getInputForMessage(message) {
     return input;
 }
 
-function approveContractCallInput(sourceChain, sourceAddress, destinationAddress, payloadHash, commandId = keccak256((new Date()).getTime())) {
+function approveContractCallInput(env, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId = keccak256((new Date()).getTime())) {
     const bcs = getBcsForGateway();
     
     const message = bcs
@@ -142,10 +142,10 @@ function approveContractCallInput(sourceChain, sourceAddress, destinationAddress
         })
         .toBytes();
         
-        return getInputForMessage(message);
+        return getInputForMessage(env, message);
 }
 
-function TransferOperatorshipInput(newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
+function TransferOperatorshipInput(env, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -172,14 +172,14 @@ function TransferOperatorshipInput(newOperators, newWeights, newThreshold, comma
         })
         .toBytes();
 
-        return getInputForMessage(message);
+        return getInputForMessage(env, message);
 }
 
-async function approveContractCall(client, keypair, sourceChain, sourceAddress, destinationAddress, payloadHash) {
+async function approveContractCall(env, client, keypair, sourceChain, sourceAddress, destinationAddress, payloadHash) {
     const commandId = keccak256((new Date()).getTime());
-    const input = approveContractCallInput(sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
-    const packageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
+    const input = approveContractCallInput(env, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
+    const packageId = axelarInfo[env].packageId;
+    const validators = axelarInfo[env]['validators::AxelarValidators'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({
@@ -198,10 +198,10 @@ async function approveContractCall(client, keypair, sourceChain, sourceAddress, 
     return commandId;
 }
 
-async function transferOperatorship(client, keypair, newOperators, newWeights, newThreshold ) {
-    const input = TransferOperatorshipInput( newOperators, newWeights, newThreshold);
-    const packageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
+async function transferOperatorship(env, client, keypair, newOperators, newWeights, newThreshold ) {
+    const input = TransferOperatorshipInput(env, newOperators, newWeights, newThreshold);
+    const packageId = axelarInfo[env].packageId;
+    const validators = axelarInfo[env]['validators::AxelarValidators'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({
@@ -220,52 +220,8 @@ async function transferOperatorship(client, keypair, newOperators, newWeights, n
     console.log(approveTxn.effects.status);
 }
 
-async function executeContractCall(client, keypair, sourceChain, sourceAddress, destinationAddress, payload, commandId) {
-    const packageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
-    const test = axelarInfo['test_receive_call::Singleton'];
-    console.log(destinationAddress);
-    const channel = await client.getObject({id: destinationAddress.slice(2), options: {showFields: true}});
-    console.log(channel);
-    return;
-    
-    const payload_hash = keccak256(payload);
-
-	const tx = new TransactionBlock(); 
-    const approvedCall = tx.moveCall({
-        target: `${packageId}::gateway::take_approved_call`,
-        arguments: [
-            tx.object(validators.objectId), 
-            tx.pure(commandId),
-            tx.pure(sourceChain),
-            tx.pure(sourceAddress),
-            tx.pure(destinationAddress),
-            tx.pure(String.fromCharCode(...arrayify(payload))),
-        ],
-        typeArguments: [],
-    });
-    tx.moveCall({
-        target: `${packageId}::test_receive_call::execute`,
-        arguments: [
-            tx.object(test.objectId),
-            approvedCall,
-        ],
-        typeArguments: []
-    });
-
-    const executeTxn = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
-        },
-    });
-}
-
 module.exports = {
     approveContractCall,
     transferOperatorship,
     getRandomOperators,
-    executeContractCall,
 }

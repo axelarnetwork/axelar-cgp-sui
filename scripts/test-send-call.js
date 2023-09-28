@@ -7,10 +7,12 @@ const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { utils: { hexlify }} = require('ethers');
 
 const { toPure } = require('./utils');
-const axelarInfo = require('../info/axelar.json');
 
 
 (async () => {
+    const env = process.argv[2] || 'localnet';
+    const axelarInfo = require('../info/axelar.json')[env];
+    const testInfo = require('../info/test.json')[env];
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -19,12 +21,13 @@ const axelarInfo = require('../info/axelar.json');
     // get the public key in a compressed format
     const keypair = Ed25519Keypair.fromSecretKey(privKey);
     // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl('localnet') });
+    const client = new SuiClient({ url: getFullnodeUrl(env) });
     
-    const packageId = axelarInfo.packageId;
-    const test = axelarInfo['test::Singleton'];
+    const axlearPackageId = axelarInfo.packageId;
+    const testPackageId = testInfo.packageId;
+    const test = testInfo['test::Singleton'];
     
-    const destinationChain = 'Ethereum';
+    const destinationChain = 'ethereum';
     const destinationAddress = '0x123456';
     const payload = '0x1234';
     
@@ -32,7 +35,7 @@ const axelarInfo = require('../info/axelar.json');
 	const tx = new TransactionBlock(); 
 
     tx.moveCall({
-        target: `${packageId}::test::send_call`,
+        target: `${testPackageId}::test::send_call`,
         arguments: [
             tx.object(test.objectId),
             tx.pure(destinationChain),
@@ -51,7 +54,7 @@ const axelarInfo = require('../info/axelar.json');
         },
     });
     const event = (await client.queryEvents({query: {
-        MoveEventType: `${packageId}::gateway::ContractCall`,
+        MoveEventType: `${axlearPackageId}::gateway::ContractCall`,
     }})).data[0].parsedJson;
     console.log(event);
 

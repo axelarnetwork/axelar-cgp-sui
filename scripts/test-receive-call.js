@@ -7,7 +7,6 @@ const {BCS, fromHEX, getSuiMoveConfig} = require("@mysten/bcs");
 const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
-const axelarInfo = require('../info/axelar.json');
 const { approveContractCall } = require('./gateway');
 const { toPure } = require('./utils');
 
@@ -18,6 +17,9 @@ function getCalInfoFunFromType(type) {
 }
 
 (async () => {
+    const env = process.argv[2] || 'localnet';
+    const axelarInfo = require('../info/axelar.json')[env];
+    const testInfo = require('../info/test.json')[env];
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -26,18 +28,19 @@ function getCalInfoFunFromType(type) {
     // get the public key in a compressed format
     const keypair = Ed25519Keypair.fromSecretKey(privKey);
     // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl('localnet') });
+    const client = new SuiClient({ url: getFullnodeUrl(env) });
     
-    const packageId = axelarInfo.packageId;
+    const axelarPackageId = axelarInfo.packageId;
     const validators = axelarInfo['validators::AxelarValidators'];
-    const test = axelarInfo['test::Singleton'];
+    const testPackageId = testInfo.packageId;
+    const test = testInfo['test::Singleton'];
     
     const payload = '0x1234';
     const payload_hash = keccak256(payload);
-    await approveContractCall(client, keypair, 'Ethereum', '0x0', test.channel, payload_hash);
+    await approveContractCall(env, client, keypair, 'Ethereum', '0x0', test.channel, payload_hash);
  
     const eventData = (await client.queryEvents({query: {
-        MoveEventType: `${packageId}::gateway::ContractCallApproved`,
+        MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
     }}));
     let event = eventData.data[0].parsedJson;
 
@@ -62,7 +65,7 @@ function getCalInfoFunFromType(type) {
     
 	tx = new TransactionBlock(); 
     const approvedCall = tx.moveCall({
-        target: `${packageId}::gateway::take_approved_call`,
+        target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [
             tx.object(validators.objectId), 
             tx.pure(event.cmd_id),
@@ -100,7 +103,7 @@ function getCalInfoFunFromType(type) {
         },
     });
     event = (await client.queryEvents({query: {
-        MoveEventType: `${packageId}::test::Executed`,
+        MoveEventType: `${testPackageId}::test::Executed`,
     }})).data[0].parsedJson;
     
     if ( hexlify(event.data) != payload ) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
