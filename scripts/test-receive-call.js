@@ -33,7 +33,7 @@ function getCalInfoFunFromType(type) {
     const test = axelarInfo['test::Singleton'];
     
     const payload = '0x1234';
-    const payload_hash = arrayify(keccak256(payload));
+    const payload_hash = keccak256(payload);
     await approveContractCall(client, keypair, 'Ethereum', '0x0', test.channel, payload_hash);
  
     const eventData = (await client.queryEvents({query: {

@@ -166,14 +166,14 @@ module axelar::validators {
         source_chain: String,
         source_address: String,
         target_id: address,
-        payload_hash: vector<u8>
+        payload_hash: address
     ) {
         let data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *string::bytes(&source_chain));
         vector::append(&mut data, *string::bytes(&source_address));
-        vector::append(&mut data, payload_hash);
+        vector::append(&mut data, address::to_bytes(payload_hash));
 
         table::add(&mut axelar.approvals, cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
@@ -248,14 +248,14 @@ module axelar::validators {
         source_chain: String,
         source_address: String,
         target_id: address,
-        payload_hash: vector<u8>
+        payload_hash: address
     ) {
         let data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *string::bytes(&source_chain));
         vector::append(&mut data, *string::bytes(&source_address));
-        vector::append(&mut data, payload_hash);
+        vector::append(&mut data, address::to_bytes(payload_hash));
 
         table::add(&mut axelar.approvals, cmd_id, Approval {
             approval_hash: hash::keccak256(&data),

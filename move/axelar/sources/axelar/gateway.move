@@ -67,7 +67,7 @@ module axelar::gateway {
         source_chain: String,
         source_address: String,
         target_id: address,
-        payload_hash: vector<u8>,
+        payload_hash: address,
     }
 
 
@@ -128,7 +128,7 @@ module axelar::gateway {
                     string::utf8(bcs::peel_vec_u8(&mut payload)),
                     string::utf8(bcs::peel_vec_u8(&mut payload)),
                     bcs::peel_address(&mut payload),
-                    bcs::peel_vec_u8(&mut payload)
+                    bcs::peel_address(&mut payload)
                 );
                 validators::add_approval(validators,
                     cmd_id, source_chain, source_address, target_id, payload_hash

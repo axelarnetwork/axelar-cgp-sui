@@ -54,7 +54,7 @@ function getBcsForGateway() {
         source_chain: "string",
         source_address: "string",
         target_id: "address",
-        payload_hash: "vector<u8>",
+        payload_hash: "address",
     });
 
     return bcs;
@@ -229,7 +229,7 @@ async function executeContractCall(client, keypair, sourceChain, sourceAddress, 
     console.log(channel);
     return;
     
-    const payload_hash = arrayify(keccak256(payload));
+    const payload_hash = keccak256(payload);
 
 	const tx = new TransactionBlock(); 
     const approvedCall = tx.moveCall({
