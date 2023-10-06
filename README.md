@@ -5,6 +5,11 @@ An implementation of the Axelar gateway for the Sui blockchain.
 ## Installation
 
 Install Sui and run a local Sui network: https://docs.sui.io/build/sui-local-network.
+The copy `.env.exaple` to `.env` and add a valid private key for sui. If you want to deploy to testnet you shoukd have its address be funded.
+
+## Deployment
+
+To deploy to testnet run `node scripts/publish-package axelar testnet` 
 
 ## Scripts
 
