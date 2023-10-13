@@ -42,3 +42,34 @@ First of all, as we mentioned before, for applications to 'validate' themselves 
     - `contractCall`: the `ApprovedCall` object (see below).
     - `pure:${info}`: a pure argument specified by `$info`.
     - `obj:${objectId}`: a shared object with the specified `id`.
+  - `typeArguments`: a list of types to be passed to the function called
+
+## ITS spec
+
+The ITS on sui is supposed to be able to receive 3 messages:
+- Register Coin: The payload will be abi encoded data that looks like this:                              
+  `4`: `uint256`, fixed,
+  `tokenId`: `bytes32`, fixed,
+  `name`: `string`, variable,
+  `symbol`: `string`, variable,
+  `decimals`: `uint8`, fixed,
+  `distributor`: `bytes`, variable,
+  `mintTo`: `bytes`, variable,
+  `mintAmount`: `uint256`, variable,
+  `operator`: `bytes`, variable,
+Don't worry about the distributor and operator for now
+
+- Receive coin: The payload will be abi encoded data that looks like this:
+  `1`, `uint256`, fixed,
+  `tokenId`, `bytes32`, fixed,
+  `destinationAddress`, `bytes`, variable (has to be converted to address),
+  `amount`, `uint256`, fixed,
+
+- Receive coin with data: The payload will be abi encoded data that looks like this:
+  `2`, `uint256`, fixed,
+  `tokenId`, `bytes32`, fixed,
+  `destinationAddress`, bytes, variable (has to be converted to address),
+  `amount`, `uint256`, fixed,
+  `sourceChain`, `string`, variable,
+  `sourceAddress`, `bytes`, variable
+This needs to return the coin object only if called with the right capability (another channel) that proves the caller is the `destinationAddress`

@@ -8,6 +8,7 @@ module axelar::channel {
     use sui::object;
     use sui::tx_context::TxContext;
     use sui::event;
+    use std::option;
 
     use axelar::utils::{get_channel_witness_for};
 
@@ -60,7 +61,8 @@ module axelar::channel {
     struct Channel<phantom T: key> has store {
         /// Unique ID of the target object which allows message targeting
         /// by comparing against `id_bytes`.
-        id: address,
+        id: UID,
+        value: option<T>,
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
@@ -97,13 +99,13 @@ module axelar::channel {
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel<T: key, W: drop>(t: &T, _channel_witness: W, ctx: &mut TxContext): Channel<T> {
-        let id = object::id_address(t);
+    public fun create_channel<T: key>(value: option<T>, ctx: &mut TxContext): Channel<T> {
+        let id = object::new(ctx);
         event::emit(ChannelCreated<T> { id });
-        assert!(&get_channel_witness_for<T>() == type_name::borrow_string(&type_name::get<W>()), ENotChannelWitness);
-        
+
         Channel<T> {
             id,
+            value,
             processed_call_approvals: linked_table::new(ctx),
         }
     }
