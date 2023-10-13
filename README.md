@@ -73,3 +73,5 @@ Don't worry about the distributor and operator for now
   `sourceChain`, `string`, variable,
   `sourceAddress`, `bytes`, variable
 This needs to return the coin object only if called with the right capability (another channel) that proves the caller is the `destinationAddress`
+
+ITS also needs to be able to send 2 calls, the call to receive coin and the call to receive coin with data, only id the right coin object is received. Since coins are only u64 some conversion might need to happen when receiving coins (decimals of 18 are too large for Sui to handle).
