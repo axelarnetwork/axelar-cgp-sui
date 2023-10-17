@@ -1,0 +1,38 @@
+[package]
+name = "axelar-cgp-sui"
+version = "0.0.1"
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.75"
+async-trait = "0.1.74"
+tokio = "1.33.0"
+#okio-stream.workspace = true
+serde = "1.0.189"
+axum = "0.6.20"
+thiserror = "1.0.49"
+strum = "0.25.0"
+strum_macros = "0.25.3"
+tracing = "0.1.39"
+serde_json = "1.0.107"
+
+clap = { version = "4.4.6", features = ["env"] }
+
+rxrust = "1.0.0-beta.4"
+
+futures = "0.3.28"
+bcs = "0.1.6"
+
+sui-sdk = { git = "https://github.com/MystenLabs/sui.git", package = "sui-sdk", rev = "f839d723182671984622459688c5550914451b94" }
+sui-keys = { git = "https://github.com/MystenLabs/sui.git", package = "sui-keys", rev = "f839d723182671984622459688c5550914451b94" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui.git", package = "shared-crypto", rev = "f839d723182671984622459688c5550914451b94" }
+telemetry-subscribers = { git = "https://github.com/MystenLabs/sui.git", package = "telemetry-subscribers", rev = "f839d723182671984622459688c5550914451b94" }
+
+[dev-dependencies]
+hex = "0.4.3"
+
+[[bin]]
+name = "sui-axelar-relayer"
+path = "src/relayer.rs"
