@@ -32,7 +32,7 @@ telemetry-subscribers = { git = "https://github.com/MystenLabs/sui.git", package
 [dev-dependencies]
 hex = "0.4.3"
 test-cluster = { git = "https://github.com/MystenLabs/sui.git", package = "test-cluster", rev = "f839d723182671984622459688c5550914451b94" }
-
+sui-move-build = { git = "https://github.com/MystenLabs/sui.git", package = "sui-move-build", rev = "f839d723182671984622459688c5550914451b94" }
 
 [[bin]]
 name = "sui-axelar-relayer"

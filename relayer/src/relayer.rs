@@ -5,15 +5,15 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::Router;
 use axum::routing::post;
+use axum::Router;
 use clap::Parser;
 use futures::future::try_join_all;
 use rxrust::observable::ObservableItem;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
-use sui_sdk::{SuiClient, SuiClientBuilder};
 use sui_sdk::types::base_types::{ObjectID, SuiAddress};
 use sui_sdk::types::crypto::SignatureScheme;
+use sui_sdk::{SuiClient, SuiClientBuilder};
 use telemetry_subscribers::TelemetryConfig;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -31,16 +31,16 @@ mod types;
 
 #[derive(Parser)]
 #[clap(
-name = "sui-axelar-relayer",
-rename_all = "kebab-case",
-author,
-version
+    name = "sui-axelar-relayer",
+    rename_all = "kebab-case",
+    author,
+    version
 )]
 pub struct SuiAxelarRelayer {
     #[clap(
-    long,
-    env,
-    default_value = "you parade planet become era edit fuel birth arrow cry grunt snow"
+        long,
+        env,
+        default_value = "you parade planet become era edit fuel birth arrow cry grunt snow"
     )]
     signer_mnemonic: String,
     #[clap(long, env, default_value = "https://rpc.testnet.sui.io:443")]
@@ -50,15 +50,15 @@ pub struct SuiAxelarRelayer {
     #[clap(long, env, default_value = "127.0.0.1:10000")]
     listen_address: SocketAddr,
     #[clap(
-    long,
-    env,
-    default_value = "0x37e8cb0b746891c21f5a09cfc8eaae2c10770e1a367edb57e4b779eed3263314"
+        long,
+        env,
+        default_value = "0x37e8cb0b746891c21f5a09cfc8eaae2c10770e1a367edb57e4b779eed3263314"
     )]
     gateway_package_id: ObjectID,
     #[clap(
-    long,
-    env,
-    default_value = "0x5a444605cda2e01ddee5de4a670be2f20b432b58502c82fae2a3d0a879a8a75f"
+        long,
+        env,
+        default_value = "0x5a444605cda2e01ddee5de4a670be2f20b432b58502c82fae2a3d0a879a8a75f"
     )]
     validators: ObjectID,
     #[clap(long, env, default_value = "896987")]
@@ -126,7 +126,7 @@ impl SuiAxelarRelayer {
             contract_call_handle,
             operatorship_transferred_handle,
         ])
-            .await?;
+        .await?;
         Ok(())
     }
 

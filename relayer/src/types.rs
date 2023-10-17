@@ -3,12 +3,12 @@
 
 use std::str::FromStr;
 
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use axum::Json;
 use serde::de::Error as DeError;
 use serde::ser::Error as SerdeError;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 use strum_macros::{Display, EnumDiscriminants, EnumIter, EnumProperty};
 use sui_sdk::types::base_types::SuiAddress;
@@ -18,9 +18,9 @@ use tokio::task::JoinError;
 
 #[derive(Debug, Error, EnumDiscriminants, EnumProperty)]
 #[strum_discriminants(
-name(ErrorType),
-derive(Display, EnumIter),
-strum(serialize_all = "kebab-case")
+    name(ErrorType),
+    derive(Display, EnumIter),
+    strum(serialize_all = "kebab-case")
 )]
 #[allow(clippy::enum_variant_names)]
 pub enum Error {
@@ -42,8 +42,8 @@ pub enum Error {
 
 impl Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let error = json!(self);
         error.serialize(serializer)
@@ -78,8 +78,8 @@ pub struct AxelarMessage {
 }
 
 fn to_bcs_bytes_vec<S>(params: &[AxelarParameter], serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+where
+    S: Serializer,
 {
     let params = params
         .iter()
@@ -90,9 +90,9 @@ fn to_bcs_bytes_vec<S>(params: &[AxelarParameter], serializer: S) -> Result<S::O
 }
 
 fn to_bcs_bytes<S, T>(data: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        T: Serialize,
+where
+    S: Serializer,
+    T: Serialize,
 {
     bcs::to_bytes(data)
         .map_err(S::Error::custom)?
@@ -120,8 +120,8 @@ pub enum AxelarParameter {
 // this is needed to workaround serde's untagged enum deserialization
 // https://github.com/serde-rs/serde/issues/1682
 fn string_to_u128_vec<'de, D>(deserializer: D) -> Result<Vec<u128>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let input = Vec::<String>::deserialize(deserializer)?;
     input
@@ -132,8 +132,8 @@ fn string_to_u128_vec<'de, D>(deserializer: D) -> Result<Vec<u128>, D::Error>
 }
 
 fn string_to_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let input = String::deserialize(deserializer)?;
     u128::from_str(&input).map_err(D::Error::custom)
@@ -163,8 +163,8 @@ mod test {
 
     use sui_sdk::types::base_types::SuiAddress;
 
-    use crate::types::{AxelarMessage, Input, Proof};
     use crate::types::AxelarParameter::TransferOperatorshipMessage;
+    use crate::types::{AxelarMessage, Input, Proof};
 
     #[test]
     fn test_message_to_bcs() {
@@ -179,7 +179,7 @@ mod test {
             command_ids: vec![SuiAddress::from_str(
                 "0x0000000000000000000000000000000000000000000000000000000000000001",
             )
-                .unwrap()],
+            .unwrap()],
             commands: vec!["transferOperatorship".into()],
             params: vec![TransferOperatorshipMessage {
                 operators: vec![operator.to_vec()],
