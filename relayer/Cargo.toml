@@ -24,15 +24,15 @@ rxrust = "1.0.0-beta.4"
 futures = "0.3.28"
 bcs = "0.1.6"
 
-sui-sdk = { git = "https://github.com/MystenLabs/sui.git", package = "sui-sdk", rev = "f839d723182671984622459688c5550914451b94" }
-sui-keys = { git = "https://github.com/MystenLabs/sui.git", package = "sui-keys", rev = "f839d723182671984622459688c5550914451b94" }
-shared-crypto = { git = "https://github.com/MystenLabs/sui.git", package = "shared-crypto", rev = "f839d723182671984622459688c5550914451b94" }
-telemetry-subscribers = { git = "https://github.com/MystenLabs/sui.git", package = "telemetry-subscribers", rev = "f839d723182671984622459688c5550914451b94" }
+sui-sdk = { git = "https://github.com/MystenLabs/sui.git", package = "sui-sdk", branch = "testnet" }
+sui-keys = { git = "https://github.com/MystenLabs/sui.git", package = "sui-keys", branch = "testnet" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui.git", package = "shared-crypto", branch = "testnet" }
+telemetry-subscribers = { git = "https://github.com/MystenLabs/sui.git", package = "telemetry-subscribers", branch = "testnet" }
 
 [dev-dependencies]
 hex = "0.4.3"
-test-cluster = { git = "https://github.com/MystenLabs/sui.git", package = "test-cluster", rev = "f839d723182671984622459688c5550914451b94" }
-sui-move-build = { git = "https://github.com/MystenLabs/sui.git", package = "sui-move-build", rev = "f839d723182671984622459688c5550914451b94" }
+test-cluster = { git = "https://github.com/MystenLabs/sui.git", package = "test-cluster", branch = "framework/testnet" }
+sui-move-build = { git = "https://github.com/MystenLabs/sui.git", package = "sui-move-build", branch = "framework/testnet" }
 
 [[bin]]
 name = "sui-axelar-relayer"

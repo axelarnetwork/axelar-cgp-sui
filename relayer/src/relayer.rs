@@ -52,16 +52,16 @@ pub struct SuiAxelarRelayer {
     #[clap(
         long,
         env,
-        default_value = "0x37e8cb0b746891c21f5a09cfc8eaae2c10770e1a367edb57e4b779eed3263314"
+        default_value = "0x3ef8140369a7b5270fa2cea453a28de2c55b016d333523aea517f7abc55ce9f4"
     )]
     gateway_package_id: ObjectID,
     #[clap(
         long,
         env,
-        default_value = "0x5a444605cda2e01ddee5de4a670be2f20b432b58502c82fae2a3d0a879a8a75f"
+        default_value = "0x2e75b650c1e1bd2a6b737e629514fd3cdde7252e0b74a074fa6fb53a40921141"
     )]
     validators: ObjectID,
-    #[clap(long, env, default_value = "896987")]
+    #[clap(long, env, default_value = "897000")]
     validators_shared_version: u64,
 }
 
