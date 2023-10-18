@@ -41,12 +41,8 @@ module dummy_its::its {
     id: UID,
   }
 
-  struct ChannelType has key {
-    id: UID,
-    get_call_object_ids: vector<address>,
+  struct ChannelType has store {
   }
-
-  struct ChannelWitness has drop {}
 
   struct ITS has key {
       id: UID,
@@ -59,27 +55,23 @@ module dummy_its::its {
   }
 
   fun init(ctx: &mut TxContext) {
-    let (its, channel_type) = get_singleton_its(ctx);
+    let its = get_singleton_its(ctx);
     transfer::share_object(its);
-    transfer::share_object(channel_type);
   }
 
-  fun get_singleton_its(ctx: &mut TxContext) : (ITS, ChannelType) {
+  fun get_singleton_its(ctx: &mut TxContext) : (ITS) {
     let id = object::new(ctx);
-    let channel_type = ChannelType {
-      id:  object::new(ctx),
-      get_call_object_ids: vector::singleton(object::uid_to_address(&id)),
-    };
+
     let its = ITS {
       id,
-      channel: channel::create_channel<ChannelType, ChannelWitness>(&channel_type, ChannelWitness {} , ctx),
+      channel: channel::create_channel<ChannelType>(option::none(), ctx),
       trusted_address: string::utf8(x"00"),
       registered_coins: object::new(ctx),
       registered_coin_types: object::new(ctx),
       unregistered_coins: object::new(ctx),
       unregistered_coin_types: object::new(ctx),
     };
-    (its, channel_type)
+    its
   }
 
   public fun create_coin_channel(ctx: &mut TxContext): CoinChannel {

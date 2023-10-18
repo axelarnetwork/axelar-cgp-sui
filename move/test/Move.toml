@@ -1,12 +1,12 @@
 [package]
 name = "Test"
 version = "0.0.1"
-published-at = "0xcb6c2771773d600a126a5a8c95bb3eeefcdf01863f4ad2a7c11bfe489bebeef6"
+published-at = "0xe6dbe2ea188896552c37cd2312d41fa0623a3cbf7aac472f80bdd8be09b7422e"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/devnet" }
 Axelar = { local = "../axelar" }
 
 [addresses]
-test = "0x0"
-dummy_its = "0x0"
+test = "0xe6dbe2ea188896552c37cd2312d41fa0623a3cbf7aac472f80bdd8be09b7422e"
+dummy_its = "0xe6dbe2ea188896552c37cd2312d41fa0623a3cbf7aac472f80bdd8be09b7422e"

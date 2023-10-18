@@ -11,9 +11,41 @@ const { approveContractCall } = require('./gateway');
 const { toPure } = require('./utils');
 
 
-function getCalInfoFunFromType(type) {
-    const lastCol = type.lastIndexOf(':');
-    return type.slice(0, lastCol + 1) + 'get_call_info';
+function getMoveCallFromTx(tx, txData, payload, callContractObj) {
+    const bcs = new BCS(getSuiMoveConfig());
+
+    // input argument for the tx
+    bcs.registerStructType("Description", {
+        packageId: "address",
+        module_name: "string",
+        name: "string",
+    });
+    bcs.registerStructType("Transaction", {
+        function: "Description",
+        arguments: "vector<vector<u8>>",
+        type_arguments: "vector<Description>",
+    });
+    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
+    const decodeArgs = (args, tx) => args.map(arg => {
+        if(arg[0] === 0) {
+            return tx.object(hexlify(arg.slice(1)));
+        } else if (arg[0] === 1) {
+            return tx.pure(arg.slice(1));
+        } else if (arg[0] === 2) {
+            return callContractObj
+        } else if (arg[0] === 3) {
+            return tx.pure(String.fromCharCode(...arrayify(payload)));
+        } else {
+            throw new Error(`Invalid argument prefix: ${arg[0]}`);
+        }
+    });
+    const decodeDescription = (description) => `${description.packageId}::${description.module_name}::${description.name}`;
+
+    return{
+        target: decodeDescription(txInfo.function),
+        arguments: decodeArgs(txInfo.arguments, tx),
+        typeArguments: txInfo.type_arguments.map(typeArgument => decodeDescription(typeArgument)),
+    };
 }
 
 (async () => {
@@ -32,6 +64,7 @@ function getCalInfoFunFromType(type) {
     
     const axelarPackageId = axelarInfo.packageId;
     const validators = axelarInfo['validators::AxelarValidators'];
+    const discovery = axelarInfo['discovery::RelayerDiscovery'];
     const testPackageId = testInfo.packageId;
     const test = testInfo['test::Singleton'];
     
@@ -43,27 +76,42 @@ function getCalInfoFunFromType(type) {
         MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
     }}));
     let event = eventData.data[0].parsedJson;
-
-    const callInfoObject = await client.getObject({id: event.target_id, options: {showContent: true}});
-    const callObjectIds = callInfoObject.data.content.fields.get_call_info_object_ids;
-    const infoTarget = getCalInfoFunFromType(callInfoObject.data.content.type);
-
+    
     let tx = new TransactionBlock();
     tx.moveCall({
-        target: infoTarget,
-        arguments: [tx.pure(String.fromCharCode(...arrayify(payload))), ...callObjectIds.map(id => tx.object(id))],
+        target: `${testPackageId}::test::register_transaction`,
+        arguments: [tx.object(discovery.objectId), tx.object(test.objectId)],
     });
-    const resp = await client.devInspectTransactionBlock({
+    await client.signAndExecuteTransactionBlock({       
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+
+    tx = new TransactionBlock();
+    
+    tx.moveCall({
+        target: `${axelarPackageId}::discovery::get_transaction`,
+        arguments: [tx.object(discovery.objectId), tx.pure(event.target_id)],
+    });
+    let resp = await client.devInspectTransactionBlock({
+        sender: keypair.getPublicKey().toSuiAddress(),
+        transactionBlock: tx,
+    });
+    
+    tx = new TransactionBlock();
+    tx.moveCall(getMoveCallFromTx(tx, resp.results[0].returnValues[0][0], payload));
+    resp = await client.devInspectTransactionBlock({
         sender: keypair.getPublicKey().toSuiAddress(),
         transactionBlock: tx,
         
     });
-    const bcs_encoded_resp = resp.results[0].returnValues[0][0];
-    const bcs = new BCS(getSuiMoveConfig());
-    const decoded = bcs.de(BCS.STRING, new Uint8Array(bcs_encoded_resp));
-    const toCall = JSON.parse(decoded);
+
+    tx = new TransactionBlock();
     
-	tx = new TransactionBlock(); 
     const approvedCall = tx.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [
@@ -77,22 +125,7 @@ function getCalInfoFunFromType(type) {
         typeArguments: [],
     });
 
-    toCall.arguments = toCall.arguments.map(arg => {
-        if(typeof arg !== 'string') {
-            return tx.pure(arg);
-        }
-        if(arg == 'contractCall') {
-            return approvedCall;
-        }
-        if(arg.slice(0,4) === 'obj:') {
-            return tx.object(arg.slice(4));
-        }
-        if(arg.slice(0,5) === 'pure:') {
-            return tx.pure(arg.slice(5));
-        }
-    });
-
-    tx.moveCall(toCall);
+    tx.moveCall(getMoveCallFromTx(tx, resp.results[0].returnValues[0][0], null, approvedCall));
 
     await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,

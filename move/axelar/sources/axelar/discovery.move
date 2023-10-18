@@ -9,6 +9,7 @@
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
     use std::option::{Self, Option};
+    use std::ascii::{Self, String};
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
     use sui::object::{Self, ID, UID};
@@ -21,17 +22,24 @@ module axelar::discovery {
         id: UID,
         /// A map of channel IDs to the target that needs to be executed by the
         /// relayer. There can be only one configuration per channel.
-        configurations: Table<ID, Target>,
+        configurations: Table<ID, Transaction>,
     }
 
-    /// The target configuration for the Relayer call.
-    struct Target has store, drop {
-        /// The transaction that should be executed by the Relayer. Transaction
-        /// bytes are stored in a pre-serialized format, similar to the
-        ///
-        /// TransactionData definition in Sui Node codebase, however, some parts
-        /// are simplified to fetch versions at the time of calling.
-        transaction: Option<vector<u8>>,
+    struct Description has store, copy, drop {
+        package_id: address,
+        module_name: String,
+        name: String,
+    }
+
+    /// Arguments are prefixed with:
+    /// - 0 for objects followed by exactly 32 bytes that cointain the object id
+    /// - 1 for pures followed by the bcs encoded form of the pure
+    /// - 2 for the call contract objects, followed by nothing (to be passed into the target function)
+    /// - 3 for the payload of the contract call (to be passed into the intermediate function)
+    struct Transaction has store, copy, drop {
+        function: Description,
+        arguments: vector<vector<u8>>,
+        type_arguments: vector<Description>,
     }
 
     /// During the creation of the object, the UID should be passed here to
@@ -49,40 +57,41 @@ module axelar::discovery {
     /// ```
     ///
     /// Note: Wrapper must be a shared object so that Relayer can access it.
-    public fun create_configuration<T: store>(
+    public fun register_transaction<T>(
         self: &mut RelayerDiscovery,
         channel: &Channel<T>,
-        ctx: &mut TxContext
+        tx: Transaction,
     ) {
-        let channel_id = object::id_from_bytes(source_id(channel));
-
-        table::add(&mut self.configurations, channel_id, Target {
-            transaction: option::none()
-        });
+        let channel_id = source_id(channel);
+        if(table::contains(&self.configurations, channel_id)) {
+            table::remove(&mut self.configurations, channel_id);
+        };
+        table::add(&mut self.configurations, channel_id, tx);
     }
 
-    /// A function that should be used to register an action performed by the
-    /// Relayer. The action will be executed on the object with the given UID.
-    /// Additional parameters can be passed in a pre-serialized transaction
-    /// format.
-    ///
-    /// The function can be called multiple times, every time overriding the
-    /// previous action stored in the Relayer storage.
-    public fun register_transaction<T: store>(
+    public fun get_transaction(
         self: &mut RelayerDiscovery,
-        channel: &Channel<T>,
-        transaction: vector<u8>,
-    ) {
-        let channel_id = object::id_from_bytes(source_id(channel));
-        let record_mut: &mut Target = table::borrow_mut(
-            &mut self.configurations,
-            channel_id
-        );
-
-        record_mut.transaction = option::some(transaction);
+        channel_id: ID,
+    ): Transaction {
+        assert!(table::contains(&self.configurations, channel_id), 0);
+        *table::borrow(&self.configurations, channel_id)
     }
 
-    // please call 0x000000::register_transaction::give_me_payload(): vector<u8>
+    public fun new_description(package_id: address, module_name: String, function_or_type: String) : Description {
+        Description {
+            package_id,
+            module_name,
+            name: function_or_type,
+        }
+    }
+
+    public fun new_transaction(function: Description, arguments: vector<vector<u8>>, type_arguments: vector<Description>) : Transaction {
+        Transaction {
+            function,
+            arguments,
+            type_arguments
+        }
+    }
 
     // === Internal ===
 

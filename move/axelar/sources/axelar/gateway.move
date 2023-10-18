@@ -169,14 +169,14 @@ module axelar::gateway {
     /// frozen object scenario or when someone exposes the Channel to the outer
     /// world. However, this restriction may be lifted in the future, and having
     /// an immutable reference should be enough.
-    public fun call_contract<T: key>(
+    public fun call_contract<T>(
         channel: &mut Channel<T>,
         destination_chain: String,
         destination_address: String,
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source_id: channel::source_id(channel),
+            source_id: channel::source_address(channel),
             destination_chain,
             destination_address,
             payload,
