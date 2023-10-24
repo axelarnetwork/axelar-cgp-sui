@@ -8,12 +8,11 @@
 /// should be treated as a reference and a temporary solution until there's a
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
-    use std::option::{Self, Option};
-    use std::ascii::{Self, String};
+    use std::ascii::{String};
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
     use sui::object::{Self, ID, UID};
-    use axelar::channel::{Self, source_id, Channel};
+    use axelar::channel::{source_id, Channel};
 
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the

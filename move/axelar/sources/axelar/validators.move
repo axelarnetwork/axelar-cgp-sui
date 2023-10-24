@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::validators {
+    
     use std::string::{Self, String};
     use std::vector;
     use sui::table::{Self, Table};
@@ -25,7 +26,7 @@ module axelar::validators {
     const EInvalidThreshold: u64 = 1;
     /// For when operators have changed, and proof is no longer valid.
     const EInvalidOperators: u64 = 2;
-    const EDuplicateOperators: u64 = 3;
+    // const EDuplicateOperators: u64 = 3;
     /// For when number of signatures for the call approvals is below the threshold.
     const ELowSignaturesWeight: u64 = 4;
     /// Trying to `take_approved_call` with a wrong payload.

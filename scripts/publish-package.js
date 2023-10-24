@@ -54,8 +54,15 @@ async function publishPackage(packagePath, client, keypair) {
 	return { packageId, publishTxn };
 }
 
+function updateMoveToml(packagePath, packageId) {
+    const path = `${__dirname}/../move/${packagePath}/Move.toml`;
+    const toml = fs.readFileSync(path, 'utf8');
+    fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId));
+}
+
 module.exports = {
     publishPackage,
+    updateMoveToml,
 }
 
 function insertPublishedAt(toml, packageId) {
@@ -139,7 +146,6 @@ if (require.main === module) {
         const allConfigs = require(`../info/${packagePath}.json`) || {};
         allConfigs[env] = config;
         fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
-
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(insertPublishedAt(toml, packageId), packageId));
+        updateMoveToml(packagePath, packageId);
     })();
 }

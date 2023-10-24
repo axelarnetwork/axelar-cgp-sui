@@ -41,7 +41,7 @@ module axelar::gateway {
     use axelar::validators::{Self, AxelarValidators, validate_proof};
 
     /// For when approval signatures failed verification.
-    const ESignatureInvalid: u64 = 1;
+    // const ESignatureInvalid: u64 = 1;
 
     /// For when number of commands does not match number of command ids.
     const EInvalidCommands: u64 = 4;

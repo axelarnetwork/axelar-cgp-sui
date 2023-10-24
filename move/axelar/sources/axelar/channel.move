@@ -3,14 +3,11 @@
 
 module axelar::channel {
     use std::string::String;
-    use std::type_name;
     use sui::linked_table::{Self, LinkedTable};
     use sui::object::{Self, UID, ID};
     use sui::tx_context::TxContext;
     use sui::event;
-    use std::option::{Self, Option};
-
-    use axelar::utils::{get_channel_witness_for};
+    use std::option::{Option};
 
     friend axelar::validators;
 
@@ -47,7 +44,6 @@ module axelar::channel {
     const EWrongDestination: u64 = 0;
     /// For when message has already been processed and submitted twice.
     const EDuplicateMessage: u64 = 2;
-    const ENotChannelWitness: u64 = 3;
 
     const MAX_PROCESSED_APPROVAL_HISTORY: u64 = 100;
 
