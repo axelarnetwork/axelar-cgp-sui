@@ -1,8 +1,8 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+//
+//
 
 module axelar::validators {
-    
+
     use std::string::{Self, String};
     use std::vector;
     use sui::table::{Self, Table};
@@ -101,7 +101,7 @@ module axelar::validators {
         let (i, weight, operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
         while (i < total_signatures) {
-            
+
             let signature = *vector::borrow(&signatures, i);
             normalize_signature(&mut signature);
 

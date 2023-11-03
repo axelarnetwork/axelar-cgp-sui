@@ -1,5 +1,5 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+//
+//
 
 /// This module implements a discovery mechanic for the Relayer to be able to
 /// call some (!) transactions automatically.

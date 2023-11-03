@@ -1,5 +1,5 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+//
+//
 
 module axelar::channel {
     use std::string::String;
@@ -181,7 +181,7 @@ module axelar::channel {
         object::uid_to_address(&self.id)
     }
     // === Testing ===
-    
+
     #[test_only]
     public fun burn_approved_call_for_testing(call: ApprovedCall) {
         let ApprovedCall {
