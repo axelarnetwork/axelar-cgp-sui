@@ -65,11 +65,12 @@ module its::token_service {
 
     #[allow(unused_function)]
     /// Send a Sui-native Coin by locking it in the `TokenService`.
+    /// This function can be kept private and only do business logic of TokenSerice,
+    /// message passing and verification can be done as a higher-level function.
     fun send_native<T>(
         self: &mut TokenService,
         coin: Coin<T>,
         token_id: String,
-        /* add parameters for the event */
         _ctx: &mut TxContext
     ) {
         let token_key = NativeTokenKey<T> { token_id };
@@ -102,8 +103,7 @@ module its::token_service {
     }
 
     /// Generate a `token_id` for a Sui Native token.
-    /// MUST include `TypeName` of `T` so there's no collision between different
-    /// types.
+    /// MUST include `TypeName` of `T` so there's no collision between different types.
     fun token_id<T>(
         decimals: u8,
         symbol: String,
@@ -114,7 +114,7 @@ module its::token_service {
             bcs::to_bytes(&decimals),
             bcs::to_bytes(&symbol),
             bcs::to_bytes(&name),
-            bcs::to_bytes(&type_name::get<T>())
+            bcs::to_bytes(&type_name::get<T>()),
         ]);
 
         string::utf8(blake2b256(&source))
