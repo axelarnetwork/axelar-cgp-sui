@@ -84,6 +84,23 @@ module its::token_service {
         // use axelar events system for this
     }
 
+    #[allow(unused_function)]
+    /// Receive a Sui-native Coin by unlocking it from the `TokenService`.
+    /// TODO: to be triggered when a message is received.
+    fun receive_native<T>(
+        self: &mut TokenService,
+        token_id: String,
+        amount: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        let token_key = NativeTokenKey<T> { token_id };
+
+        assert!(vec_set::contains(&self.native_token_ids, &token_id), EUnknownToken);
+        assert!(bag::contains(&self.native_assets, token_key), EUnknownToken);
+
+        coin::take(bag::borrow_mut(&mut self.native_assets, token_key), amount, ctx)
+    }
+
     /// Generate a `token_id` for a Sui Native token.
     /// MUST include `TypeName` of `T` so there's no collision between different
     /// types.
