@@ -54,11 +54,10 @@ module axelar::channel {
     /// The `T` parameter allows wrapping a Capability or a piece of data into
     /// the channel to be used when the message is consumed (eg authorize a
     /// `mint` call using a stored `AdminCap`).
-    struct Channel<T> has key, store {
+    struct Channel has key, store {
         /// Unique ID of the target object which allows message targeting
         /// by comparing against `id_bytes`.
         id: UID,
-        value: Option<T>,
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
@@ -83,40 +82,38 @@ module axelar::channel {
 
     // ====== Events ======
 
-    struct ChannelCreated<phantom T> has copy, drop {
+    struct ChannelCreated has copy, drop {
         id: address,
     }
 
-    struct ChannelDestroyed<phantom T> has copy, drop {
+    struct ChannelDestroyed has copy, drop {
         id: address,
     }
 
-    /// Create new `Channel<T>` object. Anyone can create their own `Channel` to target
+    /// Create new `Channel` object. Anyone can create their own `Channel` to target
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel<T>(value: Option<T>, ctx: &mut TxContext): Channel<T> {
+    public fun create_channel(ctx: &mut TxContext): Channel {
         let id = object::new(ctx);
-        event::emit(ChannelCreated<T> { id: object::uid_to_address(&id) });
+        event::emit(ChannelCreated { id: object::uid_to_address(&id) });
 
-        Channel<T> {
+        Channel {
             id,
-            value,
             processed_call_approvals: linked_table::new(ctx),
         }
     }
 
-    /// Destroy a `Channel<T>` releasing the T. Not constrained and can be performed
+    /// Destroy a `Channen` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
-    public fun destroy_channel<T: key>(self: Channel<T>): Option<T>{
-        let Channel { id, value, processed_call_approvals } = self;
+    public fun destroy_channel(self: Channel) {
+        let Channel { id, processed_call_approvals } = self;
         while (!linked_table::is_empty(&processed_call_approvals)) {
             linked_table::pop_back(&mut processed_call_approvals);
         };
         linked_table::destroy_empty(processed_call_approvals);
-        event::emit(ChannelDestroyed<T> { id: object::uid_to_address(&id) });
+        event::emit(ChannelDestroyed { id: object::uid_to_address(&id) });
         object::delete(id);
-        value
     }
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
@@ -142,8 +139,8 @@ module axelar::channel {
     ///
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
     /// and the `payload` to be used by the consuming application.
-    public fun consume_approved_call<T>(
-        t: &mut Channel<T>,
+    public fun consume_approved_call(
+        t: &mut Channel,
         approved_call: ApprovedCall
     ): (String, String, vector<u8>) {
         let ApprovedCall {
@@ -172,12 +169,12 @@ module axelar::channel {
     }
 
     /// Get the bytes of the Channel ID
-    public fun source_id<T>(self: &Channel<T>): ID {
+    public fun source_id(self: &Channel): ID {
         object::uid_to_inner(&self.id)
     }
 
      /// Get the bytes of the Channel ID
-     public fun source_address<T>(self: &Channel<T>): address {
+     public fun source_address(self: &Channel): address {
         object::uid_to_address(&self.id)
     }
     // === Testing ===

@@ -3,7 +3,6 @@ module test::test {
     use std::vector;
     use std::string::{String};
     use std::type_name;
-    use std::option;
 
     use sui::object::{Self, UID};
     use sui::transfer;
@@ -19,19 +18,16 @@ module test::test {
   
     struct Singleton has key {
         id: UID,
-        channel: Channel<ChannelType>,
+        channel: Channel,
     }
 
     struct Executed has copy, drop {
         data: vector<u8>,
     }
-
-    struct ChannelType has store {
-    }
   
     fun init(ctx: &mut TxContext) {
         let singletonId = object::new(ctx);
-        let channel = channel::create_channel<ChannelType>(option::none(), ctx);
+        let channel = channel::create_channel(ctx);
         transfer::share_object(Singleton {
             id: singletonId,
             channel,
@@ -81,7 +77,7 @@ module test::test {
             _,
             _,
             payload,
-        ) = channel::consume_approved_call<ChannelType>(
+        ) = channel::consume_approved_call(
             &mut singleton.channel,
             call,
         );

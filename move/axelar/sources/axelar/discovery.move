@@ -56,9 +56,9 @@ module axelar::discovery {
     /// ```
     ///
     /// Note: Wrapper must be a shared object so that Relayer can access it.
-    public fun register_transaction<T>(
+    public fun register_transaction(
         self: &mut RelayerDiscovery,
-        channel: &Channel<T>,
+        channel: &Channel,
         tx: Transaction,
     ) {
         let channel_id = source_id(channel);

@@ -13,6 +13,7 @@ module dummy_its::its {
   use sui::coin::{Self, TreasuryCap, CoinMetadata, Coin};
   use sui::dynamic_field as df;
   use sui::url::{Url};
+  use sui::tx_context;
 
   use axelar::utils::{Self};
   use axelar::channel::{Self, Channel, ApprovedCall};
@@ -41,22 +42,24 @@ module dummy_its::its {
     id: UID,
   }
 
-  struct ChannelType has store {
-  }
-
   struct ITS has key {
       id: UID,
-      channel: Channel<ChannelType>,
+      channel: Channel,
       trusted_address: String,
-      registered_coins: UID,
-      registered_coin_types: UID,
-      unregistered_coins: UID,
-      unregistered_coin_types: UID,
+      registered_coins: table<tokenId, InterchainCoinData>,
+      registered_coin_types: table<tokenId, Type>,
+  }
+
+  struct AdminCap has key {
+    id: UID
   }
 
   fun init(ctx: &mut TxContext) {
     let its = get_singleton_its(ctx);
     transfer::share_object(its);
+    transfer::transfer(AdminCap {
+      id: object::new(ctx),
+  }, tx_context::sender(ctx))
   }
 
   fun get_singleton_its(ctx: &mut TxContext) : (ITS) {
@@ -64,7 +67,7 @@ module dummy_its::its {
 
     let its = ITS {
       id,
-      channel: channel::create_channel<ChannelType>(option::none(), ctx),
+      channel: channel::create_channel(ctx),
       trusted_address: string::utf8(x"00"),
       registered_coins: object::new(ctx),
       registered_coin_types: object::new(ctx),
@@ -97,7 +100,7 @@ module dummy_its::its {
         _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelType>(
+    ) = channel::consume_approved_call(
         &mut its.channel,
         approved_call,
     );
@@ -132,7 +135,7 @@ module dummy_its::its {
         _,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelType>(
+    ) = channel::consume_approved_call(
         &mut its.channel,
         approved_call,
     );
@@ -157,7 +160,7 @@ module dummy_its::its {
         source_chain,
         source_address,
         payload,
-    ) = channel::consume_approved_call<ChannelType>(
+    ) = channel::consume_approved_call(
         &mut its.channel,
         approved_call,
     );

@@ -4,7 +4,7 @@ version = "0.0.1"
 published-at = "0xcc08cfe4419fa5c54f867ff1d36f31f7135d34c4d0bfdd9c2edba93c8af2141c"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/devnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 Axelar = { local = "../axelar" }
 
 [addresses]
