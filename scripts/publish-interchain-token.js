@@ -14,7 +14,7 @@ const { updateMoveToml, publishPackage } = require('./publish-package');
 
 const packagePath = 'interchain_token';
 
-async function publishInterchainToken(client, keypair, symbol, decimals, itsPackage, itsObject) {
+async function publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId) {
     let file = fs.readFileSync(`scripts/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
     let witness = moduleName.toUpperCase();
@@ -35,9 +35,9 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
     const tx = new TransactionBlock();
 
     tx.moveCall({
-        target: `${itsPackage}::service::give_unregistered_coin`,
+        target: `${itsPackageId}::service::give_unregistered_coin`,
         arguments: [
-            tx.object(itsObject),
+            tx.object(itsPackageId),
             tx.object(treasuryCap.objectId),
             tx.object(coinMetadata.objectId),
         ],
@@ -84,9 +84,9 @@ if (require.main === module) {
         }
 
         const its = require('../info/test.json');
-        const itsPackage = its[env].packageId;
-        const itsObject = its[env]['storage::ITS'].objectId;
+        const itsPackageId = its[env].packageId;
+        const itsObjectId = its[env]['storage::ITS'].objectId;
 
-        publishInterchainToken(client, keypair, symbol, decimals, itsPackage, itsObject);
+        publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId);
     })();
 }
