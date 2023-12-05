@@ -133,14 +133,24 @@ if (require.main === module) {
                 }
             }); 
             const fields = objectResponce.data.content.fields;
-            for(const key in fields) {
-                if(key === 'id') continue;
-                if(fields[key].fields) {
-                    object[key] = fields[key].fields.id.id || fields[key].fields.id;
-                } else {
-                    object[key] = fields[key].id;
+
+            function decodeFields(fields, object) {
+                for(const key in fields) {
+                    if(key === 'id') continue;
+                    if(fields[key].fields) {
+                        if(!fields[key].fields.id) {
+                            object[key] = {};
+                            decodeFields(fields[key].fields, object[key]);
+                        } else {
+                            object[key] = fields[key].fields.id.id || fields[key].fields.id;
+                        }
+                    } else {
+                        object[key] = fields[key].id;
+                    }
                 }
+                return object;
             }
+            decodeFields(fields, object);
         }
         
         const allConfigs = require(`../info/${packagePath}.json`) || {};
