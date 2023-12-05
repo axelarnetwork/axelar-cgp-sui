@@ -41,6 +41,13 @@ module axelar::discovery {
         type_arguments: vector<Description>,
     }
 
+    fun init(ctx: &mut TxContext) {
+        sui::transfer::share_object(RelayerDiscovery {
+            id: object::new(ctx),
+            configurations: table::new(ctx),
+        });
+    }
+
     /// During the creation of the object, the UID should be passed here to
     /// receive the Channel and emit an event which will be handled by the
     /// Relayer.
@@ -92,42 +99,4 @@ module axelar::discovery {
         }
     }
 
-    // === Internal ===
-
-    #[test_only]
-    struct CallTarget has copy, store, drop {
-        package: address,
-        module_: String,
-        function: String,
-    }
-
-    #[test_only]
-    /// This struct exists to illustrate the BCS format for the TransactionData
-    /// used in the Relayer discovery mechanism. Use it as a reference when
-    /// preparing the transaction bytes for the relayer registry.
-    struct TransactionData has copy, store, drop {
-        /// List of type arguments for the transaction.
-        type_arguments: vector<String>,
-
-        /// The arguments are an Enum which has two possible values:
-        /// 0: address - Object ID of the Argument
-        /// 1: vector<u8> - Pure Argument
-        /// 2: ApprovedCall
-        ///
-        /// According to the BCS spec: the enum is represented as a single ULEB
-        /// byte, followed by the value of the enum. Given that there's only two
-        /// possible values, 0 stands for an ObjectArgument, 1 stands for the
-        /// VectorArgument, 2 stands for the ApprovedCall argument.
-        arguments: vector<vector<u8>>,
-
-        /// The function to call.
-        target: CallTarget,
-    }
-
-    fun init(ctx: &mut TxContext) {
-        sui::transfer::share_object(RelayerDiscovery {
-            id: object::new(ctx),
-            configurations: table::new(ctx),
-        });
-    }
 }

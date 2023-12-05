@@ -3,10 +3,8 @@
 
 module axelar::validators {
     
-    use std::string::{Self, String};
+    use std::ascii::{Self, String};
     use std::vector;
-    use sui::table::{Self, Table};
-    use sui::address;
 
     use sui::bcs;
     use sui::dynamic_field as df;
@@ -17,6 +15,8 @@ module axelar::validators {
     use sui::transfer;
     use sui::tx_context::TxContext;
     use sui::vec_map:: {Self, VecMap};
+    use sui::table::{Self, Table};
+    use sui::address;
 
     use axelar::channel::{Self, ApprovedCall};
     use axelar::utils::{normalize_signature, operators_hash};
@@ -184,8 +184,8 @@ module axelar::validators {
         let data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *string::bytes(&source_chain));
-        vector::append(&mut data, *string::bytes(&source_address));
+        vector::append(&mut data, *ascii::as_bytes(&source_chain));
+        vector::append(&mut data, *ascii::as_bytes(&source_address));
         vector::append(&mut data, address::to_bytes(payload_hash));
 
         table::add(&mut axelar.approvals, cmd_id, Approval {
@@ -213,8 +213,8 @@ module axelar::validators {
         let data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *string::bytes(&source_chain));
-        vector::append(&mut data, *string::bytes(&source_address));
+        vector::append(&mut data, *ascii::as_bytes(&source_chain));
+        vector::append(&mut data, *ascii::as_bytes(&source_address));
         vector::append(&mut data, hash::keccak256(&payload));
 
         assert!(hash::keccak256(&data) == approval_hash, EPayloadHashMismatch);
@@ -266,8 +266,8 @@ module axelar::validators {
         let data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *string::bytes(&source_chain));
-        vector::append(&mut data, *string::bytes(&source_address));
+        vector::append(&mut data, *ascii::as_bytes(&source_chain));
+        vector::append(&mut data, *ascii::as_bytes(&source_address));
         vector::append(&mut data, address::to_bytes(payload_hash));
 
         table::add(&mut axelar.approvals, cmd_id, Approval {

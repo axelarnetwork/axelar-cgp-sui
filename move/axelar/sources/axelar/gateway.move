@@ -29,7 +29,7 @@
 ///  - CallApproval is checked to match the `Channel`.id
 ///
 module axelar::gateway {
-    use std::string::{Self, String};
+    use std::ascii::{Self, String};
     use std::vector;
 
     use sui::bcs;
@@ -125,8 +125,8 @@ module axelar::gateway {
             if (cmd_selector == &SELECTOR_APPROVE_CONTRACT_CALL) {
                 let payload = bcs::new(payload);
                 let ( source_chain, source_address, target_id, payload_hash ) = (
-                    string::utf8(bcs::peel_vec_u8(&mut payload)),
-                    string::utf8(bcs::peel_vec_u8(&mut payload)),
+                    ascii::string(bcs::peel_vec_u8(&mut payload)),
+                    ascii::string(bcs::peel_vec_u8(&mut payload)),
                     bcs::peel_address(&mut payload),
                     bcs::peel_address(&mut payload)
                 );

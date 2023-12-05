@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::channel {
-    use std::string::String;
-    use sui::linked_table::{Self, LinkedTable};
+    use std::ascii::String;
+    use sui::table::{Self, Table};
     use sui::object::{Self, UID, ID};
     use sui::tx_context::TxContext;
     use sui::event;
-    use std::option::{Option};
 
     friend axelar::validators;
 
@@ -45,8 +44,6 @@ module axelar::channel {
     /// For when message has already been processed and submitted twice.
     const EDuplicateMessage: u64 = 2;
 
-    const MAX_PROCESSED_APPROVAL_HISTORY: u64 = 100;
-
     /// The Channel object. Acts as a destination for the messages sent through
     /// the bridge. The `target_id` is compared against the `id` of the `Channel`
     /// during the message consumption.
@@ -61,7 +58,7 @@ module axelar::channel {
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
-        processed_call_approvals: LinkedTable<address, bool>,
+        processed_call_approvals: Table<address, bool>,
     }
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
@@ -100,7 +97,7 @@ module axelar::channel {
 
         Channel {
             id,
-            processed_call_approvals: linked_table::new(ctx),
+            processed_call_approvals: table::new(ctx),
         }
     }
 
@@ -108,10 +105,8 @@ module axelar::channel {
     /// by any party as long as they own a Channel.
     public fun destroy_channel(self: Channel) {
         let Channel { id, processed_call_approvals } = self;
-        while (!linked_table::is_empty(&processed_call_approvals)) {
-            linked_table::pop_back(&mut processed_call_approvals);
-        };
-        linked_table::destroy_empty(processed_call_approvals);
+
+        table::drop(processed_call_approvals);
         event::emit(ChannelDestroyed { id: object::uid_to_address(&id) });
         object::delete(id);
     }
@@ -152,14 +147,11 @@ module axelar::channel {
         } = approved_call;
 
         // Check if the message has already been processed.
-        assert!(!linked_table::contains(&t.processed_call_approvals, cmd_id), EDuplicateMessage);
+        assert!(!table::contains(&t.processed_call_approvals, cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
         assert!(target_id == object::uid_to_address(&t.id), EWrongDestination);
 
-        linked_table::push_back(&mut t.processed_call_approvals, cmd_id, true);
-        if (linked_table::length(&t.processed_call_approvals) > MAX_PROCESSED_APPROVAL_HISTORY) {
-            linked_table::pop_front(&mut t.processed_call_approvals);
-        };
+        table::add(&mut t.processed_call_approvals, cmd_id, true);
 
         (
             source_chain,

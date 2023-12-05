@@ -1,7 +1,7 @@
 module test::test {
     use std::ascii;
     use std::vector;
-    use std::string::{String};
+    use std::ascii::{String};
     use std::type_name;
 
     use sui::object::{Self, UID};
