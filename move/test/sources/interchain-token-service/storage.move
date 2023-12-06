@@ -14,7 +14,7 @@ module interchain_token_service::storage {
 
     use axelar::channel::{Self, Channel};
 
-    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId};
+    use interchain_token_service::token_id::{Self, TokenId, UnregisteredTokenId};
     use interchain_token_service::interchain_address_tracker::{Self, InterchainAddressTracker};
     use interchain_token_service::coin_info::{Self, CoinInfo};
     use interchain_token_service::coin_management::{CoinManagement};
@@ -65,8 +65,8 @@ module interchain_token_service::storage {
         self
     }
 
-    public fun borrow_unregistered_coin_type(self: &ITS, token_id: UnregisteredTokenId): &TypeName {
-        table::borrow(&self.unregistered_coin_types, token_id)
+    public fun borrow_unregistered_coin_type(self: &ITS, symbol: &String, decimals: &u8): &TypeName {
+        table::borrow(&self.unregistered_coin_types, token_id::unregistered_token_id(symbol, decimals))
     }
 
     fun add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {

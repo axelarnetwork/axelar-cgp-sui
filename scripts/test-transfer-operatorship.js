@@ -10,7 +10,7 @@ const fs = require('fs');
 
 (async () => {
     const env = process.argv[2] || 'localnet';
-    const axelarInfo = require('../info/axelar.json')[env];
+    const axelarInfo = require('../info/axelar.json');
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -25,7 +25,7 @@ const fs = require('fs');
 
     await transferOperatorship(env, client, keypair, operators.pubKeys, operators.weights, operators.threashold);
 
-    axelarInfo.activeOperators = operators
+    axelarInfo[env].activeOperators = operators
 
     fs.writeFileSync(`info/axelar.json`, JSON.stringify(axelarInfo, null, 4));
 })();

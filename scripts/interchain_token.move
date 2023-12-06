@@ -12,7 +12,7 @@ module interchain_token::$module_name {
         let (treasury, metadata) = coin::create_currency<$witness>(
             witness,
             $decimals,
-            b"",
+            b"$symbol",
             b"",
             b"",
             option::none<Url>(),

@@ -119,10 +119,7 @@ module interchain_token_service::service {
         let decimals =(utils::abi_decode_fixed(&payload, 4) as u8);
         let distributor = address::from_bytes(utils::abi_decode_variable(&payload, 5));
         
-        let module_name = type_name::get_module(&type_name::get<T>());
-        assert!(&module_name == &its_utils::get_module_from_symbol(&symbol), EModuleNameDoesNotMatchSymbol);
-        
-        let (treasury_cap, coin_metadata) = storage::remove_unregistered_coin<T>(self, token_id::unregistered_token_id<T>(decimals));
+        let (treasury_cap, coin_metadata) = storage::remove_unregistered_coin<T>(self, token_id::unregistered_token_id(&symbol, &decimals));
 
         coin::update_name(&treasury_cap, &mut coin_metadata, name);
         coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
@@ -143,8 +140,12 @@ module interchain_token_service::service {
         coin::update_description(&treasury_cap, &mut coin_metadata, string::utf8(b""));
 
         let decimals = coin::get_decimals(&coin_metadata);
+        let symbol = coin::get_symbol(&coin_metadata);
 
-        let token_id = token_id::unregistered_token_id<T>(decimals);
+        let module_name = type_name::get_module(&type_name::get<T>());
+        assert!(&module_name == &its_utils::get_module_from_symbol(&symbol), EModuleNameDoesNotMatchSymbol);
+        
+        let token_id = token_id::unregistered_token_id(&symbol, &decimals);
         
         storage::add_unregistered_coin<T>(self, token_id, treasury_cap, coin_metadata);
     }

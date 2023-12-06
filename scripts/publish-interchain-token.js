@@ -11,15 +11,17 @@ const tmp = require('tmp');
 
 const { getModuleNameFromSymbol } = require('./utils');
 const { updateMoveToml, publishPackage } = require('./publish-package');
+const { keccak256, toUtf8Bytes } = require('ethers/lib/utils');
 
 const packagePath = 'interchain_token';
 
-async function publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId) {
+async function publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId, skipRegister = false) {
     let file = fs.readFileSync(`scripts/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
     let witness = moduleName.toUpperCase();
     file = file.replaceAll('$module_name', moduleName);
     file = file.replaceAll('$witness', witness);
+    file = file.replaceAll('$symbol', symbol);
     file = file.replaceAll('$decimals', decimals);
     fs.writeFileSync(`move/${packagePath}/sources/interchain_token.move`, file);
 
@@ -32,19 +34,23 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
         return object.objectType && object.objectType.startsWith('0x2::coin::CoinMetadata');
     });
 
+    if(skipRegister) {
+        return [treasuryCap, coinMetadata];
+    }
+
     const tx = new TransactionBlock();
 
     tx.moveCall({
         target: `${itsPackageId}::service::give_unregistered_coin`,
         arguments: [
-            tx.object(itsPackageId),
+            tx.object(itsObjectId),
             tx.object(treasuryCap.objectId),
             tx.object(coinMetadata.objectId),
         ],
         typeArguments: [`${packageId}::${moduleName}::${witness}`],
     });
 
-    await client.signAndExecuteTransactionBlock({
+    const resp = await client.signAndExecuteTransactionBlock({
 		transactionBlock: tx,
 		signer: keypair,
 		options: {
@@ -54,12 +60,14 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
 		},
 	});
 
+    console.log(resp);
 }
 
 if (require.main === module) {
     const symbol = process.argv[2] || 'TT';
     const decimals = process.argv[3] || 6;
-    const env = process.argv[4] || 'localnet';
+    const skipRegister = process.argv[4] ? process.argv[4] != 'false' : false;
+    const env = process.argv[5] || 'localnet';
     
     (async () => {
         const privKey = 
@@ -87,6 +95,6 @@ if (require.main === module) {
         const itsPackageId = its[env].packageId;
         const itsObjectId = its[env]['storage::ITS'].objectId;
 
-        publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId);
+        publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId, skipRegister);
     })();
 }

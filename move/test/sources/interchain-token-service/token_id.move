@@ -1,9 +1,8 @@
 
 
 module interchain_token_service::token_id {
-    use std::ascii::{Self};
+    use std::ascii::{Self, String};
     use std::vector;
-    use std::type_name;
 
     use sui::address::{Self};
     use sui::hash::{keccak256};
@@ -42,10 +41,9 @@ module interchain_token_service::token_id {
         TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
 
-    public (friend) fun unregistered_token_id<T>(decimals: u8): UnregisteredTokenId {
-        let module_name = type_name::get_module(&type_name::get<T>());
-        let v = vector::singleton(decimals);
-        vector::append<u8>(&mut v, *ascii::as_bytes(&module_name));
+    public fun unregistered_token_id(symbol: &String, decimals: &u8): UnregisteredTokenId {
+        let v = vector::singleton(*decimals);
+        vector::append<u8>(&mut v, *ascii::as_bytes(symbol));
         let id = address::from_bytes(keccak256(&v));
         UnregisteredTokenId { id }
     }
