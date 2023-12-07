@@ -8,11 +8,20 @@
 /// should be treated as a reference and a temporary solution until there's a
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
-    use std::ascii::{String};
+    use std::ascii::{Self, String};
+    use std::type_name::{Self, TypeName};
+    use std::vector;
+
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
     use sui::object::{Self, ID, UID};
+    use sui::address;
+    use sui::hex;
+    use sui::bcs::{Self, BCS};
+
     use axelar::channel::{source_id, Channel};
+
+    const ASCII_COLON: u8 = 58;
 
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the
@@ -24,7 +33,7 @@ module axelar::discovery {
         configurations: Table<ID, Transaction>,
     }
 
-    struct Description has store, copy, drop {
+    struct Function has store, copy, drop {
         package_id: address,
         module_name: String,
         name: String,
@@ -36,9 +45,9 @@ module axelar::discovery {
     /// - 2 for the call contract objects, followed by nothing (to be passed into the target function)
     /// - 3 for the payload of the contract call (to be passed into the intermediate function)
     struct Transaction has store, copy, drop {
-        function: Description,
+        function: Function,
         arguments: vector<vector<u8>>,
-        type_arguments: vector<Description>,
+        type_arguments: vector<String>,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -83,19 +92,45 @@ module axelar::discovery {
         *table::borrow(&self.configurations, channel_id)
     }
 
-    public fun new_description(package_id: address, module_name: String, function_or_type: String) : Description {
-        Description {
+    public fun new_function(package_id: address, module_name: String, name: String) : Function {
+        Function {
             package_id,
             module_name,
-            name: function_or_type,
+            name,
         }
     }
 
-    public fun new_transaction(function: Description, arguments: vector<vector<u8>>, type_arguments: vector<Description>) : Transaction {
+    public fun new_function_from_bcs(bcs: &mut BCS): Function {
+        Function {
+            package_id: bcs::peel_address(bcs),
+            module_name: ascii::string(bcs::peel_vec_u8(bcs)),
+            name: ascii::string(bcs::peel_vec_u8(bcs)),
+        }
+    }
+
+    public fun new_transaction(function: Function, arguments: vector<vector<u8>>, type_arguments: vector<String>) : Transaction {
         Transaction {
             function,
             arguments,
-            type_arguments
+            type_arguments,
+        }
+    }
+
+    public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
+        let function = new_function_from_bcs(bcs);
+        let arguments = bcs::peel_vec_vec_u8(bcs);
+        let length = bcs::peel_vec_length(bcs);
+        let type_arguments = vector::empty<String>();
+        let i = 0;
+        while(i < length) {
+            let type_argument = ascii::string(bcs::peel_vec_u8(bcs));
+            vector::push_back(&mut type_arguments, type_argument);
+            i = i + 1;
+        };
+        Transaction {
+            function,
+            arguments,
+            type_arguments,
         }
     }
 

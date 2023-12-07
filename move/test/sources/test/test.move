@@ -40,7 +40,7 @@ module test::test {
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
         let tx = discovery::new_transaction(
-            discovery::new_description(
+            discovery::new_function(
                 address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))), 
                 ascii::string(b"test"), 
                 ascii::string(b"get_call_info")
@@ -62,7 +62,7 @@ module test::test {
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
         discovery::new_transaction(
-            discovery::new_description(
+            discovery::new_function(
                 address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))), 
                 ascii::string(b"test"), 
                 ascii::string(b"execute")

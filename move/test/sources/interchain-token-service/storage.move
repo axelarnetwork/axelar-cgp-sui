@@ -20,12 +20,14 @@ module interchain_token_service::storage {
     use interchain_token_service::coin_management::{CoinManagement};
 
     friend interchain_token_service::service;
+    friend interchain_token_service::discovery;
     
     struct CoinData<phantom T> has store {
         coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
     }
-
+    
+    #[lint_allow(coin_field)]
     struct UnregisteredCoinData<phantom T> has store {
         treasury_cap: TreasuryCap<T>,
         coin_metadata: CoinMetadata<T>,
@@ -43,7 +45,7 @@ module interchain_token_service::storage {
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: UID,
     }
-
+    #[lint_allow(share_owned)]
     fun init(ctx: &mut TxContext) {
         let its = get_singleton_its(ctx);
         transfer::share_object(its);
@@ -150,6 +152,10 @@ module interchain_token_service::storage {
     public fun token_decimals<T>(self: &ITS, token_id: TokenId) : u8 {
         let coin_info = borrow_coin_info<T>(self, token_id);
         coin_info::decimals<T>(coin_info)
+    }
+
+    public (friend) fun borrow_channel(self: &ITS): &Channel {
+        &self.channel
     }
 
     public (friend) fun borrow_mut_channel(self: &mut ITS): &mut Channel {

@@ -15,15 +15,15 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
     const bcs = new BCS(getSuiMoveConfig());
 
     // input argument for the tx
-    bcs.registerStructType("Description", {
+    bcs.registerStructType("Function", {
         packageId: "address",
         module_name: "string",
         name: "string",
     });
     bcs.registerStructType("Transaction", {
-        function: "Description",
+        function: "Function",
         arguments: "vector<vector<u8>>",
-        type_arguments: "vector<Description>",
+        type_arguments: "vector<Function>",
     });
     let txInfo = bcs.de('Transaction', new Uint8Array(txData));
     const decodeArgs = (args, tx) => args.map(arg => {
@@ -92,7 +92,7 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
     });
 
     tx = new TransactionBlock();
-    
+
     tx.moveCall({
         target: `${axelarPackageId}::discovery::get_transaction`,
         arguments: [tx.object(discovery.objectId), tx.pure(event.target_id)],
@@ -124,7 +124,6 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
         ],
         typeArguments: [],
     });
-
     tx.moveCall(getMoveCallFromTx(tx, resp.results[0].returnValues[0][0], null, approvedCall));
 
     await client.signAndExecuteTransactionBlock({
