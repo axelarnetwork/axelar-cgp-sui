@@ -5,7 +5,6 @@ const secp256k1 = require('secp256k1');
 const {
     utils: { keccak256 },
 } = require('ethers');
-const axelarInfo = require('../info/axelar.json');
 
 function hashMessage(data) {
     // sorry for putting it here...
@@ -60,15 +59,15 @@ function getBcsForGateway() {
     return bcs;
 }
 
-function getOperators(env) {
-    if(!axelarInfo[env].activeOperators) {
+function getOperators(axelarInfo) {
+    if(!axelarInfo.activeOperators) {
         return {
             privKeys: [], 
             weights: [], 
             threashold: 0,
         };
     }
-    return axelarInfo[env].activeOperators;
+    return axelarInfo.activeOperators;
 }
 
 function getRandomOperators(n = 5) {
@@ -90,9 +89,7 @@ function getRandomOperators(n = 5) {
     }
 }
 
-function getInputForMessage(env, message) {
-    const operators = getOperators(env);
-
+function getInputForMessage(operators, message) {
     // get the public key in a compressed format
     const pubKeys = operators.privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
 
@@ -121,7 +118,7 @@ function getInputForMessage(env, message) {
     return input;
 }
 
-function approveContractCallInput(env, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId = keccak256((new Date()).getTime())) {
+function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId = keccak256((new Date()).getTime())) {
     const bcs = getBcsForGateway();
     
     const message = bcs
@@ -142,10 +139,10 @@ function approveContractCallInput(env, sourceChain, sourceAddress, destinationAd
         })
         .toBytes();
         
-        return getInputForMessage(env, message);
+        return getInputForMessage(getOperators(axelarInfo), message);
 }
 
-function TransferOperatorshipInput(env, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
+function TransferOperatorshipInput(axelarInfo, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -172,14 +169,14 @@ function TransferOperatorshipInput(env, newOperators, newWeights, newThreshold, 
         })
         .toBytes();
 
-        return getInputForMessage(env, message);
+        return getInputForMessage(getOperators(axelarInfo), message);
 }
 
-async function approveContractCall(env, client, keypair, sourceChain, sourceAddress, destinationAddress, payloadHash) {
+async function approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash) {
     const commandId = keccak256((new Date()).getTime());
-    const input = approveContractCallInput(env, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
-    const packageId = axelarInfo[env].packageId;
-    const validators = axelarInfo[env]['validators::AxelarValidators'];
+    const input = approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
+    const packageId = axelarInfo.packageId;
+    const validators = axelarInfo['validators::AxelarValidators'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({
@@ -198,10 +195,10 @@ async function approveContractCall(env, client, keypair, sourceChain, sourceAddr
     return commandId;
 }
 
-async function transferOperatorship(env, client, keypair, newOperators, newWeights, newThreshold ) {
-    const input = TransferOperatorshipInput(env, newOperators, newWeights, newThreshold);
-    const packageId = axelarInfo[env].packageId;
-    const validators = axelarInfo[env]['validators::AxelarValidators'];
+async function transferOperatorship(client, keypair, axelarInfo, newOperators, newWeights, newThreshold ) {
+    const input = TransferOperatorshipInput(axelarInfo, newOperators, newWeights, newThreshold);
+    const packageId = axelarInfo.packageId;
+    const validators = axelarInfo['validators::AxelarValidators'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({

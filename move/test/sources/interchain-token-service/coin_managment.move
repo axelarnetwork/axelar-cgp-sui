@@ -12,7 +12,7 @@ module interchain_token_service::coin_management {
 
     const EDistributorNeedsTreasuryCap: u64 = 0;
 
-    struct CoinManagement<phantom T> has store{
+    struct CoinManagement<phantom T> has store {
         has_capability: bool,
         treasury_cap: Option<TreasuryCap<T>>,
         balance: Option<Balance<T>>,

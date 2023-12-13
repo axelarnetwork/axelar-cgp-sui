@@ -8,6 +8,7 @@ module interchain_token_service::service {
     use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::address;
+    use sui::event;
 
     use axelar::utils;
     use axelar::channel::{Self, ApprovedCall};
@@ -35,10 +36,18 @@ module interchain_token_service::service {
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
 
+    struct CoinRegistered<phantom T> has copy, drop {
+        token_id: TokenId,
+    }
+
     public fun register_coin<T>(self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>) {
         let token_id = token_id::from_coin_info(&coin_info);
 
         storage::add_registered_coin(self, token_id, coin_management, coin_info);
+
+        event::emit( CoinRegistered<T> {
+            token_id
+        })
     }
 
     public fun deploy_remote_interchain_token<T>(self: &mut ITS, token_id: TokenId, destination_chain: String) {

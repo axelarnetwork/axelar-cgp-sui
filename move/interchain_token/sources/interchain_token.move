@@ -1,4 +1,4 @@
-module interchain_token::$module_name {
+module interchain_token::tt {
     use sui::tx_context::{Self, TxContext};
     use std::option;
 
@@ -6,14 +6,14 @@ module interchain_token::$module_name {
     use sui::url::{Url};
     use sui::transfer;
 
-    struct $witness has drop {}
+    struct TT has drop {}
 
-    fun init(witness: $witness, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency<$witness>(
+    fun init(witness: TT, ctx: &mut TxContext) {
+        let (treasury, metadata) = coin::create_currency<TT>(
             witness,
-            $decimals,
-            b"$symbol",
-            b"$name",
+            6,
+            b"TT",
+            b"Test Token",
             b"",
             option::none<Url>(),
             ctx

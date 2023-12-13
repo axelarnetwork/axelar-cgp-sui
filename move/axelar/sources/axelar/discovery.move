@@ -9,19 +9,14 @@
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
     use std::ascii::{Self, String};
-    use std::type_name::{Self, TypeName};
     use std::vector;
 
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
     use sui::object::{Self, ID, UID};
-    use sui::address;
-    use sui::hex;
     use sui::bcs::{Self, BCS};
 
     use axelar::channel::{source_id, Channel};
-
-    const ASCII_COLON: u8 = 58;
 
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the

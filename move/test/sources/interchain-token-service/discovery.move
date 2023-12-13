@@ -42,10 +42,10 @@ module interchain_token_service::discovery {
 
     public fun get_call_info(self: &ITS, payload: &vector<u8>): Transaction {
         let message_type = utils::abi_decode_fixed(payload, 0);
-        assert!(message_type <= MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
-        if(message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
+        if( message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER ) {
             get_interchain_transfer_tx(self, payload)
         } else {
+            assert!( message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType );
             get_deploy_interchain_token_tx(self, payload)
         }
     }

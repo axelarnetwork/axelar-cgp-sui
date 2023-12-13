@@ -60,6 +60,6 @@ if (require.main === module) {
         const itsPackageId = its[env].packageId;
         const itsObjectId = its[env]['storage::ITS'].objectId;
 
-        getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId);
+        await getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId);
     })();
 }

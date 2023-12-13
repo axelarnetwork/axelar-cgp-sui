@@ -35,7 +35,7 @@ module interchain_token_service::token_id {
         address::to_u256(token_id.id)
     }
 
-    public (friend) fun from_coin_info<T>(coin_info: &CoinInfo<T>): TokenId {
+    public fun from_coin_info<T>(coin_info: &CoinInfo<T>): TokenId {
         let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
         vector::append(&mut vec, bcs::to_bytes(coin_info));
         TokenId { id: address::from_bytes(keccak256(&vec)) }

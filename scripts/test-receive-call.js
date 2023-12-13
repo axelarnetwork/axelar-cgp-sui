@@ -10,88 +10,22 @@ const {
 const { approveContractCall } = require('./gateway');
 const { toPure } = require('./utils');
 
-
-function getMoveCallFromTx(tx, txData, payload, callContractObj) {
-    const bcs = new BCS(getSuiMoveConfig());
-
-    // input argument for the tx
-    bcs.registerStructType("Function", {
-        packageId: "address",
-        module_name: "string",
-        name: "string",
-    });
-    bcs.registerStructType("Transaction", {
-        function: "Function",
-        arguments: "vector<vector<u8>>",
-        type_arguments: "vector<Function>",
-    });
-    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
-    const decodeArgs = (args, tx) => args.map(arg => {
-        if(arg[0] === 0) {
-            return tx.object(hexlify(arg.slice(1)));
-        } else if (arg[0] === 1) {
-            return tx.pure(arg.slice(1));
-        } else if (arg[0] === 2) {
-            return callContractObj
-        } else if (arg[0] === 3) {
-            return tx.pure(String.fromCharCode(...arrayify(payload)));
-        } else {
-            throw new Error(`Invalid argument prefix: ${arg[0]}`);
-        }
-    });
-    const decodeDescription = (description) => `${description.packageId}::${description.module_name}::${description.name}`;
-
-    return{
-        target: decodeDescription(txInfo.function),
-        arguments: decodeArgs(txInfo.arguments, tx),
-        typeArguments: txInfo.type_arguments.map(typeArgument => decodeDescription(typeArgument)),
-    };
-}
-
-(async () => {
-    const env = process.argv[2] || 'localnet';
-    const axelarInfo = require('../info/axelar.json')[env];
-    const testInfo = require('../info/test.json')[env];
-    const privKey = Buffer.from(
-        process.env.SUI_PRIVATE_KEY,
-        "hex"
-    );
-
-    // get the public key in a compressed format
-    const keypair = Ed25519Keypair.fromSecretKey(privKey);
-    // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl(env) });
-    
+async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload) {
     const axelarPackageId = axelarInfo.packageId;
     const validators = axelarInfo['validators::AxelarValidators'];
     const discovery = axelarInfo['discovery::RelayerDiscovery'];
-    const testPackageId = testInfo.packageId;
-    const test = testInfo['test::Singleton'];
-    
-    const payload = '0x1234';
     const payload_hash = keccak256(payload);
-    await approveContractCall(env, client, keypair, 'Ethereum', '0x0', test.channel, payload_hash);
+
+    await approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload_hash);
  
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
     }}));
     let event = eventData.data[0].parsedJson;
     
-    let tx = new TransactionBlock();
-    tx.moveCall({
-        target: `${testPackageId}::test::register_transaction`,
-        arguments: [tx.object(discovery.objectId), tx.object(test.objectId)],
-    });
-    await client.signAndExecuteTransactionBlock({       
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
-        },
-    });
 
-    tx = new TransactionBlock();
+
+    let tx = new TransactionBlock();
 
     tx.moveCall({
         target: `${axelarPackageId}::discovery::get_transaction`,
@@ -134,7 +68,86 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
             showObjectChanges: true,
         },
     });
-    event = (await client.queryEvents({query: {
+}
+function getMoveCallFromTx(tx, txData, payload, callContractObj) {
+    const bcs = new BCS(getSuiMoveConfig());
+
+    // input argument for the tx
+    bcs.registerStructType("Function", {
+        packageId: "address",
+        module_name: "string",
+        name: "string",
+    });
+    bcs.registerStructType("Transaction", {
+        function: "Function",
+        arguments: "vector<vector<u8>>",
+        type_arguments: "vector<Function>",
+    });
+    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
+    const decodeArgs = (args, tx) => args.map(arg => {
+        if(arg[0] === 0) {
+            return tx.object(hexlify(arg.slice(1)));
+        } else if (arg[0] === 1) {
+            return tx.pure(arg.slice(1));
+        } else if (arg[0] === 2) {
+            return callContractObj
+        } else if (arg[0] === 3) {
+            return tx.pure(String.fromCharCode(...arrayify(payload)));
+        } else {
+            throw new Error(`Invalid argument prefix: ${arg[0]}`);
+        }
+    });
+    const decodeDescription = (description) => `${description.packageId}::${description.module_name}::${description.name}`;
+
+    return{
+        target: decodeDescription(txInfo.function),
+        arguments: decodeArgs(txInfo.arguments, tx),
+        typeArguments: txInfo.type_arguments.map(typeArgument => decodeDescription(typeArgument)),
+    };
+}
+
+module.exports = {
+    receiveCall,
+}
+
+(async () => {
+    const env = process.argv[2] || 'localnet';
+    const axelarInfo = require('../info/axelar.json')[env];
+    const testInfo = require('../info/test.json')[env];
+    const privKey = Buffer.from(
+        process.env.SUI_PRIVATE_KEY,
+        "hex"
+    );
+
+    const discovery = axelarInfo['discovery::RelayerDiscovery'];
+
+    // get the public key in a compressed format
+    const keypair = Ed25519Keypair.fromSecretKey(privKey);
+    // create a new SuiClient object pointing to the network you want to use
+    const client = new SuiClient({ url: getFullnodeUrl(env) });
+    
+    const testPackageId = testInfo.packageId;
+    const test = testInfo['test::Singleton'];
+    
+    const payload = '0x1234';
+
+    let tx = new TransactionBlock();
+    tx.moveCall({
+        target: `${testPackageId}::test::register_transaction`,
+        arguments: [tx.object(discovery.objectId), tx.object(test.objectId)],
+    });
+    await client.signAndExecuteTransactionBlock({       
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+
+    await receiveCall(client, keypair, axelarInfo, 'Ethereum', '0x0', test.channel, payload);
+    
+    const event = (await client.queryEvents({query: {
         MoveEventType: `${testPackageId}::test::Executed`,
     }})).data[0].parsedJson;
     

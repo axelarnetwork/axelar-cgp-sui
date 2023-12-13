@@ -1,26 +1,27 @@
 require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const { execSync } = require('child_process');
 const fs = require('fs');
-const tmp = require('tmp');
 
+const { getModuleNameFromSymbol } = require('../utils');
+const { publishPackage } = require('../publish-package');
 
-const { getModuleNameFromSymbol } = require('./utils');
-const { updateMoveToml, publishPackage } = require('./publish-package');
-const { keccak256, toUtf8Bytes } = require('ethers/lib/utils');
+const testInfo = require('../../info/test.json');
 
 const packagePath = 'interchain_token';
 
-async function publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId, skipRegister = false) {
+async function publishInterchainToken(client, keypair, testInfo, name, symbol, decimals, skipRegister = false) {
+    const itsPackageId = testInfo.packageId;
+    const itsObjectId = testInfo['storage::ITS'].objectId;
+
     let file = fs.readFileSync(`scripts/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
     let witness = moduleName.toUpperCase();
     file = file.replaceAll('$module_name', moduleName);
     file = file.replaceAll('$witness', witness);
+    file = file.replaceAll('$name', name);
     file = file.replaceAll('$symbol', symbol);
     file = file.replaceAll('$decimals', decimals);
     fs.writeFileSync(`move/${packagePath}/sources/interchain_token.move`, file);
@@ -34,12 +35,18 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
         return object.objectType && object.objectType.startsWith('0x2::coin::CoinMetadata');
     });
 
+    coinType = `${packageId}::${moduleName}::${witness}`;
+
     if(skipRegister) {
-        return [treasuryCap, coinMetadata];
+        return { 
+            coinType, 
+            treasuryCap, 
+            coinMetadata 
+        };
     }
 
     const tx = new TransactionBlock();
-
+    
     tx.moveCall({
         target: `${itsPackageId}::service::give_unregistered_coin`,
         arguments: [
@@ -50,7 +57,7 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
         typeArguments: [`${packageId}::${moduleName}::${witness}`],
     });
 
-    const resp = await client.signAndExecuteTransactionBlock({
+    await client.signAndExecuteTransactionBlock({
 		transactionBlock: tx,
 		signer: keypair,
 		options: {
@@ -60,7 +67,13 @@ async function publishInterchainToken(client, keypair, symbol, decimals, itsPack
 		},
 	});
 
-    console.log(resp);
+    return {
+        coinType
+    }
+}
+
+module.exports = {
+    publishInterchainToken,
 }
 
 if (require.main === module) {
@@ -91,10 +104,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        const its = require('../info/test.json');
-        const itsPackageId = its[env].packageId;
-        const itsObjectId = its[env]['storage::ITS'].objectId;
-
-        publishInterchainToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId, skipRegister);
+        await publishInterchainToken(client, keypair, testInfo[env], '', symbol, decimals, skipRegister);
     })();
 }
