@@ -1,0 +1,10 @@
+[package]
+name = "its"
+version = "0.0.1"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+Axelar = { local = "../axelar" }
+
+[addresses]
+its = "0x0"

@@ -1,0 +1,14 @@
+For Sui Native assets:
+
+- anyone can deploy a new native asset specifying decimals, name, symbol, a tokenId is created from these params
+- then they're free to send this token (linked by type) to as some tokenId
+- event is emitted, coin is stored in the bridge as native
+
+Storage structure:
+```
+    ITS ==( Key<Type> { tokenId } )==> Balance<Type>
+```
+
+--- --- --- --- ---
+
+

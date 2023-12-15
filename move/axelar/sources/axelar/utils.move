@@ -1,5 +1,5 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+//
+//
 
 module axelar::utils {
     use std::vector;
@@ -108,7 +108,7 @@ module axelar::utils {
         vector::append<u8>(&mut data, bcs::to_bytes(&threshold));
         hash::keccak256(&data)
     }
-    
+
     #[test_only]
     const VAR1: vector<u8> = x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028";
     #[test_only]
@@ -137,7 +137,7 @@ module axelar::utils {
         let fix2 = abi_decode_fixed(&v, 2);
         let var2 = abi_decode_variable(&v, 3);
 
-        
+
         assert!(&fix1 == &FIX1, 1);
         assert!(&var1 == &VAR1, 1);
         assert!(&fix2 == &FIX2, 1);
