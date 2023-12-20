@@ -86,10 +86,32 @@ function fillAddresses(toml, address) {
     return lines.join('\n');
 }
 
+function isValidHttpUrl(string) {
+    let url;
+    
+    try {
+      url = new URL(string);
+    } catch (_) {
+      return false;  
+    }
+  
+    return url.protocol === "http:" || url.protocol === "https:";
+  }
+
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
-    const env = process.argv[3] || 'localnet';
+    const arg = process.argv[3] ?
+        JSON.parse(process.argv[3]) :
+        {
+            alias: "localnet",
+            url: getFullnodeUrl('localnet')
+        };
+
+    const env = Object.assign(arg, arg.url ? {} : { url: getFullnodeUrl(arg.alias) });
+    const faucet = (process.argv[4]?.toLowerCase?.() === 'true');
     
+    console.log(env);
+
     (async () => {
         const privKey = 
         Buffer.from(
@@ -99,19 +121,20 @@ if (require.main === module) {
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
-        const client = new SuiClient({ url: getFullnodeUrl(env) });
+        const client = new SuiClient({ url: env.url });
 
-        try {
-            await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
-            });
-        } catch (e) {
-            console.log(e);
+        if (faucet) {
+            try {
+                await requestSuiFromFaucetV0({
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env.alias),
+                recipient: address,
+                });
+            } catch (e) {
+                console.log(e);
+            }
         }
-
 
         let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
         fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
@@ -122,6 +145,8 @@ if (require.main === module) {
         config.packageId = packageId;
         for(const singleton of info.singletons) {
             const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
+            console.log(object);
+
             delete object.type;
             delete object.sender;
             delete object.owner;
@@ -143,8 +168,8 @@ if (require.main === module) {
             }
         }
         
-        const allConfigs = require(`../info/${packagePath}.json`) || {};
-        allConfigs[env] = config;
+        const allConfigs = fs.existsSync(`../info/${packagePath}.json`) ? require(`../info/${packagePath}.json`) : {};
+        allConfigs[env.alias] = config;
         fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
         updateMoveToml(packagePath, packageId);
     })();
