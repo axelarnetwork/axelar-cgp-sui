@@ -134,7 +134,6 @@ if (require.main === module) {
         config.packageId = packageId;
         for(const singleton of info.singletons) {
             const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
-
             delete object.type;
             delete object.sender;
             delete object.owner;
