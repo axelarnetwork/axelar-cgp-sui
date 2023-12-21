@@ -110,8 +110,6 @@ if (require.main === module) {
     const env = Object.assign(arg, arg.url ? {} : { url: getFullnodeUrl(arg.alias) });
     const faucet = (process.argv[4]?.toLowerCase?.() === 'true');
     
-    console.log(env);
-
     (async () => {
         const privKey = 
         Buffer.from(
@@ -145,7 +143,6 @@ if (require.main === module) {
         config.packageId = packageId;
         for(const singleton of info.singletons) {
             const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
-            console.log(object);
 
             delete object.type;
             delete object.sender;
