@@ -170,6 +170,9 @@ if (require.main === module) {
         
         const allConfigs = fs.existsSync(`../info/${packagePath}.json`) ? require(`../info/${packagePath}.json`) : {};
         allConfigs[env.alias] = config;
+        if (!fs.existsSync('info')){
+            fs.mkdirSync('info');
+        }
         fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
         updateMoveToml(packagePath, packageId);
     })();
