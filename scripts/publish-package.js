@@ -86,18 +86,6 @@ function fillAddresses(toml, address) {
     return lines.join('\n');
 }
 
-function isValidHttpUrl(string) {
-    let url;
-    
-    try {
-      url = new URL(string);
-    } catch (_) {
-      return false;  
-    }
-  
-    return url.protocol === "http:" || url.protocol === "https:";
-  }
-
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
     const env = ((arg) => {
