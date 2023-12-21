@@ -100,14 +100,17 @@ function isValidHttpUrl(string) {
 
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
-    const arg = process.argv[3] ?
-        JSON.parse(process.argv[3]) :
-        {
-            alias: "localnet",
-            url: getFullnodeUrl('localnet')
-        };
-
-    const env = Object.assign(arg, arg.url ? {} : { url: getFullnodeUrl(arg.alias) });
+    const env = ((arg) => {
+        switch (arg?.toLowerCase()) {
+            case 'localnet':
+            case 'devnet':
+            case 'testnet':
+            case 'mainnet':
+                return {alias: arg, url: getFullnodeUrl(arg)};
+            default:
+                return JSON.parse(arg);
+      }
+    })(process.argv[3] || 'localnet');
     const faucet = (process.argv[4]?.toLowerCase?.() === 'true');
     
     (async () => {
