@@ -62,6 +62,7 @@ module axelar::utils {
             i = i + 1;
         };
         vector::append<u8>(v, var);
+        if( length == 0 ) return;
         i = 0;
         while( i < 31 - (length - 1) % 32 ) {
             vector::push_back<u8>(v, 0);

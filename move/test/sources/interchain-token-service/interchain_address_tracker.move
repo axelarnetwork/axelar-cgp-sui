@@ -18,8 +18,12 @@ module interchain_token_service::interchain_address_tracker {
         }
     }
 
-    public (friend) fun add_trusted_address(self: &mut InterchainAddressTracker, chain_name: String, trusted_address: String) {
-        table::add<String, String>(&mut self.trusted_addresses, chain_name, trusted_address);
+    public (friend) fun set_trusted_address(self: &mut InterchainAddressTracker, chain_name: String, trusted_address: String) {
+        if(table::contains<String, String>(&self.trusted_addresses, chain_name)) {
+            *table::borrow_mut<String, String>(&mut self.trusted_addresses, chain_name) = trusted_address;
+        } else {
+            table::add<String, String>(&mut self.trusted_addresses, chain_name, trusted_address);
+        }
     }
 
     public fun borrow_trusted_address(self: &InterchainAddressTracker, chain_name: String): &String {

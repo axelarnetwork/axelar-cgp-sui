@@ -41,7 +41,7 @@ module interchain_token_service::service {
     }
 
     public fun register_coin<T>(self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>) {
-        let token_id = token_id::from_coin_info(&coin_info);
+        let token_id = token_id::from_coin_data(&coin_info, &coin_management);
 
         storage::add_registered_coin(self, token_id, coin_management, coin_info);
 
@@ -131,7 +131,7 @@ module interchain_token_service::service {
         let (treasury_cap, coin_metadata) = storage::remove_unregistered_coin<T>(self, token_id::unregistered_token_id(&symbol, &decimals));
 
         coin::update_name(&treasury_cap, &mut coin_metadata, name);
-        coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
+        //coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
         
         let coin_management = coin_management::mint_burn<T>(treasury_cap);
         let coin_info = coin_info::from_metadata<T>(coin_metadata);
@@ -141,7 +141,7 @@ module interchain_token_service::service {
         storage::add_registered_coin<T>(self, token_id, coin_management, coin_info);
     }
 
-    // We need an empty coin that has the proper decimals and typing, and no Url.
+    // We need an coin with zero supply that has the proper decimals and typing, and no Url.
     public fun give_unregistered_coin<T>(self: &mut ITS, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
         assert!(coin::total_supply(&treasury_cap) == 0, ENonZeroTotalSupply);
         assert!(option::is_none(&coin::get_icon_url(&coin_metadata)), EUnregisteredCoinHasUrl);

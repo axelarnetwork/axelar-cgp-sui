@@ -17,7 +17,10 @@ async function publishPackage(packagePath, client, keypair) {
 	const { modules, dependencies } = JSON.parse(
 		execSync(
 			`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/' + packagePath} --install-dir ${tmpobj.name}`,
-			{ encoding: 'utf-8' },
+			{ 
+                encoding: 'utf-8',
+                stdio: 'pipe', // silent the output
+             },
 		),
 	);
 	const tx = new TransactionBlock();

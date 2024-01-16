@@ -1,13 +1,13 @@
 [package]
 name = "Test"
 version = "0.0.1"
-published-at = "0x18ec9fef4876adc739910cccba15c3d80ff90f9461518733fc1dfcdf7bca7ec2"
+published-at = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 Axelar = { local = "../axelar" }
 
 [addresses]
-test = "0x18ec9fef4876adc739910cccba15c3d80ff90f9461518733fc1dfcdf7bca7ec2"
-interchain_token_service = "0x18ec9fef4876adc739910cccba15c3d80ff90f9461518733fc1dfcdf7bca7ec2"
-dummy_its = "0x18ec9fef4876adc739910cccba15c3d80ff90f9461518733fc1dfcdf7bca7ec2"
+test = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
+interchain_token_service = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
+dummy_its = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"

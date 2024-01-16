@@ -3,12 +3,16 @@
 module interchain_token_service::token_id {
     use std::ascii::{Self, String};
     use std::vector;
+    use std::string;
+    use std::type_name;
+    use std::option;
 
     use sui::address::{Self};
     use sui::hash::{keccak256};
     use sui::bcs;
 
-    use interchain_token_service::coin_info::{CoinInfo};
+    use interchain_token_service::coin_info::{Self, CoinInfo};
+    use interchain_token_service::coin_management::{Self, CoinManagement};
 
     friend interchain_token_service::service;
 
@@ -35,10 +39,25 @@ module interchain_token_service::token_id {
         address::to_u256(token_id.id)
     }
 
-    public fun from_coin_info<T>(coin_info: &CoinInfo<T>): TokenId {
+    public fun from_info<T>(name: &string::String, symbol: &String, decimals: &u8, has_metadata: &bool, has_treasury: &bool): TokenId {
         let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
-        vector::append(&mut vec, bcs::to_bytes(coin_info));
+        vector::append(&mut vec, bcs::to_bytes(&type_name::get<T>()));
+        vector::append(&mut vec, bcs::to_bytes(name));
+        vector::append(&mut vec, bcs::to_bytes(symbol));
+        vector::append(&mut vec, bcs::to_bytes(decimals));
+        vector::append(&mut vec, bcs::to_bytes(has_metadata));
+        vector::append(&mut vec, bcs::to_bytes(has_treasury));
         TokenId { id: address::from_bytes(keccak256(&vec)) }
+    }
+
+    public (friend) fun from_coin_data<T>(coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>): TokenId {
+        from_info<T>(
+            &coin_info::name(coin_info),
+            &coin_info::symbol(coin_info),
+            &coin_info::decimals(coin_info),
+            &option::is_some(coin_info::metadata(coin_info)),
+            &coin_management::has_capability(coin_management),
+        )
     }
 
     public fun unregistered_token_id(symbol: &String, decimals: &u8): UnregisteredTokenId {

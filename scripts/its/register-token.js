@@ -8,14 +8,24 @@ const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
 const testInfo = require('../../info/test.json');
 
-async function registerInterchainToken(client, keypair, testInfo, name, symbol, decimals) {
+async function registerInterchainToken(client, keypair, testInfo, name, symbol, decimals, mintAmount = false) {
     const { coinType, coinMetadata, treasuryCap } = await publishInterchainToken(client, keypair, testInfo, name, symbol, decimals, true);
 
     const itsPackageId = testInfo.packageId;
     const itsObjectId = testInfo['storage::ITS'].objectId;
     let tx = new TransactionBlock();
 
-
+    if(mintAmount) {
+        tx.moveCall({
+            target: `0x2::coin::mint_and_transfer`,
+            arguments: [
+                tx.object(treasuryCap.objectId),
+                tx.pure(mintAmount),
+                tx.pure.address(keypair.getPublicKey().toSuiAddress()),
+            ],
+            typeArguments: [coinType],
+        });
+    }
 
     const coinInfo = tx.moveCall({
         target: `${itsPackageId}::coin_info::from_metadata`,
@@ -52,54 +62,17 @@ async function registerInterchainToken(client, keypair, testInfo, name, symbol, 
             showContent: true
 		},
 	});
-
+    
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${itsPackageId}::service::CoinRegistered<${coinType}>`,
     }}));
     const tokenId = eventData.data[0].parsedJson.token_id.id;
 
-    tx = new TransactionBlock();
+    return [tokenId, coinType];
+}
 
-    const tokenIdObj = tx.moveCall({
-        target: `${itsPackageId}::token_id::from_address`,
-        arguments: [tx.pure(tokenId)],
-    });
-
-    tx.moveCall({
-        target: `${itsPackageId}::storage::token_name`,
-        arguments: [tx.object(itsObjectId), tokenIdObj],
-        typeArguments: [coinType],
-    });
-
-    tx.moveCall({
-        target: `${itsPackageId}::storage::token_symbol`,
-        arguments: [tx.object(itsObjectId), tokenIdObj],
-        typeArguments: [coinType],
-    });
-
-    tx.moveCall({
-        target: `${itsPackageId}::storage::token_decimals`,
-        arguments: [tx.object(itsObjectId), tokenIdObj],
-        typeArguments: [coinType],
-    });
-
-    let resp = await client.devInspectTransactionBlock({
-        sender: keypair.getPublicKey().toSuiAddress(),
-        transactionBlock: tx,
-    });
-
-    const bcs = new BCS(getSuiMoveConfig());
-
-    {
-        const name = bcs.de('string', new Uint8Array(resp.results[1].returnValues[0][0]));
-        const symbol = bcs.de('string', new Uint8Array(resp.results[2].returnValues[0][0]));
-        const decimals = bcs.de('u8', new Uint8Array(resp.results[2].returnValues[0][0]));
-        console.log(tokenId, name, symbol, decimals);
-    }
-    
-    //console.log(resp.results.map(res => res.returnValues[0][0]));
-
-
+module.exports = {
+    registerInterchainToken,
 }
 
 
@@ -131,6 +104,51 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await registerInterchainToken(client, keypair, testInfo[env], name, symbol, decimals);
+        const [tokenId, coinType] = await registerInterchainToken(client, keypair, testInfo[env], name, symbol, decimals);
+
+        const itsPackageId = testInfo[env].packageId;
+        const itsObjectId = testInfo[env]['storage::ITS'].objectId;
+
+        tx = new TransactionBlock();
+    
+        const tokenIdObj = tx.moveCall({
+            target: `${itsPackageId}::token_id::from_address`,
+            arguments: [
+                tx.pure.address(tokenId),
+            ],
+            typeArguments: [],
+        });
+
+        tx.moveCall({
+            target: `${itsPackageId}::storage::token_name`,
+            arguments: [tx.object(itsObjectId), tokenIdObj],
+            typeArguments: [coinType],
+        });
+    
+        tx.moveCall({
+            target: `${itsPackageId}::storage::token_symbol`,
+            arguments: [tx.object(itsObjectId), tokenIdObj],
+            typeArguments: [coinType],
+        });
+    
+        tx.moveCall({
+            target: `${itsPackageId}::storage::token_decimals`,
+            arguments: [tx.object(itsObjectId), tokenIdObj],
+            typeArguments: [coinType],
+        });
+    
+        let resp = await client.devInspectTransactionBlock({
+            sender: keypair.getPublicKey().toSuiAddress(),
+            transactionBlock: tx,
+        });
+    
+        const bcs = new BCS(getSuiMoveConfig());
+    
+        {
+            const name = bcs.de('string', new Uint8Array(resp.results[1].returnValues[0][0]));
+            const symbol = bcs.de('string', new Uint8Array(resp.results[2].returnValues[0][0]));
+            const decimals = bcs.de('u8', new Uint8Array(resp.results[3].returnValues[0][0]));
+            console.log(name, symbol, decimals);
+        }
     })();
 }

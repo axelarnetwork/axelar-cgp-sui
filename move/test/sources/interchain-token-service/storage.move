@@ -162,6 +162,11 @@ module interchain_token_service::storage {
         &mut self.channel
     }
 
+    // Some capability should be required to only allow for admin access here.
+    public fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+        interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
+    }
+
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
         *interchain_address_tracker::borrow_trusted_address(&self.address_tracker, chain_name)
     }

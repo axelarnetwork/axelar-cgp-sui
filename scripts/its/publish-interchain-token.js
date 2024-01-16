@@ -16,7 +16,7 @@ async function publishInterchainToken(client, keypair, testInfo, name, symbol, d
     const itsPackageId = testInfo.packageId;
     const itsObjectId = testInfo['storage::ITS'].objectId;
 
-    let file = fs.readFileSync(`scripts/interchain_token.move`, 'utf8');
+    let file = fs.readFileSync(`scripts/its/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
     let witness = moduleName.toUpperCase();
     file = file.replaceAll('$module_name', moduleName);

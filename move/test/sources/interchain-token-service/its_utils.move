@@ -30,7 +30,7 @@ module interchain_token_service::its_utils {
     public fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
         let symbolBytes = ascii::as_bytes(symbol);
         let moduleName = vector[];
-
+        
         let (i, length) = (0, vector::length(symbolBytes));
         while(isNumber(*vector::borrow(symbolBytes, i))) {
             i = i + 1;
@@ -57,13 +57,17 @@ module interchain_token_service::its_utils {
     }
 
     public fun decode_metadata(metadata: vector<u8>): (u32, vector<u8>) {
-        let i = 0;
-        let version: u32 = 0;
-        while (i < 4) {
-            version = (version << (8 as u8) as u32) + (vector::remove<u8>(&mut metadata, 0) as u32);
-            i = i + 1;
-        };
-        (version, metadata)
+        if(vector::length(&metadata) < 4) {
+            (0, vector::empty<u8>())
+        } else {
+            let i = 0;
+            let version: u32 = 0;
+            while (i < 4) {
+                version = (version << (8 as u8) as u32) + (vector::remove<u8>(&mut metadata, 0) as u32);
+                i = i + 1;
+            };
+            (version, metadata)
+        }
     }
 
     #[test]

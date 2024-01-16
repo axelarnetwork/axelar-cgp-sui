@@ -30,19 +30,9 @@ module interchain_token_service::coin_management {
 
     public fun lock_unlock<T>(): CoinManagement<T> {
         CoinManagement<T> {
-            has_capability: true,
+            has_capability: false,
             treasury_cap: option::none<TreasuryCap<T>>(),
             balance: option::some<Balance<T>>(balance::zero<T>()),
-            distributor: option::none<address>(),
-        }
-    }
-
-    public fun lock_unlock_funded<T>(coin: Coin<T>): CoinManagement<T> {
-        let balance = coin::into_balance(coin);
-        CoinManagement<T> {
-            has_capability: true,
-            treasury_cap: option::none<TreasuryCap<T>>(),
-            balance: option::some<Balance<T>>(balance),
             distributor: option::none<address>(),
         }
     }
@@ -79,5 +69,9 @@ module interchain_token_service::coin_management {
 
     public fun is_distributor<T>(self: &CoinManagement<T>, distributor: address): bool {
         option::contains(&self.distributor, &distributor)
+    }
+
+    public fun has_capability<T>(self: &CoinManagement<T>): bool {
+        self.has_capability
     }
 }
