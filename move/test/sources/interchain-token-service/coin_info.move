@@ -1,18 +1,21 @@
 module interchain_token_service::coin_info {
-    use std::string;
-    use std::ascii::{String};
+    use std::ascii;
+    use std::string::String;
     use std::option::{Self, Option};
 
     use sui::coin::{Self, CoinMetadata};
 
     struct CoinInfo<phantom T> has store {
-        name: string::String,
-        symbol: String,
+        name: String,
+        symbol: ascii::String,
         decimals: u8,
         metadata: Option<CoinMetadata<T>>,
     }
-    
-    public fun from_info<T>(name: string::String, symbol: String, decimals: u8): CoinInfo<T> {
+
+    /// Create a new coin info from the given name, symbol and decimals.
+    public fun from_info<T>(
+        name: String, symbol: ascii::String, decimals: u8
+    ): CoinInfo<T> {
         CoinInfo {
             name,
             symbol,
@@ -21,23 +24,23 @@ module interchain_token_service::coin_info {
         }
     }
 
+    /// Create a new coin info from the given `CoinMetadata` object.
     public fun from_metadata<T>(metadata: CoinMetadata<T>): CoinInfo<T> {
-        let name = coin::get_name(&metadata);
-        let symbol = coin::get_symbol(&metadata);
-        let decimals = coin::get_decimals(&metadata);
         CoinInfo {
-            name,
-            symbol,
-            decimals,
+            name: coin::get_name(&metadata),
+            symbol: coin::get_symbol(&metadata),
+            decimals: coin::get_decimals(&metadata),
             metadata: option::some<CoinMetadata<T>>(metadata),
         }
     }
 
-    public fun name<T>(self: &CoinInfo<T>): string::String {
+    // === Views ===
+
+    public fun name<T>(self: &CoinInfo<T>): String {
         self.name
     }
 
-    public fun symbol<T>(self: &CoinInfo<T>): String {
+    public fun symbol<T>(self: &CoinInfo<T>): ascii::String {
         self.symbol
     }
 
@@ -51,6 +54,11 @@ module interchain_token_service::coin_info {
 
     #[test_only]
     public fun drop<T>(coin_info: CoinInfo<T>) {
-        let CoinInfo {name: _, symbol: _, decimals: _, metadata: _} = coin_info;
+        let CoinInfo {name: _, symbol: _, decimals: _, metadata } = coin_info;
+        if (option::is_some(&metadata)) {
+            abort 0
+        } else {
+            option::destroy_none(metadata)
+        }
     }
-} 
+}

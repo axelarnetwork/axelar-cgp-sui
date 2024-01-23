@@ -67,11 +67,11 @@ module interchain_token_service::service {
     }
 
     public fun interchain_transfer<T>(
-        self: &mut ITS, 
-        token_id: TokenId, 
-        coin: Coin<T>, 
-        destination_chain: String, 
-        destination_address: vector<u8>, 
+        self: &mut ITS,
+        token_id: TokenId,
+        coin: Coin<T>,
+        destination_chain: String,
+        destination_address: vector<u8>,
         metadata: vector<u8>,
         ctx: &mut TxContext,
     ) {
@@ -127,13 +127,13 @@ module interchain_token_service::service {
         let symbol = ascii::string(utils::abi_decode_variable(&payload, 3));
         let decimals =(utils::abi_decode_fixed(&payload, 4) as u8);
         let distributor = address::from_bytes(utils::abi_decode_variable(&payload, 5));
-        
+
         let (treasury_cap, coin_metadata) = storage::remove_unregistered_coin<T>(self, token_id::unregistered_token_id(&symbol, &decimals));
 
         coin::update_name(&treasury_cap, &mut coin_metadata, name);
         //coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
-        
-        let coin_management = coin_management::mint_burn<T>(treasury_cap);
+
+        let coin_management = coin_management::new_with_cap<T>(treasury_cap);
         let coin_info = coin_info::from_metadata<T>(coin_metadata);
 
         coin_management::add_distributor(&mut coin_management, distributor);
@@ -153,9 +153,9 @@ module interchain_token_service::service {
 
         let module_name = type_name::get_module(&type_name::get<T>());
         assert!(&module_name == &its_utils::get_module_from_symbol(&symbol), EModuleNameDoesNotMatchSymbol);
-        
+
         let token_id = token_id::unregistered_token_id(&symbol, &decimals);
-        
+
         storage::add_unregistered_coin<T>(self, token_id, treasury_cap, coin_metadata);
     }
 
@@ -176,12 +176,12 @@ module interchain_token_service::service {
         assert!(coin_management::is_distributor<T>(coin_management, interchain_token_channel::to_address(token_channel)), ENotDistributor);
 
         coin_management::give_coin_to(coin_management, to, amount, ctx);
-    } 
+    }
 
     public fun burn_as_distributor<T>(self: &mut ITS, token_channel: &TokenChannel, token_id: TokenId, coin: Coin<T>) {
         let coin_management = storage::borrow_mut_coin_management<T>(self, token_id);
         assert!(coin_management::is_distributor<T>(coin_management, interchain_token_channel::to_address(token_channel)), ENotDistributor);
 
         coin_management::take_coin(coin_management, coin);
-    } 
-} 
+    }
+}

@@ -10,40 +10,48 @@ module interchain_token_service::coin_management {
 
     friend interchain_token_service::service;
 
+    /// Trying to add a distributor to a `CoinManagement` that does not
+    /// have a `TreasuryCap`.
     const EDistributorNeedsTreasuryCap: u64 = 0;
 
+    /// Struct that stores information about the ITS Coin.
     struct CoinManagement<phantom T> has store {
-        has_capability: bool,
         treasury_cap: Option<TreasuryCap<T>>,
         balance: Option<Balance<T>>,
         distributor: Option<address>,
     }
 
-    public fun mint_burn<T>(treasury_cap: TreasuryCap<T>) : CoinManagement<T> {
+    /// Create a new `CoinManagement` with a `TreasuryCap`.
+    /// This type of `CoinManagement` allows minting and burning of coins.
+    public fun new_with_cap<T>(treasury_cap: TreasuryCap<T>): CoinManagement<T> {
         CoinManagement<T> {
-            has_capability: true,
-            treasury_cap: option::some<TreasuryCap<T>>(treasury_cap),
-            balance: option::none<Balance<T>>(),
-            distributor: option::none<address>(),
+            treasury_cap: option::some(treasury_cap),
+            balance: option::none(),
+            distributor: option::none(),
         }
     }
 
-    public fun lock_unlock<T>(): CoinManagement<T> {
+    /// Create a new `CoinManagement` with a `Balance`.
+    /// The stored `Balance` can be used to take and put coins.
+    public fun new_locked<T>(): CoinManagement<T> {
         CoinManagement<T> {
-            has_capability: false,
-            treasury_cap: option::none<TreasuryCap<T>>(),
-            balance: option::some<Balance<T>>(balance::zero<T>()),
-            distributor: option::none<address>(),
+            treasury_cap: option::none(),
+            balance: option::some(balance::zero()),
+            distributor: option::none(),
         }
     }
 
+    /// Adds the distributor address to the `CoinManagement`.
+    /// Only works for a `CoinManagement` with a `TreasuryCap`.
     public fun add_distributor<T>(self: &mut CoinManagement<T>, distributor: address) {
-        assert!(self.has_capability, EDistributorNeedsTreasuryCap);
+        assert!(has_capability(self), EDistributorNeedsTreasuryCap);
         option::fill(&mut self.distributor, distributor);
     }
 
-    public (friend) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
-        if(self.has_capability) {
+    // === Protected Methods ===
+
+    public(friend) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
+        if (has_capability(self)) {
             let cap = option::borrow_mut(&mut self.treasury_cap);
             coin::burn(cap, to_take);
         } else {
@@ -52,13 +60,17 @@ module interchain_token_service::coin_management {
         }
     }
 
-    public (friend) fun give_coin_to<T>(self: &mut CoinManagement<T>, to: address, amount: u64, ctx: &mut TxContext) {
-        let coin = give_coin<T>(self, amount, ctx);
-        transfer::public_transfer(coin, to);
+    /// TODO: consider redundant given the `give_coin` method.
+    public(friend) fun give_coin_to<T>(
+        self: &mut CoinManagement<T>, to: address, amount: u64, ctx: &mut TxContext
+    ) {
+        transfer::public_transfer(give_coin<T>(self, amount, ctx), to);
     }
 
-    public (friend) fun give_coin<T>(self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext) : Coin<T> {
-        if(self.has_capability) {
+    public(friend) fun give_coin<T>(
+        self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext
+    ) : Coin<T> {
+        if (has_capability(self)) {
             let cap = option::borrow_mut(&mut self.treasury_cap);
             coin::mint(cap, amount, ctx)
         } else {
@@ -67,11 +79,15 @@ module interchain_token_service::coin_management {
         }
     }
 
+    // === Views ===
+
+    /// Checks if the given address is a `distributor`.
     public fun is_distributor<T>(self: &CoinManagement<T>, distributor: address): bool {
         option::contains(&self.distributor, &distributor)
     }
 
+    /// Returns true if the coin management has a `TreasuryCap`.
     public fun has_capability<T>(self: &CoinManagement<T>): bool {
-        self.has_capability
+        option::is_some(&self.treasury_cap)
     }
 }
