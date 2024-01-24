@@ -1,14 +1,14 @@
 
 
 module interchain_token_service::token_id {
-    use std::ascii::{Self, String};
+    use std::ascii;
     use std::vector;
-    use std::string;
+    use std::string::String;
     use std::type_name;
     use std::option;
 
-    use sui::address::{Self};
-    use sui::hash::{keccak256};
+    use sui::hash::keccak256;
+    use sui::address;
     use sui::bcs;
 
     use interchain_token_service::coin_info::{Self, CoinInfo};
@@ -18,7 +18,6 @@ module interchain_token_service::token_id {
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
-    
 
     struct TokenId has store, copy, drop {
         id: address
@@ -29,17 +28,23 @@ module interchain_token_service::token_id {
     }
 
     public fun from_address(id: address): TokenId {
-        TokenId{ id }
+        TokenId { id }
     }
     public fun from_u256(id: u256): TokenId {
-        TokenId{ id: address::from_u256(id) }
+        TokenId { id: address::from_u256(id) }
     }
 
     public fun to_u256(token_id: &TokenId): u256 {
         address::to_u256(token_id.id)
     }
 
-    public fun from_info<T>(name: &string::String, symbol: &String, decimals: &u8, has_metadata: &bool, has_treasury: &bool): TokenId {
+    public fun from_info<T>(
+        name: &String,
+        symbol: &ascii::String,
+        decimals: &u8,
+        has_metadata: &bool,
+        has_treasury: &bool
+    ): TokenId {
         let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
         vector::append(&mut vec, bcs::to_bytes(&type_name::get<T>()));
         vector::append(&mut vec, bcs::to_bytes(name));
@@ -50,7 +55,9 @@ module interchain_token_service::token_id {
         TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
 
-    public (friend) fun from_coin_data<T>(coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>): TokenId {
+    public(friend) fun from_coin_data<T>(
+        coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>
+    ): TokenId {
         from_info<T>(
             &coin_info::name(coin_info),
             &coin_info::symbol(coin_info),
@@ -60,9 +67,11 @@ module interchain_token_service::token_id {
         )
     }
 
-    public fun unregistered_token_id(symbol: &String, decimals: &u8): UnregisteredTokenId {
-        let v = vector::singleton(*decimals);
-        vector::append<u8>(&mut v, *ascii::as_bytes(symbol));
+    public fun unregistered_token_id(
+        symbol: &ascii::String, decimals: u8
+    ): UnregisteredTokenId {
+        let v = vector[decimals];
+        vector::append(&mut v, *ascii::as_bytes(symbol));
         let id = address::from_bytes(keccak256(&v));
         UnregisteredTokenId { id }
     }
@@ -73,7 +82,11 @@ module interchain_token_service::token_id {
         use std::string;
         use interchain_token_service::coin_info;
 
-        let prefix = address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
+        let prefix = address::to_u256(
+            address::from_bytes(
+                keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))
+            )
+        );
         assert!(prefix == PREFIX_SUI_TOKEN_ID, 5);
 
         let name = string::utf8(b"Name");

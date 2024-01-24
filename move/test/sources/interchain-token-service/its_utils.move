@@ -30,21 +30,21 @@ module interchain_token_service::its_utils {
     public fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
         let symbolBytes = ascii::as_bytes(symbol);
         let moduleName = vector[];
-        
+
         let (i, length) = (0, vector::length(symbolBytes));
-        while(isNumber(*vector::borrow(symbolBytes, i))) {
+        while (isNumber(*vector::borrow(symbolBytes, i))) {
             i = i + 1;
         };
-        while( i < length) {
+        while (i < length) {
             let b = *vector::borrow(symbolBytes, i);
-            if( isLowercase(b) || isNumber(b) ) {
+            if (isLowercase(b) || isNumber(b) ) {
                 vector::push_back(&mut moduleName, b);
-            } else if( isUppercase(b) ) {
+            } else if (isUppercase(b) ) {
                 vector::push_back(&mut moduleName, b - UPPERCASE_START + LOWERCASE_START);
-            } else if(b == UNDERSCORE || b == SPACE) {
+            } else if (b == UNDERSCORE || b == SPACE) {
                 vector::push_back(&mut moduleName, UNDERSCORE);
             };
-            
+
             i = i + 1;
         };
         ascii::string(moduleName)
@@ -57,7 +57,7 @@ module interchain_token_service::its_utils {
     }
 
     public fun decode_metadata(metadata: vector<u8>): (u32, vector<u8>) {
-        if(vector::length(&metadata) < 4) {
+        if (vector::length(&metadata) < 4) {
             (0, vector::empty<u8>())
         } else {
             let i = 0;

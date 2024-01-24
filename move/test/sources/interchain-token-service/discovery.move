@@ -95,7 +95,7 @@ module interchain_token_service::discovery {
 
         let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
         let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
-        let type_name = storage::borrow_unregistered_coin_type(self, &symbol, &decimals);
+        let type_name = storage::borrow_unregistered_coin_type(self, &symbol, decimals);
 
         discovery::new_transaction(
             discovery::new_function(
