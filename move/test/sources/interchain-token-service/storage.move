@@ -6,9 +6,9 @@ module interchain_token_service::storage {
     use std::type_name::{Self, TypeName};
 
     use sui::transfer;
+    use sui::bag::{Self, Bag};
     use sui::object::{Self, UID};
-    use sui::tx_context::{TxContext};
-    use sui::dynamic_field as df;
+    use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
 
@@ -17,17 +17,19 @@ module interchain_token_service::storage {
     use interchain_token_service::token_id::{Self, TokenId, UnregisteredTokenId};
     use interchain_token_service::interchain_address_tracker::{Self, InterchainAddressTracker};
     use interchain_token_service::coin_info::{Self, CoinInfo};
-    use interchain_token_service::coin_management::{CoinManagement};
+    use interchain_token_service::coin_management::CoinManagement;
 
     friend interchain_token_service::service;
     friend interchain_token_service::discovery;
-    
+
+    /// Trying to read a token that doesn't exist.
+    const ENotFound: u64 = 0;
+
     struct CoinData<phantom T> has store {
         coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
     }
-    
-    #[lint_allow(coin_field)]
+
     struct UnregisteredCoinData<phantom T> has store {
         treasury_cap: TreasuryCap<T>,
         coin_metadata: CoinMetadata<T>,
@@ -38,133 +40,56 @@ module interchain_token_service::storage {
         channel: Channel,
 
         address_tracker: InterchainAddressTracker,
-        
+
         unregistered_coin_types: Table<UnregisteredTokenId, TypeName>,
-        unregistered_coin_info: UID,
+        unregistered_coin_info: Bag,
 
         registered_coin_types: Table<TokenId, TypeName>,
-        registered_coins: UID,
+        registered_coins: Bag,
     }
+
     #[lint_allow(share_owned)]
     fun init(ctx: &mut TxContext) {
-        let its = get_singleton_its(ctx);
-        transfer::share_object(its);
+        transfer::share_object(get_singleton_its(ctx));
     }
 
-    public (friend) fun get_singleton_its(ctx: &mut TxContext) : (ITS) {
-        let self = ITS {
-            id: object::new(ctx),
-            channel: channel::create_channel(ctx),
-
-            address_tracker: interchain_address_tracker::new(ctx),
-
-            registered_coins: object::new(ctx),
-            registered_coin_types: table::new<TokenId, TypeName>(ctx),
-
-            unregistered_coin_info: object::new(ctx),
-            unregistered_coin_types: table::new<UnregisteredTokenId, TypeName>(ctx),
-        };
-        self
+    // Some capability should be required to only allow for admin access here.
+    // TODO: double check on mutable access - friend only?
+    public fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+        interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
-    public fun borrow_unregistered_coin_type(self: &ITS, symbol: &String, decimals: &u8): &TypeName {
-        table::borrow(&self.unregistered_coin_types, token_id::unregistered_token_id(symbol, decimals))
-    }
+    public fun borrow_unregistered_coin_type(
+        self: &ITS, symbol: &String, decimals: u8
+    ): &TypeName {
+        let key = token_id::unregistered_token_id(symbol, decimals);
 
-    fun add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {
-        table::add(&mut self.unregistered_coin_types, token_id, type_name);
-    }
-
-    fun remove_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId) : TypeName {
-        table::remove(&mut self.unregistered_coin_types, token_id)
+        assert!(table::contains(&self.unregistered_coin_types, key), ENotFound);
+        table::borrow(&self.unregistered_coin_types, key)
     }
 
     public fun borrow_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
         table::borrow(&self.registered_coin_types, token_id)
     }
 
-    fun add_registered_coin_type(self: &mut ITS, token_id: TokenId, type_name: TypeName) {
-        table::add(&mut self.registered_coin_types, token_id, type_name);
-    }
-
-    #[allow(unused_function)]
-    fun remove_registered_coin_type(self: &mut ITS, token_id: TokenId) : TypeName {
-        table::remove(&mut self.registered_coin_types, token_id)
-    }
-
-    public (friend) fun add_unregistered_coin<T>(self: &mut ITS, token_id: UnregisteredTokenId, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
-        df::add<UnregisteredTokenId, UnregisteredCoinData<T>>(&mut self.unregistered_coin_info, token_id, UnregisteredCoinData<T> {
-            treasury_cap,
-            coin_metadata,
-        });
-        let type_name = type_name::get<T>();
-        add_unregistered_coin_type(self, token_id, type_name);
-    }
-
-    public (friend) fun remove_unregistered_coin<T>(self: &mut ITS, token_id: UnregisteredTokenId): (TreasuryCap<T>, CoinMetadata<T>) {
-        let UnregisteredCoinData<T> { treasury_cap, coin_metadata } = df::remove<UnregisteredTokenId, UnregisteredCoinData<T>>(&mut self.unregistered_coin_info, token_id);
-        remove_unregistered_coin_type(self, token_id);
-        (treasury_cap, coin_metadata)
-    }
-
-    public (friend) fun add_registered_coin<T>(
-        self: &mut ITS, 
-        token_id: TokenId, 
-        coin_management: CoinManagement<T>, 
-        coin_info: CoinInfo<T>,
-    ) {
-        df::add<TokenId, CoinData<T>>(&mut self.registered_coins, token_id, CoinData<T> {
-            coin_management,
-            coin_info,
-        });
-        let type_name = type_name::get<T>();
-        add_registered_coin_type(self, token_id, type_name);
-    }
-
     public fun borrow_coin_data<T>(self: &ITS, token_id: TokenId) : &CoinData<T> {
-        df::borrow<TokenId, CoinData<T>>(&self.registered_coins, token_id)
-    }
-
-    public (friend) fun borrow_mut_coin_data<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
-        df::borrow_mut<TokenId, CoinData<T>>(&mut self.registered_coins, token_id)
+        bag::borrow(&self.registered_coins, token_id)
     }
 
     public fun borrow_coin_info<T>(self: &ITS, token_id: TokenId) : &CoinInfo<T> {
-        let registered_coin = borrow_coin_data<T>(self, token_id);
-        &registered_coin.coin_info
-    }
-
-    public (friend) fun borrow_mut_coin_management<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
-        let registered_coin = borrow_mut_coin_data<T>(self, token_id);
-        &mut registered_coin.coin_management
+        &borrow_coin_data<T>(self, token_id).coin_info
     }
 
     public fun token_name<T>(self: &ITS, token_id: TokenId) : string::String {
-        let coin_info = borrow_coin_info<T>(self, token_id);
-        coin_info::name<T>(coin_info)
+        coin_info::name<T>(borrow_coin_info<T>(self, token_id))
     }
 
     public fun token_symbol<T>(self: &ITS, token_id: TokenId) : String {
-        let coin_info = borrow_coin_info<T>(self, token_id);
-        coin_info::symbol<T>(coin_info)
+        coin_info::symbol<T>(borrow_coin_info<T>(self, token_id))
     }
 
     public fun token_decimals<T>(self: &ITS, token_id: TokenId) : u8 {
-        let coin_info = borrow_coin_info<T>(self, token_id);
-        coin_info::decimals<T>(coin_info)
-    }
-
-    public (friend) fun borrow_channel(self: &ITS): &Channel {
-        &self.channel
-    }
-
-    public (friend) fun borrow_mut_channel(self: &mut ITS): &mut Channel {
-        &mut self.channel
-    }
-
-    // Some capability should be required to only allow for admin access here.
-    public fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
+        coin_info::decimals<T>(borrow_coin_info<T>(self, token_id))
     }
 
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
@@ -173,5 +98,104 @@ module interchain_token_service::storage {
 
     public fun is_trusted_address(self: &ITS, source_chain: String, source_address: String): bool {
         &source_address == interchain_address_tracker::borrow_trusted_address(&self.address_tracker, source_chain)
+    }
+
+    // === Friend-only ===
+
+    public(friend) fun get_singleton_its(ctx: &mut TxContext): ITS {
+        ITS {
+            id: object::new(ctx),
+            channel: channel::create_channel(ctx),
+
+            address_tracker: interchain_address_tracker::new(ctx),
+
+            registered_coins: bag::new(ctx),
+            registered_coin_types: table::new(ctx),
+
+            unregistered_coin_info: bag::new(ctx),
+            unregistered_coin_types: table::new(ctx),
+        }
+    }
+
+    public(friend) fun borrow_channel(self: &ITS): &Channel {
+        &self.channel
+    }
+
+    public(friend) fun borrow_mut_channel(self: &mut ITS): &mut Channel {
+        &mut self.channel
+    }
+
+    public(friend) fun borrow_mut_coin_management<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
+        &mut borrow_mut_coin_data<T>(self, token_id).coin_management
+    }
+
+    public(friend) fun borrow_mut_coin_data<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
+        bag::borrow_mut(&mut self.registered_coins, token_id)
+    }
+
+    public(friend) fun add_unregistered_coin<T>(
+        self: &mut ITS,
+        token_id: UnregisteredTokenId,
+        treasury_cap: TreasuryCap<T>,
+        coin_metadata: CoinMetadata<T>
+    ) {
+        bag::add(
+            &mut self.unregistered_coin_info,
+            token_id,
+            UnregisteredCoinData<T> {
+                treasury_cap,
+                coin_metadata,
+            }
+        );
+
+        let type_name = type_name::get<T>();
+        add_unregistered_coin_type(self, token_id, type_name);
+    }
+
+    public(friend) fun remove_unregistered_coin<T>(
+        self: &mut ITS, token_id: UnregisteredTokenId
+    ): (TreasuryCap<T>, CoinMetadata<T>) {
+        let UnregisteredCoinData<T> {
+            treasury_cap,
+            coin_metadata
+        } = bag::remove(&mut self.unregistered_coin_info, token_id);
+
+        remove_unregistered_coin_type(self, token_id);
+
+        (treasury_cap, coin_metadata)
+    }
+
+    public(friend) fun add_registered_coin<T>(
+        self: &mut ITS,
+        token_id: TokenId,
+        coin_management: CoinManagement<T>,
+        coin_info: CoinInfo<T>,
+    ) {
+        bag::add(&mut self.registered_coins, token_id, CoinData<T> {
+            coin_management,
+            coin_info,
+        });
+
+        let type_name = type_name::get<T>();
+        add_registered_coin_type(self, token_id, type_name);
+    }
+
+    // === Private ===
+
+    fun add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {
+        table::add(&mut self.unregistered_coin_types, token_id, type_name);
+    }
+
+    fun remove_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId): TypeName {
+        table::remove(&mut self.unregistered_coin_types, token_id)
+    }
+
+    fun add_registered_coin_type(self: &mut ITS, token_id: TokenId, type_name: TypeName) {
+        table::add(&mut self.registered_coin_types, token_id, type_name);
+    }
+
+    #[allow(unused_function)]
+    fun remove_registered_coin_type(self: &mut ITS, token_id: TokenId): TypeName {
+        table::remove(&mut self.registered_coin_types, token_id)
     }
 }
