@@ -1,6 +1,6 @@
 
 
-module interchain_token_service::its_utils {
+module its::utils {
     use std::ascii;
     use std::vector;
 
@@ -77,7 +77,7 @@ module interchain_token_service::its_utils {
     }
 }
 
-module interchain_token_service::thecool1234coin___ {
+module its::thecool1234coin___ {
     use sui::tx_context::{Self, TxContext};
     use sui::coin;
     use std::option;

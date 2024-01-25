@@ -1,6 +1,6 @@
 
 
-module interchain_token_service::storage {
+module its::storage {
     use std::string;
     use std::ascii::{String};
     use std::type_name::{Self, TypeName};
@@ -14,13 +14,13 @@ module interchain_token_service::storage {
 
     use axelar::channel::{Self, Channel};
 
-    use interchain_token_service::token_id::{Self, TokenId, UnregisteredTokenId};
-    use interchain_token_service::interchain_address_tracker::{Self, InterchainAddressTracker};
-    use interchain_token_service::coin_info::{Self, CoinInfo};
-    use interchain_token_service::coin_management::CoinManagement;
+    use its::token_id::{Self, TokenId, UnregisteredTokenId};
+    use its::interchain_address_tracker::{Self, InterchainAddressTracker};
+    use its::coin_info::{Self, CoinInfo};
+    use its::coin_management::CoinManagement;
 
-    friend interchain_token_service::service;
-    friend interchain_token_service::discovery;
+    friend its::service;
+    friend its::discovery;
 
     /// Trying to read a token that doesn't exist.
     const ENotFound: u64 = 0;
@@ -50,7 +50,18 @@ module interchain_token_service::storage {
 
     #[lint_allow(share_owned)]
     fun init(ctx: &mut TxContext) {
-        transfer::share_object(get_singleton_its(ctx));
+        transfer::share_object(ITS {
+            id: object::new(ctx),
+            channel: channel::create_channel(ctx),
+
+            address_tracker: interchain_address_tracker::new(ctx),
+
+            registered_coins: bag::new(ctx),
+            registered_coin_types: table::new(ctx),
+
+            unregistered_coin_info: bag::new(ctx),
+            unregistered_coin_types: table::new(ctx),
+        });
     }
 
     // Some capability should be required to only allow for admin access here.
@@ -93,43 +104,27 @@ module interchain_token_service::storage {
     }
 
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
-        *interchain_address_tracker::borrow_trusted_address(&self.address_tracker, chain_name)
+        *interchain_address_tracker::get_trusted_address(&self.address_tracker, chain_name)
     }
 
     public fun is_trusted_address(self: &ITS, source_chain: String, source_address: String): bool {
-        &source_address == interchain_address_tracker::borrow_trusted_address(&self.address_tracker, source_chain)
+        interchain_address_tracker::is_trusted_address(&self.address_tracker, source_chain, source_address)
     }
 
     // === Friend-only ===
-
-    public(friend) fun get_singleton_its(ctx: &mut TxContext): ITS {
-        ITS {
-            id: object::new(ctx),
-            channel: channel::create_channel(ctx),
-
-            address_tracker: interchain_address_tracker::new(ctx),
-
-            registered_coins: bag::new(ctx),
-            registered_coin_types: table::new(ctx),
-
-            unregistered_coin_info: bag::new(ctx),
-            unregistered_coin_types: table::new(ctx),
-        }
-    }
-
-    public(friend) fun borrow_channel(self: &ITS): &Channel {
+    public(friend) fun channel(self: &ITS): &Channel {
         &self.channel
     }
 
-    public(friend) fun borrow_mut_channel(self: &mut ITS): &mut Channel {
+    public(friend) fun channel_mut(self: &mut ITS): &mut Channel {
         &mut self.channel
     }
 
-    public(friend) fun borrow_mut_coin_management<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
-        &mut borrow_mut_coin_data<T>(self, token_id).coin_management
+    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
+        &mut coin_data_mut<T>(self, token_id).coin_management
     }
 
-    public(friend) fun borrow_mut_coin_data<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
+    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
         bag::borrow_mut(&mut self.registered_coins, token_id)
     }
 

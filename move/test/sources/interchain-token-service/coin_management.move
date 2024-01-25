@@ -1,14 +1,13 @@
 
 
-module interchain_token_service::coin_management {
+module its::coin_management {
     use std::option::{Self, Option};
 
     use sui::coin::{Self, TreasuryCap, Coin};
     use sui::balance::{Self, Balance};
-    use sui::transfer;
     use sui::tx_context::TxContext;
 
-    friend interchain_token_service::service;
+    friend its::service;
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
@@ -50,6 +49,7 @@ module interchain_token_service::coin_management {
 
     // === Protected Methods ===
 
+    /// Takes the given amount of Coins from user.
     public(friend) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
         if (has_capability(self)) {
             let cap = option::borrow_mut(&mut self.treasury_cap);
@@ -60,16 +60,10 @@ module interchain_token_service::coin_management {
         }
     }
 
-    /// TODO: consider redundant given the `give_coin` method.
-    public(friend) fun give_coin_to<T>(
-        self: &mut CoinManagement<T>, to: address, amount: u64, ctx: &mut TxContext
-    ) {
-        transfer::public_transfer(give_coin<T>(self, amount, ctx), to);
-    }
-
+    /// Withdraws or mints the given amount of coins.
     public(friend) fun give_coin<T>(
         self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext
-    ) : Coin<T> {
+    ): Coin<T> {
         if (has_capability(self)) {
             let cap = option::borrow_mut(&mut self.treasury_cap);
             coin::mint(cap, amount, ctx)

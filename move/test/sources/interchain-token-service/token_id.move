@@ -1,6 +1,6 @@
 
 
-module interchain_token_service::token_id {
+module its::token_id {
     use std::ascii;
     use std::vector;
     use std::string::String;
@@ -11,10 +11,10 @@ module interchain_token_service::token_id {
     use sui::address;
     use sui::bcs;
 
-    use interchain_token_service::coin_info::{Self, CoinInfo};
-    use interchain_token_service::coin_management::{Self, CoinManagement};
+    use its::coin_info::{Self, CoinInfo};
+    use its::coin_management::{Self, CoinManagement};
 
-    friend interchain_token_service::service;
+    friend its::service;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
@@ -80,7 +80,7 @@ module interchain_token_service::token_id {
     fun test() {
         use std::debug;
         use std::string;
-        use interchain_token_service::coin_info;
+        use its::coin_info;
 
         let prefix = address::to_u256(
             address::from_bytes(
