@@ -1,4 +1,8 @@
-module interchain_token_service::coin_info {
+
+
+/// Defines the `CoinInfo` type which allows to store information about a coin:
+/// either derived from `CoinMetadata` or manually provided.
+module its::coin_info {
     use std::ascii;
     use std::string::String;
     use std::option::{Self, Option};
@@ -20,7 +24,7 @@ module interchain_token_service::coin_info {
             name,
             symbol,
             decimals,
-            metadata: option::none<CoinMetadata<T>>(),
+            metadata: option::none(),
         }
     }
 
@@ -30,7 +34,7 @@ module interchain_token_service::coin_info {
             name: coin::get_name(&metadata),
             symbol: coin::get_symbol(&metadata),
             decimals: coin::get_decimals(&metadata),
-            metadata: option::some<CoinMetadata<T>>(metadata),
+            metadata: option::some(metadata),
         }
     }
 

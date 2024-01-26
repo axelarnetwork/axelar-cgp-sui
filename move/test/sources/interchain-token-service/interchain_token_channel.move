@@ -1,21 +1,20 @@
 
 
-
-module interchain_token_service::interchain_token_channel {
+/// Todo: consider nuking?
+module its::interchain_token_channel {
     use sui::object::{Self, UID};
-    use sui::tx_context::{TxContext};
-    
-    struct TokenChannel has store {
-        id: UID,
+    use sui::tx_context::{Self, TxContext};
+
+    /// Identifies a token channel.
+    struct TokenChannel has store, drop {
+        id: address,
     }
 
+    /// Creates a new token channel.
     public fun new(ctx: &mut TxContext): TokenChannel {
-        TokenChannel {
-            id: object::new(ctx),
-        }
+        TokenChannel { id: tx_context::fresh_object_address(ctx) }
     }
 
-    public fun to_address(token_channel: &TokenChannel): address {
-        object::uid_to_address(&token_channel.id)
-    }
+    /// Returns the address of the token channel.
+    public fun to_address(self: &TokenChannel): address { self.id }
 }

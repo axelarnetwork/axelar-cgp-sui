@@ -1,6 +1,6 @@
 
 
-module interchain_token_service::discovery {
+module its::discovery {
     use std::ascii;
     use std::type_name;
     use std::vector;
@@ -13,8 +13,8 @@ module interchain_token_service::discovery {
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
     use axelar::utils;
 
-    use interchain_token_service::storage::{Self, ITS};
-    use interchain_token_service::token_id;
+    use its::storage::{Self, ITS};
+    use its::token_id;
 
     const EUnsupportedMessageType: u64 = 0;
 
@@ -41,7 +41,7 @@ module interchain_token_service::discovery {
             vector[],
         );
 
-        discovery::register_transaction(discovery, storage::borrow_channel(self), tx);
+        discovery::register_transaction(discovery, storage::channel(self), tx);
     }
 
     public fun get_call_info(self: &ITS, payload: &vector<u8>): Transaction {
