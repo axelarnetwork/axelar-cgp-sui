@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[allow(implicit_const_copy)]
 /// Implementation a cross-chain messaging system for Axelar.
 ///
 /// This code is based on the following:
@@ -38,7 +39,7 @@ module axelar::gateway {
 
     use axelar::utils::to_sui_signed;
     use axelar::channel::{Self, Channel, ApprovedCall};
-    use axelar::validators::{Self, AxelarValidators, validate_proof};
+    use axelar::validators::{AxelarValidators, validate_proof};
 
     /// For when approval signatures failed verification.
     // const ESignatureInvalid: u64 = 1;
@@ -54,7 +55,7 @@ module axelar::gateway {
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
 
     /// Emitted when a new message is sent from the SUI network.
-    struct ContractCall has copy, drop {
+    public struct ContractCall has copy, drop {
         source_id: address,
         destination_chain: String,
         destination_address: String,
@@ -62,7 +63,7 @@ module axelar::gateway {
         payload_hash: address,
     }
 
-    struct ContractCallApproved has copy, drop {
+    public struct ContractCallApproved has copy, drop {
         cmd_id: address,
         source_chain: String,
         source_address: String,
@@ -79,35 +80,37 @@ module axelar::gateway {
     /// supported by the current implementation of the protocol.
     ///
     /// Input data must be serialized with BCS (see specification here: https://github.com/diem/bcs).
-    public entry fun process_commands(
+    entry fun process_commands(
         validators: &mut AxelarValidators,
         input: vector<u8>
     ) {
-        let bytes = bcs::new(input);
+        let mut bytes = bcs::new(input);
         // Split input into:
         // data: vector<u8> (BCS bytes)
         // proof: vector<u8> (BCS bytes)
         let (data, proof) = (
-            bcs::peel_vec_u8(&mut bytes),
-            bcs::peel_vec_u8(&mut bytes)
+            bytes.peel_vec_u8(),
+            bytes.peel_vec_u8()
         );
-        let allow_operatorship_transfer = validate_proof(validators, to_sui_signed(*&data), proof);
+
+        let mut allow_operatorship_transfer = validate_proof(validators, to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
-        let data_bcs = bcs::new(data);
+        let mut data_bcs = bcs::new(data);
 
         // Split data into:
         // chain_id: u64,
         // command_ids: vector<vector<u8>> (vector<string>)
         // commands: vector<vector<u8>> (vector<string>)
         // params: vector<vector<u8>> (vector<byteArray>)
-        let chain_id = bcs::peel_u64(&mut data_bcs);
-        let command_ids =bcs::peel_vec_address(&mut data_bcs);
-        let commands = bcs::peel_vec_vec_u8(&mut data_bcs);
-        let params = bcs::peel_vec_vec_u8(&mut data_bcs);
+        let chain_id = data_bcs.peel_u64();
+        let command_ids = data_bcs.peel_vec_address();
+        let commands = data_bcs.peel_vec_vec_u8();
+        let params = data_bcs.peel_vec_vec_u8();
+
         assert!(chain_id == 1, EInvalidChain);
 
-        let (i, commands_len) = (0, vector::length(&commands));
+        let (mut i, commands_len) = (0, vector::length(&commands));
 
         // make sure number of commands passed matches command IDs
         assert!(vector::length(&command_ids) == commands_len, EInvalidCommands);
@@ -123,17 +126,19 @@ module axelar::gateway {
             // Build a `CallApproval` object from the `params[i]`. BCS serializes data
             // in order, so field reads have to be done carefully and in order!
             if (cmd_selector == &SELECTOR_APPROVE_CONTRACT_CALL) {
-                let payload = bcs::new(payload);
-                let ( source_chain, source_address, target_id, payload_hash ) = (
-                    ascii::string(bcs::peel_vec_u8(&mut payload)),
-                    ascii::string(bcs::peel_vec_u8(&mut payload)),
-                    bcs::peel_address(&mut payload),
-                    bcs::peel_address(&mut payload)
+                let mut payload = bcs::new(payload);
+                let (source_chain, source_address, target_id, payload_hash) = (
+                    ascii::string(payload.peel_vec_u8()),
+                    ascii::string(payload.peel_vec_u8()),
+                    payload.peel_address(),
+                    payload.peel_address()
                 );
-                validators::add_approval(validators,
+
+                validators.add_approval(
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 );
-                sui::event::emit( ContractCallApproved {
+
+                sui::event::emit(ContractCallApproved {
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 });
                 continue
@@ -142,7 +147,7 @@ module axelar::gateway {
                     continue
                 };
                 allow_operatorship_transfer = false;
-                validators::transfer_operatorship(validators, payload)
+                validators.transfer_operatorship(payload)
             } else {
                 continue
             };
@@ -159,8 +164,8 @@ module axelar::gateway {
         target_id: address,
         payload: vector<u8>
     ): ApprovedCall {
-        validators::take_approved_call(
-            axelar, cmd_id, source_chain, source_address, target_id, payload
+        axelar.take_approved_call(
+            cmd_id, source_chain, source_address, target_id, payload
         )
     }
 

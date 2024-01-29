@@ -48,7 +48,6 @@ module its::storage {
         registered_coins: Bag,
     }
 
-    #[lint_allow(share_owned)]
     fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
@@ -70,7 +69,7 @@ module its::storage {
         interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
-    public fun borrow_unregistered_coin_type(
+    public fun get_unregistered_coin_type(
         self: &ITS, symbol: &String, decimals: u8
     ): &TypeName {
         let key = token_id::unregistered_token_id(symbol, decimals);
@@ -79,28 +78,28 @@ module its::storage {
         table::borrow(&self.unregistered_coin_types, key)
     }
 
-    public fun borrow_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
+    public fun get_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
         table::borrow(&self.registered_coin_types, token_id)
     }
 
-    public fun borrow_coin_data<T>(self: &ITS, token_id: TokenId) : &CoinData<T> {
+    public fun get_coin_data<T>(self: &ITS, token_id: TokenId): &CoinData<T> {
         bag::borrow(&self.registered_coins, token_id)
     }
 
-    public fun borrow_coin_info<T>(self: &ITS, token_id: TokenId) : &CoinInfo<T> {
-        &borrow_coin_data<T>(self, token_id).coin_info
+    public fun get_coin_info<T>(self: &ITS, token_id: TokenId): &CoinInfo<T> {
+        &get_coin_data<T>(self, token_id).coin_info
     }
 
-    public fun token_name<T>(self: &ITS, token_id: TokenId) : string::String {
-        coin_info::name<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_name<T>(self: &ITS, token_id: TokenId): string::String {
+        coin_info::name<T>(get_coin_info<T>(self, token_id))
     }
 
-    public fun token_symbol<T>(self: &ITS, token_id: TokenId) : String {
-        coin_info::symbol<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_symbol<T>(self: &ITS, token_id: TokenId): String {
+        coin_info::symbol<T>(get_coin_info<T>(self, token_id))
     }
 
-    public fun token_decimals<T>(self: &ITS, token_id: TokenId) : u8 {
-        coin_info::decimals<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_decimals<T>(self: &ITS, token_id: TokenId): u8 {
+        coin_info::decimals<T>(get_coin_info<T>(self, token_id))
     }
 
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
@@ -120,11 +119,11 @@ module its::storage {
         &mut self.channel
     }
 
-    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
+    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         &mut coin_data_mut<T>(self, token_id).coin_management
     }
 
-    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
+    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
         bag::borrow_mut(&mut self.registered_coins, token_id)
     }
 

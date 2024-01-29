@@ -15,20 +15,21 @@ module axelar::discovery {
     use sui::tx_context::TxContext;
     use sui::object::{Self, ID, UID};
     use sui::bcs::{Self, BCS};
+    use sui::transfer;
 
     use axelar::channel::{source_id, Channel};
 
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the
     /// transactions when a message is targeted at specific channel.
-    struct RelayerDiscovery has key {
+    public struct RelayerDiscovery has key {
         id: UID,
         /// A map of channel IDs to the target that needs to be executed by the
         /// relayer. There can be only one configuration per channel.
         configurations: Table<ID, Transaction>,
     }
 
-    struct Function has store, copy, drop {
+    public struct Function has store, copy, drop {
         package_id: address,
         module_name: String,
         name: String,
@@ -39,14 +40,14 @@ module axelar::discovery {
     /// - 1 for pures followed by the bcs encoded form of the pure
     /// - 2 for the call contract objects, followed by nothing (to be passed into the target function)
     /// - 3 for the payload of the contract call (to be passed into the intermediate function)
-    struct Transaction has store, copy, drop {
+    public struct Transaction has store, copy, drop {
         function: Function,
         arguments: vector<vector<u8>>,
         type_arguments: vector<String>,
     }
 
     fun init(ctx: &mut TxContext) {
-        sui::transfer::share_object(RelayerDiscovery {
+        transfer::share_object(RelayerDiscovery {
             id: object::new(ctx),
             configurations: table::new(ctx),
         });
@@ -73,10 +74,10 @@ module axelar::discovery {
         tx: Transaction,
     ) {
         let channel_id = source_id(channel);
-        if(table::contains(&self.configurations, channel_id)) {
-            table::remove(&mut self.configurations, channel_id);
+        if (self.configurations.contains(channel_id)) {
+            self.configurations.remove(channel_id);
         };
-        table::add(&mut self.configurations, channel_id, tx);
+        self.configurations.add(channel_id, tx);
     }
 
     public fun get_transaction(
@@ -84,10 +85,12 @@ module axelar::discovery {
         channel_id: ID,
     ): Transaction {
         assert!(table::contains(&self.configurations, channel_id), 0);
-        *table::borrow(&self.configurations, channel_id)
+        *self.configurations.borrow(channel_id)
     }
 
-    public fun new_function(package_id: address, module_name: String, name: String) : Function {
+    public fun new_function(
+        package_id: address, module_name: String, name: String
+    ): Function {
         Function {
             package_id,
             module_name,
@@ -113,15 +116,17 @@ module axelar::discovery {
 
     public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
         let function = new_function_from_bcs(bcs);
-        let arguments = bcs::peel_vec_vec_u8(bcs);
-        let length = bcs::peel_vec_length(bcs);
-        let type_arguments = vector::empty<String>();
-        let i = 0;
-        while(i < length) {
-            let type_argument = ascii::string(bcs::peel_vec_u8(bcs));
+        let arguments = bcs.peel_vec_vec_u8();
+        let length = bcs.peel_vec_length();
+        let mut type_arguments = vector[];
+        let mut i = 0;
+
+        while (i < length) {
+            let type_argument = ascii::string(bcs.peel_vec_u8());
             vector::push_back(&mut type_arguments, type_argument);
             i = i + 1;
         };
+
         Transaction {
             function,
             arguments,

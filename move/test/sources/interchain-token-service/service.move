@@ -52,7 +52,7 @@ module its::service {
     }
 
     public fun deploy_remote_interchain_token<T>(self: &mut ITS, token_id: TokenId, destination_chain: String) {
-        let coin_info = storage::borrow_coin_info<T>(self, token_id);
+        let coin_info = storage::get_coin_info<T>(self, token_id);
         let name = coin_info::name(coin_info);
         let symbol = coin_info::symbol(coin_info);
         let decimals = coin_info::decimals(coin_info);
