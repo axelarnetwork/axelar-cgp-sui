@@ -90,7 +90,7 @@ module axelar::utils {
         let len = (abi_decode_fixed(v, start / 32) as u64);
         let mut var = vector::empty();
         let mut i = 0;
-        while(i < len) {
+        while (i < len) {
             vector::push_back(&mut var, *vector::borrow(v, i + start + 32));
             i = i + 1;
         };

@@ -91,7 +91,7 @@ module axelar::channel {
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel(ctx: &mut TxContext): Channel {
+    public fun new(ctx: &mut TxContext): Channel {
         let id = object::new(ctx);
         event::emit(ChannelCreated { id: id.uid_to_address() });
 
@@ -103,7 +103,7 @@ module axelar::channel {
 
     /// Destroy a `Channen` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
-    public fun destroy_channel(self: Channel) {
+    public fun destroy(self: Channel) {
         let Channel { id, processed_call_approvals } = self;
 
         processed_call_approvals.drop();

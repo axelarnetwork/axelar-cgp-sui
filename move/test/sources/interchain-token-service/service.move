@@ -2,19 +2,18 @@ module its::service {
     use std::string;
     use std::ascii::{Self, String};
     use std::vector;
-    use std::option;
     use std::type_name;
 
-    use sui::tx_context::{Self, TxContext};
+    use sui::tx_context::TxContext;
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::transfer;
     use sui::address;
     use sui::event;
 
     use axelar::utils;
-    use axelar::channel::{Self, ApprovedCall};
+    use axelar::channel::ApprovedCall;
 
-    use its::storage::{Self, ITS};
+    use its::storage::ITS;
     use its::coin_info::{Self, CoinInfo};
     use its::token_id::{Self, TokenId};
     use its::coin_management::{Self, CoinManagement};
@@ -37,33 +36,37 @@ module its::service {
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
 
-    struct CoinRegistered<phantom T> has copy, drop {
+    public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
     }
 
-    public fun register_coin<T>(self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>) {
+    public fun register_coin<T>(
+        self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>
+    ) {
         let token_id = token_id::from_coin_data(&coin_info, &coin_management);
 
-        storage::add_registered_coin(self, token_id, coin_management, coin_info);
+        self.add_registered_coin(token_id, coin_management, coin_info);
 
         event::emit(CoinRegistered<T> {
             token_id
         })
     }
 
-    public fun deploy_remote_interchain_token<T>(self: &mut ITS, token_id: TokenId, destination_chain: String) {
-        let coin_info = storage::get_coin_info<T>(self, token_id);
-        let name = coin_info::name(coin_info);
-        let symbol = coin_info::symbol(coin_info);
-        let decimals = coin_info::decimals(coin_info);
-        let payload = utils::abi_encode_start(6);
+    public fun deploy_remote_interchain_token<T>(
+        self: &mut ITS, token_id: TokenId, destination_chain: String
+    ) {
+        let coin_info = self.get_coin_info<T>(token_id);
+        let name = coin_info.name();
+        let symbol = coin_info.symbol();
+        let decimals = coin_info.decimals();
+        let mut payload = utils::abi_encode_start(6);
 
         utils::abi_encode_fixed(&mut payload, 0, MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN);
-        utils::abi_encode_fixed(&mut payload, 1, token_id::to_u256(&token_id));
+        utils::abi_encode_fixed(&mut payload, 1, token_id.to_u256());
         utils::abi_encode_variable(&mut payload, 2, *string::bytes(&name));
         utils::abi_encode_variable(&mut payload, 3, *ascii::as_bytes(&symbol));
-        utils::abi_encode_fixed(&mut payload, 4,(decimals as u256));
-        utils::abi_encode_variable(&mut payload, 5, vector::empty<u8>());
+        utils::abi_encode_fixed(&mut payload, 4, (decimals as u256));
+        utils::abi_encode_variable(&mut payload, 5, vector::empty());
 
         send_payload(self, destination_chain, payload);
     }
@@ -79,16 +82,17 @@ module its::service {
     ) {
         let amount = (coin::value<T>(&coin) as u256);
         let (_version, data) = its_utils::decode_metadata(metadata);
-        let payload = utils::abi_encode_start(6);
+        let mut payload = utils::abi_encode_start(6);
 
         utils::abi_encode_fixed(&mut payload, 0, MESSAGE_TYPE_INTERCHAIN_TRANSFER);
-        utils::abi_encode_fixed(&mut payload, 1, token_id::to_u256(&token_id));
-        utils::abi_encode_variable(&mut payload, 2, address::to_bytes(tx_context::sender(ctx)));
+        utils::abi_encode_fixed(&mut payload, 1, token_id.to_u256());
+        utils::abi_encode_variable(&mut payload, 2, address::to_bytes(ctx.sender()));
         utils::abi_encode_variable(&mut payload, 3, destination_address);
         utils::abi_encode_fixed(&mut payload, 4, amount);
         utils::abi_encode_variable(&mut payload, 5, data);
 
-        coin_management::take_coin<T>(storage::coin_management_mut(self, token_id), coin);
+        self.coin_management_mut(token_id)
+            .take_coin(coin);
 
         send_payload(self, destination_chain, payload);
     }
@@ -103,18 +107,23 @@ module its::service {
         let destination_address = address::from_bytes(utils::abi_decode_variable(&payload, 3));
         let amount = (utils::abi_decode_fixed(&payload, 4) as u64);
 
-        let coin = coin_management::give_coin<T>(
-            storage::coin_management_mut(self, token_id), amount, ctx
-        );
+        let coin = self
+            .coin_management_mut(token_id)
+            .give_coin<T>(amount, ctx);
 
         transfer::public_transfer(coin, destination_address)
     }
 
-    public fun receive_interchain_transfer_with_data<T>(self: &mut ITS, approved_call: ApprovedCall, token_channel: &TokenChannel, ctx: &mut TxContext): (String, vector<u8>, vector<u8>, Coin<T>) {
+    public fun receive_interchain_transfer_with_data<T>(
+        self: &mut ITS,
+        approved_call: ApprovedCall,
+        token_channel: &TokenChannel,
+        ctx: &mut TxContext
+    ): (String, vector<u8>, vector<u8>, Coin<T>) {
         let (source_chain, payload) = decode_approved_call(self, approved_call);
 
         assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(address::from_bytes(utils::abi_decode_variable(&payload, 3)) == interchain_token_channel::to_address(token_channel), EWrongDestination);
+        assert!(address::from_bytes(utils::abi_decode_variable(&payload, 3)) == token_channel.to_address(), EWrongDestination);
 
         let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
         let source_address = utils::abi_decode_variable(&payload, 2);
@@ -123,50 +132,62 @@ module its::service {
 
         assert!(!vector::is_empty(&data), EInterchainTransferHasNoData);
 
-        (source_chain, source_address, data, coin_management::give_coin<T>(storage::coin_management_mut(self, token_id), amount, ctx))
+        let coin = self
+            .coin_management_mut(token_id)
+            .give_coin(amount, ctx);
+
+        (
+            source_chain,
+            source_address,
+            data,
+            coin,
+        )
     }
 
     public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_call: ApprovedCall) {
         let (_, payload) = decode_approved_call(self, approved_call);
 
         assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
+
         let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
         let name = string::utf8(utils::abi_decode_variable(&payload, 2));
         let symbol = ascii::string(utils::abi_decode_variable(&payload, 3));
         let decimals = (utils::abi_decode_fixed(&payload, 4) as u8);
         let distributor = address::from_bytes(utils::abi_decode_variable(&payload, 5));
 
-        let (treasury_cap, coin_metadata) = storage::remove_unregistered_coin<T>(
-            self, token_id::unregistered_token_id(&symbol, decimals)
+        let (treasury_cap, mut coin_metadata) = self.remove_unregistered_coin<T>(
+            token_id::unregistered_token_id(&symbol, decimals)
         );
 
-        coin::update_name(&treasury_cap, &mut coin_metadata, name);
+        treasury_cap.update_name(&mut coin_metadata, name);
         //coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
 
-        let coin_management = coin_management::new_with_cap<T>(treasury_cap);
+        let mut coin_management = coin_management::new_with_cap<T>(treasury_cap);
         let coin_info = coin_info::from_metadata<T>(coin_metadata);
 
-        coin_management::add_distributor(&mut coin_management, distributor);
+        coin_management.add_distributor(distributor);
 
-        storage::add_registered_coin<T>(self, token_id, coin_management, coin_info);
+        self.add_registered_coin<T>(token_id, coin_management, coin_info);
     }
 
     // We need an coin with zero supply that has the proper decimals and typing, and no Url.
-    public fun give_unregistered_coin<T>(self: &mut ITS, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
-        assert!(coin::total_supply(&treasury_cap) == 0, ENonZeroTotalSupply);
-        assert!(option::is_none(&coin::get_icon_url(&coin_metadata)), EUnregisteredCoinHasUrl);
+    public fun give_unregistered_coin<T>(
+        self: &mut ITS, treasury_cap: TreasuryCap<T>, mut coin_metadata: CoinMetadata<T>
+    ) {
+        assert!(treasury_cap.total_supply() == 0, ENonZeroTotalSupply);
+        assert!(coin::get_icon_url(&coin_metadata).is_none(), EUnregisteredCoinHasUrl);
 
-        coin::update_description(&treasury_cap, &mut coin_metadata, string::utf8(b""));
+        treasury_cap.update_description(&mut coin_metadata, string::utf8(b""));
 
-        let decimals = coin::get_decimals(&coin_metadata);
-        let symbol = coin::get_symbol(&coin_metadata);
+        let decimals = coin_metadata.get_decimals();
+        let symbol = coin_metadata.get_symbol();
 
         let module_name = type_name::get_module(&type_name::get<T>());
         assert!(&module_name == &its_utils::get_module_from_symbol(&symbol), EModuleNameDoesNotMatchSymbol);
 
         let token_id = token_id::unregistered_token_id(&symbol, decimals);
 
-        storage::add_unregistered_coin<T>(self, token_id, treasury_cap, coin_metadata);
+        self.add_unregistered_coin<T>(token_id, treasury_cap, coin_metadata);
     }
 
     public fun mint_as_distributor<T>(
@@ -177,10 +198,12 @@ module its::service {
         amount: u64,
         ctx: &mut TxContext
     ) {
-        let coin_management = storage::coin_management_mut<T>(self, token_id);
-        assert!(coin_management::is_distributor<T>(coin_management, interchain_token_channel::to_address(token_channel)), ENotDistributor);
+        let coin_management = self.coin_management_mut(token_id);
+        let distributor = token_channel.to_address();
 
-        let coin = coin_management::give_coin(coin_management, amount, ctx);
+        assert!(coin_management.is_distributor(distributor), ENotDistributor);
+
+        let coin = coin_management.give_coin(amount, ctx);
         transfer::public_transfer(coin, to)
     }
 
@@ -190,31 +213,32 @@ module its::service {
         token_id: TokenId,
         coin: Coin<T>
     ) {
-        let coin_management = storage::coin_management_mut<T>(self, token_id);
+        let coin_management = self.coin_management_mut<T>(token_id);
+        let distributor = token_channel.to_address();
 
-        assert!(coin_management::is_distributor<T>(
-            coin_management, interchain_token_channel::to_address(token_channel)
-        ), ENotDistributor);
+        assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 
-        coin_management::take_coin(coin_management, coin);
+        coin_management.take_coin(coin);
     }
 
     // === Internal functions ===
 
     /// Decode an approved call and check that the source chain is trusted.
     fun decode_approved_call(self: &mut ITS, approved_call: ApprovedCall): (String, vector<u8>) {
-        let (source_chain, source_address, payload) = channel::consume_approved_call(
-            storage::channel_mut(self), approved_call
-        );
+        let (
+            source_chain,
+            source_address,
+            payload
+        ) = self.channel_mut().consume_approved_call(approved_call);
 
-        assert!(storage::is_trusted_address(self, source_chain, source_address), EUntrustedAddress);
+        assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
 
         (source_chain, payload)
     }
 
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
     fun send_payload(self: &mut ITS, destination_chain: String, payload: vector<u8>) {
-        let destination_address = storage::get_trusted_address(self, destination_chain);
-        gateway::call_contract(storage::channel_mut(self), destination_chain, destination_address, payload);
+        let destination_address = self.get_trusted_address(destination_chain);
+        gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
 }

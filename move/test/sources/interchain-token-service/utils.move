@@ -29,9 +29,9 @@ module its::utils {
 
     public fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
         let symbolBytes = ascii::as_bytes(symbol);
-        let moduleName = vector[];
+        let mut moduleName = vector[];
 
-        let (i, length) = (0, vector::length(symbolBytes));
+        let (mut i, length) = (0, vector::length(symbolBytes));
         while (isNumber(*vector::borrow(symbolBytes, i))) {
             i = i + 1;
         };
@@ -51,21 +51,22 @@ module its::utils {
     }
 
     public fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
-        let v = vector::singleton(*decimals);
-        vector::append<u8>(&mut v, *ascii::as_bytes(symbol));
+        let mut v = vector[*decimals];
+        vector::append(&mut v, *ascii::as_bytes(symbol));
         address::from_bytes(keccak256(&v))
     }
 
-    public fun decode_metadata(metadata: vector<u8>): (u32, vector<u8>) {
+    public fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
         if (vector::length(&metadata) < 4) {
-            (0, vector::empty<u8>())
+            (0, vector[])
         } else {
-            let i = 0;
-            let version: u32 = 0;
+            let mut i = 0;
+            let mut version: u32 = 0;
             while (i < 4) {
                 version = (version << (8 as u8) as u32) + (vector::remove<u8>(&mut metadata, 0) as u32);
                 i = i + 1;
             };
+
             (version, metadata)
         }
     }
@@ -84,7 +85,7 @@ module its::thecool1234coin___ {
     use sui::url::{Url};
     use sui::transfer;
 
-    struct THECOOL1234COIN___ has drop{
+    public struct THECOOL1234COIN___ has drop{
 
     }
 

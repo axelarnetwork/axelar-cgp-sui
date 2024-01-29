@@ -106,7 +106,11 @@ module axelar::discovery {
         }
     }
 
-    public fun new_transaction(function: Function, arguments: vector<vector<u8>>, type_arguments: vector<String>) : Transaction {
+    public fun new_transaction(
+        function: Function,
+        arguments: vector<vector<u8>>,
+        type_arguments: vector<String>
+    ): Transaction {
         Transaction {
             function,
             arguments,

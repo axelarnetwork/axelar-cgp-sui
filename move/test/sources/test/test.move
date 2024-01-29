@@ -1,3 +1,4 @@
+#[test_only]
 module test::test {
     use std::ascii;
     use std::vector;
@@ -16,18 +17,18 @@ module test::test {
 
     use axelar::gateway;
 
-    struct Singleton has key {
+    public struct Singleton has key {
         id: UID,
         channel: Channel,
     }
 
-    struct Executed has copy, drop {
+    public struct Executed has copy, drop {
         data: vector<u8>,
     }
 
     fun init(ctx: &mut TxContext) {
         let singletonId = object::new(ctx);
-        let channel = channel::create_channel(ctx);
+        let channel = channel::new(ctx);
         transfer::share_object(Singleton {
             id: singletonId,
             channel,
