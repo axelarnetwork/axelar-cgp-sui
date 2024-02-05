@@ -19,6 +19,9 @@ module axelar::discovery {
 
     use axelar::channel::{source_id, Channel};
 
+    /// TypeArgument is not a valid string.
+    const EInvalidString: u64 = 0;
+
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the
     /// transactions when a message is targeted at specific channel.
@@ -126,8 +129,9 @@ module axelar::discovery {
         let mut i = 0;
 
         while (i < length) {
-            let type_argument = ascii::string(bcs.peel_vec_u8());
-            vector::push_back(&mut type_arguments, type_argument);
+            let mut type_argument = ascii::try_string(bcs.peel_vec_u8());
+            assert!(type_argument.is_some(), EInvalidString);
+            vector::push_back(&mut type_arguments, type_argument.extract());
             i = i + 1;
         };
 

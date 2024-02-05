@@ -205,7 +205,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let mut ctx = &mut sui::tx_context::dummy();
 
         // public keys of `operators`
         let epoch = 1;
@@ -214,28 +214,28 @@ module axelar::gateway {
         ];
 
         let mut epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let mut test = ts::begin(@0x0);
+        epoch_for_hash.insert(
+            operators_hash(&operators, &vector[100u128], 10u128),
+            epoch
+        );
 
         // create validators for testing
         let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
 
         process_commands(&mut validators, CALL_APPROVAL);
 
-        validators::remove_approval_for_test(&mut validators, @0x1);
-        validators::remove_approval_for_test(&mut validators, @0x2);
-        validators::drop_for_test(validators);
-        ts::end(test);
+        validators.remove_approval_for_test(@0x1);
+        validators.remove_approval_for_test(@0x2);
+        validators.drop_for_test();
     }
 
     #[test]
     fun test_transfer_operatorship() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let mut ctx = &mut sui::tx_context::dummy();
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[
@@ -243,20 +243,18 @@ module axelar::gateway {
         ];
 
         let mut epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let mut test = ts::begin(@0x0);
+        let operators_hash = operators_hash(&operators, &vector[100u128], 10u128);
+        epoch_for_hash.insert(operators_hash, epoch);
 
         // create validators for testing
         let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
         assert!(validators.epoch() == 2, 0);
 
         validators.drop_for_test();
-        ts::end(test);
     }
 }
