@@ -14,7 +14,7 @@ const packagePath = 'interchain_token';
 async function getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId) {
     const tx = new TransactionBlock();
     tx.moveCall({
-        target: `${itsPackageId}::storage::borrow_unregistered_coin_type`,
+        target: `${itsPackageId}::storage::get_unregistered_coin_type`,
         arguments: [
             tx.object(itsObjectId),
             tx.pure.string(symbol),
@@ -33,9 +33,9 @@ if (require.main === module) {
     const symbol = process.argv[2] || 'TT';
     const decimals = process.argv[3] || 6;
     const env = process.argv[4] || 'localnet';
-    
+
     (async () => {
-        const privKey = 
+        const privKey =
         Buffer.from(
             process.env.SUI_PRIVATE_KEY,
             "hex"

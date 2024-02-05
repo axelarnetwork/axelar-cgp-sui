@@ -26,7 +26,7 @@ async function sendInterchainToken(client, keypair, testInfo, tokenId, coin, des
     });
 
     tx.moveCall({
-        target: `${itsPackageId}::storage::borrow_registered_coin_type`,
+        target: `${itsPackageId}::storage::get_registered_coin_type`,
         arguments: [
             tx.object(itsObjectId),
             tokenIdObj,
@@ -40,7 +40,7 @@ async function sendInterchainToken(client, keypair, testInfo, tokenId, coin, des
     });
 
     const bcs = new BCS(getSuiMoveConfig());
-    
+
     const coinType = bcs.de('string', new Uint8Array(resp.results[1].returnValues[0][0]));
 
     tx = new TransactionBlock();
@@ -86,9 +86,9 @@ if (require.main === module) {
     const name = process.argv[6] || 'Test Token';
     const symbol = process.argv[7] || 'TT';
     const decimals = process.argv[8] || 6;
-    
+
     (async () => {
-        const privKey = 
+        const privKey =
         Buffer.from(
             process.env.SUI_PRIVATE_KEY,
             "hex"
@@ -113,7 +113,7 @@ if (require.main === module) {
 
         let resp = await client.getCoins({
             owner: keypair.getPublicKey().toSuiAddress(),
-            coinType: coinType, 
+            coinType: coinType,
         });
         coin = resp.data[0].coinObjectId;
 

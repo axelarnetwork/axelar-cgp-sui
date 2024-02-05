@@ -67,7 +67,7 @@ module its::discovery {
             ];
 
             let token_id = token_id::from_u256(utils::abi_decode_fixed(payload, 1));
-            let type_name = storage::borrow_registered_coin_type(self, token_id);
+            let type_name = storage::get_registered_coin_type(self, token_id);
 
             discovery::new_transaction(
                 discovery::new_function(
@@ -95,7 +95,7 @@ module its::discovery {
 
         let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
         let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
-        let type_name = storage::borrow_unregistered_coin_type(self, &symbol, decimals);
+        let type_name = storage::get_unregistered_coin_type(self, &symbol, decimals);
 
         discovery::new_transaction(
             discovery::new_function(

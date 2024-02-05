@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::validators {
-    
+
     use std::ascii::{Self, String};
     use std::vector;
 
@@ -38,12 +38,12 @@ module axelar::validators {
 
     /// An object holding the state of the Axelar bridge.
     /// The central piece in managing call approval creation and signature verification.
-    struct AxelarValidators has key {
+    public struct AxelarValidators has key {
         id: UID,
         approvals: Table<address, Approval>
     }
 
-    struct AxelarValidatorsV1 has store {
+    public struct AxelarValidatorsV1 has store {
         /// Epoch of the validators.
         epoch: u64,
         /// Epoch for the operators hash.
@@ -53,26 +53,28 @@ module axelar::validators {
     /// CallApproval struct which can consumed only by a `Channel` object.
     /// Does not require additional generic field to operate as linking
     /// by `id_bytes` is more than enough.
-    struct Approval has store {
+    public struct Approval has store {
         /// Hash of the cmd_id, target_id, source_chain, source_address, payload_hash
         approval_hash: vector<u8>,
     }
 
     /// Emitted when the operatorship changes.
-    struct OperatorshipTransferred has copy, drop {
+    public struct OperatorshipTransferred has copy, drop {
         epoch: u64,
         payload: vector<u8>,
     }
 
     fun init(ctx: &mut TxContext) {
-        let validators = AxelarValidators {
+        let mut validators = AxelarValidators {
             id: object::new(ctx),
             approvals: table::new(ctx)
         };
-        df::add<u8, AxelarValidatorsV1>(&mut validators.id, 1, AxelarValidatorsV1 {
+
+        df::add(&mut validators.id, 1u8, AxelarValidatorsV1 {
             epoch: 0,
             epoch_for_hash: vec_map::empty(),
         });
+
         transfer::share_object(validators);
     }
 
@@ -84,11 +86,13 @@ module axelar::validators {
         approval_hash: vector<u8>,
         proof: vector<u8>
     ): bool {
-
         let epoch = epoch(validators);
-        if(epoch == 0) return true;
+        if (epoch == 0) {
+            return true
+        };
+
         // Turn everything into bcs bytes and split data.
-        let proof = bcs::new(proof);
+        let mut proof = bcs::new(proof);
         let operators =  bcs::peel_vec_vec_u8(&mut proof);
 
         let ( weights, threshold, signatures) = (
@@ -105,11 +109,11 @@ module axelar::validators {
 
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
 
-        let (i, weight, operator_index) = (0, 0, 0);
+        let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
         while (i < total_signatures) {
-            
-            let signature = *vector::borrow(&signatures, i);
+
+            let mut signature = *vector::borrow(&signatures, i);
             normalize_signature(&mut signature);
 
             let signed_by: vector<u8> = ecdsa::secp256k1_ecrecover(&signature, &approval_hash, 0);
@@ -129,10 +133,10 @@ module axelar::validators {
     }
 
     public(friend) fun transfer_operatorship(axelar: &mut AxelarValidators, payload: vector<u8>) {
-        let bcs = bcs::new(payload);
-        let new_operators = bcs::peel_vec_vec_u8(&mut bcs);
-        let new_weights = bcs::peel_vec_u128(&mut bcs);
-        let new_threshold = bcs::peel_u128(&mut bcs);
+        let mut bcs = bcs::new(payload);
+        let new_operators = bcs.peel_vec_vec_u8();
+        let new_weights = bcs.peel_vec_u128();
+        let new_threshold = bcs.peel_u128();
 
         let operators_length = vector::length(&new_operators);
         let weight_length = vector::length(&new_weights);
@@ -141,7 +145,7 @@ module axelar::validators {
         // TODO: implement `_isSortedAscAndContainsNoDuplicate` function.
 
         assert!(weight_length == operators_length, EInvalidWeights);
-        let (total_weight, i) = (0, 0);
+        let (mut total_weight, mut i) = (0, 0);
         while (i < weight_length) {
             total_weight = total_weight + *vector::borrow(&new_weights, i);
             i = i + 1;
@@ -152,18 +156,18 @@ module axelar::validators {
         // Remove old epoch for the operators if it exists
         let epoch = epoch(axelar) + 1;
         let epoch_for_hash = epoch_for_hash_mut(axelar);
-        if (vec_map::contains(epoch_for_hash, &new_operators_hash)) {
-            vec_map::remove(epoch_for_hash, &new_operators_hash);
+        if (epoch_for_hash.contains(&new_operators_hash)) {
+            epoch_for_hash.remove(&new_operators_hash);
         };
         // clean up old epoch
-        if (epoch >= OLD_KEY_RETENTION && vec_map::size(epoch_for_hash) > 0) {
+        if (epoch >= OLD_KEY_RETENTION && epoch_for_hash.size() > 0) {
             let old_epoch = epoch - OLD_KEY_RETENTION;
-            let (_, epoch) = vec_map::get_entry_by_idx(epoch_for_hash, 0);
+            let (_, epoch) = epoch_for_hash.get_entry_by_idx(0);
             if (*epoch <= old_epoch) {
-                vec_map::remove_entry_by_idx(epoch_for_hash, 0);
+                epoch_for_hash.remove_entry_by_idx(0);
             };
         };
-        vec_map::insert(epoch_for_hash, new_operators_hash, epoch);
+        epoch_for_hash.insert(new_operators_hash, epoch);
 
         set_epoch(axelar, epoch);
 
@@ -181,14 +185,14 @@ module axelar::validators {
         target_id: address,
         payload_hash: address
     ) {
-        let data = vector[];
+        let mut data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *ascii::as_bytes(&source_chain));
         vector::append(&mut data, *ascii::as_bytes(&source_address));
         vector::append(&mut data, address::to_bytes(payload_hash));
 
-        table::add(&mut axelar.approvals, cmd_id, Approval {
+        axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
         });
     }
@@ -210,7 +214,7 @@ module axelar::validators {
             approval_hash,
         } = table::remove(&mut axelar.approvals, cmd_id);
 
-        let data = vector[];
+        let mut data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *ascii::as_bytes(&source_chain));
@@ -270,7 +274,7 @@ module axelar::validators {
         vector::append(&mut data, *ascii::as_bytes(&source_address));
         vector::append(&mut data, address::to_bytes(payload_hash));
 
-        table::add(&mut axelar.approvals, cmd_id, Approval {
+        axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
         });
     }
@@ -286,10 +290,12 @@ module axelar::validators {
             id: object::new(ctx),
             approvals: table::new(ctx)
         };
+
         df::add(&mut base.id, 1u8, AxelarValidatorsV1 {
             epoch,
             epoch_for_hash,
         });
+
         base
     }
 

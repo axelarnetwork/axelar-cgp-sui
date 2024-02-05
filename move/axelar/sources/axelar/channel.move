@@ -51,7 +51,7 @@ module axelar::channel {
     /// The `T` parameter allows wrapping a Capability or a piece of data into
     /// the channel to be used when the message is consumed (eg authorize a
     /// `mint` call using a stored `AdminCap`).
-    struct Channel has key, store {
+    public struct Channel has key, store {
         /// Unique ID of the target object which allows message targeting
         /// by comparing against `id_bytes`.
         id: UID,
@@ -63,7 +63,7 @@ module axelar::channel {
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
     /// matching Channel, otherwise the TX fails.
-    struct ApprovedCall {
+    public struct ApprovedCall {
         /// ID of the call approval, guaranteed to be unique by Axelar.
         cmd_id: address,
         /// The target Channel's UID.
@@ -79,11 +79,11 @@ module axelar::channel {
 
     // ====== Events ======
 
-    struct ChannelCreated has copy, drop {
+    public struct ChannelCreated has copy, drop {
         id: address,
     }
 
-    struct ChannelDestroyed has copy, drop {
+    public struct ChannelDestroyed has copy, drop {
         id: address,
     }
 
@@ -93,7 +93,7 @@ module axelar::channel {
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
     public fun create_channel(ctx: &mut TxContext): Channel {
         let id = object::new(ctx);
-        event::emit(ChannelCreated { id: object::uid_to_address(&id) });
+        event::emit(ChannelCreated { id: id.uid_to_address() });
 
         Channel {
             id,
@@ -106,9 +106,9 @@ module axelar::channel {
     public fun destroy_channel(self: Channel) {
         let Channel { id, processed_call_approvals } = self;
 
-        table::drop(processed_call_approvals);
-        event::emit(ChannelDestroyed { id: object::uid_to_address(&id) });
-        object::delete(id);
+        processed_call_approvals.drop();
+        event::emit(ChannelDestroyed { id: id.uid_to_address() });
+        id.delete();
     }
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
@@ -135,7 +135,7 @@ module axelar::channel {
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
     /// and the `payload` to be used by the consuming application.
     public fun consume_approved_call(
-        t: &mut Channel,
+        channel: &mut Channel,
         approved_call: ApprovedCall
     ): (String, String, vector<u8>) {
         let ApprovedCall {
@@ -147,11 +147,11 @@ module axelar::channel {
         } = approved_call;
 
         // Check if the message has already been processed.
-        assert!(!table::contains(&t.processed_call_approvals, cmd_id), EDuplicateMessage);
+        assert!(!table::contains(&channel.processed_call_approvals, cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
-        assert!(target_id == object::uid_to_address(&t.id), EWrongDestination);
+        assert!(target_id == object::uid_to_address(&channel.id), EWrongDestination);
 
-        table::add(&mut t.processed_call_approvals, cmd_id, true);
+        channel.processed_call_approvals.add(cmd_id, true);
 
         (
             source_chain,
@@ -170,7 +170,7 @@ module axelar::channel {
         object::uid_to_address(&self.id)
     }
     // === Testing ===
-    
+
     #[test_only]
     public fun burn_approved_call_for_testing(call: ApprovedCall) {
         let ApprovedCall {

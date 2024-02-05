@@ -15,7 +15,7 @@ module test::test {
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
 
     use axelar::gateway;
-  
+
     struct Singleton has key {
         id: UID,
         channel: Channel,
@@ -24,7 +24,7 @@ module test::test {
     struct Executed has copy, drop {
         data: vector<u8>,
     }
-  
+
     fun init(ctx: &mut TxContext) {
         let singletonId = object::new(ctx);
         let channel = channel::create_channel(ctx);
@@ -35,14 +35,14 @@ module test::test {
     }
 
     public fun register_transaction(discovery: &mut RelayerDiscovery, singleton: &Singleton) {
-        let arguments = vector::empty<vector<u8>>(); 
-        let arg = vector::singleton<u8>(0);
+        let arguments = vector::empty();
+        let arg = vector::singleton(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
         let tx = discovery::new_transaction(
             discovery::new_function(
-                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))), 
-                ascii::string(b"test"), 
+                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
+                ascii::string(b"test"),
                 ascii::string(b"get_call_info")
             ),
             arguments,
@@ -63,13 +63,13 @@ module test::test {
         vector::push_back(&mut arguments, arg);
         discovery::new_transaction(
             discovery::new_function(
-                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))), 
-                ascii::string(b"test"), 
+                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
+                ascii::string(b"test"),
                 ascii::string(b"execute")
             ),
             arguments,
             vector[],
-        )        
+        )
     }
 
     public fun execute(call: ApprovedCall, singleton: &mut Singleton) {
