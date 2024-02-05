@@ -35,10 +35,11 @@ module axelar::gateway {
 
     use sui::bcs;
     use sui::hash;
+    use sui::object;
     use sui::address;
 
     use axelar::utils::to_sui_signed;
-    use axelar::channel::{Self, Channel, ApprovedCall};
+    use axelar::channel::{Channel, ApprovedCall};
     use axelar::validators::{AxelarValidators, validate_proof};
 
     /// For when approval signatures failed verification.
@@ -54,7 +55,7 @@ module axelar::gateway {
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
 
-    /// Emitted when a new message is sent from the SUI network.
+    /// Event: emitted when a new message is sent from the SUI network.
     public struct ContractCall has copy, drop {
         source_id: address,
         destination_chain: String,
@@ -63,6 +64,7 @@ module axelar::gateway {
         payload_hash: address,
     }
 
+    /// Event: emitted when a new message is approved by the SUI network.
     public struct ContractCallApproved has copy, drop {
         cmd_id: address,
         source_chain: String,
@@ -70,7 +72,6 @@ module axelar::gateway {
         target_id: address,
         payload_hash: address,
     }
-
 
     /// The main entrypoint for the external approval processing.
     /// Parses data and attaches call approvals to the Axelar object to be
@@ -181,7 +182,7 @@ module axelar::gateway {
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source_id: channel::source_address(channel),
+            source_id: object::id_address(channel),
             destination_chain,
             destination_address,
             payload,
@@ -205,7 +206,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        let mut ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut sui::tx_context::dummy();
 
         // public keys of `operators`
         let epoch = 1;
@@ -235,7 +236,7 @@ module axelar::gateway {
 
     #[test]
     fun test_transfer_operatorship() {
-        let mut ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut sui::tx_context::dummy();
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[

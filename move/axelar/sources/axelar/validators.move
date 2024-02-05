@@ -70,6 +70,7 @@ module axelar::validators {
             approvals: table::new(ctx)
         };
 
+        // TODO: consider using a custom DF key here
         df::add(&mut validators.id, 1u8, AxelarValidatorsV1 {
             epoch: 0,
             epoch_for_hash: vec_map::empty(),
@@ -93,12 +94,12 @@ module axelar::validators {
 
         // Turn everything into bcs bytes and split data.
         let mut proof = bcs::new(proof);
-        let operators =  bcs::peel_vec_vec_u8(&mut proof);
+        let operators =  proof.peel_vec_vec_u8();
 
-        let ( weights, threshold, signatures) = (
-            bcs::peel_vec_u128(&mut proof),
-            bcs::peel_u128(&mut proof),
-            bcs::peel_vec_vec_u8(&mut proof)
+        let (weights, threshold, signatures) = (
+            proof.peel_vec_u128(),
+            proof.peel_u128(),
+            proof.peel_vec_vec_u8()
         );
 
         let operators_length = vector::length(&operators);
@@ -154,11 +155,12 @@ module axelar::validators {
 
         let new_operators_hash = operators_hash(&new_operators, &new_weights, new_threshold);
         // Remove old epoch for the operators if it exists
-        let epoch = epoch(axelar) + 1;
-        let epoch_for_hash = epoch_for_hash_mut(axelar);
+        let epoch = axelar.epoch() + 1;
+        let epoch_for_hash = axelar.epoch_for_hash_mut();
         if (epoch_for_hash.contains(&new_operators_hash)) {
             epoch_for_hash.remove(&new_operators_hash);
         };
+
         // clean up old epoch
         if (epoch >= OLD_KEY_RETENTION && epoch_for_hash.size() > 0) {
             let old_epoch = epoch - OLD_KEY_RETENTION;
@@ -167,9 +169,10 @@ module axelar::validators {
                 epoch_for_hash.remove_entry_by_idx(0);
             };
         };
+        
         epoch_for_hash.insert(new_operators_hash, epoch);
 
-        set_epoch(axelar, epoch);
+        axelar.set_epoch(epoch);
 
         event::emit(OperatorshipTransferred {
             epoch,
@@ -253,6 +256,9 @@ module axelar::validators {
 
     // === Testing ===
 
+    // temporary polyfill for the `append` function
+    #[test_only] use fun std::vector::append as vector.append;
+
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(ctx)
@@ -268,11 +274,12 @@ module axelar::validators {
         payload_hash: address
     ) {
         let mut data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, address::to_bytes(payload_hash));
+
+        data.append(address::to_bytes(cmd_id));
+        data.append(address::to_bytes(target_id));
+        data.append(*ascii::as_bytes(&source_chain));
+        data.append(*ascii::as_bytes(&source_address));
+        data.append(address::to_bytes(payload_hash));
 
         axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
@@ -306,8 +313,8 @@ module axelar::validators {
     public fun drop_for_test(self: AxelarValidators) {
         // validator cleanup
         let AxelarValidators { id, approvals } = self;
-        table::destroy_empty(approvals);
-        object::delete(id);
+        approvals.destroy_empty();
+        id.delete();
     }
 
     #[test_only]

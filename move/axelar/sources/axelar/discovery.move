@@ -17,10 +17,13 @@ module axelar::discovery {
     use sui::bcs::{Self, BCS};
     use sui::transfer;
 
-    use axelar::channel::{source_id, Channel};
+    use axelar::channel::Channel;
 
     /// TypeArgument is not a valid string.
     const EInvalidString: u64 = 0;
+
+    /// Channel not found.
+    const EChannelNotFound: u64 = 1;
 
     /// A central shared object that stores discovery configuration for the
     /// Relayer. The Relayer will use this object to discover and execute the
@@ -76,20 +79,23 @@ module axelar::discovery {
         channel: &Channel,
         tx: Transaction,
     ) {
-        let channel_id = source_id(channel);
+        let channel_id = object::id(channel);
         if (self.configurations.contains(channel_id)) {
             self.configurations.remove(channel_id);
         };
         self.configurations.add(channel_id, tx);
     }
 
+    /// Get a transaction for a specific channel by the channel `ID`.
     public fun get_transaction(
         self: &mut RelayerDiscovery,
         channel_id: ID,
     ): Transaction {
-        assert!(table::contains(&self.configurations, channel_id), 0);
+        assert!(self.configurations.contains(channel_id), EChannelNotFound);
         *self.configurations.borrow(channel_id)
     }
+
+    // === Tx Building ===
 
     public fun new_function(
         package_id: address, module_name: String, name: String
@@ -142,4 +148,17 @@ module axelar::discovery {
         }
     }
 
+    #[test]
+    fun tx_builder() {
+        let function = new_function(
+            @0x1,
+            ascii::string(b"ascii"),
+            ascii::string(b"string"),
+        );
+
+        let _tx = function.new_transaction(
+            vector[ bcs::to_bytes(&b"some_string") ], // arguments
+            vector[ ], // type_arguments
+        );
+    }
 }

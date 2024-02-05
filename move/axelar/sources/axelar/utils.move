@@ -135,7 +135,7 @@ module axelar::utils {
         abi_encode_variable(&mut v, 1, VAR1);
         abi_encode_variable(&mut v, 3, VAR2);
 
-        assert!(&v == &RESULT, 1);
+        assert!(v == RESULT, 1);
 
         let fix1 = abi_decode_fixed(&v, 0);
         let var1 = abi_decode_variable(&v, 1);
@@ -143,9 +143,9 @@ module axelar::utils {
         let var2 = abi_decode_variable(&v, 3);
 
 
-        assert!(&fix1 == &FIX1, 1);
-        assert!(&var1 == &VAR1, 1);
-        assert!(&fix2 == &FIX2, 1);
-        assert!(&var2 == &VAR2, 1);
+        assert!(fix1 == FIX1, 1);
+        assert!(var1 == VAR1, 1);
+        assert!(fix2 == FIX2, 1);
+        assert!(var2 == VAR2, 1);
     }
 }
