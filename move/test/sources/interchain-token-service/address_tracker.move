@@ -1,10 +1,10 @@
-module its::interchain_address_tracker {
+module its::address_tracker {
     use std::ascii::String;
 
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
 
-    friend its::storage;
+    friend its::its;
 
     /// Attempt to borrow a trusted address but it's not registered.
     const ENoAddress: u64 = 0;

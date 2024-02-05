@@ -36,8 +36,8 @@ module test::test {
     }
 
     public fun register_transaction(discovery: &mut RelayerDiscovery, singleton: &Singleton) {
-        let arguments = vector::empty();
-        let arg = vector::singleton(0);
+        let mut arguments = vector[];
+        let mut arg = vector::singleton(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
         let tx = discovery::new_transaction(
@@ -56,8 +56,8 @@ module test::test {
         gateway::call_contract(&mut singleton.channel, destination_chain, destination_address, payload);
     }
     public fun get_call_info(singleton: &Singleton): Transaction {
-        let arguments = vector::empty<vector<u8>>();
-        let arg = vector::singleton<u8>(2);
+        let mut arguments = vector::empty<vector<u8>>();
+        let mut arg = vector::singleton<u8>(2);
         vector::push_back(&mut arguments, arg);
         arg = vector::singleton<u8>(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));

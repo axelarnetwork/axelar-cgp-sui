@@ -267,7 +267,7 @@ module axelar::validators {
         target_id: address,
         payload_hash: address
     ) {
-        let data = vector[];
+        let mut data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *ascii::as_bytes(&source_chain));
@@ -286,7 +286,7 @@ module axelar::validators {
 
     #[test_only]
     public fun new(epoch: u64, epoch_for_hash: VecMap<vector<u8>, u64>, ctx: &mut TxContext): AxelarValidators {
-        let base = AxelarValidators {
+        let mut base = AxelarValidators {
             id: object::new(ctx),
             approvals: table::new(ctx)
         };
@@ -325,7 +325,7 @@ module axelar::validators {
     /// Samples for this test are generated with the `presets/` application.
     fun test_ecrecover() {
         let message = x"68656c6c6f20776f726c64"; // hello world
-        let signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
+        let mut signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
 
         normalize_signature(&mut signature);
         let pubkey = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);
@@ -339,7 +339,7 @@ module axelar::validators {
     /// Samples for this test are generated with the `presets/` application.
     fun test_to_signed() {
         let message = b"hello world";
-        let signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
+        let mut signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
         normalize_signature(&mut signature);
 
         let pub_key = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);

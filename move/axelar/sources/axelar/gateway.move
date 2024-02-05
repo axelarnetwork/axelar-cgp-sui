@@ -189,10 +189,9 @@ module axelar::gateway {
         })
     }
 
-    #[test_only]
-    use axelar::utils::operators_hash;
-    #[test_only]
-    use sui::vec_map;
+    #[test_only] use axelar::utils::operators_hash;
+    #[test_only] use axelar::validators;
+    #[test_only] use sui::vec_map;
 
     #[test_only]
     /// Test call approval for the `test_execute` test.
@@ -214,13 +213,13 @@ module axelar::gateway {
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
+        let mut epoch_for_hash = vec_map::empty();
         vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
 
-        let test = ts::begin(@0x0);
+        let mut test = ts::begin(@0x0);
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
             ctx(&mut test)
@@ -243,21 +242,21 @@ module axelar::gateway {
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
+        let mut epoch_for_hash = vec_map::empty();
         vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
 
-        let test = ts::begin(@0x0);
+        let mut test = ts::begin(@0x0);
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
             ctx(&mut test)
         );
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
-        assert!(validators::epoch(&validators) == 2, 0);
+        assert!(validators.epoch() == 2, 0);
 
-        validators::drop_for_test(validators);
+        validators.drop_for_test();
         ts::end(test);
     }
 }

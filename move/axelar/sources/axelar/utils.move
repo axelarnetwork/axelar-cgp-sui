@@ -129,7 +129,7 @@ module axelar::utils {
 
     #[test]
     fun abi_encode_test() {
-        let v = abi_encode_start(4);
+        let mut v = abi_encode_start(4);
         abi_encode_fixed(&mut v, 0, FIX1);
         abi_encode_fixed(&mut v, 2, FIX2);
         abi_encode_variable(&mut v, 1, VAR1);

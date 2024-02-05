@@ -105,13 +105,9 @@ module its::thecool1234coin___ {
 
     #[test]
     fun test_init() {
-        use sui::test_scenario::{Self as ts, ctx};
-        let test = ts::begin(@0x0);
+        // use sui::test_scenario::{Self as ts, ctx};
+        use sui::tx_context::dummy;
 
-        init(THECOOL1234COIN___{}, ctx(&mut test));
-
-
-
-        ts::end(test);
+        init(THECOOL1234COIN___{}, &mut dummy());
     }
 }

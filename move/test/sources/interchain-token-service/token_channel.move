@@ -1,7 +1,7 @@
 
 
 /// Todo: consider nuking?
-module its::interchain_token_channel {
+module its::token_channel {
     use sui::tx_context::TxContext;
 
     /// Identifies a token channel.

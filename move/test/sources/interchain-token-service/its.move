@@ -1,6 +1,6 @@
 
 
-module its::storage {
+module its::its {
     use std::string;
     use std::ascii::{String};
     use std::type_name::{Self, TypeName};
@@ -15,7 +15,7 @@ module its::storage {
     use axelar::channel::Channel;
 
     use its::token_id::{Self, TokenId, UnregisteredTokenId};
-    use its::interchain_address_tracker::{Self, InterchainAddressTracker};
+    use its::address_tracker::{Self, InterchainAddressTracker};
     use its::coin_info::CoinInfo;
     use its::coin_management::CoinManagement;
 
@@ -53,7 +53,7 @@ module its::storage {
             id: object::new(ctx),
             channel: axelar::channel::new(ctx),
 
-            address_tracker: interchain_address_tracker::new(ctx),
+            address_tracker: address_tracker::new(ctx),
 
             registered_coins: bag::new(ctx),
             registered_coin_types: table::new(ctx),

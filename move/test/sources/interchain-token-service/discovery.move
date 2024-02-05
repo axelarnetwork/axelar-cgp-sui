@@ -13,7 +13,7 @@ module its::discovery {
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
     use axelar::utils;
 
-    use its::storage::ITS;
+    use its::its::ITS;
     use its::token_id;
 
     const EUnsupportedMessageType: u64 = 0;

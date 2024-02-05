@@ -13,12 +13,12 @@ module its::service {
     use axelar::utils;
     use axelar::channel::ApprovedCall;
 
-    use its::storage::ITS;
+    use its::its::ITS;
     use its::coin_info::{Self, CoinInfo};
     use its::token_id::{Self, TokenId};
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
-    use its::interchain_token_channel::{Self, TokenChannel};
+    use its::token_channel::TokenChannel;
 
     use axelar::gateway;
 
@@ -198,7 +198,7 @@ module its::service {
         amount: u64,
         ctx: &mut TxContext
     ) {
-        let coin_management = self.coin_management_mut(token_id);
+        let coin_management = self.coin_management_mut<T>(token_id);
         let distributor = token_channel.to_address();
 
         assert!(coin_management.is_distributor(distributor), ENotDistributor);

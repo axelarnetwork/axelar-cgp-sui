@@ -93,8 +93,8 @@ module its::token_id {
         let symbol = ascii::string(b"Symbol");
         let decimals: u8 = 56;
         let coin_info = coin_info::from_info<String>(name, symbol, decimals);
-        let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
-        
+        let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+
         vector::append<u8>(&mut vec, bcs::to_bytes<CoinInfo<String>>(&coin_info));
         debug::print<address>(&address::from_u256(PREFIX_SUI_TOKEN_ID));
         debug::print<vector<u8>>(&vec);
