@@ -17,6 +17,7 @@
     "node": ">=16"
   },
   "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@mysten/sui.js": "^0.42.0",
     "child_process": "^1.0.2",
     "dotenv": "^16.3.1",
