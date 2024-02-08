@@ -6,11 +6,10 @@ const fs = require('fs');
 const { parseEnv } = require('./utils');
 
 (async () => {
-    const packagePath = process.argv[2] || 'axelar';
-    const env = parseEnv(process.argv[3] || 'localnet');
-    const rpc = process.argv[4] || 'http://localhost:26657';
-    const proverAddr = process.argv[5];
-    const allInfo = require(`../info/${packagePath}.json`);
+    const env = parseEnv(process.argv[2] || 'localnet');
+    const rpc = process.argv[3] || 'http://localhost:26657';
+    const proverAddr = process.argv[4];
+    const allInfo = require(`../info/axelar.json`);
     const privKey = Buffer.from(
         process.env.SUI_PRIVATE_KEY,
         "hex"
@@ -27,5 +26,5 @@ const { parseEnv } = require('./utils');
 
     allInfo[env.alias].activeOperators = operators
 
-    fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allInfo, null, 4));
+    fs.writeFileSync(`info/axelar.json`, JSON.stringify(allInfo, null, 4));
 })();
