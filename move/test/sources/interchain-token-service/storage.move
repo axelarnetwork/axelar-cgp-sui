@@ -11,6 +11,7 @@ module its::storage {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
+    use sui::package::UpgradeCap;
 
     use axelar::channel::{Self, Channel};
 
@@ -46,10 +47,11 @@ module its::storage {
 
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: Bag,
+
+        upgrade_cap: UpgradeCap,
     }
 
-    #[lint_allow(share_owned)]
-    fun init(ctx: &mut TxContext) {
+    public fun give_upgrade_cap(upgrade_cap: UpgradeCap, ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
             channel: channel::create_channel(ctx),
@@ -61,6 +63,8 @@ module its::storage {
 
             unregistered_coin_info: bag::new(ctx),
             unregistered_coin_types: table::new(ctx),
+
+            upgrade_cap,
         });
     }
 
