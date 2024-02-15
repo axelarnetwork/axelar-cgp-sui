@@ -159,17 +159,4 @@ module axelar::channel {
             payload,
         )
     }
-
-    // === Testing ===
-
-    #[test_only]
-    public fun burn_approved_call_for_testing(call: ApprovedCall) {
-        let ApprovedCall {
-            cmd_id: _,
-            target_id: _,
-            source_chain: _,
-            source_address: _,
-            payload: _,
-        } = call;
-    }
 }

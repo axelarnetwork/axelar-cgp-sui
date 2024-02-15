@@ -1,10 +1,9 @@
 
-
 module its::utils {
     use std::ascii;
     use std::vector;
 
-    use sui::hash::{keccak256};
+    use sui::hash::keccak256;
     use sui::address;
 
     const LOWERCASE_START: u8 = 97;
@@ -17,13 +16,15 @@ module its::utils {
         (val as u64)
     }
 
-    public fun isLowercase(c: u8): bool {
+    public fun is_lowercase(c: u8): bool {
         c >= LOWERCASE_START && c <= LOWERCASE_START + 25
     }
-    public fun isUppercase(c: u8): bool {
+
+    public fun is_uppercase(c: u8): bool {
         c >= UPPERCASE_START && c <= UPPERCASE_START + 25
     }
-    public fun isNumber(c: u8): bool {
+
+    public fun is_number(c: u8): bool {
         c >= NUMBERS_START && c <= NUMBERS_START + 9
     }
 
@@ -37,9 +38,9 @@ module its::utils {
         };
         while (i < length) {
             let b = *vector::borrow(symbolBytes, i);
-            if (isLowercase(b) || isNumber(b) ) {
+            if (is_lowercase(b) || is_number(b) ) {
                 vector::push_back(&mut moduleName, b);
-            } else if (isUppercase(b) ) {
+            } else if (is_uppercase(b) ) {
                 vector::push_back(&mut moduleName, b - UPPERCASE_START + LOWERCASE_START);
             } else if (b == UNDERSCORE || b == SPACE) {
                 vector::push_back(&mut moduleName, UNDERSCORE);
@@ -75,39 +76,5 @@ module its::utils {
     fun test_get_module_from_symbol() {
         let symbol = ascii::string(b"1(TheCool1234Coin) _ []!rdt");
         std::debug::print(&get_module_from_symbol(&symbol));
-    }
-}
-
-module its::thecool1234coin___ {
-    use sui::tx_context::{Self, TxContext};
-    use sui::coin;
-    use std::option;
-    use sui::url::{Url};
-    use sui::transfer;
-
-    public struct THECOOL1234COIN___ has drop{
-
-    }
-
-    fun init(witness: THECOOL1234COIN___, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency<THECOOL1234COIN___>(
-            witness,
-            6,
-            b"THECOOL1234COIN___",
-            b"",
-            b"",
-            option::none<Url>(),
-            ctx
-        );
-        transfer::public_transfer(treasury, tx_context::sender(ctx));
-        transfer::public_transfer(metadata, tx_context::sender(ctx));
-    }
-
-    #[test]
-    fun test_init() {
-        // use sui::test_scenario::{Self as ts, ctx};
-        use sui::tx_context::dummy;
-
-        init(THECOOL1234COIN___{}, &mut dummy());
     }
 }

@@ -103,10 +103,8 @@ module axelar::validators {
         );
 
         let operators_length = vector::length(&operators);
-        let operators_epoch = *vec_map::get(
-            epoch_for_hash(validators),
-            &operators_hash(&operators, &weights, threshold)
-        );
+        let operators_epoch = *epoch_for_hash(validators)
+            .get(&operators_hash(&operators, &weights, threshold));
 
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
 
@@ -169,7 +167,6 @@ module axelar::validators {
                 epoch_for_hash.remove_entry_by_idx(0);
             };
         };
-        
         epoch_for_hash.insert(new_operators_hash, epoch);
 
         axelar.set_epoch(epoch);
@@ -308,14 +305,6 @@ module axelar::validators {
 
     #[test_only]
     use axelar::utils::to_sui_signed;
-
-    #[test_only]
-    public fun drop_for_test(self: AxelarValidators) {
-        // validator cleanup
-        let AxelarValidators { id, approvals } = self;
-        approvals.destroy_empty();
-        id.delete();
-    }
 
     #[test_only]
     /// Test message for the `test_execute` test.

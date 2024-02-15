@@ -231,7 +231,7 @@ module axelar::gateway {
 
         validators.remove_approval_for_test(@0x1);
         validators.remove_approval_for_test(@0x2);
-        validators.drop_for_test();
+        sui::test_utils::destroy(validators);
     }
 
     #[test]
@@ -256,6 +256,6 @@ module axelar::gateway {
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
         assert!(validators.epoch() == 2, 0);
 
-        validators.drop_for_test();
+        sui::test_utils::destroy(validators);
     }
 }

@@ -1,3 +1,5 @@
+/// Q: why addresses are stored as Strings?
+/// Q: why chains are Strings?
 module its::address_tracker {
     use std::ascii::String;
 

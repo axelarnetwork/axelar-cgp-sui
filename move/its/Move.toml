@@ -1,5 +1,5 @@
 [package]
-name = "Test"
+name = "its"
 version = "0.0.1"
 #published-at = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
 edition = "2024.alpha"
