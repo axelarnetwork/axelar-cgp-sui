@@ -21,6 +21,9 @@ module axelar::validators {
     use axelar::channel::{Self, ApprovedCall};
     use axelar::utils::{normalize_signature, operators_hash};
 
+    // remove once 2024 is released and vector is natively supported
+    use fun std::vector::append as vector.append;
+
     friend axelar::gateway;
 
     const EInvalidWeights: u64 = 0;
@@ -186,11 +189,12 @@ module axelar::validators {
         payload_hash: address
     ) {
         let mut data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, address::to_bytes(payload_hash));
+
+        data.append(address::to_bytes(cmd_id));
+        data.append(address::to_bytes(target_id));
+        data.append(*ascii::as_bytes(&source_chain));
+        data.append(*ascii::as_bytes(&source_address));
+        data.append(address::to_bytes(payload_hash));
 
         axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
@@ -215,11 +219,12 @@ module axelar::validators {
         } = table::remove(&mut axelar.approvals, cmd_id);
 
         let mut data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, hash::keccak256(&payload));
+
+        data.append(address::to_bytes(cmd_id));
+        data.append(address::to_bytes(target_id));
+        data.append(*ascii::as_bytes(&source_chain));
+        data.append(*ascii::as_bytes(&source_address));
+        data.append(hash::keccak256(&payload));
 
         assert!(hash::keccak256(&data) == approval_hash, EPayloadHashMismatch);
 
@@ -235,6 +240,14 @@ module axelar::validators {
 
     // === Getters ===
 
+    public fun epoch(axelar: &AxelarValidators): u64 {
+        df::borrow<u8, AxelarValidatorsV1>(&axelar.id, 1).epoch
+    }
+
+    fun set_epoch(axelar: &mut AxelarValidators, epoch: u64) {
+        df::borrow_mut<u8, AxelarValidatorsV1>(&mut axelar.id, 1).epoch = epoch
+    }
+
     fun epoch_for_hash(axelar: &AxelarValidators): &VecMap<vector<u8>, u64> {
         &df::borrow<u8, AxelarValidatorsV1>(&axelar.id, 1).epoch_for_hash
     }
@@ -243,18 +256,7 @@ module axelar::validators {
         &mut df::borrow_mut<u8, AxelarValidatorsV1>(&mut axelar.id, 1).epoch_for_hash
     }
 
-    fun set_epoch(axelar: &mut AxelarValidators, epoch: u64) {
-        df::borrow_mut<u8, AxelarValidatorsV1>(&mut axelar.id, 1).epoch = epoch
-    }
-
-    public fun epoch(axelar: &AxelarValidators): u64 {
-        df::borrow<u8, AxelarValidatorsV1>(&axelar.id, 1).epoch
-    }
-
     // === Testing ===
-
-    // temporary polyfill for the `append` function
-    #[test_only] use fun std::vector::append as vector.append;
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {

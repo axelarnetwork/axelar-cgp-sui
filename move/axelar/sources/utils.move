@@ -142,7 +142,6 @@ module axelar::utils {
         let fix2 = abi_decode_fixed(&v, 2);
         let var2 = abi_decode_variable(&v, 3);
 
-
         assert!(fix1 == FIX1, 1);
         assert!(var1 == VAR1, 1);
         assert!(fix2 == FIX2, 1);
