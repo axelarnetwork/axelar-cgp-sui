@@ -34,7 +34,6 @@ module axelar::gateway {
     use std::type_name;
 
     use sui::bcs;
-    use sui::dynamic_field as df;
     use sui::hash;
     use sui::object::{Self, UID};
     use sui::transfer;
@@ -46,7 +45,7 @@ module axelar::gateway {
 
     use axelar::utils::to_sui_signed;
     use axelar::channel::{Self, Channel, ApprovedCall};
-    use axelar::validators::{Self, AxelarValidatorsV1, validate_proof};
+    use axelar::validators::{Self, AxelarValidators, validate_proof};
 
     /// For when approval signatures failed verification.
     // const ESignatureInvalid: u64 = 1;
@@ -71,6 +70,7 @@ module axelar::gateway {
     struct Gateway has key {
         id: UID,
         approvals: Table<address, Approval>,
+        validators: AxelarValidators,
         upgrade_cap: UpgradeCap,
         channel: Channel,
     }
@@ -115,11 +115,10 @@ module axelar::gateway {
         let gateway = Gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
+            validators: validators::new(),
             upgrade_cap,
             channel: channel::create_channel(ctx),
         };
-
-        df::add<u8, AxelarValidatorsV1>(&mut gateway.id, 1, validators::new());
 
         transfer::share_object(gateway);
     }
@@ -280,12 +279,12 @@ module axelar::gateway {
         });
     }
 
-    fun borrow_validators(self: &Gateway): &AxelarValidatorsV1 {
-        df::borrow<u8, AxelarValidatorsV1>(&self.id, 1)
+    fun borrow_validators(self: &Gateway): &AxelarValidators {
+        &self.validators
     }
 
-    fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidatorsV1 {
-        df::borrow_mut<u8, AxelarValidatorsV1>(&mut self.id, 1)
+    fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidators {
+        &mut self.validators
     }
 
     #[test_only]

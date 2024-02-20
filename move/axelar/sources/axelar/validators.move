@@ -25,7 +25,7 @@ module axelar::validators {
     /// Used for a check in `validate_proof` function.
     const OLD_KEY_RETENTION: u64 = 16;
 
-    struct AxelarValidatorsV1 has store {
+    struct AxelarValidators has store {
         /// Epoch of the validators.
         epoch: u64,
         /// Epoch for the operators hash.
@@ -38,8 +38,8 @@ module axelar::validators {
         payload: vector<u8>,
     }
 
-    public(friend) fun new(): AxelarValidatorsV1 {
-        AxelarValidatorsV1 {
+    public(friend) fun new(): AxelarValidators {
+        AxelarValidators {
             epoch: 0,
             epoch_for_hash: vec_map::empty(),
         }
@@ -49,7 +49,7 @@ module axelar::validators {
     /// Does proof validation, fails when proof is invalid or if weight
     /// threshold is not reached.
     public(friend) fun validate_proof(
-        validators: &AxelarValidatorsV1,
+        validators: &AxelarValidators,
         approval_hash: vector<u8>,
         proof: vector<u8>
     ): bool {
@@ -88,7 +88,7 @@ module axelar::validators {
             // assert!(operator_index == operators_length, 0); // EMalformedSigners
 
             weight = weight + *vector::borrow(&weights, operator_index);
-            if (weight >= threshold) { return true };
+            if (weight >= threshold) { return operators_epoch == epoch };
             operator_index = operator_index + 1;
 
             i = i + 1;
@@ -97,7 +97,7 @@ module axelar::validators {
         abort ELowSignaturesWeight
     }
 
-    public(friend) fun transfer_operatorship(validators: &mut AxelarValidatorsV1, payload: vector<u8>) {
+    public(friend) fun transfer_operatorship(validators: &mut AxelarValidators, payload: vector<u8>) {
         let bcs = bcs::new(payload);
         let new_operators = bcs::peel_vec_vec_u8(&mut bcs);
         let new_weights = bcs::peel_vec_u128(&mut bcs);
@@ -144,19 +144,19 @@ module axelar::validators {
 
     // === Getters ===
 
-    fun epoch_for_hash(validators: &AxelarValidatorsV1): &VecMap<vector<u8>, u64> {
+    fun epoch_for_hash(validators: &AxelarValidators): &VecMap<vector<u8>, u64> {
         &validators.epoch_for_hash
     }
 
-    fun epoch_for_hash_mut(validators: &mut AxelarValidatorsV1): &mut VecMap<vector<u8>, u64> {
+    fun epoch_for_hash_mut(validators: &mut AxelarValidators): &mut VecMap<vector<u8>, u64> {
         &mut validators.epoch_for_hash
     }
 
-    fun set_epoch(validators: &mut AxelarValidatorsV1, epoch: u64) {
+    fun set_epoch(validators: &mut AxelarValidators, epoch: u64) {
         validators.epoch = epoch
     }
 
-    public fun epoch(validators: &AxelarValidatorsV1): u64 {
+    public fun epoch(validators: &AxelarValidators): u64 {
         validators.epoch
     }
 
@@ -199,7 +199,7 @@ module axelar::validators {
             id: object::new(ctx),
             approvals: table::new(ctx)
         };
-        df::add(&mut base.id, 1u8, AxelarValidatorsV1 {
+        df::add(&mut base.id, 1u8, AxelarValidators {
             epoch,
             epoch_for_hash,
         });
