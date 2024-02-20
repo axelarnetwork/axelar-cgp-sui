@@ -8,7 +8,7 @@ module axelar::channel {
     use sui::tx_context::TxContext;
     use sui::event;
 
-    friend axelar::validators;
+    friend axelar::gateway;
 
     /// Generic target for the messaging system.
     ///
