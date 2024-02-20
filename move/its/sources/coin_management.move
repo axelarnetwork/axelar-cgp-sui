@@ -14,7 +14,7 @@ module its::coin_management {
     const EDistributorNeedsTreasuryCap: u64 = 0;
 
     /// Struct that stores information about the ITS Coin.
-    struct CoinManagement<phantom T> has store {
+    public struct CoinManagement<phantom T> has store {
         treasury_cap: Option<TreasuryCap<T>>,
         balance: Option<Balance<T>>,
         distributor: Option<address>,
@@ -44,7 +44,7 @@ module its::coin_management {
     /// Only works for a `CoinManagement` with a `TreasuryCap`.
     public fun add_distributor<T>(self: &mut CoinManagement<T>, distributor: address) {
         assert!(has_capability(self), EDistributorNeedsTreasuryCap);
-        option::fill(&mut self.distributor, distributor);
+        self.distributor.fill(distributor);
     }
 
     // === Protected Methods ===
@@ -52,11 +52,13 @@ module its::coin_management {
     /// Takes the given amount of Coins from user.
     public(friend) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
         if (has_capability(self)) {
-            let cap = option::borrow_mut(&mut self.treasury_cap);
-            coin::burn(cap, to_take);
+            self.treasury_cap
+                .borrow_mut()
+                .burn(to_take);
         } else {
-            let balance = option::borrow_mut(&mut self.balance);
-            coin::put(balance, to_take);
+            self.balance
+                .borrow_mut()
+                .join(to_take.into_balance());
         }
     }
 
@@ -65,11 +67,11 @@ module its::coin_management {
         self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext
     ): Coin<T> {
         if (has_capability(self)) {
-            let cap = option::borrow_mut(&mut self.treasury_cap);
-            coin::mint(cap, amount, ctx)
+            self.treasury_cap
+                .borrow_mut()
+                .mint(amount, ctx)
         } else {
-            let balance = option::borrow_mut(&mut self.balance);
-            coin::take<T>(balance, amount, ctx)
+            coin::take(self.balance.borrow_mut(), amount, ctx)
         }
     }
 
@@ -77,11 +79,11 @@ module its::coin_management {
 
     /// Checks if the given address is a `distributor`.
     public fun is_distributor<T>(self: &CoinManagement<T>, distributor: address): bool {
-        option::contains(&self.distributor, &distributor)
+        &distributor == self.distributor.borrow()
     }
 
     /// Returns true if the coin management has a `TreasuryCap`.
     public fun has_capability<T>(self: &CoinManagement<T>): bool {
-        option::is_some(&self.treasury_cap)
+        self.treasury_cap.is_some()
     }
 }

@@ -1,16 +1,18 @@
-module its::interchain_address_tracker {
+/// Q: why addresses are stored as Strings?
+/// Q: why chains are Strings?
+module its::address_tracker {
     use std::ascii::String;
 
     use sui::table::{Self, Table};
-    use sui::tx_context::{TxContext};
+    use sui::tx_context::TxContext;
 
-    friend its::storage;
+    friend its::its;
 
     /// Attempt to borrow a trusted address but it's not registered.
     const ENoAddress: u64 = 0;
 
     /// The interchain address tracker stores the trusted addresses for each chain.
-    struct InterchainAddressTracker has store {
+    public struct InterchainAddressTracker has store {
         trusted_addresses: Table<String, String>
     }
 
@@ -18,8 +20,8 @@ module its::interchain_address_tracker {
     public fun get_trusted_address(
         self: &InterchainAddressTracker, chain_name: String
     ): &String {
-        assert!(table::contains(&self.trusted_addresses, chain_name), ENoAddress);
-        table::borrow(&self.trusted_addresses, chain_name)
+        assert!(self.trusted_addresses.contains(chain_name), ENoAddress);
+        self.trusted_addresses.borrow(chain_name)
     }
 
     /// Check if the given address is trusted for the given chain.
@@ -44,10 +46,10 @@ module its::interchain_address_tracker {
         chain_name: String,
         trusted_address: String
     ) {
-        if (table::contains(&self.trusted_addresses, chain_name)) {
-            *table::borrow_mut(&mut self.trusted_addresses, chain_name) = trusted_address;
+        if (self.trusted_addresses.contains(chain_name)) {
+            *self.trusted_addresses.borrow_mut(chain_name) = trusted_address;
         } else {
-            table::add(&mut self.trusted_addresses, chain_name, trusted_address);
+            self.trusted_addresses.add(chain_name, trusted_address);
         }
     }
 }

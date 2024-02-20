@@ -35,10 +35,11 @@ module axelar::gateway {
 
     use sui::bcs;
     use sui::hash;
+    use sui::object;
     use sui::address;
 
     use axelar::utils::to_sui_signed;
-    use axelar::channel::{Self, Channel, ApprovedCall};
+    use axelar::channel::{Channel, ApprovedCall};
     use axelar::validators::{AxelarValidators, validate_proof};
 
     /// For when approval signatures failed verification.
@@ -54,7 +55,7 @@ module axelar::gateway {
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
 
-    /// Emitted when a new message is sent from the SUI network.
+    /// Event: emitted when a new message is sent from the SUI network.
     public struct ContractCall has copy, drop {
         source_id: address,
         destination_chain: String,
@@ -63,6 +64,7 @@ module axelar::gateway {
         payload_hash: address,
     }
 
+    /// Event: emitted when a new message is approved by the SUI network.
     public struct ContractCallApproved has copy, drop {
         cmd_id: address,
         source_chain: String,
@@ -70,7 +72,6 @@ module axelar::gateway {
         target_id: address,
         payload_hash: address,
     }
-
 
     /// The main entrypoint for the external approval processing.
     /// Parses data and attaches call approvals to the Axelar object to be
@@ -181,7 +182,7 @@ module axelar::gateway {
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source_id: channel::source_address(channel),
+            source_id: object::id_address(channel),
             destination_chain,
             destination_address,
             payload,
@@ -189,10 +190,9 @@ module axelar::gateway {
         })
     }
 
-    #[test_only]
-    use axelar::utils::operators_hash;
-    #[test_only]
-    use sui::vec_map;
+    #[test_only] use axelar::utils::operators_hash;
+    #[test_only] use axelar::validators;
+    #[test_only] use sui::vec_map;
 
     #[test_only]
     /// Test call approval for the `test_execute` test.
@@ -206,7 +206,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
 
         // public keys of `operators`
         let epoch = 1;
@@ -214,50 +214,48 @@ module axelar::gateway {
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        epoch_for_hash.insert(
+            operators_hash(&operators, &vector[100u128], 10u128),
+            epoch
+        );
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
 
         process_commands(&mut validators, CALL_APPROVAL);
 
-        validators::remove_approval_for_test(&mut validators, @0x1);
-        validators::remove_approval_for_test(&mut validators, @0x2);
-        validators::drop_for_test(validators);
-        ts::end(test);
+        validators.remove_approval_for_test(@0x1);
+        validators.remove_approval_for_test(@0x2);
+        sui::test_utils::destroy(validators);
     }
 
     #[test]
     fun test_transfer_operatorship() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        let operators_hash = operators_hash(&operators, &vector[100u128], 10u128);
+        epoch_for_hash.insert(operators_hash, epoch);
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
-        assert!(validators::epoch(&validators) == 2, 0);
+        assert!(validators.epoch() == 2, 0);
 
-        validators::drop_for_test(validators);
-        ts::end(test);
+        sui::test_utils::destroy(validators);
     }
 }

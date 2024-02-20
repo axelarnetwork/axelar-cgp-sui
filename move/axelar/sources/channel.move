@@ -4,7 +4,7 @@
 module axelar::channel {
     use std::ascii::String;
     use sui::table::{Self, Table};
-    use sui::object::{Self, UID, ID};
+    use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
@@ -91,7 +91,7 @@ module axelar::channel {
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel(ctx: &mut TxContext): Channel {
+    public fun new(ctx: &mut TxContext): Channel {
         let id = object::new(ctx);
         event::emit(ChannelCreated { id: id.uid_to_address() });
 
@@ -103,7 +103,7 @@ module axelar::channel {
 
     /// Destroy a `Channen` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
-    public fun destroy_channel(self: Channel) {
+    public fun destroy(self: Channel) {
         let Channel { id, processed_call_approvals } = self;
 
         processed_call_approvals.drop();
@@ -147,9 +147,9 @@ module axelar::channel {
         } = approved_call;
 
         // Check if the message has already been processed.
-        assert!(!table::contains(&channel.processed_call_approvals, cmd_id), EDuplicateMessage);
+        assert!(!channel.processed_call_approvals.contains(cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
-        assert!(target_id == object::uid_to_address(&channel.id), EWrongDestination);
+        assert!(target_id == object::id_address(channel), EWrongDestination);
 
         channel.processed_call_approvals.add(cmd_id, true);
 
@@ -158,27 +158,5 @@ module axelar::channel {
             source_address,
             payload,
         )
-    }
-
-    /// Get the bytes of the Channel ID
-    public fun source_id(self: &Channel): ID {
-        object::uid_to_inner(&self.id)
-    }
-
-     /// Get the bytes of the Channel ID
-     public fun source_address(self: &Channel): address {
-        object::uid_to_address(&self.id)
-    }
-    // === Testing ===
-
-    #[test_only]
-    public fun burn_approved_call_for_testing(call: ApprovedCall) {
-        let ApprovedCall {
-            cmd_id: _,
-            target_id: _,
-            source_chain: _,
-            source_address: _,
-            payload: _,
-        } = call;
     }
 }

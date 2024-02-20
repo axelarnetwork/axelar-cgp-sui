@@ -90,7 +90,7 @@ module axelar::utils {
         let len = (abi_decode_fixed(v, start / 32) as u64);
         let mut var = vector::empty();
         let mut i = 0;
-        while(i < len) {
+        while (i < len) {
             vector::push_back(&mut var, *vector::borrow(v, i + start + 32));
             i = i + 1;
         };
@@ -129,23 +129,22 @@ module axelar::utils {
 
     #[test]
     fun abi_encode_test() {
-        let v = abi_encode_start(4);
+        let mut v = abi_encode_start(4);
         abi_encode_fixed(&mut v, 0, FIX1);
         abi_encode_fixed(&mut v, 2, FIX2);
         abi_encode_variable(&mut v, 1, VAR1);
         abi_encode_variable(&mut v, 3, VAR2);
 
-        assert!(&v == &RESULT, 1);
+        assert!(v == RESULT, 1);
 
         let fix1 = abi_decode_fixed(&v, 0);
         let var1 = abi_decode_variable(&v, 1);
         let fix2 = abi_decode_fixed(&v, 2);
         let var2 = abi_decode_variable(&v, 3);
 
-
-        assert!(&fix1 == &FIX1, 1);
-        assert!(&var1 == &VAR1, 1);
-        assert!(&fix2 == &FIX2, 1);
-        assert!(&var2 == &VAR2, 1);
+        assert!(fix1 == FIX1, 1);
+        assert!(var1 == VAR1, 1);
+        assert!(fix2 == FIX2, 1);
+        assert!(var2 == VAR2, 1);
     }
 }
