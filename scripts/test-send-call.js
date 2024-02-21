@@ -55,6 +55,7 @@ const { toPure, parseEnv } = require('./utils');
     const event = (await client.queryEvents({query: {
         MoveEventType: `${axlearPackageId}::gateway::ContractCall`,
     }})).data[0].parsedJson;
+    console.log(event);
 
     if ( hexlify(event.source_id) != test.channel ) throw new Error(`Emmited payload missmatch: ${hexlify(event.source)} != ${test.channel}`);
     
