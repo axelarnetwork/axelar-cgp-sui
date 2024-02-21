@@ -21,8 +21,6 @@ const { parseEnv } = require('./utils');
 
     const operators = getRandomOperators(5);
 
-    console.log(operators);
-
     await transferOperatorship(allInfo[env.alias], client, keypair, operators.pubKeys, operators.weights, operators.threshold);
 
     allInfo[env.alias].activeOperators = operators
