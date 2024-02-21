@@ -43,7 +43,7 @@ const { toPure, parseEnv } = require('./utils');
         typeArguments: []
     });
 
-    const executeTxn = await client.signAndExecuteTransactionBlock({
+    await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
         options: {
