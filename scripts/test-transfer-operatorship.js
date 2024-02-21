@@ -4,6 +4,7 @@ const secp256k1 = require('secp256k1');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const fs = require('fs');
+const { parseEnv } = require('./utils');
 
 (async () => {
     const env = parseEnv(process.argv[2] || 'localnet');
@@ -19,6 +20,8 @@ const fs = require('fs');
     const client = new SuiClient({ url: env.url });
 
     const operators = getRandomOperators(5);
+
+    console.log(operators);
 
     await transferOperatorship(allInfo[env.alias], client, keypair, operators.pubKeys, operators.weights, operators.threshold);
 
