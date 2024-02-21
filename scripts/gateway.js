@@ -195,7 +195,8 @@ async function approveContractCall(env, client, keypair, sourceChain, sourceAddr
 async function getAmplifierWorkers(rpc, proverAddr) {
     const client = await CosmWasmClient.connect(rpc);
     const workerSet = await client.queryContractSmart(proverAddr, 'get_worker_set');
-    const signers = Object.values(workerSet.signers).sort((a, b) => a.pub_key.ecdsa.toLowerCase().localeCompare(b.pub_key.ecdsa.toLowerCase()));
+    const signers = Object.values(workerSet.signers).sort((a, b) => 
+        a.pub_key.ecdsa.toLowerCase().localeCompare(b.pub_key.ecdsa.toLowerCase()));
 
     const pubKeys = signers.map((signer) => Buffer.from(signer.pub_key.ecdsa, 'hex'));
     const weights = signers.map((signer) => Number(signer.weight));
