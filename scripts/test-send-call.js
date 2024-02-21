@@ -7,7 +7,6 @@ const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { utils: { hexlify }} = require('ethers');
 
 const { toPure, parseEnv } = require('./utils');
-const { keccak256 } = require('ethers/lib/utils');
 
 
 (async () => {
@@ -43,11 +42,6 @@ const { keccak256 } = require('ethers/lib/utils');
         ],
         typeArguments: []
     });
-
-    console.log(payload);
-
-    const payloadHash = keccak256(payload);
-    console.log(payloadHash);
 
     const executeTxn = await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
