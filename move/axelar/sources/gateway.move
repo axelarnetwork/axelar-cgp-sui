@@ -148,10 +148,10 @@ module axelar::gateway {
         // command_ids: vector<vector<u8>> (vector<string>)
         // commands: vector<vector<u8>> (vector<string>)
         // params: vector<vector<u8>> (vector<byteArray>)
-        let chain_id = bcs::peel_u64(&mut data_bcs);
-        let command_ids = bcs::peel_vec_address(&mut data_bcs);
-        let commands = bcs::peel_vec_vec_u8(&mut data_bcs);
-        let params = bcs::peel_vec_vec_u8(&mut data_bcs);
+        let chain_id = data_bcs.peel_u64();
+        let command_ids = data_bcs.peel_vec_address();
+        let commands = data_bcs.peel_vec_vec_u8();
+        let params = data_bcs.peel_vec_vec_u8();
         assert!(chain_id == 1, EInvalidChain);
 
         let (mut i, commands_len) = (0, vector::length(&commands));
