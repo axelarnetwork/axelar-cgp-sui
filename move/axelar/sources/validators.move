@@ -102,9 +102,9 @@ module axelar::validators {
 
     public(friend) fun transfer_operatorship(validators: &mut AxelarValidators, payload: vector<u8>) {
         let mut bcs = bcs::new(payload);
-        let new_operators = bcs::peel_vec_vec_u8(&mut bcs);
-        let new_weights = bcs::peel_vec_u128(&mut bcs);
-        let new_threshold = bcs::peel_u128(&mut bcs);
+        let new_operators = bcs.peel_vec_vec_u8();
+        let new_weights = bcs.peel_vec_u128();
+        let new_threshold = bcs.peel_u128();
 
         let operators_length = vector::length(&new_operators);
         let weight_length = vector::length(&new_weights);
@@ -204,11 +204,11 @@ module axelar::validators {
     ) {
         let mut data = vector[];
 
-        data.append(address::to_bytes(cmd_id));
-        data.append(address::to_bytes(target_id));
-        data.append(*ascii::as_bytes(&source_chain));
-        data.append(*ascii::as_bytes(&source_address));
-        data.append(address::to_bytes(payload_hash));
+        data.append(cmd_id.to_bytes());
+        data.append(target_id.to_bytes());
+        data.append(*source_chain.as_bytes());
+        data.append(*source_address.as_bytes());
+        data.append(payload_hash.to_bytes());
 
         axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
