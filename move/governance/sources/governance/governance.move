@@ -54,7 +54,7 @@ module governance::governance {
             trusted_source_chain,
             trusted_source_address,
             message_type,
-            channel: channel::create_channel(ctx),
+            channel: channel::new(ctx),
             caps: table::new<ID, UpgradeCap>(ctx),
         })
     }
@@ -67,7 +67,7 @@ module governance::governance {
     ): bool{
         &chain_name == &self.trusted_source_chain && &addr == &self.trusted_source_address
     }
-    
+
     // TODO maybe check that the polcy for the upgrade cap has not been tampered with.
     public fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
         is_cap_new(&upgrade_cap);

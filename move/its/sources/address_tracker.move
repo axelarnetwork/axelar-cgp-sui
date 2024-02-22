@@ -1,7 +1,7 @@
 /// Q: why addresses are stored as Strings?
 /// Q: why chains are Strings?
 module its::address_tracker {
-    use std::ascii::String;
+    use std::ascii::{Self, String};
 
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;

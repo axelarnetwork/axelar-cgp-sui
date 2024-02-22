@@ -43,7 +43,7 @@ module its::its {
             id: object::new(ctx),
             channel: axelar::channel::new(ctx),
 
-            address_tracker: interchain_address_tracker::new(
+            address_tracker: address_tracker::new(
                 ctx,
             ),
 
@@ -56,7 +56,7 @@ module its::its {
     }
 
     public(friend) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
+        address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
     public fun get_unregistered_coin_type(

@@ -28,7 +28,7 @@ module axelar::validators {
     /// Used for a check in `validate_proof` function.
     const OLD_KEY_RETENTION: u64 = 16;
 
-    struct AxelarValidators has store {
+    public struct AxelarValidators has store {
         /// Epoch of the validators.
         epoch: u64,
         /// Epoch for the operators hash.
@@ -101,7 +101,7 @@ module axelar::validators {
     }
 
     public(friend) fun transfer_operatorship(validators: &mut AxelarValidators, payload: vector<u8>) {
-        let bcs = bcs::new(payload);
+        let mut bcs = bcs::new(payload);
         let new_operators = bcs::peel_vec_vec_u8(&mut bcs);
         let new_weights = bcs::peel_vec_u128(&mut bcs);
         let new_threshold = bcs::peel_u128(&mut bcs);
@@ -171,7 +171,7 @@ module axelar::validators {
             return false
         };
 
-        let i = 1;
+        let mut i = 1;
         while (i < accountsLength) {
             let currAccount = vector::borrow(accounts, i);
 

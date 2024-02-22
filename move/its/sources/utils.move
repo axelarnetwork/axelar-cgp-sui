@@ -33,7 +33,7 @@ module its::utils {
         let mut moduleName = vector[];
 
         let (mut i, length) = (0, vector::length(symbolBytes));
-        while (isNumber(*vector::borrow(symbolBytes, i))) {
+        while (is_number(*vector::borrow(symbolBytes, i))) {
             i = i + 1;
         };
         while (i < length) {

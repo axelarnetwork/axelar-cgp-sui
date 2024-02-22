@@ -74,7 +74,7 @@ module axelar::gateway {
 
     /// An object holding the state of the Axelar bridge.
     /// The central piece in managing call approval creation and signature verification.
-    struct Gateway has key {
+    public struct Gateway has key {
         id: UID,
         approvals: Table<address, Approval>,
         validators: AxelarValidators,
@@ -83,13 +83,13 @@ module axelar::gateway {
     /// CallApproval struct which can consumed only by a `Channel` object.
     /// Does not require additional generic field to operate as linking
     /// by `id_bytes` is more than enough.
-    struct Approval has store {
+    public struct Approval has store {
         /// Hash of the cmd_id, target_id, source_chain, source_address, payload_hash
         approval_hash: vector<u8>,
     }
 
     /// Emitted when a new message is sent from the SUI network.
-    struct ContractCall has copy, drop {
+    public struct ContractCall has copy, drop {
         source_id: address,
         destination_chain: String,
         destination_address: String,
@@ -138,7 +138,7 @@ module axelar::gateway {
             bytes.peel_vec_u8(),
             bytes.peel_vec_u8()
         );
-        let allow_operatorship_transfer = validate_proof(borrow_validators(self), to_sui_signed(*&data), proof);
+        let mut allow_operatorship_transfer = validate_proof(borrow_validators(self), to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
         let mut data_bcs = bcs::new(data);
@@ -214,7 +214,7 @@ module axelar::gateway {
             approval_hash,
         } = table::remove(&mut self.approvals, cmd_id);
 
-        let data = vector[];
+        let mut data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *ascii::as_bytes(&source_chain));
@@ -262,7 +262,7 @@ module axelar::gateway {
         target_id: address,
         payload_hash: address
     ) {
-        let data = vector[];
+        let mut data = vector[];
         vector::append(&mut data, address::to_bytes(cmd_id));
         vector::append(&mut data, address::to_bytes(target_id));
         vector::append(&mut data, *ascii::as_bytes(&source_chain));
