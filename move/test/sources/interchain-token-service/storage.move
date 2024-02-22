@@ -2,7 +2,7 @@
 
 module its::storage {
     use std::string;
-    use std::ascii::{Self, String};
+    use std::ascii::String;
     use std::type_name::{Self, TypeName};
 
     use sui::bag::{Self, Bag};
@@ -10,7 +10,6 @@ module its::storage {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
-    use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
     use sui::transfer;
 
     use axelar::channel::{Self, Channel};
@@ -47,19 +46,15 @@ module its::storage {
 
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: Bag,
-
-        upgrade_cap: UpgradeCap,
     }
 
-    public fun give_upgrade_cap(upgrade_cap: UpgradeCap, ctx: &mut TxContext) {
+    fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
             channel: channel::create_channel(ctx),
 
             address_tracker: interchain_address_tracker::new(
                 ctx,
-                ascii::string(b"Axelar"),
-                ascii::string(b"0x..."),
             ),
 
             registered_coins: bag::new(ctx),
@@ -67,8 +62,6 @@ module its::storage {
 
             unregistered_coin_info: bag::new(ctx),
             unregistered_coin_types: table::new(ctx),
-
-            upgrade_cap,
         });
     }
 
@@ -115,10 +108,6 @@ module its::storage {
 
     public fun is_trusted_address(self: &ITS, source_chain: String, source_address: String): bool {
         interchain_address_tracker::is_trusted_address(&self.address_tracker, source_chain, source_address)
-    }
-
-    public fun is_axelar_governance(self: &ITS, source_chain: String, source_address: String): bool {
-        interchain_address_tracker::is_axelar_governance(&self.address_tracker, source_chain, source_address)
     }
 
     // === Friend-only ===
@@ -183,22 +172,6 @@ module its::storage {
 
         let type_name = type_name::get<T>();
         add_registered_coin_type(self, token_id, type_name);
-    }
-
-    public(friend) fun authorize_upgrade(
-        self: &mut ITS, 
-        policy: u8,
-        digest: vector<u8>
-    ): UpgradeTicket {
-        package::authorize_upgrade(&mut self.upgrade_cap, policy, digest)
-    }
-
-
-    public(friend) fun commit_upgrade(
-        self: &mut ITS,
-        receipt: UpgradeReceipt,
-    ) {
-        package::commit_upgrade(&mut self.upgrade_cap, receipt)
     }
 
     // === Private ===

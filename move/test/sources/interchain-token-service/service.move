@@ -11,10 +11,11 @@ module its::service {
     use sui::address;
     use sui::event;
     use sui::bcs;
-    use sui::package::{UpgradeTicket, UpgradeReceipt};
 
     use axelar::utils;
     use axelar::channel::{Self, ApprovedCall};
+
+    use governance::governance::{Self, Governance};
 
     use its::storage::{Self, ITS};
     use its::coin_info::{Self, CoinInfo};
@@ -28,8 +29,7 @@ module its::service {
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
-    // address::to_u256(address::from_bytes(keccak256(b"sui-authorize-upgrade")));
-    const MESSAGE_TYPE_AUTHORIZE_UPGRADE: u256 = 0x6650591a2a5ddb76c14dc3391ca387db8ca4fe939511ec09c8f71edeadbc8efb;
+    
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
     
@@ -207,35 +207,12 @@ module its::service {
     }
 
     // === Special Call Receiving
-    public fun authorize_upgrade(self: &mut ITS, approved_call: ApprovedCall): UpgradeTicket {
+    public fun set_trusted_addresses(self: &mut ITS, governance: &Governance, approved_call: ApprovedCall) {
         let (source_chain, source_address, payload) = channel::consume_approved_call(
             storage::channel_mut(self), approved_call
         );
 
-        assert!(storage::is_axelar_governance(self, source_chain, source_address), EUntrustedAddress);
-
-        let message_type = utils::abi_decode_fixed(&payload, 0);
-        assert!(message_type == MESSAGE_TYPE_AUTHORIZE_UPGRADE, EInvalidMessageType);
-
-        let policy = (utils::abi_decode_fixed(&payload, 1) as u8);
-        let digest = utils::abi_decode_variable(&payload, 2);
-
-        storage::authorize_upgrade(self, policy, digest)
-    }
-
-    public fun commit_upgrade(
-        self: &mut ITS,
-        receipt: UpgradeReceipt,
-    ) {
-        storage::commit_upgrade(self, receipt)
-    }
-
-    public fun set_trusted_addresses(self: &mut ITS, approved_call: ApprovedCall) {
-        let (source_chain, source_address, payload) = channel::consume_approved_call(
-            storage::channel_mut(self), approved_call
-        );
-
-        assert!(storage::is_axelar_governance(self, source_chain, source_address), EUntrustedAddress);
+        assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
 
         let message_type = utils::abi_decode_fixed(&payload, 0);
         assert!(message_type == MESSAGE_TYPE_SET_TRUSTED_ADDRESSES, EInvalidMessageType);

@@ -40,10 +40,10 @@ module axelar::gateway {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::address;
-    use sui::package::{Self, UpgradeCap};
+    use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
     use sui::hex;
 
-    use axelar::utils::to_sui_signed;
+    use axelar::utils::{to_sui_signed, abi_decode_fixed, abi_decode_variable};
     use axelar::channel::{Self, Channel, ApprovedCall};
     use axelar::validators::{Self, AxelarValidators, validate_proof};
 
@@ -61,9 +61,15 @@ module axelar::gateway {
 
     const EInvalidUpgradeCap: u64 = 6;
 
+    const EUntrustedAddress: u64 = 7;
+    const EInvalidMessageType: u64 = 8;
+
     // These are currently supported
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
+
+    // address::to_u256(address::from_bytes(keccak256(b"sui-authorize-upgrade")));
+    const MESSAGE_TYPE_AUTHORIZE_UPGRADE: u256 = 0x6650591a2a5ddb76c14dc3391ca387db8ca4fe939511ec09c8f71edeadbc8efb;
 
     /// An object holding the state of the Axelar bridge.
     /// The central piece in managing call approval creation and signature verification.
@@ -71,8 +77,6 @@ module axelar::gateway {
         id: UID,
         approvals: Table<address, Approval>,
         validators: AxelarValidators,
-        upgrade_cap: UpgradeCap,
-        channel: Channel,
     }
 
     /// CallApproval struct which can consumed only by a `Channel` object.
@@ -101,23 +105,11 @@ module axelar::gateway {
     }
 
 
-    public fun initialize(upgrade_cap: UpgradeCap, ctx: &mut TxContext) {
-        let package_id = object::id_from_bytes(
-            hex::decode(
-                ascii::into_bytes(
-                    type_name::get_address(
-                        &type_name::get<Gateway>()
-                    )
-                )
-            )
-        );
-        assert!(package::upgrade_package(&upgrade_cap) == package_id && package::version(&upgrade_cap) == 0, EInvalidUpgradeCap);
+    fun init(ctx: &mut TxContext) {
         let gateway = Gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             validators: validators::new(),
-            upgrade_cap,
-            channel: channel::create_channel(ctx),
         };
 
         transfer::share_object(gateway);
@@ -286,6 +278,7 @@ module axelar::gateway {
     fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidators {
         &mut self.validators
     }
+    
 
     #[test_only]
     use axelar::utils::operators_hash;

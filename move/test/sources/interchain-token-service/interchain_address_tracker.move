@@ -12,8 +12,6 @@ module its::interchain_address_tracker {
     /// The interchain address tracker stores the trusted addresses for each chain.
     struct InterchainAddressTracker has store {
         trusted_addresses: Table<String, String>,
-        axelar_chain_name: String,
-        axelar_governance_address: String,
     }
 
     /// Get the trusted address for a chain.
@@ -30,23 +28,12 @@ module its::interchain_address_tracker {
     ): bool{
         get_trusted_address(self, chain_name) == &addr
     }
-
-    public fun is_axelar_governance(
-        self: &InterchainAddressTracker, 
-        chain_name: String, 
-        addr: String
-    ): bool{
-        &chain_name == &self.axelar_chain_name && &addr == &self.axelar_governance_address
-    }
-
     // === Protected ===
 
     /// Create a new interchain address tracker.
-    public(friend) fun new(ctx: &mut TxContext, axelar_chain_name: String, axelar_governance_address: String): InterchainAddressTracker {
+    public(friend) fun new(ctx: &mut TxContext): InterchainAddressTracker {
         InterchainAddressTracker {
             trusted_addresses: table::new(ctx),
-            axelar_chain_name,
-            axelar_governance_address,
         }
     }
 
