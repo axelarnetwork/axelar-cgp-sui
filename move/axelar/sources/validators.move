@@ -12,6 +12,9 @@ module axelar::validators {
 
     use axelar::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
 
+    // remove once 2024 is released and vector is natively supported
+    use fun std::vector::append as vector.append;
+
     friend axelar::gateway;
 
     const EInvalidWeights: u64 = 0;
@@ -33,7 +36,7 @@ module axelar::validators {
     }
 
     /// Emitted when the operatorship changes.
-    struct OperatorshipTransferred has copy, drop {
+    public struct OperatorshipTransferred has copy, drop {
         epoch: u64,
         payload: vector<u8>,
     }
@@ -53,32 +56,32 @@ module axelar::validators {
         approval_hash: vector<u8>,
         proof: vector<u8>
     ): bool {
-
         let epoch = epoch(validators);
-        if(epoch == 0) return true;
-        // Turn everything into bcs bytes and split data.
-        let proof = bcs::new(proof);
-        let operators =  bcs::peel_vec_vec_u8(&mut proof);
+        if (epoch == 0) {
+            return true
+        };
 
-        let ( weights, threshold, signatures) = (
-            bcs::peel_vec_u128(&mut proof),
-            bcs::peel_u128(&mut proof),
-            bcs::peel_vec_vec_u8(&mut proof)
+        // Turn everything into bcs bytes and split data.
+        let mut proof = bcs::new(proof);
+        let operators =  proof.peel_vec_vec_u8();
+
+        let (weights, threshold, signatures) = (
+            proof.peel_vec_u128(),
+            proof.peel_u128(),
+            proof.peel_vec_vec_u8()
         );
 
         let operators_length = vector::length(&operators);
-        let operators_epoch = *vec_map::get(
-            epoch_for_hash(validators),
-            &operators_hash(&operators, &weights, threshold)
-        );
+        let operators_epoch = *epoch_for_hash(validators)
+            .get(&operators_hash(&operators, &weights, threshold));
 
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
 
-        let (i, weight, operator_index) = (0, 0, 0);
+        let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
         while (i < total_signatures) {
-            
-            let signature = *vector::borrow(&signatures, i);
+
+            let mut signature = *vector::borrow(&signatures, i);
             normalize_signature(&mut signature);
 
             let signed_by: vector<u8> = ecdsa::secp256k1_ecrecover(&signature, &approval_hash, 0);
@@ -109,7 +112,7 @@ module axelar::validators {
         assert!(operators_length != 0 && is_sorted_asc_and_contains_no_duplicate(&new_operators), EInvalidOperators);
 
         assert!(weight_length == operators_length, EInvalidWeights);
-        let (total_weight, i) = (0, 0);
+        let (mut total_weight, mut i) = (0, 0);
         while (i < weight_length) {
             total_weight = total_weight + *vector::borrow(&new_weights, i);
             i = i + 1;
@@ -123,15 +126,16 @@ module axelar::validators {
         if (vec_map::contains(epoch_for_hash, &new_operators_hash)) {
             vec_map::remove(epoch_for_hash, &new_operators_hash);
         };
+
         // clean up old epoch
-        if (epoch >= OLD_KEY_RETENTION && vec_map::size(epoch_for_hash) > 0) {
+        if (epoch >= OLD_KEY_RETENTION && epoch_for_hash.size() > 0) {
             let old_epoch = epoch - OLD_KEY_RETENTION;
-            let (_, epoch) = vec_map::get_entry_by_idx(epoch_for_hash, 0);
+            let (_, epoch) = epoch_for_hash.get_entry_by_idx(0);
             if (*epoch <= old_epoch) {
-                vec_map::remove_entry_by_idx(epoch_for_hash, 0);
+                epoch_for_hash.remove_entry_by_idx(0);
             };
         };
-        vec_map::insert(epoch_for_hash, new_operators_hash, epoch);
+        epoch_for_hash.insert(new_operators_hash, epoch);
 
         set_epoch(validators, epoch);
 
@@ -198,14 +202,15 @@ module axelar::validators {
         target_id: address,
         payload_hash: address
     ) {
-        let data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, address::to_bytes(payload_hash));
+        let mut data = vector[];
 
-        table::add(&mut axelar.approvals, cmd_id, Approval {
+        data.append(address::to_bytes(cmd_id));
+        data.append(address::to_bytes(target_id));
+        data.append(*ascii::as_bytes(&source_chain));
+        data.append(*ascii::as_bytes(&source_address));
+        data.append(address::to_bytes(payload_hash));
+
+        axelar.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
         });
     }
@@ -217,7 +222,7 @@ module axelar::validators {
 
     #[test_only]
     public fun new(epoch: u64, epoch_for_hash: VecMap<vector<u8>, u64>, ctx: &mut TxContext): AxelarValidators {
-        let base = AxelarValidators {
+        let mut base = AxelarValidators {
             id: object::new(ctx),
             approvals: table::new(ctx)
         };
@@ -225,19 +230,12 @@ module axelar::validators {
             epoch,
             epoch_for_hash,
         });
+
         base
     }
 
     #[test_only]
     use axelar::utils::to_sui_signed;
-
-    #[test_only]
-    public fun drop_for_test(self: AxelarValidators) {
-        // validator cleanup
-        let AxelarValidators { id, approvals } = self;
-        table::destroy_empty(approvals);
-        object::delete(id);
-    }
 
     #[test_only]
     /// Test message for the `test_execute` test.
@@ -254,7 +252,7 @@ module axelar::validators {
     /// Samples for this test are generated with the `presets/` application.
     fun test_ecrecover() {
         let message = x"68656c6c6f20776f726c64"; // hello world
-        let signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
+        let mut signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
 
         normalize_signature(&mut signature);
         let pubkey = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);
@@ -268,7 +266,7 @@ module axelar::validators {
     /// Samples for this test are generated with the `presets/` application.
     fun test_to_signed() {
         let message = b"hello world";
-        let signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
+        let mut signature = x"0e88ac153a06d86f28dc0f946654d02302099c0c6558806b569d43f8bd062d5c295beb095e9cc396cd68a6b18daa0f1c0489b778831c4b3bb46f7aa1171c23b101";
         normalize_signature(&mut signature);
 
         let pub_key = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);

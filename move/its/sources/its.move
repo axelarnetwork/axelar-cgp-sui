@@ -1,6 +1,6 @@
 
 
-module its::storage {
+module its::its {
     use std::string;
     use std::ascii::String;
     use std::type_name::{Self, TypeName};
@@ -12,11 +12,11 @@ module its::storage {
     use sui::coin::{TreasuryCap, CoinMetadata};
     use sui::transfer;
 
-    use axelar::channel::{Self, Channel};
+    use axelar::channel::Channel;
 
     use its::token_id::{Self, TokenId, UnregisteredTokenId};
-    use its::interchain_address_tracker::{Self, InterchainAddressTracker};
-    use its::coin_info::{Self, CoinInfo};
+    use its::address_tracker::{Self, InterchainAddressTracker};
+    use its::coin_info::CoinInfo;
     use its::coin_management::CoinManagement;
 
     friend its::service;
@@ -25,17 +25,7 @@ module its::storage {
     /// Trying to read a token that doesn't exist.
     const ENotFound: u64 = 0;
 
-    struct CoinData<phantom T> has store {
-        coin_management: CoinManagement<T>,
-        coin_info: CoinInfo<T>,
-    }
-
-    struct UnregisteredCoinData<phantom T> has store {
-        treasury_cap: TreasuryCap<T>,
-        coin_metadata: CoinMetadata<T>,
-    }
-
-    struct ITS has key {
+    public struct ITS has key {
         id: UID,
         channel: Channel,
 
@@ -51,7 +41,7 @@ module its::storage {
     fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
-            channel: channel::create_channel(ctx),
+            channel: axelar::channel::new(ctx),
 
             address_tracker: interchain_address_tracker::new(
                 ctx,
@@ -69,45 +59,45 @@ module its::storage {
         interchain_address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
-    public fun borrow_unregistered_coin_type(
+    public fun get_unregistered_coin_type(
         self: &ITS, symbol: &String, decimals: u8
     ): &TypeName {
         let key = token_id::unregistered_token_id(symbol, decimals);
 
-        assert!(table::contains(&self.unregistered_coin_types, key), ENotFound);
-        table::borrow(&self.unregistered_coin_types, key)
+        assert!(self.unregistered_coin_types.contains(key), ENotFound);
+        self.unregistered_coin_types.borrow(key)
     }
 
-    public fun borrow_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
-        table::borrow(&self.registered_coin_types, token_id)
+    public fun get_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
+        self.registered_coin_types.borrow(token_id)
     }
 
-    public fun borrow_coin_data<T>(self: &ITS, token_id: TokenId) : &CoinData<T> {
-        bag::borrow(&self.registered_coins, token_id)
+    public fun get_coin_data<T>(self: &ITS, token_id: TokenId): &CoinData<T> {
+        self.registered_coins.borrow(token_id)
     }
 
-    public fun borrow_coin_info<T>(self: &ITS, token_id: TokenId) : &CoinInfo<T> {
-        &borrow_coin_data<T>(self, token_id).coin_info
+    public fun get_coin_info<T>(self: &ITS, token_id: TokenId): &CoinInfo<T> {
+        &get_coin_data<T>(self, token_id).coin_info
     }
 
-    public fun token_name<T>(self: &ITS, token_id: TokenId) : string::String {
-        coin_info::name<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_name<T>(self: &ITS, token_id: TokenId): string::String {
+        get_coin_info<T>(self, token_id).name()
     }
 
-    public fun token_symbol<T>(self: &ITS, token_id: TokenId) : String {
-        coin_info::symbol<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_symbol<T>(self: &ITS, token_id: TokenId): String {
+        get_coin_info<T>(self, token_id).symbol()
     }
 
-    public fun token_decimals<T>(self: &ITS, token_id: TokenId) : u8 {
-        coin_info::decimals<T>(borrow_coin_info<T>(self, token_id))
+    public fun token_decimals<T>(self: &ITS, token_id: TokenId): u8 {
+        get_coin_info<T>(self, token_id).decimals()
     }
 
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
-        *interchain_address_tracker::get_trusted_address(&self.address_tracker, chain_name)
+        *self.address_tracker.get_trusted_address(chain_name)
     }
 
     public fun is_trusted_address(self: &ITS, source_chain: String, source_address: String): bool {
-        interchain_address_tracker::is_trusted_address(&self.address_tracker, source_chain, source_address)
+        self.address_tracker.is_trusted_address(source_chain, source_address)
     }
 
     // === Friend-only ===
@@ -119,12 +109,12 @@ module its::storage {
         &mut self.channel
     }
 
-    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinManagement<T> {
+    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         &mut coin_data_mut<T>(self, token_id).coin_management
     }
 
-    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId) : &mut CoinData<T> {
-        bag::borrow_mut(&mut self.registered_coins, token_id)
+    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
+        self.registered_coins.borrow_mut(token_id)
     }
 
     public(friend) fun add_unregistered_coin<T>(
@@ -133,14 +123,10 @@ module its::storage {
         treasury_cap: TreasuryCap<T>,
         coin_metadata: CoinMetadata<T>
     ) {
-        bag::add(
-            &mut self.unregistered_coin_info,
-            token_id,
-            UnregisteredCoinData<T> {
-                treasury_cap,
-                coin_metadata,
-            }
-        );
+        self.unregistered_coin_info.add(token_id, UnregisteredCoinData<T> {
+            treasury_cap,
+            coin_metadata,
+        });
 
         let type_name = type_name::get<T>();
         add_unregistered_coin_type(self, token_id, type_name);
@@ -152,7 +138,7 @@ module its::storage {
         let UnregisteredCoinData<T> {
             treasury_cap,
             coin_metadata
-        } = bag::remove(&mut self.unregistered_coin_info, token_id);
+        } = self.unregistered_coin_info.remove(token_id);
 
         remove_unregistered_coin_type(self, token_id);
 
@@ -165,7 +151,7 @@ module its::storage {
         coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
     ) {
-        bag::add(&mut self.registered_coins, token_id, CoinData<T> {
+        self.registered_coins.add(token_id, CoinData<T> {
             coin_management,
             coin_info,
         });
@@ -177,19 +163,19 @@ module its::storage {
     // === Private ===
 
     fun add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {
-        table::add(&mut self.unregistered_coin_types, token_id, type_name);
+        self.unregistered_coin_types.add(token_id, type_name);
     }
 
     fun remove_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId): TypeName {
-        table::remove(&mut self.unregistered_coin_types, token_id)
+        self.unregistered_coin_types.remove(token_id)
     }
 
     fun add_registered_coin_type(self: &mut ITS, token_id: TokenId, type_name: TypeName) {
-        table::add(&mut self.registered_coin_types, token_id, type_name);
+        self.registered_coin_types.add(token_id, type_name);
     }
 
     #[allow(unused_function)]
     fun remove_registered_coin_type(self: &mut ITS, token_id: TokenId): TypeName {
-        table::remove(&mut self.registered_coin_types, token_id)
+        self.registered_coin_types.remove(token_id)
     }
 }

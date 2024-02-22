@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[allow(implicit_const_copy)]
 /// Implementation a cross-chain messaging system for Axelar.
 ///
 /// This code is based on the following:
@@ -96,7 +97,8 @@ module axelar::gateway {
         payload_hash: address,
     }
 
-    struct ContractCallApproved has copy, drop {
+    /// Event: emitted when a new message is approved by the SUI network.
+    public struct ContractCallApproved has copy, drop {
         cmd_id: address,
         source_chain: String,
         source_address: String,
@@ -128,18 +130,18 @@ module axelar::gateway {
         self: &mut Gateway,
         input: vector<u8>
     ) {
-        let bytes = bcs::new(input);
+        let mut bytes = bcs::new(input);
         // Split input into:
         // data: vector<u8> (BCS bytes)
         // proof: vector<u8> (BCS bytes)
         let (data, proof) = (
-            bcs::peel_vec_u8(&mut bytes),
-            bcs::peel_vec_u8(&mut bytes)
+            bytes.peel_vec_u8(),
+            bytes.peel_vec_u8()
         );
         let allow_operatorship_transfer = validate_proof(borrow_validators(self), to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
-        let data_bcs = bcs::new(data);
+        let mut data_bcs = bcs::new(data);
 
         // Split data into:
         // chain_id: u64,
@@ -152,7 +154,7 @@ module axelar::gateway {
         let params = bcs::peel_vec_vec_u8(&mut data_bcs);
         assert!(chain_id == 1, EInvalidChain);
 
-        let (i, commands_len) = (0, vector::length(&commands));
+        let (mut i, commands_len) = (0, vector::length(&commands));
 
         // make sure number of commands passed matches command IDs
         assert!(vector::length(&command_ids) == commands_len, EInvalidCommands);
@@ -168,17 +170,18 @@ module axelar::gateway {
             // Build a `CallApproval` object from the `params[i]`. BCS serializes data
             // in order, so field reads have to be done carefully and in order!
             if (cmd_selector == &SELECTOR_APPROVE_CONTRACT_CALL) {
-                let payload = bcs::new(payload);
-                let ( source_chain, source_address, target_id, payload_hash ) = (
-                    ascii::string(bcs::peel_vec_u8(&mut payload)),
-                    ascii::string(bcs::peel_vec_u8(&mut payload)),
-                    bcs::peel_address(&mut payload),
-                    bcs::peel_address(&mut payload)
+                let mut payload = bcs::new(payload);
+                let (source_chain, source_address, target_id, payload_hash) = (
+                    ascii::string(payload.peel_vec_u8()),
+                    ascii::string(payload.peel_vec_u8()),
+                    payload.peel_address(),
+                    payload.peel_address()
                 );
                 add_approval(self,
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 );
-                sui::event::emit( ContractCallApproved {
+
+                sui::event::emit(ContractCallApproved {
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 });
                 continue
@@ -242,7 +245,7 @@ module axelar::gateway {
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source_id: channel::source_address(channel),
+            source_id: object::id_address(channel),
             destination_chain,
             destination_address,
             payload,
@@ -297,7 +300,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
 
         // public keys of `operators`
         let epoch = 1;
@@ -305,50 +308,48 @@ module axelar::gateway {
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        epoch_for_hash.insert(
+            operators_hash(&operators, &vector[100u128], 10u128),
+            epoch
+        );
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
 
         process_commands(&mut validators, CALL_APPROVAL);
 
-        validators::remove_approval_for_test(&mut validators, @0x1);
-        validators::remove_approval_for_test(&mut validators, @0x2);
-        validators::drop_for_test(validators);
-        ts::end(test);
+        validators.remove_approval_for_test(@0x1);
+        validators.remove_approval_for_test(@0x2);
+        sui::test_utils::destroy(validators);
     }
 
     #[test]
     fun test_transfer_operatorship() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        let operators_hash = operators_hash(&operators, &vector[100u128], 10u128);
+        epoch_for_hash.insert(operators_hash, epoch);
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
-        assert!(validators::epoch(&validators) == 2, 0);
+        assert!(validators.epoch() == 2, 0);
 
-        validators::drop_for_test(validators);
-        ts::end(test);
+        sui::test_utils::destroy(validators);
     }
 }

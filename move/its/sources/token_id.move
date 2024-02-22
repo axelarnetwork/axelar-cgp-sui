@@ -11,19 +11,19 @@ module its::token_id {
     use sui::address;
     use sui::bcs;
 
-    use its::coin_info::{Self, CoinInfo};
-    use its::coin_management::{Self, CoinManagement};
+    use its::coin_info::CoinInfo;
+    use its::coin_management::CoinManagement;
 
     friend its::service;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
 
-    struct TokenId has store, copy, drop {
+    public struct TokenId has store, copy, drop {
         id: address
     }
 
-    struct UnregisteredTokenId has store, copy, drop {
+    public struct UnregisteredTokenId has store, copy, drop {
         id: address
     }
 
@@ -45,7 +45,7 @@ module its::token_id {
         has_metadata: &bool,
         has_treasury: &bool
     ): TokenId {
-        let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+        let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
         vector::append(&mut vec, bcs::to_bytes(&type_name::get<T>()));
         vector::append(&mut vec, bcs::to_bytes(name));
         vector::append(&mut vec, bcs::to_bytes(symbol));
@@ -59,18 +59,18 @@ module its::token_id {
         coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>
     ): TokenId {
         from_info<T>(
-            &coin_info::name(coin_info),
-            &coin_info::symbol(coin_info),
-            &coin_info::decimals(coin_info),
-            &option::is_some(coin_info::metadata(coin_info)),
-            &coin_management::has_capability(coin_management),
+            &coin_info.name(),
+            &coin_info.symbol(),
+            &coin_info.decimals(),
+            &option::is_some(coin_info.metadata()),
+            &coin_management.has_capability(),
         )
     }
 
     public fun unregistered_token_id(
         symbol: &ascii::String, decimals: u8
     ): UnregisteredTokenId {
-        let v = vector[decimals];
+        let mut v = vector[decimals];
         vector::append(&mut v, *ascii::as_bytes(symbol));
         let id = address::from_bytes(keccak256(&v));
         UnregisteredTokenId { id }
@@ -93,7 +93,8 @@ module its::token_id {
         let symbol = ascii::string(b"Symbol");
         let decimals: u8 = 56;
         let coin_info = coin_info::from_info<String>(name, symbol, decimals);
-        let vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+        let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+
         vector::append<u8>(&mut vec, bcs::to_bytes<CoinInfo<String>>(&coin_info));
         debug::print<address>(&address::from_u256(PREFIX_SUI_TOKEN_ID));
         debug::print<vector<u8>>(&vec);

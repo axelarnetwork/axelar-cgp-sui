@@ -13,7 +13,7 @@ module its::discovery {
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
     use axelar::utils;
 
-    use its::storage::{Self, ITS};
+    use its::its::ITS;
     use its::token_id;
 
     const EUnsupportedMessageType: u64 = 0;
@@ -23,7 +23,7 @@ module its::discovery {
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
 
     public fun register_transaction(self: &ITS, discovery: &mut RelayerDiscovery) {
-        let arg = vector[0];
+        let mut arg = vector[0];
         vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
 
         let arguments = vector[
@@ -31,17 +31,19 @@ module its::discovery {
             vector[3]
         ];
 
+        let function = discovery::new_function(
+            address_bytes<ITS>(),
+            ascii::string(b"discovery"),
+            ascii::string(b"get_call_info")
+        );
+
         let tx = discovery::new_transaction(
-            discovery::new_function(
-                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<ITS>())))),
-                ascii::string(b"discovery"),
-                ascii::string(b"get_call_info")
-            ),
+            function,
             arguments,
             vector[],
         );
 
-        discovery::register_transaction(discovery, storage::channel(self), tx);
+        discovery.register_transaction(self.channel(), tx);
     }
 
     public fun get_call_info(self: &ITS, payload: &vector<u8>): Transaction {
@@ -49,7 +51,7 @@ module its::discovery {
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             get_interchain_transfer_tx(self, payload)
         } else {
-            assert!( message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType );
+            assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
             get_deploy_interchain_token_tx(self, payload)
         }
     }
@@ -58,7 +60,7 @@ module its::discovery {
         let data = utils::abi_decode_variable(payload, 5);
 
         if (vector::is_empty(&data)) {
-            let arg = vector[0];
+            let mut arg = vector[0];
             vector::append(&mut arg, address::to_bytes(object::id_address(self)));
 
             let arguments = vector[
@@ -67,7 +69,7 @@ module its::discovery {
             ];
 
             let token_id = token_id::from_u256(utils::abi_decode_fixed(payload, 1));
-            let type_name = storage::borrow_registered_coin_type(self, token_id);
+            let type_name = self.get_registered_coin_type(token_id);
 
             discovery::new_transaction(
                 discovery::new_function(
@@ -85,7 +87,7 @@ module its::discovery {
     }
 
     fun get_deploy_interchain_token_tx(self: &ITS, payload: &vector<u8>): Transaction {
-        let arg = vector::singleton<u8>(0);
+        let mut arg = vector[0];
         vector::append(&mut arg, address::to_bytes(object::id_address(self)));
 
         let arguments = vector[
@@ -95,7 +97,7 @@ module its::discovery {
 
         let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
         let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
-        let type_name = storage::borrow_unregistered_coin_type(self, &symbol, decimals);
+        let type_name = self.get_unregistered_coin_type(&symbol, decimals);
 
         discovery::new_transaction(
             discovery::new_function(

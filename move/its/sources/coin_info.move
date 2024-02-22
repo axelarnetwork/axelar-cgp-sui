@@ -9,7 +9,7 @@ module its::coin_info {
 
     use sui::coin::{Self, CoinMetadata};
 
-    struct CoinInfo<phantom T> has store {
+    public struct CoinInfo<phantom T> has store {
         name: String,
         symbol: ascii::String,
         decimals: u8,
