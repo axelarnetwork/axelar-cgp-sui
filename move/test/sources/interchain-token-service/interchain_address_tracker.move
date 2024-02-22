@@ -1,5 +1,5 @@
 module its::interchain_address_tracker {
-    use std::ascii::String;
+    use std::ascii::{Self, String};
 
     use sui::table::{Self, Table};
     use sui::tx_context::{TxContext};
@@ -11,7 +11,9 @@ module its::interchain_address_tracker {
 
     /// The interchain address tracker stores the trusted addresses for each chain.
     struct InterchainAddressTracker has store {
-        trusted_addresses: Table<String, String>
+        trusted_addresses: Table<String, String>,
+        axelar_chain_name: String,
+        axelar_governance_address: String,
     }
 
     /// Get the trusted address for a chain.
@@ -29,12 +31,22 @@ module its::interchain_address_tracker {
         get_trusted_address(self, chain_name) == &addr
     }
 
+    public fun is_axelar_governance(
+        self: &InterchainAddressTracker, 
+        chain_name: String, 
+        addr: String
+    ): bool{
+        &chain_name == &self.axelar_chain_name && &addr == &self.axelar_governance_address
+    }
+
     // === Protected ===
 
     /// Create a new interchain address tracker.
-    public(friend) fun new(ctx: &mut TxContext): InterchainAddressTracker {
+    public(friend) fun new(ctx: &mut TxContext, axelar_chain_name: String, axelar_governance_address: String): InterchainAddressTracker {
         InterchainAddressTracker {
             trusted_addresses: table::new(ctx),
+            axelar_chain_name,
+            axelar_governance_address,
         }
     }
 
@@ -45,9 +57,15 @@ module its::interchain_address_tracker {
         trusted_address: String
     ) {
         if (table::contains(&self.trusted_addresses, chain_name)) {
-            *table::borrow_mut(&mut self.trusted_addresses, chain_name) = trusted_address;
+            if (ascii::length(&trusted_address) == 0) {
+                table::remove(&mut self.trusted_addresses, chain_name);
+            } else {
+                *table::borrow_mut(&mut self.trusted_addresses, chain_name) = trusted_address;
+            }
         } else {
-            table::add(&mut self.trusted_addresses, chain_name, trusted_address);
+            if (ascii::length(&trusted_address) > 0) {
+                table::add(&mut self.trusted_addresses, chain_name, trusted_address);
+            }
         }
     }
 }

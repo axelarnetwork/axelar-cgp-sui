@@ -2,7 +2,6 @@
 
 /// Todo: consider nuking?
 module its::interchain_token_channel {
-    use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
 
     /// Identifies a token channel.

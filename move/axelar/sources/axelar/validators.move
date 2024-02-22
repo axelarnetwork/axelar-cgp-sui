@@ -10,7 +10,7 @@ module axelar::validators {
     use sui::event;
     use sui::vec_map:: {Self, VecMap};
 
-    use axelar::utils::{normalize_signature, operators_hash};
+    use axelar::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
 
     friend axelar::gateway;
 
@@ -106,8 +106,7 @@ module axelar::validators {
         let operators_length = vector::length(&new_operators);
         let weight_length = vector::length(&new_weights);
 
-        assert!(operators_length != 0, EInvalidOperators);
-        // TODO: implement `_isSortedAscAndContainsNoDuplicate` function.
+        assert!(operators_length != 0 && is_sorted_asc_and_contains_no_duplicate(&new_operators), EInvalidOperators);
 
         assert!(weight_length == operators_length, EInvalidWeights);
         let (total_weight, i) = (0, 0);
@@ -158,6 +157,29 @@ module axelar::validators {
 
     public fun epoch(validators: &AxelarValidators): u64 {
         validators.epoch
+    }
+
+    fun is_sorted_asc_and_contains_no_duplicate(accounts: &vector<vector<u8>>): bool {
+        let accountsLength = vector::length(accounts);
+        let prevAccount = vector::borrow(accounts, 0);
+
+        if (is_address_vector_zero(prevAccount)) {
+            return false
+        };
+
+        let i = 1;
+        while (i < accountsLength) {
+            let currAccount = vector::borrow(accounts, i);
+
+            if (!compare_address_vectors(prevAccount, currAccount)) {
+                return false
+            };
+
+            prevAccount = currAccount;
+            i = i + 1;
+        };
+
+        true
     }
 
     // === Testing ===
