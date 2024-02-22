@@ -53,7 +53,7 @@ module its::utils {
 
     public fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
         let mut v = vector[*decimals];
-        vector::append(&mut v, *ascii::as_bytes(symbol));
+        vector::append(&mut v, *symbol.as_bytes());
         address::from_bytes(keccak256(&v))
     }
 
