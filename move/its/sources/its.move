@@ -37,6 +37,16 @@ module its::its {
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: Bag,
     }
+    
+    public struct CoinData<phantom T> has store {
+        coin_management: CoinManagement<T>,
+        coin_info: CoinInfo<T>,
+    }
+
+    public struct UnregisteredCoinData<phantom T> has store {
+        treasury_cap: TreasuryCap<T>,
+        coin_metadata: CoinMetadata<T>,
+    }
 
     fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {

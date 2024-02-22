@@ -165,7 +165,7 @@ module axelar::validators {
 
     fun is_sorted_asc_and_contains_no_duplicate(accounts: &vector<vector<u8>>): bool {
         let accountsLength = vector::length(accounts);
-        let prevAccount = vector::borrow(accounts, 0);
+        let mut prevAccount = vector::borrow(accounts, 0);
 
         if (is_address_vector_zero(prevAccount)) {
             return false
