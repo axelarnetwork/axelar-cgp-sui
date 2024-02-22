@@ -10,7 +10,7 @@ module its::storage {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
-    use sui::package::{Self, UpgradeCap, UpgradeTicket};
+    use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
     use sui::transfer;
 
     use axelar::channel::{Self, Channel};
@@ -191,6 +191,14 @@ module its::storage {
         digest: vector<u8>
     ): UpgradeTicket {
         package::authorize_upgrade(&mut self.upgrade_cap, policy, digest)
+    }
+
+
+    public(friend) fun commit_upgrade(
+        self: &mut ITS,
+        receipt: UpgradeReceipt,
+    ) {
+        package::commit_upgrade(&mut self.upgrade_cap, receipt)
     }
 
     // === Private ===

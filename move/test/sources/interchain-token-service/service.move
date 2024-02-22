@@ -11,7 +11,7 @@ module its::service {
     use sui::address;
     use sui::event;
     use sui::bcs;
-    use sui::package::UpgradeTicket;
+    use sui::package::{UpgradeTicket, UpgradeReceipt};
 
     use axelar::utils;
     use axelar::channel::{Self, ApprovedCall};
@@ -221,6 +221,13 @@ module its::service {
         let digest = utils::abi_decode_variable(&payload, 2);
 
         storage::authorize_upgrade(self, policy, digest)
+    }
+
+    public fun commit_upgrade(
+        self: &mut ITS,
+        receipt: UpgradeReceipt,
+    ) {
+        storage::commit_upgrade(self, receipt)
     }
 
     public fun set_trusted_addresses(self: &mut ITS, approved_call: ApprovedCall) {
