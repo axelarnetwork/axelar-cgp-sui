@@ -229,9 +229,9 @@ module its::service {
     }
 
     // === Special Call Receiving
-    public fun set_trusted_addresses(self: &mut ITS, governance: &Governance, approved_call: ApprovedCall) {
+    public fun set_trusted_addresses(its: &mut ITS, governance: &Governance, approved_call: ApprovedCall) {
         let (source_chain, source_address, payload) = channel::consume_approved_call(
-            its::channel_mut(self), approved_call
+            its::channel_mut(its), approved_call
         );
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
@@ -241,8 +241,8 @@ module its::service {
 
         let mut trusted_address_info = bcs::new(utils::abi_decode_variable(&payload, 1));
 
-        let mut chain_names = bcs::peel_vec_vec_u8(&mut trusted_address_info);
-        let mut trusted_addresses = bcs::peel_vec_vec_u8(&mut trusted_address_info);
+        let mut chain_names = trusted_address_info.peel_vec_vec_u8();
+        let mut trusted_addresses = trusted_address_info.peel_vec_vec_u8();
 
         let length = vector::length(&chain_names);
 
@@ -250,8 +250,7 @@ module its::service {
 
         let mut i = 0;
         while(i < length) {
-            its::set_trusted_address(
-                self,
+            its.set_trusted_address(
                 ascii::string(vector::pop_back(&mut chain_names)),
                 ascii::string(vector::pop_back(&mut trusted_addresses)),
             );

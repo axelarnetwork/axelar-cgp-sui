@@ -121,10 +121,10 @@ module axelar::validators {
 
         let new_operators_hash = operators_hash(&new_operators, &new_weights, new_threshold);
         // Remove old epoch for the operators if it exists
-        let epoch = epoch(validators) + 1;
-        let epoch_for_hash = epoch_for_hash_mut(validators);
-        if (vec_map::contains(epoch_for_hash, &new_operators_hash)) {
-            vec_map::remove(epoch_for_hash, &new_operators_hash);
+        let epoch = validators.epoch() + 1;
+        let epoch_for_hash = validators.epoch_for_hash_mut();
+        if (epoch_for_hash.contains(&new_operators_hash)) {
+            epoch_for_hash.remove(&new_operators_hash);
         };
 
         // clean up old epoch
