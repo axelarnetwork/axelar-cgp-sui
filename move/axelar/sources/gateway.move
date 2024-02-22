@@ -190,7 +190,7 @@ module axelar::gateway {
                     continue
                 };
                 allow_operatorship_transfer = false;
-                validators::transfer_operatorship(borrow_mut_validators(self), payload)
+                borrow_mut_validators(self).transfer_operatorship(payload);
             } else {
                 continue
             };

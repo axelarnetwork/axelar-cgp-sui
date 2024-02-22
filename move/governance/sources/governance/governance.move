@@ -19,7 +19,7 @@ module governance::governance {
     const ENotSelfUpgradeCap: u64 = 2;
     const ENotNewPackage: u64 = 3;
 
-    struct Governance has key, store {
+    public struct Governance has key, store {
         id: UID,
         trusted_source_chain: String,
         trusted_source_address: String,
@@ -38,14 +38,10 @@ module governance::governance {
     ) {
         let package_id = object::id_from_bytes(
             hex::decode(
-                ascii::into_bytes(
-                    type_name::get_address(
-                        &type_name::get<Governance>()
-                    )
-                )
+                type_name::get<Governance>().get_address().into_bytes()
             )
         );
-        assert!(package::upgrade_package(&upgrade_cap) == package_id, ENotSelfUpgradeCap);
+        assert!(upgrade_cap.upgrade_package() == package_id, ENotSelfUpgradeCap);
         is_cap_new(&upgrade_cap);
         package::make_immutable(upgrade_cap);
 
@@ -72,18 +68,14 @@ module governance::governance {
     public fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
         is_cap_new(&upgrade_cap);
 
-        table::add(
-            &mut self.caps,
+        self.caps.add(
             object::id(&upgrade_cap),
             upgrade_cap,
         )
     }
 
     public fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
-        let (source_chain, source_address, payload) = channel::consume_approved_call(
-            &mut self.channel, 
-            approved_call,
-        );
+        let (source_chain, source_address, payload) = self.channel.consume_approved_call(approved_call);
 
         assert!(is_governance(self, source_chain, source_address), EUntrustedAddress);
 
