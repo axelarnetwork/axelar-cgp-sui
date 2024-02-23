@@ -1,7 +1,7 @@
 /// Q: why addresses are stored as Strings?
 /// Q: why chains are Strings?
 module its::address_tracker {
-    use std::ascii::String;
+    use std::ascii::{String};
 
     use sui::table::{Self, Table};
     use sui::tx_context::TxContext;
@@ -30,7 +30,6 @@ module its::address_tracker {
     ): bool{
         get_trusted_address(self, chain_name) == &addr
     }
-
     // === Protected ===
 
     /// Create a new interchain address tracker.
@@ -47,9 +46,15 @@ module its::address_tracker {
         trusted_address: String
     ) {
         if (self.trusted_addresses.contains(chain_name)) {
-            *self.trusted_addresses.borrow_mut(chain_name) = trusted_address;
+            if (trusted_address.length() == 0) {
+                self.trusted_addresses.remove(chain_name);
+            } else {
+                *self.trusted_addresses.borrow_mut(chain_name) = trusted_address;
+            }
         } else {
-            self.trusted_addresses.add(chain_name, trusted_address);
+            if (trusted_address.length() > 0) {
+                self.trusted_addresses.add(chain_name, trusted_address);
+            }
         }
     }
 }

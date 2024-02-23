@@ -33,7 +33,7 @@ module its::utils {
         let mut moduleName = vector[];
 
         let (mut i, length) = (0, vector::length(symbolBytes));
-        while (isNumber(*vector::borrow(symbolBytes, i))) {
+        while (is_number(*vector::borrow(symbolBytes, i))) {
             i = i + 1;
         };
         while (i < length) {
@@ -53,7 +53,7 @@ module its::utils {
 
     public fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
         let mut v = vector[*decimals];
-        vector::append(&mut v, *ascii::as_bytes(symbol));
+        vector::append(&mut v, *symbol.as_bytes());
         address::from_bytes(keccak256(&v))
     }
 

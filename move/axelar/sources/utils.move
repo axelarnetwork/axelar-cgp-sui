@@ -6,6 +6,7 @@ module axelar::utils {
 
     use sui::bcs;
     use sui::hash;
+    use sui::address;
 
     const EInvalidSignatureLength: u64 = 0;
 
@@ -114,6 +115,14 @@ module axelar::utils {
         hash::keccak256(&data)
     }
 
+    public fun is_address_vector_zero(v: &vector<u8>): bool {
+        address::to_u256(address::from_bytes(*v)) == 0
+    }
+
+    public fun compare_address_vectors(v1: &vector<u8>, v2: &vector<u8>): bool {
+        address::to_u256(address::from_bytes(*v1)) < address::to_u256(address::from_bytes(*v2))
+    }
+    
     #[test_only]
     const VAR1: vector<u8> = x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028";
     #[test_only]

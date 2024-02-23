@@ -2,15 +2,15 @@
 
 module its::its {
     use std::string;
-    use std::ascii::{String};
+    use std::ascii::String;
     use std::type_name::{Self, TypeName};
 
-    use sui::transfer;
     use sui::bag::{Self, Bag};
     use sui::object::{Self, UID};
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
+    use sui::transfer;
 
     use axelar::channel::Channel;
 
@@ -37,7 +37,7 @@ module its::its {
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: Bag,
     }
-
+    
     public struct CoinData<phantom T> has store {
         coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
@@ -53,7 +53,9 @@ module its::its {
             id: object::new(ctx),
             channel: axelar::channel::new(ctx),
 
-            address_tracker: address_tracker::new(ctx),
+            address_tracker: address_tracker::new(
+                ctx,
+            ),
 
             registered_coins: bag::new(ctx),
             registered_coin_types: table::new(ctx),
@@ -63,10 +65,8 @@ module its::its {
         });
     }
 
-    // Some capability should be required to only allow for admin access here.
-    // TODO: double check on mutable access - friend only?
-    public fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        self.address_tracker.set_trusted_address(chain_name, trusted_address);
+    public(friend) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+        address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
     public fun get_unregistered_coin_type(
