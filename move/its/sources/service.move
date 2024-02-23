@@ -21,9 +21,9 @@ module its::service {
     use its::token_id::{Self, TokenId};
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
-    use its::token_channel::TokenChannel;
 
     use axelar::gateway;
+    use axelar::channel::Channel;
 
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -124,13 +124,13 @@ module its::service {
     public fun receive_interchain_transfer_with_data<T>(
         self: &mut ITS,
         approved_call: ApprovedCall,
-        token_channel: &TokenChannel,
+        channel: &Channel,
         ctx: &mut TxContext
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
         let (source_chain, payload) = decode_approved_call(self, approved_call);
 
         assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(address::from_bytes(utils::abi_decode_variable(&payload, 3)) == token_channel.to_address(), EWrongDestination);
+        assert!(address::from_bytes(utils::abi_decode_variable(&payload, 3)) == channel.to_address(), EWrongDestination);
 
         let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
         let source_address = utils::abi_decode_variable(&payload, 2);
@@ -199,14 +199,14 @@ module its::service {
 
     public fun mint_as_distributor<T>(
         self: &mut ITS,
-        token_channel: &TokenChannel,
+        channel: &Channel,
         token_id: TokenId,
         to: address,
         amount: u64,
         ctx: &mut TxContext
     ) {
         let coin_management = self.coin_management_mut<T>(token_id);
-        let distributor = token_channel.to_address();
+        let distributor = channel.to_address();
 
         assert!(coin_management.is_distributor(distributor), ENotDistributor);
 
@@ -216,12 +216,12 @@ module its::service {
 
     public fun burn_as_distributor<T>(
         self: &mut ITS,
-        token_channel: &TokenChannel,
+        channel: &Channel,
         token_id: TokenId,
         coin: Coin<T>
     ) {
         let coin_management = self.coin_management_mut<T>(token_id);
-        let distributor = token_channel.to_address();
+        let distributor = channel.to_address();
 
         assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 

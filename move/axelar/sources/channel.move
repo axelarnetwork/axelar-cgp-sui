@@ -4,7 +4,7 @@
 module axelar::channel {
     use std::ascii::String;
     use sui::table::{Self, Table};
-    use sui::object::{Self, UID};
+    use sui::object::{Self, ID, UID};
     use sui::tx_context::TxContext;
     use sui::event;
 
@@ -109,6 +109,14 @@ module axelar::channel {
         processed_call_approvals.drop();
         event::emit(ChannelDestroyed { id: id.uid_to_address() });
         id.delete();
+    }
+
+    public fun id(self: &Channel): ID {
+        object::id(self)
+    }
+
+    public fun to_address(self: &Channel): address {
+        object::id_address(self)
     }
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
