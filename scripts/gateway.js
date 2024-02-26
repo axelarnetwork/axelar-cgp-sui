@@ -4,7 +4,7 @@ const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const secp256k1 = require('secp256k1');
 const { CosmWasmClient } = require('@cosmjs/cosmwasm-stargate');
 const {
-    utils: { keccak256, computeAddress },
+    utils: { keccak256 },
 } = require('ethers');
 const axelarInfo = require('../info/axelar.json');
 
@@ -196,8 +196,7 @@ async function getAmplifierWorkers(rpc, proverAddr) {
     const client = await CosmWasmClient.connect(rpc);
     const workerSet = await client.queryContractSmart(proverAddr, 'get_worker_set');
     const signers = Object.values(workerSet.signers).sort((a, b) =>
-        computeAddress('0x' + a.pub_key.ecdsa).toLowerCase()
-        .localeCompare(computeAddress('0x' + b.pub_key.ecdsa).toLowerCase())
+        a.pub_key.ecdsa.toLowerCase().localeCompare(b.pub_key.ecdsa.toLowerCase())
     );
 
     const pubKeys = signers.map((signer) => Buffer.from(signer.pub_key.ecdsa, 'hex'));
