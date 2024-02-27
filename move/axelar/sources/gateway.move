@@ -32,7 +32,6 @@
 module axelar::gateway {
     use std::ascii::{Self, String};
     use std::vector;
-    use std::type_name;
 
     use sui::bcs;
     use sui::hash;
@@ -41,10 +40,8 @@ module axelar::gateway {
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::address;
-    use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
-    use sui::hex;
 
-    use axelar::utils::{to_sui_signed, abi_decode_fixed, abi_decode_variable};
+    use axelar::utils::{to_sui_signed};
     use axelar::channel::{Self, Channel, ApprovedCall};
     use axelar::validators::{Self, AxelarValidators, validate_proof};
 
@@ -60,17 +57,9 @@ module axelar::gateway {
     /// Trying to `take_approved_call` with a wrong payload.
     const EPayloadHashMismatch: u64 = 5;
 
-    const EInvalidUpgradeCap: u64 = 6;
-
-    const EUntrustedAddress: u64 = 7;
-    const EInvalidMessageType: u64 = 8;
-
     // These are currently supported
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
-
-    // address::to_u256(address::from_bytes(keccak256(b"sui-authorize-upgrade")));
-    const MESSAGE_TYPE_AUTHORIZE_UPGRADE: u256 = 0x6650591a2a5ddb76c14dc3391ca387db8ca4fe939511ec09c8f71edeadbc8efb;
 
     /// An object holding the state of the Axelar bridge.
     /// The central piece in managing call approval creation and signature verification.

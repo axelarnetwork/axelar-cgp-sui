@@ -1,6 +1,4 @@
 {
     "singletons": [
-        "validators::AxelarValidators",
-        "discovery::RelayerDiscovery"
     ]
 }

@@ -7,6 +7,7 @@ const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const tmp = require('tmp');
+const { setConfig, getFullObject } = require('./utils');
 
 async function publishPackage(packagePath, client, keypair) {
 	// remove all controlled temporary objects on process exit
@@ -63,11 +64,6 @@ function updateMoveToml(packagePath, packageId) {
     fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId));
 }
 
-module.exports = {
-    publishPackage,
-    updateMoveToml,
-}
-
 function insertPublishedAt(toml, packageId) {
     const lines = toml.split('\n');
     const versionLineIndex = lines.findIndex(line => line.slice(0, 7) === 'version');
@@ -88,6 +84,32 @@ function fillAddresses(toml, address) {
     }
     return lines.join('\n');
 }
+
+async function publishPackageFull(packagePath, client, keypair, env) {
+    let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
+        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
+    
+        const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
+        const info = require(`../move/${packagePath}/info.json`);
+        const config = {};
+        config.packageId = packageId;
+        for(const singleton of info.singletons) {
+            const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
+            config[singleton] = await getFullObject(object, client);
+        }
+        
+        setConfig(packagePath, env.alias, config);
+        updateMoveToml(packagePath, packageId);
+
+        return {packageId, publishTxn};
+}
+
+module.exports = {
+    publishPackage,
+    updateMoveToml,
+    publishPackageFull,
+}
+
 
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
@@ -128,52 +150,6 @@ if (require.main === module) {
             }
         }
 
-        let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
-    
-        const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
-        const info = require(`../move/${packagePath}/info.json`);
-        const config = {};
-        config.packageId = packageId;
-        for(const singleton of info.singletons) {
-            const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
-            delete object.type;
-            delete object.sender;
-            delete object.owner;
-            config[singleton] = object
-            const objectResponce = await client.getObject({
-                id: object.objectId,
-                options: {
-                    showContent: true,
-                }
-            }); 
-            const fields = objectResponce.data.content.fields;
-
-            function decodeFields(fields, object) {
-                for(const key in fields) {
-                    if(key === 'id') continue;
-                    if(fields[key].fields) {
-                        if(!fields[key].fields.id) {
-                            object[key] = {};
-                            decodeFields(fields[key].fields, object[key]);
-                        } else {
-                            object[key] = fields[key].fields.id.id || fields[key].fields.id;
-                        }
-                    } else {
-                        object[key] = fields[key].id;
-                    }
-                }
-                return object;
-            }
-            decodeFields(fields, object);
-        }
-        
-        const allConfigs = fs.existsSync(`../info/${packagePath}.json`) ? require(`../info/${packagePath}.json`) : {};
-        allConfigs[env.alias] = config;
-        if (!fs.existsSync('info')){
-            fs.mkdirSync('info');
-        }
-        fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
-        updateMoveToml(packagePath, packageId);
+        await publishPackageFull(packagePath, client, keypair, env);
     })();
 }

@@ -108,6 +108,6 @@ module governance::governance {
 
     
     fun is_cap_new(cap: &UpgradeCap) {
-        assert!(package::version(cap) == 0, ENotNewPackage);
+        assert!(package::version(cap) == 1, ENotNewPackage);
     }
 }

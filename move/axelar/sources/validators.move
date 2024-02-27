@@ -12,9 +12,6 @@ module axelar::validators {
 
     use axelar::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
 
-    // remove once 2024 is released and vector is natively supported
-    use fun std::vector::append as vector.append;
-
     friend axelar::gateway;
 
     const EInvalidWeights: u64 = 0;
@@ -24,6 +21,7 @@ module axelar::validators {
     // const EDuplicateOperators: u64 = 3;
     /// For when number of signatures for the call approvals is below the threshold.
     const ELowSignaturesWeight: u64 = 4;
+    const EMalformedSigners: u64 = 5;
 
     /// Used for a check in `validate_proof` function.
     const OLD_KEY_RETENTION: u64 = 16;
@@ -88,7 +86,7 @@ module axelar::validators {
             while (operator_index < operators_length && &signed_by != vector::borrow(&operators, operator_index)) {
                 operator_index = operator_index + 1;
             };
-            // assert!(operator_index == operators_length, 0); // EMalformedSigners
+            assert!(operator_index == operators_length, EMalformedSigners);
 
             weight = weight + *vector::borrow(&weights, operator_index);
             if (weight >= threshold) { return operators_epoch == epoch };

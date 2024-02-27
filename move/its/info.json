@@ -1,6 +1,5 @@
 {
     "singletons": [
-        "test::Singleton",
-        "storage::ITS"
+        "its::ITS"
     ]
 }
