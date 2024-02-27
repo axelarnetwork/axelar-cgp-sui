@@ -1,76 +1,33 @@
 require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
-const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const { execSync } = require('child_process');
-const fs = require('fs');
-const tmp = require('tmp');
 const { publishPackageFull } = require('./publish-package');
-const { getConfig, setConfig, getFullObject } = require('./utils');
+const { initializeGovernance, takeUpgradeCaps } = require('./governance');
 
 async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
     const packageIds = {};
     for(const packagePath of ['axelar', 'governance', 'gas_service', 'its']) {
         console.log(packagePath);
-        const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
-        upgradeCaps[packagePath] =  publishTxn.objectChanges.find((obj) => obj.objectType == '0x2::package::UpgradeCap' );
-        packageIds[packagePath] = packageId;
+        while (true) try {
+            const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
+            upgradeCaps[packagePath] =  publishTxn.objectChanges.find((obj) => obj.objectType == '0x2::package::UpgradeCap' );
+            packageIds[packagePath] = packageId;
+            break;
+        } catch(e) {
+
+        }
     }
 
-    let tx = new TransactionBlock();
-    tx.moveCall({   
-            target: `${packageIds['governance']}::governance::new`,
-        arguments: [
-            tx.pure.string('Axelar'),
-            tx.pure.string('the governance source addresss'),
-            tx.pure.u256(0),
-            tx.object(upgradeCaps['governance']['objectId']),
-        ],
-        typeArguments: [],
-    });
-    const publishTxn = await client.signAndExecuteTransactionBlock({
-		transactionBlock: tx,
-		signer: keypair,
-		options: {
-			showEffects: true,
-			showObjectChanges: true,
-            showContent: true
-		},
-	});
+    await initializeGovernance(upgradeCaps.governance, client, keypair, env);
 
-    const governance = publishTxn.objectChanges.find((obj) => obj.objectType == `${packageIds['governance']}::governance::Governance`);
-
-    const governanceConfig = getConfig('governance', env.alias);
-
-    governanceConfig['governance::Governance'] = await getFullObject(governance, client);
-
-    setConfig('governance', env.alias, governanceConfig);
-
-    tx = new TransactionBlock();
-    for(const packagePath of ['axelar', 'gas_service', 'its']) {
-        console.log(packagePath);
-        tx.moveCall({   
-                target: `${packageIds['governance']}::governance::take_upgrade_cap`,
-            arguments: [
-                tx.object(governance.objectId),
-                tx.object(upgradeCaps[packagePath]['objectId']),
-            ],
-            typeArguments: [],
-        });
-    }
-
-    console.log(await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
-            showContent: true
-        },
-    }));
+    await takeUpgradeCaps(
+        ['axelar', 'gas_service', 'its'].map(packagePath => upgradeCaps[packagePath]),
+        client,
+        keypair,
+        env,
+    );
 }
 
 if (require.main === module) {
