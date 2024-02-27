@@ -1,13 +1,13 @@
 require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
+const { SuiClient } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const tmp = require('tmp');
 const { setConfig, getFullObject } = require('./utils');
+const { parseEnv } = require('./utils');
 
 async function publishPackage(packagePath, client, keypair) {
 	// remove all controlled temporary objects on process exit
@@ -113,17 +113,7 @@ module.exports = {
 
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
-    const env = ((arg) => {
-        switch (arg?.toLowerCase()) {
-            case 'localnet':
-            case 'devnet':
-            case 'testnet':
-            case 'mainnet':
-                return {alias: arg, url: getFullnodeUrl(arg)};
-            default:
-                return JSON.parse(arg);
-      }
-    })(process.argv[3] || 'localnet');
+    const env = parseEnv(process.argv[3] || 'localnet');
     const faucet = (process.argv[4]?.toLowerCase?.() === 'true');
     
     (async () => {

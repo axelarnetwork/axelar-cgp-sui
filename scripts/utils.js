@@ -2,6 +2,7 @@ const { arrayify } = require('ethers/lib/utils');
 const fs = require('fs');
 
 const configs = {};
+const { getFullnodeUrl } = require('@mysten/sui.js/client');
 
 function toPure(hexString) {
     return String.fromCharCode(...arrayify(hexString));
@@ -91,6 +92,16 @@ async function getFullObject(object, client) {
     }
     decodeFields(fields, object);
     return object;
+function parseEnv(arg) {
+    switch (arg?.toLowerCase()) {
+        case 'localnet':
+        case 'devnet':
+        case 'testnet':
+        case 'mainnet':
+            return {alias: arg, url: getFullnodeUrl(arg)};
+        default:
+            return JSON.parse(arg);
+  }
 }
 
 module.exports = {
@@ -99,4 +110,5 @@ module.exports = {
     getConfig,
     setConfig,
     getFullObject,
+    parseEnv,
 };

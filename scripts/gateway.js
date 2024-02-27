@@ -2,6 +2,7 @@ require('dotenv').config();
 const {BCS, fromHEX, getSuiMoveConfig} = require("@mysten/bcs");
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const secp256k1 = require('secp256k1');
+const { CosmWasmClient } = require('@cosmjs/cosmwasm-stargate');
 const {
     utils: { keccak256 },
 } = require('ethers');
@@ -64,7 +65,7 @@ function getOperators(axelarInfo) {
         return {
             privKeys: [], 
             weights: [], 
-            threashold: 0,
+            threshold: 0,
         };
     }
     return axelarInfo.activeOperators;
@@ -80,16 +81,18 @@ function getRandomOperators(n = 5) {
 
     const pubKeys = privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
     const weights = privKeys.map(privKey => 3);
-    const threashold = privKeys.length * 2;
+    const threshold = privKeys.length * 2;
     return {
         privKeys,
         pubKeys,
         weights,
-        threashold,
+        threshold,
     }
 }
 
-function getInputForMessage(operators, message) {
+function getInputForMessage(info, message) {
+    const operators = getOperators(info);
+
     // get the public key in a compressed format
     const pubKeys = operators.privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
 
@@ -104,7 +107,7 @@ function getInputForMessage(operators, message) {
         .ser("Proof", {
             operators: pubKeys,
             weights: operators.weights,
-            threshold: operators.threashold,
+            threshold: operators.threshold,
             signatures,
         })
         .toBytes();
@@ -139,17 +142,10 @@ function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destin
         })
         .toBytes();
         
-        return getInputForMessage(getOperators(axelarInfo), message);
+        return getInputForMessage(axelarInfo[env], message);
 }
 
-function TransferOperatorshipInput(axelarInfo, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
-    const privKey = Buffer.from(
-        process.env.SUI_PRIVATE_KEY,
-        "hex"
-    );
-
-    // get the public key in a compressed format
-    const pubKey = secp256k1.publicKeyCreate(privKey);
+function TransferOperatorshipInput(info, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
 
     const bcs = getBcsForGateway();
     const message = bcs
@@ -169,7 +165,7 @@ function TransferOperatorshipInput(axelarInfo, newOperators, newWeights, newThre
         })
         .toBytes();
 
-        return getInputForMessage(getOperators(axelarInfo), message);
+        return getInputForMessage(info, message);
 }
 
 async function approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash) {
@@ -195,10 +191,22 @@ async function approveContractCall(client, keypair, axelarInfo, sourceChain, sou
     return commandId;
 }
 
-async function transferOperatorship(client, keypair, axelarInfo, newOperators, newWeights, newThreshold ) {
-    const input = TransferOperatorshipInput(axelarInfo, newOperators, newWeights, newThreshold);
-    const packageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
+async function getAmplifierWorkers(rpc, proverAddr) {
+    const client = await CosmWasmClient.connect(rpc);
+    const workerSet = await client.queryContractSmart(proverAddr, 'get_worker_set');
+    const signers = Object.values(workerSet.signers);
+
+    const pubKeys = signers.map((signer) => Buffer.from(signer.pub_key.ecdsa, 'hex'));
+    const weights = signers.map((signer) => Number(signer.weight));
+    const threshold = Number(workerSet.threshold);
+
+    return { pubKeys, weights, threshold };
+};
+
+async function transferOperatorship(info, client, keypair, newOperators, newWeights, newThreshold ) {
+    const input = TransferOperatorshipInput(info, newOperators, newWeights, newThreshold);
+    const packageId = info.packageId;
+    const validators = info['validators::AxelarValidators'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({
@@ -221,4 +229,5 @@ module.exports = {
     approveContractCall,
     transferOperatorship,
     getRandomOperators,
+    getAmplifierWorkers,
 }

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@mysten/sui.js": "^0.47.0",
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "child_process": "^1.0.2",
     "dotenv": "^16.3.1",
     "ethers": "^5.0.0",
