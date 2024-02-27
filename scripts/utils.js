@@ -92,6 +92,8 @@ async function getFullObject(object, client) {
     }
     decodeFields(fields, object);
     return object;
+}
+
 function parseEnv(arg) {
     switch (arg?.toLowerCase()) {
         case 'localnet':
