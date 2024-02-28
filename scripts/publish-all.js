@@ -16,7 +16,8 @@ async function publishAll(client, keypair, env) {
             packageIds[packagePath] = packageId;
             break;
         } catch(e) {
-
+            console.log(e);
+            console.log(`Retrying for ${packagePath}`);
         }
     }
 

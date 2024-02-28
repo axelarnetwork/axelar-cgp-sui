@@ -21,7 +21,7 @@ async function receiveInterchainToken(client, keypair, axelarInfo, itsInfo, toke
     const tx = new TransactionBlock();
 
     tx.moveCall({
-        target: `${itsPackageId}::storage::get_trusted_address`,
+        target: `${itsPackageId}::its::get_trusted_address`,
         arguments: [
             tx.object(itsObjectId),
             tx.pure.string(sourceChain),

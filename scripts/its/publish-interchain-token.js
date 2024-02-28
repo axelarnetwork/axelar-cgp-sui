@@ -8,7 +8,6 @@ const fs = require('fs');
 const { getModuleNameFromSymbol, getConfig } = require('../utils');
 const { publishPackage } = require('../publish-package');
 
-
 const packagePath = 'interchain_token';
 
 async function publishInterchainToken(client, keypair, itsInfo, name, symbol, decimals, skipRegister = false) {

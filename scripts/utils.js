@@ -71,7 +71,7 @@ async function getFullObject(object, client) {
         options: {
             showContent: true,
         }
-    }); 
+    });
     const fields = objectResponce.data.content.fields;
 
     function decodeFields(fields, object) {
@@ -84,8 +84,10 @@ async function getFullObject(object, client) {
                 } else {
                     object[key] = fields[key].fields.id.id || fields[key].fields.id;
                 }
-            } else {
+            } else if(fields[key].id) {
                 object[key] = fields[key].id;
+            } else {
+                object[key] = fields[key];
             }
         }
         return object;

@@ -5,15 +5,13 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
-const testInfo = require('../../info/test.json');
-const axelarInfo = require('../../info/axelar.json');
-
 const { registerInterchainToken } = require('./register-token');
 const { arrayify, defaultAbiCoder } = require('ethers/lib/utils');
+const { getConfig } = require('../utils');
 
-async function sendInterchainToken(client, keypair, testInfo, tokenId, coin, destinationChain, destiantionAddress) {
-    const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['its::ITS'].objectId;
+async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, destinationChain, destiantionAddress) {
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
 
     let tx = new TransactionBlock();
 
@@ -26,7 +24,7 @@ async function sendInterchainToken(client, keypair, testInfo, tokenId, coin, des
     });
 
     tx.moveCall({
-        target: `${itsPackageId}::storage::get_registered_coin_type`,
+        target: `${itsPackageId}::its::get_registered_coin_type`,
         arguments: [
             tx.object(itsObjectId),
             tokenIdObj,
@@ -108,8 +106,10 @@ if (require.main === module) {
         } catch (e) {
             console.log(e);
         }
+        const itsInfo = getConfig('its', env);
+        const axelarInfo = getConfig('axelar', env);
 
-        const [tokenId, coinType] = await registerInterchainToken(client, keypair, testInfo[env], name, symbol, decimals, amount);
+        const [tokenId, coinType] = await registerInterchainToken(client, keypair, itsInfo, name, symbol, decimals, amount);
 
         let resp = await client.getCoins({
             owner: keypair.getPublicKey().toSuiAddress(),
@@ -117,10 +117,10 @@ if (require.main === module) {
         });
         coin = resp.data[0].coinObjectId;
 
-        await sendInterchainToken(client, keypair, testInfo[env], tokenId, coin, destinationChain, destiantionAddress);
+        await sendInterchainToken(client, keypair, itsInfo, tokenId, coin, destinationChain, destiantionAddress);
 
         const eventData = (await client.queryEvents({query: {
-            MoveEventType: `${axelarInfo[env].packageId}::gateway::ContractCall`,
+            MoveEventType: `${axelarInfo.packageId}::gateway::ContractCall`,
         }}));
         const payload = eventData.data[0].parsedJson.payload;
         {

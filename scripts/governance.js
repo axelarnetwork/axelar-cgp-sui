@@ -31,7 +31,6 @@ async function initializeGovernance(upgradeCap, client, keypair, env) {
     const governance = publishTxn.objectChanges.find((obj) => obj.objectType == `${packageId}::governance::Governance`);
 
     governanceConfig['governance::Governance'] = await getFullObject(governance, client);
-
     setConfig('governance', env.alias, governanceConfig);
 
     return governance;
@@ -42,7 +41,6 @@ async function takeUpgradeCaps(upgradeCaps, client, keypair, env) {
     const packageId = governanceConfig.packageId;
     tx = new TransactionBlock();
     for(const upgradeCap of upgradeCaps) {
-        console.log(upgradeCap);
         tx.moveCall({   
                 target: `${packageId}::governance::take_upgrade_cap`,
             arguments: [

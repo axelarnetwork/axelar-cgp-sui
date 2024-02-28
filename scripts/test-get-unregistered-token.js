@@ -14,7 +14,7 @@ const packagePath = 'interchain_token';
 async function getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId) {
     const tx = new TransactionBlock();
     tx.moveCall({
-        target: `${itsPackageId}::storage::get_unregistered_coin_type`,
+        target: `${itsPackageId}::its::get_unregistered_coin_type`,
         arguments: [
             tx.object(itsObjectId),
             tx.pure.string(symbol),

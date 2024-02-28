@@ -6,10 +6,9 @@ const { publishInterchainToken } = require('./publish-interchain-token');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
-const axelarInfo = require('../../info/axelar.json');
-const testInfo = require('../../info/test.json');
 const { registerInterchainToken } = require('./register-token');
 const { arrayify } = require('ethers/lib/utils');
+const { getConfig } = require('../utils');
 
 async function setDiscovery(client, keypair, axelarInfo, testInfo) {
     const itsPackageId = testInfo.packageId;
@@ -66,6 +65,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await setDiscovery(client, keypair, axelarInfo[env], testInfo[env]);
+        await setDiscovery(client, keypair, getConfig('axelar', env), getConfig('its', env));
     })();
 }
