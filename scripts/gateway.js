@@ -72,16 +72,30 @@ function getOperators(axelarInfo) {
 }
 
 function getRandomOperators(n = 5) {
-    const privKeys = [];
+    let privKeys = [];
     for(let i=0; i<n; i++) {
         privKeys.push(
             keccak256(Math.floor(Math.random()*10000000)).slice(2),
         );
     }
 
-    const pubKeys = privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
+    let pubKeys = privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
+    const indices = Array.from(pubKeys.keys())
+    const pubKeyLength = 33;
+
+    indices.sort( (a, b) => {
+        for(let i = 0; i < pubKeyLength; i++) {
+            const aByte = pubKeys[a][i];
+            const bByte = pubKeys[b][i];
+            if(aByte != bByte) return aByte - bByte;
+        }
+        return 0;
+    } );
+    pubKeys = indices.map(i => pubKeys[i]);
+    privKeys = indices.map(i => privKeys[i]);
     const weights = privKeys.map(privKey => 3);
     const threshold = privKeys.length * 2;
+
     return {
         privKeys,
         pubKeys,
@@ -92,10 +106,9 @@ function getRandomOperators(n = 5) {
 
 function getInputForMessage(info, message) {
     const operators = getOperators(info);
-
     // get the public key in a compressed format
     const pubKeys = operators.privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
-
+    
     const hashed = fromHEX(hashMessage(message));
     const signatures = operators.privKeys.map(privKey => {
         const {signature, recid} = secp256k1.ecdsaSign(hashed, Buffer.from(privKey, 'hex'));

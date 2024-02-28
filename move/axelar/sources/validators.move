@@ -61,9 +61,9 @@ module axelar::validators {
 
         // Turn everything into bcs bytes and split data.
         let mut proof = bcs::new(proof);
-        let operators =  proof.peel_vec_vec_u8();
 
-        let (weights, threshold, signatures) = (
+        let (operators, weights, threshold, signatures) = (
+            proof.peel_vec_vec_u8(),
             proof.peel_vec_u128(),
             proof.peel_u128(),
             proof.peel_vec_vec_u8()
@@ -74,7 +74,6 @@ module axelar::validators {
             .get(&operators_hash(&operators, &weights, threshold));
 
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
-
         let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
         while (i < total_signatures) {
@@ -86,7 +85,8 @@ module axelar::validators {
             while (operator_index < operators_length && &signed_by != vector::borrow(&operators, operator_index)) {
                 operator_index = operator_index + 1;
             };
-            assert!(operator_index == operators_length, EMalformedSigners);
+            
+            assert!(operator_index < operators_length, EMalformedSigners);
 
             weight = weight + *vector::borrow(&weights, operator_index);
             if (weight >= threshold) { return operators_epoch == epoch };
