@@ -146,7 +146,6 @@ function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destin
 }
 
 function TransferOperatorshipInput(info, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
-
     const bcs = getBcsForGateway();
     const message = bcs
         .ser("AxelarMessage", {
@@ -208,12 +207,12 @@ async function getAmplifierWorkers(rpc, proverAddr) {
 async function transferOperatorship(info, client, keypair, newOperators, newWeights, newThreshold ) {
     const input = TransferOperatorshipInput(info, newOperators, newWeights, newThreshold);
     const packageId = info.packageId;
-    const validators = info['validators::AxelarValidators'];
+    const gateway = info['gateway::Gateway'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({
         target: `${packageId}::gateway::process_commands`,
-        arguments: [tx.object(validators.objectId), tx.pure(String.fromCharCode(...input))],
+        arguments: [tx.object(gateway.objectId), tx.pure(String.fromCharCode(...input))],
         typeArguments: [],
     });
     const approveTxn = await client.signAndExecuteTransactionBlock({

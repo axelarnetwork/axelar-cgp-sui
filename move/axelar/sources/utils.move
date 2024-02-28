@@ -6,9 +6,9 @@ module axelar::utils {
 
     use sui::bcs;
     use sui::hash;
-    use sui::address;
 
     const EInvalidSignatureLength: u64 = 0;
+    const EVectorLengthMismatch: u64 = 1;
 
     /// Prefix for Sui Messages.
     const PREFIX: vector<u8> = b"\x19Sui Signed Message:\n";
@@ -116,11 +116,30 @@ module axelar::utils {
     }
 
     public fun is_address_vector_zero(v: &vector<u8>): bool {
-        address::to_u256(address::from_bytes(*v)) == 0
+        let length = vector::length(v);
+        let mut i = 0;
+        while(i < length) {
+            if(*vector::borrow(v, i) != 0) return false;
+            i = i + 1;
+        };
+        true
     }
 
     public fun compare_address_vectors(v1: &vector<u8>, v2: &vector<u8>): bool {
-        address::to_u256(address::from_bytes(*v1)) < address::to_u256(address::from_bytes(*v2))
+        let length = vector::length(v1);
+        assert!(length == vector::length(v1), EVectorLengthMismatch); 
+        let mut i = 0;
+        while(i < length) {
+            let b1 = *vector::borrow(v1, i);
+            let b2 = *vector::borrow(v2, i);
+            if(b1 < b2) {
+                return true
+            } else if(b1 > b2) {
+                return false
+            };
+            i = i + 1;
+        };
+        false
     }
     
     #[test_only]
