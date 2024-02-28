@@ -155,7 +155,7 @@ function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destin
         })
         .toBytes();
         
-        return getInputForMessage(axelarInfo[env], message);
+        return getInputForMessage(axelarInfo, message);
 }
 
 function TransferOperatorshipInput(info, newOperators, newWeights, newThreshold, commandId = keccak256((new Date()).getTime())) {
@@ -184,7 +184,7 @@ async function approveContractCall(client, keypair, axelarInfo, sourceChain, sou
     const commandId = keccak256((new Date()).getTime());
     const input = approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId);
     const packageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
+    const validators = axelarInfo['gateway::Gateway'];
 
 	const tx = new TransactionBlock(); 
     tx.moveCall({

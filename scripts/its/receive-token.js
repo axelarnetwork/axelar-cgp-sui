@@ -5,17 +5,15 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
-const testInfo = require('../../info/test.json');
-const axelarInfo = require('../../info/axelar.json');
-
 const { registerInterchainToken } = require('./register-token');
 const { arrayify, defaultAbiCoder } = require('ethers/lib/utils');
 const { receiveCall } = require('../test-receive-call');
+const { getConfig } = require('../utils');
 
-async function receiveInterchainToken(client, keypair, axelarInfo, testInfo, tokenId, sourceChain, sourceAddress, destinationAddress, amount) {
-    const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
-    const channelId = testInfo['storage::ITS'].channel;
+async function receiveInterchainToken(client, keypair, axelarInfo, itsInfo, tokenId, sourceChain, sourceAddress, destinationAddress, amount) {
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
+    const channelId = itsInfo['its::ITS'].channel;
 
     const selector = 0;
     const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [selector, tokenId, sourceAddress, destinationAddress, amount, '0x']);
@@ -76,9 +74,9 @@ if (require.main === module) {
             console.log(e);
         }
 
-        const [tokenId, coinType] = await registerInterchainToken(client, keypair, testInfo[env], name, symbol, decimals);
+        const [tokenId, coinType] = await registerInterchainToken(client, keypair, getConfig('its', env), name, symbol, decimals);
 
-        await receiveInterchainToken(client, keypair, axelarInfo[env], testInfo[env], tokenId, sourceChain, sourceAddress, destinationAddress, amount);
+        await receiveInterchainToken(client, keypair, getConfig('axelar', env), getConfig('its', env), tokenId, sourceChain, sourceAddress, destinationAddress, amount);
 
         const coins = await client.getCoins({
             owner: address,

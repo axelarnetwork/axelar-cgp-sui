@@ -13,7 +13,7 @@ const { arrayify } = require('ethers/lib/utils');
 
 async function setDiscovery(client, keypair, axelarInfo, testInfo) {
     const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
+    const itsObjectId = testInfo['its::ITS'].objectId;
     const relayerDecovery = axelarInfo['discovery::RelayerDiscovery'].objectId;
 
     let tx = new TransactionBlock();

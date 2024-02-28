@@ -12,7 +12,7 @@ const { toPure } = require('./utils');
 
 async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload) {
     const axelarPackageId = axelarInfo.packageId;
-    const validators = axelarInfo['validators::AxelarValidators'];
+    const gateway = axelarInfo['gateway::Gateway'];
     const discovery = axelarInfo['discovery::RelayerDiscovery'];
     const payload_hash = keccak256(payload);
 
@@ -47,7 +47,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     const approvedCall = tx.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [
-            tx.object(validators.objectId), 
+            tx.object(gateway.objectId), 
             tx.pure(event.cmd_id),
             tx.pure(event.source_chain),
             tx.pure(event.source_address),

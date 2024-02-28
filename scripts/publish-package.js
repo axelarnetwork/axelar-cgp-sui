@@ -24,6 +24,7 @@ async function publishPackage(packagePath, client, keypair) {
              },
 		),
 	);
+    
 	const tx = new TransactionBlock();
 	const cap = tx.publish({
 		modules,
@@ -87,21 +88,21 @@ function fillAddresses(toml, address) {
 
 async function publishPackageFull(packagePath, client, keypair, env) {
     let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
-    
-        const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
-        const info = require(`../move/${packagePath}/info.json`);
-        const config = {};
-        config.packageId = packageId;
-        for(const singleton of info.singletons) {
-            const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
-            config[singleton] = await getFullObject(object, client);
-        }
-        
-        setConfig(packagePath, env.alias, config);
-        updateMoveToml(packagePath, packageId);
+    fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
 
-        return {packageId, publishTxn};
+    const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
+    const info = require(`../move/${packagePath}/info.json`);
+    const config = {};
+    config.packageId = packageId;
+    for(const singleton of info.singletons) {
+        const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
+        config[singleton] = await getFullObject(object, client);
+    }
+    
+    setConfig(packagePath, env.alias, config);
+    updateMoveToml(packagePath, packageId);
+
+    return {packageId, publishTxn};
 }
 
 module.exports = {

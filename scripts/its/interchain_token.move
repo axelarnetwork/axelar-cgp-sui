@@ -6,7 +6,7 @@ module interchain_token::$module_name {
     use sui::url::{Url};
     use sui::transfer;
 
-    struct $witness has drop {}
+    public struct $witness has drop {}
 
     fun init(witness: $witness, ctx: &mut TxContext) {
         let (treasury, metadata) = coin::create_currency<$witness>(

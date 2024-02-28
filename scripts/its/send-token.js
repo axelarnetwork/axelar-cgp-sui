@@ -13,7 +13,7 @@ const { arrayify, defaultAbiCoder } = require('ethers/lib/utils');
 
 async function sendInterchainToken(client, keypair, testInfo, tokenId, coin, destinationChain, destiantionAddress) {
     const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
+    const itsObjectId = testInfo['its::ITS'].objectId;
 
     let tx = new TransactionBlock();
 

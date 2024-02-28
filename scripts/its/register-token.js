@@ -5,14 +5,13 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { publishInterchainToken } = require('./publish-interchain-token');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
+const { getConfig } = require('../utils');
 
-const testInfo = require('../../info/test.json');
+async function registerInterchainToken(client, keypair, itsInfo, name, symbol, decimals, mintAmount = false) {
+    const { coinType, coinMetadata, treasuryCap } = await publishInterchainToken(client, keypair, itsInfo, name, symbol, decimals, true);
 
-async function registerInterchainToken(client, keypair, testInfo, name, symbol, decimals, mintAmount = false) {
-    const { coinType, coinMetadata, treasuryCap } = await publishInterchainToken(client, keypair, testInfo, name, symbol, decimals, true);
-
-    const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
     let tx = new TransactionBlock();
 
     if(mintAmount) {
@@ -36,7 +35,7 @@ async function registerInterchainToken(client, keypair, testInfo, name, symbol, 
     });
 
     const coinManagement = tx.moveCall({
-        target: `${itsPackageId}::coin_management::mint_burn`,
+        target: `${itsPackageId}::coin_management::new_with_cap`,
         arguments: [
             tx.object(treasuryCap.objectId),
         ],
@@ -103,11 +102,11 @@ if (require.main === module) {
         } catch (e) {
             console.log(e);
         }
+        const itsInfo = getConfig('its', env);
+        const [tokenId, coinType] = await registerInterchainToken(client, keypair, itsInfo, name, symbol, decimals);
 
-        const [tokenId, coinType] = await registerInterchainToken(client, keypair, testInfo[env], name, symbol, decimals);
-
-        const itsPackageId = testInfo[env].packageId;
-        const itsObjectId = testInfo[env]['storage::ITS'].objectId;
+        const itsPackageId = itsInfo.packageId;
+        const itsObjectId = itsInfo['its::ITS'].objectId;
 
         tx = new TransactionBlock();
     
@@ -120,19 +119,19 @@ if (require.main === module) {
         });
 
         tx.moveCall({
-            target: `${itsPackageId}::storage::token_name`,
+            target: `${itsPackageId}::its::token_name`,
             arguments: [tx.object(itsObjectId), tokenIdObj],
             typeArguments: [coinType],
         });
     
         tx.moveCall({
-            target: `${itsPackageId}::storage::token_symbol`,
+            target: `${itsPackageId}::its::token_symbol`,
             arguments: [tx.object(itsObjectId), tokenIdObj],
             typeArguments: [coinType],
         });
     
         tx.moveCall({
-            target: `${itsPackageId}::storage::token_decimals`,
+            target: `${itsPackageId}::its::token_decimals`,
             arguments: [tx.object(itsObjectId), tokenIdObj],
             typeArguments: [coinType],
         });

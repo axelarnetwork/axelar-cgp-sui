@@ -5,16 +5,15 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const fs = require('fs');
 
-const { getModuleNameFromSymbol } = require('../utils');
+const { getModuleNameFromSymbol, getConfig } = require('../utils');
 const { publishPackage } = require('../publish-package');
 
-const testInfo = require('../../info/test.json');
 
 const packagePath = 'interchain_token';
 
-async function publishInterchainToken(client, keypair, testInfo, name, symbol, decimals, skipRegister = false) {
-    const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
+async function publishInterchainToken(client, keypair, itsInfo, name, symbol, decimals, skipRegister = false) {
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
 
     let file = fs.readFileSync(`scripts/its/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
@@ -103,7 +102,6 @@ if (require.main === module) {
         } catch (e) {
             console.log(e);
         }
-
-        await publishInterchainToken(client, keypair, testInfo[env], '', symbol, decimals, skipRegister);
+        await publishInterchainToken(client, keypair, getConfig('its', env), '', symbol, decimals, skipRegister);
     })();
 }

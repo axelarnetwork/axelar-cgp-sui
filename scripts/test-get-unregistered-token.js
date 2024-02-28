@@ -58,7 +58,7 @@ if (require.main === module) {
 
         const its = require('../info/test.json');
         const itsPackageId = its[env].packageId;
-        const itsObjectId = its[env]['storage::ITS'].objectId;
+        const itsObjectId = its[env]['its::ITS'].objectId;
 
         await getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId);
     })();

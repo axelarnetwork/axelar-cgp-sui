@@ -12,7 +12,7 @@ const { arrayify } = require('ethers/lib/utils');
 
 async function setTrustedAddress(client, keypair, testInfo, chainName, trustedAddress) {
     const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['storage::ITS'].objectId;
+    const itsObjectId = testInfo['its::ITS'].objectId;
 
     let tx = new TransactionBlock();
 

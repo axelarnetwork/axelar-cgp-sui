@@ -1,8 +1,9 @@
 module interchain_token::tt {
-    use sui::tx_context::TxContext;
+    use sui::tx_context::{Self, TxContext};
     use std::option;
 
-    use sui::coin;
+    use sui::coin::{Self};
+    use sui::url::{Url};
     use sui::transfer;
 
     public struct TT has drop {}
@@ -14,10 +15,10 @@ module interchain_token::tt {
             b"TT",
             b"Test Token",
             b"",
-            option::none(),
+            option::none<Url>(),
             ctx
         );
-        transfer::public_transfer(treasury, ctx.sender());
-        transfer::public_transfer(metadata, ctx.sender());
+        transfer::public_transfer(treasury, tx_context::sender(ctx));
+        transfer::public_transfer(metadata, tx_context::sender(ctx));
     }
 }

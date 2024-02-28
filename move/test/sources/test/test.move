@@ -1,4 +1,3 @@
-#[test_only]
 module test::test {
     use std::ascii;
     use std::vector;
