@@ -4,13 +4,6 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 
-
-const { getModuleNameFromSymbol } = require('./utils');
-const { updateMoveToml, publishPackage } = require('./publish-package');
-const { keccak256, toUtf8Bytes, hexlify } = require('ethers/lib/utils');
-
-const packagePath = 'interchain_token';
-
 async function getUnregisteredToken(client, keypair, symbol, decimals, itsPackageId, itsObjectId) {
     const tx = new TransactionBlock();
     tx.moveCall({

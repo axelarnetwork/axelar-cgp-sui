@@ -14,9 +14,9 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     const axelarPackageId = axelarInfo.packageId;
     const gateway = axelarInfo['gateway::Gateway'];
     const discovery = axelarInfo['discovery::RelayerDiscovery'];
-    const payload_hash = keccak256(payload);
+    const payloadHash = keccak256(payload);
 
-    await approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload_hash);
+    await approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash);
  
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
