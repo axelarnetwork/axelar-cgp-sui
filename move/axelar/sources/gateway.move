@@ -228,7 +228,7 @@ module axelar::gateway {
     /// world. However, this restriction may be lifted in the future, and having
     /// an immutable reference should be enough.
     public fun call_contract(
-        channel: &mut Channel,
+        channel: &Channel,
         destination_chain: String,
         destination_address: String,
         payload: vector<u8>

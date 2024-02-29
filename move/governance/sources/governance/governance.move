@@ -29,7 +29,7 @@ module governance::governance {
     }
 
     // This can only be called once since it needs its own upgrade cap which it deletes.
-    public fun new(
+    entry fun new(
         trusted_source_chain: String,
         trusted_source_address: String,
         message_type: u256,
@@ -65,7 +65,7 @@ module governance::governance {
     }
 
     // TODO maybe check that the polcy for the upgrade cap has not been tampered with.
-    public fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
+    entry fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
         is_cap_new(&upgrade_cap);
 
         self.caps.add(
@@ -74,7 +74,7 @@ module governance::governance {
         )
     }
 
-    public fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
+    entry fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
         let (source_chain, source_address, payload) = self.channel.consume_approved_call(approved_call);
 
         assert!(is_governance(self, source_chain, source_address), EUntrustedAddress);
@@ -93,7 +93,7 @@ module governance::governance {
         )
     }
 
-    public fun commit_upgrade(
+    entry fun commit_upgrade(
         self: &mut Governance,
         receipt: UpgradeReceipt,
     ) {
