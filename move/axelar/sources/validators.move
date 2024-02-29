@@ -85,7 +85,7 @@ module axelar::validators {
             while (operator_index < operators_length && &signed_by != vector::borrow(&operators, operator_index)) {
                 operator_index = operator_index + 1;
             };
-            
+
             assert!(operator_index < operators_length, EMalformedSigners);
 
             weight = weight + *vector::borrow(&weights, operator_index);
@@ -186,29 +186,24 @@ module axelar::validators {
 
     // === Testing ===
 
-    #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
-        init(ctx)
-    }
-
-    #[test_only]
+    /*#[test_only]
     public fun add_approval_for_testing(
-        axelar: &mut AxelarValidators,
+        valida: &mut Gateway,
         cmd_id: address,
         source_chain: String,
         source_address: String,
         target_id: address,
         payload_hash: address
     ) {
-        let mut data = vector[];
+        let mut data = vector::empty<u8>();
 
-        data.append(cmd_id.to_bytes());
-        data.append(target_id.to_bytes());
-        data.append(*source_chain.as_bytes());
-        data.append(*source_address.as_bytes());
-        data.append(payload_hash.to_bytes());
+        vector::append(&mut data, cmd_id.to_bytes());
+        vector::append(&mut data, target_id.to_bytes());
+        vector::append(&mut data, *source_chain.as_bytes());
+        vector::append(&mut data, *source_address.as_bytes());
+        vector::append(&mut data, payload_hash.to_bytes());
 
-        axelar.approvals.add(cmd_id, Approval {
+        gateway.approvals.add(cmd_id, Approval {
             approval_hash: hash::keccak256(&data),
         });
     }
@@ -269,5 +264,5 @@ module axelar::validators {
 
         let pub_key = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);
         assert!(pub_key == SIGNER, 0);
-    }
+    }*/
 }

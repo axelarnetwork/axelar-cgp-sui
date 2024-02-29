@@ -1,7 +1,6 @@
 module governance::governance {
     use std::ascii::String;
     use std::type_name;
-    use std::ascii;
 
     use sui::object::{Self, ID, UID};
     use sui::tx_context::TxContext;
@@ -11,7 +10,7 @@ module governance::governance {
     use sui::transfer;
     use sui::hex;
 
-    use axelar::utils::{abi_decode_fixed, abi_decode_variable};
+    use abi::abi;
     use axelar::channel::{Self, Channel, ApprovedCall};
 
     const EUntrustedAddress: u64 = 0;
@@ -74,17 +73,18 @@ module governance::governance {
         )
     }
 
-    entry fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
+    public fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
         let (source_chain, source_address, payload) = self.channel.consume_approved_call(approved_call);
 
         assert!(is_governance(self, source_chain, source_address), EUntrustedAddress);
 
-        let message_type = abi_decode_fixed(&payload, 0);
+        let abi = abi::new_reader(payload);
+        let message_type = abi.read_u256(0);
         assert!(message_type == self.message_type, EInvalidMessageType);
 
-        let cap_id = object::id_from_address(address::from_u256(abi_decode_fixed(&payload, 1)));
-        let policy = (abi_decode_fixed(&payload, 2) as u8);
-        let digest = abi_decode_variable(&payload, 3);
+        let cap_id = object::id_from_address(address::from_u256(abi.read_u256(1)));
+        let policy = (abi.read_u256(2) as u8);
+        let digest = abi.read_bytes(3);
 
         package::authorize_upgrade(
             table::borrow_mut(&mut self.caps, cap_id), 
@@ -93,7 +93,7 @@ module governance::governance {
         )
     }
 
-    entry fun commit_upgrade(
+    public fun commit_upgrade(
         self: &mut Governance,
         receipt: UpgradeReceipt,
     ) {

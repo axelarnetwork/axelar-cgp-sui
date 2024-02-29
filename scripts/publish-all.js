@@ -8,7 +8,7 @@ const { initializeGovernance, takeUpgradeCaps } = require('./governance');
 async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
     const packageIds = {};
-    for(const packagePath of ['axelar', 'governance', 'gas_service', 'its']) {
+    for(const packagePath of ['abi', 'axelar', 'governance', 'gas_service', 'its']) {
         console.log(packagePath);
         while (true) try {
             const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
@@ -24,7 +24,7 @@ async function publishAll(client, keypair, env) {
     await initializeGovernance(upgradeCaps.governance, client, keypair, env);
 
     await takeUpgradeCaps(
-        ['axelar', 'gas_service', 'its'].map(packagePath => upgradeCaps[packagePath]),
+        ['abi', 'axelar', 'gas_service', 'its'].map(packagePath => upgradeCaps[packagePath]),
         client,
         keypair,
         env,

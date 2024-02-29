@@ -11,7 +11,8 @@ module its::service {
     use sui::event;
     use sui::bcs;
 
-    use axelar::utils;
+    use abi::abi;
+
     use axelar::channel::{Self, ApprovedCall};
 
     use governance::governance::{Self, Governance};
@@ -66,16 +67,16 @@ module its::service {
         let name = coin_info.name();
         let symbol = coin_info.symbol();
         let decimals = coin_info.decimals();
-        let mut payload = utils::abi_encode_start(6);
+        let mut writer = abi::new_writer(6);
 
-        utils::abi_encode_fixed(&mut payload, 0, MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN);
-        utils::abi_encode_fixed(&mut payload, 1, token_id.to_u256());
-        utils::abi_encode_variable(&mut payload, 2, *string::bytes(&name));
-        utils::abi_encode_variable(&mut payload, 3, *ascii::as_bytes(&symbol));
-        utils::abi_encode_fixed(&mut payload, 4, (decimals as u256));
-        utils::abi_encode_variable(&mut payload, 5, vector::empty());
+        writer.write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN);
+        writer.write_u256(token_id.to_u256());
+        writer.write_bytes(*string::bytes(&name));
+        writer.write_bytes(*ascii::as_bytes(&symbol));
+        writer.write_u256((decimals as u256));
+        writer.write_bytes(vector::empty());
 
-        send_payload(self, destination_chain, payload);
+        send_payload(self, destination_chain, writer.into_bytes());
     }
 
     public fun interchain_transfer<T>(
@@ -89,30 +90,30 @@ module its::service {
     ) {
         let amount = (coin::value<T>(&coin) as u256);
         let (_version, data) = its_utils::decode_metadata(metadata);
-        let mut payload = utils::abi_encode_start(6);
+        let mut writer = abi::new_writer(6);
 
-        utils::abi_encode_fixed(&mut payload, 0, MESSAGE_TYPE_INTERCHAIN_TRANSFER);
-        utils::abi_encode_fixed(&mut payload, 1, token_id.to_u256());
-        utils::abi_encode_variable(&mut payload, 2, address::to_bytes(ctx.sender()));
-        utils::abi_encode_variable(&mut payload, 3, destination_address);
-        utils::abi_encode_fixed(&mut payload, 4, amount);
-        utils::abi_encode_variable(&mut payload, 5, data);
+        writer.write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER);
+        writer.write_u256(token_id.to_u256());
+        writer.write_bytes(address::to_bytes(ctx.sender()));
+        writer.write_bytes(destination_address);
+        writer.write_u256(amount);
+        writer.write_bytes(data);
 
         self.coin_management_mut(token_id)
             .take_coin(coin);
 
-        send_payload(self, destination_chain, payload);
+        send_payload(self, destination_chain, writer.into_bytes());
     }
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_call: ApprovedCall, ctx: &mut TxContext) {
         let (_, payload) = decode_approved_call(self, approved_call);
+        let reader = abi::new_reader(payload);
+        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
+        assert!(vector::is_empty(&reader.read_bytes(5)), EInterchainTransferHasData);
 
-        assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(vector::is_empty(&utils::abi_decode_variable(&payload, 5)), EInterchainTransferHasData);
-
-        let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
-        let destination_address = address::from_bytes(utils::abi_decode_variable(&payload, 3));
-        let amount = (utils::abi_decode_fixed(&payload, 4) as u64);
+        let token_id = token_id::from_u256(reader.read_u256(1));
+        let destination_address = address::from_bytes(reader.read_bytes(3));
+        let amount = (reader.read_u256(4) as u64);
 
         let coin = self
             .coin_management_mut(token_id)
@@ -128,14 +129,14 @@ module its::service {
         ctx: &mut TxContext
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
         let (source_chain, payload) = decode_approved_call(self, approved_call);
+        let reader = abi::new_reader(payload);
+        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
+        assert!(address::from_bytes(reader.read_bytes(3)) == channel.to_address(), EWrongDestination);
 
-        assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(address::from_bytes(utils::abi_decode_variable(&payload, 3)) == channel.to_address(), EWrongDestination);
-
-        let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
-        let source_address = utils::abi_decode_variable(&payload, 2);
-        let amount = (utils::abi_decode_fixed(&payload, 4) as u64);
-        let data = utils::abi_decode_variable(&payload, 5);
+        let token_id = token_id::from_u256(reader.read_u256(1));
+        let source_address = reader.read_bytes(2);
+        let amount = (reader.read_u256(4) as u64);
+        let data = reader.read_bytes(5);
 
         assert!(!vector::is_empty(&data), EInterchainTransferHasNoData);
 
@@ -153,14 +154,14 @@ module its::service {
 
     public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_call: ApprovedCall) {
         let (_, payload) = decode_approved_call(self, approved_call);
+        let reader = abi::new_reader(payload);
+        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
-        assert!(utils::abi_decode_fixed(&payload, 0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-
-        let token_id = token_id::from_u256(utils::abi_decode_fixed(&payload, 1));
-        let name = string::utf8(utils::abi_decode_variable(&payload, 2));
-        let symbol = ascii::string(utils::abi_decode_variable(&payload, 3));
-        let decimals = (utils::abi_decode_fixed(&payload, 4) as u8);
-        let distributor = address::from_bytes(utils::abi_decode_variable(&payload, 5));
+        let token_id = token_id::from_u256(reader.read_u256(1));
+        let name = string::utf8(reader.read_bytes(2));
+        let symbol = ascii::string(reader.read_bytes(3));
+        let decimals = (reader.read_u256(4) as u8);
+        let distributor = address::from_bytes(reader.read_bytes(5));
 
         let (treasury_cap, mut coin_metadata) = self.remove_unregistered_coin<T>(
             token_id::unregistered_token_id(&symbol, decimals)
@@ -236,10 +237,11 @@ module its::service {
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
 
-        let message_type = utils::abi_decode_fixed(&payload, 0);
+        let reader = abi::new_reader(payload);
+        let message_type = reader.read_u256(0);
         assert!(message_type == MESSAGE_TYPE_SET_TRUSTED_ADDRESSES, EInvalidMessageType);
 
-        let mut trusted_address_info = bcs::new(utils::abi_decode_variable(&payload, 1));
+        let mut trusted_address_info = bcs::new(reader.read_bytes(1));
 
         let mut chain_names = trusted_address_info.peel_vec_vec_u8();
         let mut trusted_addresses = trusted_address_info.peel_vec_vec_u8();

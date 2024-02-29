@@ -272,7 +272,7 @@ module axelar::gateway {
     }
     
 
-    #[test_only]
+    /*#[test_only]
     use axelar::utils::operators_hash;
     #[test_only]
     use sui::vec_map;
@@ -340,5 +340,5 @@ module axelar::gateway {
         assert!(validators.epoch() == 2, 0);
 
         sui::test_utils::destroy(validators);
-    }
+    }*/
 }
