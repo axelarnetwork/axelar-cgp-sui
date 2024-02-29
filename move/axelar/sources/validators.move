@@ -55,6 +55,7 @@ module axelar::validators {
         proof: vector<u8>
     ): bool {
         let epoch = epoch(validators);
+        // Allow the validators to validate any proof before the first set of operators is set (so that they can be rotated).
         if (epoch == 0) {
             return true
         };
@@ -73,6 +74,7 @@ module axelar::validators {
         let operators_epoch = *epoch_for_hash(validators)
             .get(&operators_hash(&operators, &weights, threshold));
 
+        // This error cannot be hit because we remove old operators and no set has an epoch of 0.
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
         let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
@@ -186,54 +188,8 @@ module axelar::validators {
 
     // === Testing ===
 
-    /*#[test_only]
-    public fun add_approval_for_testing(
-        valida: &mut Gateway,
-        cmd_id: address,
-        source_chain: String,
-        source_address: String,
-        target_id: address,
-        payload_hash: address
-    ) {
-        let mut data = vector::empty<u8>();
-
-        vector::append(&mut data, cmd_id.to_bytes());
-        vector::append(&mut data, target_id.to_bytes());
-        vector::append(&mut data, *source_chain.as_bytes());
-        vector::append(&mut data, *source_address.as_bytes());
-        vector::append(&mut data, payload_hash.to_bytes());
-
-        gateway.approvals.add(cmd_id, Approval {
-            approval_hash: hash::keccak256(&data),
-        });
-    }
-
-    #[test_only]
-    public fun remove_approval_for_test(self: &mut AxelarValidators, cmd_id: address) {
-        let Approval { approval_hash: _ } = table::remove(&mut self.approvals, cmd_id);
-    }
-
-    #[test_only]
-    public fun new(epoch: u64, epoch_for_hash: VecMap<vector<u8>, u64>, ctx: &mut TxContext): AxelarValidators {
-        let mut base = AxelarValidators {
-            id: object::new(ctx),
-            approvals: table::new(ctx)
-        };
-        df::add(&mut base.id, 1u8, AxelarValidators {
-            epoch,
-            epoch_for_hash,
-        });
-
-        base
-    }
-
     #[test_only]
     use axelar::utils::to_sui_signed;
-
-    #[test_only]
-    /// Test message for the `test_execute` test.
-    /// Generated via the `presets` script.
-    const MESSAGE: vector<u8> = x"af0101000000000000000209726f6775655f6f6e650a6178656c61725f74776f0213617070726f7665436f6e747261637443616c6c13617070726f7665436f6e747261637443616c6c02310345544803307830000000000000000000000000000000000000000000000000000000000000040000000005000000000034064158454c4152033078310000000000000000000000000000000000000000000000000000000000000400000000050000000000770121037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff5990280164000000000000000a000000000000000141dcfc40d95cc89a9c8a0973c3dae95806c5daa5aefe072caafd5541844d62fabf2dc580a8663df7adb846f1ef7d553a13174399e4c4cb55c42bdf7fa8f02c8fa10000";
 
     #[test_only]
     /// Signer PubKey.
@@ -264,5 +220,128 @@ module axelar::validators {
 
         let pub_key = ecdsa::secp256k1_ecrecover(&signature, &to_sui_signed(message), 0);
         assert!(pub_key == SIGNER, 0);
-    }*/
+    }
+
+    #[test]
+    fun test_transfer_operatorship() {
+        let mut validators = new();
+        
+        let operators = vector[x"0123", x"4567", x"890a"];
+        let weights = vector[1, 3, 6];
+        let threshold = 4;
+        let payload = x"0302012302456702890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        let epoch = validators.epoch_for_hash.get(&operators_hash(&operators, &weights, threshold));
+
+        assert!(*epoch == 1, 0);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidOperators)]
+    fun test_transfer_operatorship_zero_operator_length() {
+        let mut validators = new();
+
+        let payload = x"000301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidOperators)]
+    fun test_transfer_operatorship_unsorted_operatros() {
+        let mut validators = new();
+
+        let payload = x"0302456702012302890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidOperators)]
+    fun test_transfer_operatorship_duplicate_operatros() {
+        let mut validators = new();
+
+        let payload = x"0302012302890a02890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidWeights)]
+    fun test_transfer_operatorship_invalid_weights() {
+        let mut validators = new();
+
+        let payload = x"0302012302456702890a02010000000000000000000000000000000300000000000000000000000000000004000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidThreshold)]
+    fun test_transfer_operatorship_zero_threshold() {
+        let mut validators = new();
+
+        let payload = x"0302012302456702890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidThreshold)]
+    fun test_transfer_operatorship_threshold_too_high() {
+        let mut validators = new();
+
+        let payload = x"0302012302456702890a030100000000000000000000000000000003000000000000000000000000000000060000000000000000000000000000000b000000000000000000000000000000";
+
+        validators.transfer_operatorship(payload);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    fun test_validate_proof() {
+        let mut validators = new();
+
+        let message = x"123456";
+        let payload = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000006000000000000000000000000000000";
+        let proof = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea1030300000000000000000000000000000003000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000003413de59beca835483688338964eb4c314f387e06aef6c46ca2dc90733e5b7baa9b67b9b8530aacaae4263e369fced014e449166441c21b61fcef5978516d1a740301417b6940537f7fa65d37d0964d5dda49b80b5b7fcde93ba3b3224c3e007ff887ee20a203ac52802c29238353b69636cb71bd1da3bdb0c3ac3d85938531f94dd7570041529af0061fa6321419e0b702dd1ac4e16610efa718ad241e4eda8b65dd92bd2e715cfd58951305f6fc4d75a20d2c19bd4491312cff38b9694b02e2175826a2c800";
+        let payload2 = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000007000000000000000000000000000000";
+        
+        validators.transfer_operatorship(payload);
+        assert!(validators.validate_proof(to_sui_signed(message), proof) == true, 0);
+
+        validators.transfer_operatorship(payload2);
+        assert!(validators.validate_proof(to_sui_signed(message), proof) == false, 0);
+
+        sui::test_utils::destroy(validators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EMalformedSigners)]
+    fun test_validate_proof_malformed_signers() {
+        let mut validators = new();
+
+        let message = x"1234";
+        let payload = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000006000000000000000000000000000000";
+        let proof = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea1030300000000000000000000000000000003000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000003413de59beca835483688338964eb4c314f387e06aef6c46ca2dc90733e5b7baa9b67b9b8530aacaae4263e369fced014e449166441c21b61fcef5978516d1a740301417b6940537f7fa65d37d0964d5dda49b80b5b7fcde93ba3b3224c3e007ff887ee20a203ac52802c29238353b69636cb71bd1da3bdb0c3ac3d85938531f94dd7570041529af0061fa6321419e0b702dd1ac4e16610efa718ad241e4eda8b65dd92bd2e715cfd58951305f6fc4d75a20d2c19bd4491312cff38b9694b02e2175826a2c800";
+
+        validators.transfer_operatorship(payload);
+        validators.validate_proof(to_sui_signed(message), proof);
+
+        sui::test_utils::destroy(validators);
+    }
 }

@@ -79,7 +79,7 @@ module axelar::discovery {
         channel: &Channel,
         tx: Transaction,
     ) {
-        let channel_id = object::id(channel);
+        let channel_id = channel.id();
         if (self.configurations.contains(channel_id)) {
             self.configurations.remove(channel_id);
         };
@@ -148,6 +148,14 @@ module axelar::discovery {
         }
     }
 
+    #[test_only]
+    public fun new_discovery(ctx: &mut TxContext): RelayerDiscovery {
+        RelayerDiscovery {
+            id: object::new(ctx),
+            configurations: table::new(ctx),
+        }
+    }
+
     #[test]
     fun tx_builder() {
         let function = new_function(
@@ -160,5 +168,60 @@ module axelar::discovery {
             vector[ bcs::to_bytes(&b"some_string") ], // arguments
             vector[ ], // type_arguments
         );
+    }
+
+    #[test]
+    fun test_new_function_from_bcs() {
+        let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+        let module_name = std::ascii::string(b"module");
+        let name = std::ascii::string(b"function");
+        let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
+    
+        let function = new_function_from_bcs(&mut bcs::new(input));
+        assert!(function.package_id == package_id, 0);
+        assert!(function.module_name == module_name, 1);
+        assert!(function.name == name, 2);
+    }
+
+    #[test]
+    fun test_new_transaction_from_bcs() {
+        let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+        let module_name = std::ascii::string(b"module");
+        let name = std::ascii::string(b"function");
+        let arguments = vector[x"1234", x"5678"];
+        let type_arguments = vector[ascii::string(b"type1"), ascii::string(b"type2")];
+        let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
+    
+        let transaction = new_transaction_from_bcs(&mut bcs::new(input));
+        assert!(transaction.function.package_id == package_id, 0);
+        assert!(transaction.function.module_name == module_name, 1);
+        assert!(transaction.function.name == name, 2);
+        assert!(transaction.arguments == arguments, 3);
+        assert!(transaction.type_arguments == type_arguments, 4);
+    }
+
+    #[test]
+    fun test_register_and_get() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut self = new_discovery(ctx);
+        let channel = axelar::channel::new(ctx);
+
+        let input_transaction = Transaction {
+            function: Function {
+                package_id: @0x1234,
+                module_name: std::ascii::string(b"module"),
+                name: std::ascii::string(b"function"),
+            },
+            arguments: vector::empty<vector<u8>>(),
+            type_arguments: vector::empty<ascii::String>(),
+        };
+        
+        self.register_transaction(&channel, input_transaction);
+
+        let transaction = self.get_transaction(channel.id());
+        assert!(transaction == input_transaction, 0);
+        
+        sui::test_utils::destroy(self);
+        sui::test_utils::destroy(channel);
     }
 }

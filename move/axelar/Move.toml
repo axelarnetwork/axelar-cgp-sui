@@ -1,11 +1,11 @@
 [package]
 name = "Axelar"
 version = "0.0.1"
-published-at = "0xbc4817b58c99dbdb3a774c90e3119967af56ea8a65da694741ecfcc43bfe974d"
+published-at = "0xd1e7a99a9f14ce501ae097dd90bc28a6fa9d47a8f2421ab924658138caf97148"
 edition = "2024.alpha"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 [addresses]
-axelar = "0xbc4817b58c99dbdb3a774c90e3119967af56ea8a65da694741ecfcc43bfe974d"
+axelar = "0xd1e7a99a9f14ce501ae097dd90bc28a6fa9d47a8f2421ab924658138caf97148"

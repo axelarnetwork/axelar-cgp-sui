@@ -245,4 +245,5 @@ module.exports = {
     getRandomOperators,
     getAmplifierWorkers,
     getBcsForGateway,
+    hashMessage,
 }
