@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::channel {
-    use std::string::String;
-    use sui::linked_table::{Self, LinkedTable};
-    use sui::object::{Self, UID, ID};
+    use std::ascii::String;
+    use sui::table::{Self, Table};
+    use sui::object::{Self, ID, UID};
     use sui::tx_context::TxContext;
     use sui::event;
-    use std::option::{Option};
 
-    friend axelar::validators;
+    friend axelar::gateway;
 
     /// Generic target for the messaging system.
     ///
@@ -45,8 +44,6 @@ module axelar::channel {
     /// For when message has already been processed and submitted twice.
     const EDuplicateMessage: u64 = 2;
 
-    const MAX_PROCESSED_APPROVAL_HISTORY: u64 = 100;
-
     /// The Channel object. Acts as a destination for the messages sent through
     /// the bridge. The `target_id` is compared against the `id` of the `Channel`
     /// during the message consumption.
@@ -54,20 +51,19 @@ module axelar::channel {
     /// The `T` parameter allows wrapping a Capability or a piece of data into
     /// the channel to be used when the message is consumed (eg authorize a
     /// `mint` call using a stored `AdminCap`).
-    struct Channel<T> has key, store {
+    public struct Channel has key, store {
         /// Unique ID of the target object which allows message targeting
         /// by comparing against `id_bytes`.
         id: UID,
-        value: Option<T>,
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
-        processed_call_approvals: LinkedTable<address, bool>,
+        processed_call_approvals: Table<address, bool>,
     }
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
     /// matching Channel, otherwise the TX fails.
-    struct ApprovedCall {
+    public struct ApprovedCall {
         /// ID of the call approval, guaranteed to be unique by Axelar.
         cmd_id: address,
         /// The target Channel's UID.
@@ -83,40 +79,44 @@ module axelar::channel {
 
     // ====== Events ======
 
-    struct ChannelCreated<phantom T> has copy, drop {
+    public struct ChannelCreated has copy, drop {
         id: address,
     }
 
-    struct ChannelDestroyed<phantom T> has copy, drop {
+    public struct ChannelDestroyed has copy, drop {
         id: address,
     }
 
-    /// Create new `Channel<T>` object. Anyone can create their own `Channel` to target
+    /// Create new `Channel` object. Anyone can create their own `Channel` to target
     /// from the outside and there's no limitation to the data stored inside it.
     ///
     /// `copy` ability is required to disallow asset locking inside the `Channel`.
-    public fun create_channel<T>(value: Option<T>, ctx: &mut TxContext): Channel<T> {
+    public fun new(ctx: &mut TxContext): Channel {
         let id = object::new(ctx);
-        event::emit(ChannelCreated<T> { id: object::uid_to_address(&id) });
+        event::emit(ChannelCreated { id: id.uid_to_address() });
 
-        Channel<T> {
+        Channel {
             id,
-            value,
-            processed_call_approvals: linked_table::new(ctx),
+            processed_call_approvals: table::new(ctx),
         }
     }
 
-    /// Destroy a `Channel<T>` releasing the T. Not constrained and can be performed
+    /// Destroy a `Channen` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
-    public fun destroy_channel<T: key>(self: Channel<T>): Option<T>{
-        let Channel { id, value, processed_call_approvals } = self;
-        while (!linked_table::is_empty(&processed_call_approvals)) {
-            linked_table::pop_back(&mut processed_call_approvals);
-        };
-        linked_table::destroy_empty(processed_call_approvals);
-        event::emit(ChannelDestroyed<T> { id: object::uid_to_address(&id) });
-        object::delete(id);
-        value
+    public fun destroy(self: Channel) {
+        let Channel { id, processed_call_approvals } = self;
+
+        processed_call_approvals.drop();
+        event::emit(ChannelDestroyed { id: id.uid_to_address() });
+        id.delete();
+    }
+
+    public fun id(self: &Channel): ID {
+        object::id(self)
+    }
+
+    public fun to_address(self: &Channel): address {
+        object::id_address(self)
     }
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
@@ -142,8 +142,8 @@ module axelar::channel {
     ///
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
     /// and the `payload` to be used by the consuming application.
-    public fun consume_approved_call<T>(
-        t: &mut Channel<T>,
+    public fun consume_approved_call(
+        channel: &mut Channel,
         approved_call: ApprovedCall
     ): (String, String, vector<u8>) {
         let ApprovedCall {
@@ -155,41 +155,16 @@ module axelar::channel {
         } = approved_call;
 
         // Check if the message has already been processed.
-        assert!(!linked_table::contains(&t.processed_call_approvals, cmd_id), EDuplicateMessage);
+        assert!(!channel.processed_call_approvals.contains(cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
-        assert!(target_id == object::uid_to_address(&t.id), EWrongDestination);
+        assert!(target_id == object::id_address(channel), EWrongDestination);
 
-        linked_table::push_back(&mut t.processed_call_approvals, cmd_id, true);
-        if (linked_table::length(&t.processed_call_approvals) > MAX_PROCESSED_APPROVAL_HISTORY) {
-            linked_table::pop_front(&mut t.processed_call_approvals);
-        };
+        channel.processed_call_approvals.add(cmd_id, true);
 
         (
             source_chain,
             source_address,
             payload,
         )
-    }
-
-    /// Get the bytes of the Channel ID
-    public fun source_id<T>(self: &Channel<T>): ID {
-        object::uid_to_inner(&self.id)
-    }
-
-     /// Get the bytes of the Channel ID
-     public fun source_address<T>(self: &Channel<T>): address {
-        object::uid_to_address(&self.id)
-    }
-    // === Testing ===
-    
-    #[test_only]
-    public fun burn_approved_call_for_testing(call: ApprovedCall) {
-        let ApprovedCall {
-            cmd_id: _,
-            target_id: _,
-            source_chain: _,
-            source_address: _,
-            payload: _,
-        } = call;
     }
 }

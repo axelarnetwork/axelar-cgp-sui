@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#[allow(implicit_const_copy)]
 /// Implementation a cross-chain messaging system for Axelar.
 ///
 /// This code is based on the following:
@@ -29,14 +30,18 @@
 ///  - CallApproval is checked to match the `Channel`.id
 ///
 module axelar::gateway {
-    use std::string::{Self, String};
+    use std::ascii::{Self, String};
     use std::vector;
 
     use sui::bcs;
     use sui::hash;
+    use sui::object::{Self, UID};
+    use sui::transfer;
+    use sui::tx_context::TxContext;
+    use sui::table::{Self, Table};
     use sui::address;
 
-    use axelar::utils::to_sui_signed;
+    use axelar::utils::{to_sui_signed};
     use axelar::channel::{Self, Channel, ApprovedCall};
     use axelar::validators::{Self, AxelarValidators, validate_proof};
 
@@ -49,12 +54,31 @@ module axelar::gateway {
     /// For when approval chainId is not SUI.
     const EInvalidChain: u64 = 3;
 
+    /// Trying to `take_approved_call` with a wrong payload.
+    const EPayloadHashMismatch: u64 = 5;
+
     // These are currently supported
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
 
+    /// An object holding the state of the Axelar bridge.
+    /// The central piece in managing call approval creation and signature verification.
+    public struct Gateway has key {
+        id: UID,
+        approvals: Table<address, Approval>,
+        validators: AxelarValidators,
+    }
+
+    /// CallApproval struct which can consumed only by a `Channel` object.
+    /// Does not require additional generic field to operate as linking
+    /// by `id_bytes` is more than enough.
+    public struct Approval has store {
+        /// Hash of the cmd_id, target_id, source_chain, source_address, payload_hash
+        approval_hash: vector<u8>,
+    }
+
     /// Emitted when a new message is sent from the SUI network.
-    struct ContractCall has copy, drop {
+    public struct ContractCall has copy, drop {
         source_id: address,
         destination_chain: String,
         destination_address: String,
@@ -62,7 +86,8 @@ module axelar::gateway {
         payload_hash: address,
     }
 
-    struct ContractCallApproved has copy, drop {
+    /// Event: emitted when a new message is approved by the SUI network.
+    public struct ContractCallApproved has copy, drop {
         cmd_id: address,
         source_chain: String,
         source_address: String,
@@ -71,6 +96,17 @@ module axelar::gateway {
     }
 
 
+    fun init(ctx: &mut TxContext) {
+        let gateway = Gateway {
+            id: object::new(ctx),
+            approvals: table::new(ctx),
+            validators: validators::new(),
+        };
+
+        transfer::share_object(gateway);
+    }
+
+    #[allow(implicit_const_copy)]
     /// The main entrypoint for the external approval processing.
     /// Parses data and attaches call approvals to the Axelar object to be
     /// later picked up and consumed by their corresponding Channel.
@@ -80,34 +116,34 @@ module axelar::gateway {
     ///
     /// Input data must be serialized with BCS (see specification here: https://github.com/diem/bcs).
     public entry fun process_commands(
-        validators: &mut AxelarValidators,
+        self: &mut Gateway,
         input: vector<u8>
     ) {
-        let bytes = bcs::new(input);
+        let mut bytes = bcs::new(input);
         // Split input into:
         // data: vector<u8> (BCS bytes)
         // proof: vector<u8> (BCS bytes)
         let (data, proof) = (
-            bcs::peel_vec_u8(&mut bytes),
-            bcs::peel_vec_u8(&mut bytes)
+            bytes.peel_vec_u8(),
+            bytes.peel_vec_u8()
         );
-        let allow_operatorship_transfer = validate_proof(validators, to_sui_signed(*&data), proof);
+        let mut allow_operatorship_transfer = validate_proof(borrow_validators(self), to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
-        let data_bcs = bcs::new(data);
+        let mut data_bcs = bcs::new(data);
 
         // Split data into:
         // chain_id: u64,
         // command_ids: vector<vector<u8>> (vector<string>)
         // commands: vector<vector<u8>> (vector<string>)
         // params: vector<vector<u8>> (vector<byteArray>)
-        let chain_id = bcs::peel_u64(&mut data_bcs);
-        let command_ids =bcs::peel_vec_address(&mut data_bcs);
-        let commands = bcs::peel_vec_vec_u8(&mut data_bcs);
-        let params = bcs::peel_vec_vec_u8(&mut data_bcs);
+        let chain_id = data_bcs.peel_u64();
+        let command_ids = data_bcs.peel_vec_address();
+        let commands = data_bcs.peel_vec_vec_u8();
+        let params = data_bcs.peel_vec_vec_u8();
         assert!(chain_id == 1, EInvalidChain);
 
-        let (i, commands_len) = (0, vector::length(&commands));
+        let (mut i, commands_len) = (0, vector::length(&commands));
 
         // make sure number of commands passed matches command IDs
         assert!(vector::length(&command_ids) == commands_len, EInvalidCommands);
@@ -123,17 +159,18 @@ module axelar::gateway {
             // Build a `CallApproval` object from the `params[i]`. BCS serializes data
             // in order, so field reads have to be done carefully and in order!
             if (cmd_selector == &SELECTOR_APPROVE_CONTRACT_CALL) {
-                let payload = bcs::new(payload);
-                let ( source_chain, source_address, target_id, payload_hash ) = (
-                    string::utf8(bcs::peel_vec_u8(&mut payload)),
-                    string::utf8(bcs::peel_vec_u8(&mut payload)),
-                    bcs::peel_address(&mut payload),
-                    bcs::peel_address(&mut payload)
+                let mut payload = bcs::new(payload);
+                let (source_chain, source_address, target_id, payload_hash) = (
+                    ascii::string(payload.peel_vec_u8()),
+                    ascii::string(payload.peel_vec_u8()),
+                    payload.peel_address(),
+                    payload.peel_address()
                 );
-                validators::add_approval(validators,
+                add_approval(self,
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 );
-                sui::event::emit( ContractCallApproved {
+
+                sui::event::emit(ContractCallApproved {
                     cmd_id, source_chain, source_address, target_id, payload_hash
                 });
                 continue
@@ -142,25 +179,46 @@ module axelar::gateway {
                     continue
                 };
                 allow_operatorship_transfer = false;
-                validators::transfer_operatorship(validators, payload)
+                borrow_mut_validators(self).transfer_operatorship(payload);
             } else {
                 continue
             };
         };
     }
 
-    /// Creates a new `ApprovedCall` object which must be delivered to the
-    /// matching `Channel`.
+    /// Most common scenario would be to target a shared object, however this
+    /// messaging system allows sending private messages which can be consumed
+    /// by single-owner targets.
+    ///
+    /// The hot potato approvel call object is returned.
     public fun take_approved_call(
-        axelar: &mut AxelarValidators,
+        self: &mut Gateway,
         cmd_id: address,
         source_chain: String,
         source_address: String,
         target_id: address,
         payload: vector<u8>
     ): ApprovedCall {
-        validators::take_approved_call(
-            axelar, cmd_id, source_chain, source_address, target_id, payload
+        let Approval {
+            approval_hash,
+        } = table::remove(&mut self.approvals, cmd_id);
+
+        let mut data = vector[];
+        vector::append(&mut data, address::to_bytes(cmd_id));
+        vector::append(&mut data, address::to_bytes(target_id));
+        vector::append(&mut data, *ascii::as_bytes(&source_chain));
+        vector::append(&mut data, *ascii::as_bytes(&source_address));
+        vector::append(&mut data, hash::keccak256(&payload));
+
+        assert!(hash::keccak256(&data) == approval_hash, EPayloadHashMismatch);
+
+        // Friend only.
+        channel::create_approved_call(
+            cmd_id,
+            source_chain,
+            source_address,
+            target_id,
+            payload,
         )
     }
 
@@ -169,20 +227,50 @@ module axelar::gateway {
     /// frozen object scenario or when someone exposes the Channel to the outer
     /// world. However, this restriction may be lifted in the future, and having
     /// an immutable reference should be enough.
-    public fun call_contract<T>(
-        channel: &mut Channel<T>,
+    public fun call_contract(
+        channel: &Channel,
         destination_chain: String,
         destination_address: String,
         payload: vector<u8>
     ) {
         sui::event::emit(ContractCall {
-            source_id: channel::source_address(channel),
+            source_id: object::id_address(channel),
             destination_chain,
             destination_address,
             payload,
             payload_hash: address::from_bytes(hash::keccak256(&payload)),
         })
     }
+
+
+    fun add_approval(
+        self: &mut Gateway,
+        cmd_id: address,
+        source_chain: String,
+        source_address: String,
+        target_id: address,
+        payload_hash: address
+    ) {
+        let mut data = vector[];
+        vector::append(&mut data, address::to_bytes(cmd_id));
+        vector::append(&mut data, address::to_bytes(target_id));
+        vector::append(&mut data, *ascii::as_bytes(&source_chain));
+        vector::append(&mut data, *ascii::as_bytes(&source_address));
+        vector::append(&mut data, address::to_bytes(payload_hash));
+
+        table::add(&mut self.approvals, cmd_id, Approval {
+            approval_hash: hash::keccak256(&data),
+        });
+    }
+
+    fun borrow_validators(self: &Gateway): &AxelarValidators {
+        &self.validators
+    }
+
+    fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidators {
+        &mut self.validators
+    }
+    
 
     #[test_only]
     use axelar::utils::operators_hash;
@@ -201,7 +289,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
 
         // public keys of `operators`
         let epoch = 1;
@@ -209,50 +297,48 @@ module axelar::gateway {
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        epoch_for_hash.insert(
+            operators_hash(&operators, &vector[100u128], 10u128),
+            epoch
+        );
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
 
         process_commands(&mut validators, CALL_APPROVAL);
 
-        validators::remove_approval_for_test(&mut validators, @0x1);
-        validators::remove_approval_for_test(&mut validators, @0x2);
-        validators::drop_for_test(validators);
-        ts::end(test);
+        validators.remove_approval_for_test(@0x1);
+        validators.remove_approval_for_test(@0x2);
+        sui::test_utils::destroy(validators);
     }
 
     #[test]
     fun test_transfer_operatorship() {
-        use sui::test_scenario::{Self as ts, ctx};
+        let ctx = &mut sui::tx_context::dummy();
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[
             x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
         ];
 
-        let epoch_for_hash = vec_map::empty();
-        vec_map::insert(&mut epoch_for_hash, operators_hash(&operators, &vector[100u128], 10u128), epoch);
-
-        let test = ts::begin(@0x0);
+        let mut epoch_for_hash = vec_map::empty();
+        let operators_hash = operators_hash(&operators, &vector[100u128], 10u128);
+        epoch_for_hash.insert(operators_hash, epoch);
 
         // create validators for testing
-        let validators = validators::new(
+        let mut validators = validators::new(
             epoch,
             epoch_for_hash,
-            ctx(&mut test)
+            ctx
         );
         process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
-        assert!(validators::epoch(&validators) == 2, 0);
+        assert!(validators.epoch() == 2, 0);
 
-        validators::drop_for_test(validators);
-        ts::end(test);
+        sui::test_utils::destroy(validators);
     }
 }

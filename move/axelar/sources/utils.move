@@ -8,6 +8,7 @@ module axelar::utils {
     use sui::hash;
 
     const EInvalidSignatureLength: u64 = 0;
+    const EVectorLengthMismatch: u64 = 1;
 
     /// Prefix for Sui Messages.
     const PREFIX: vector<u8> = b"\x19Sui Signed Message:\n";
@@ -28,9 +29,9 @@ module axelar::utils {
     }
 
     public fun abi_encode_start(len: u64): vector<u8> {
-        let v = vector::empty<u8>();
-        let i = 0;
-        while(i < 32 * len) {
+        let mut v = vector::empty<u8>();
+        let mut i = 0;
+        while (i < 32 * len) {
             vector::push_back<u8>(&mut v, 0);
             i = i + 1;
         };
@@ -38,8 +39,8 @@ module axelar::utils {
     }
 
     public fun abi_encode_fixed(v: &mut vector<u8>, pos: u64, var: u256) {
-        let i = 0;
-        while( i < 32 ) {
+        let mut i = 0;
+        while (i < 32) {
             let val = vector::borrow_mut<u8>(v, i + 32 * pos);
             let exp = ((31 - i) * 8 as u8);
             *val = (var >> exp & 255 as u8);
@@ -48,33 +49,38 @@ module axelar::utils {
     }
 
     public fun abi_encode_variable(v: &mut vector<u8>, pos: u64, var: vector<u8>) {
-        let length = vector::length<u8>(v);
+        let mut length = vector::length(v);
         abi_encode_fixed(v, pos, (length as u256));
-        let i: u64 = 0;
-        while( i < 32 - 8 ){
-            vector::push_back<u8>(v, 0);
+        let mut i: u64 = 0;
+        while (i < 32 - 8) {
+            vector::push_back(v, 0);
             i = i + 1;
         };
         i = 0;
-        length = vector::length<u8>(&var);
-        while( i < 8 ) {
-            vector::push_back<u8>(v, ((length >> ((7 - i) * 8 as u8)) & 255 as u8));
+        length = vector::length(&var);
+        while (i < 8) {
+            vector::push_back(v, ((length >> ((7 - i) * 8 as u8)) & 255 as u8));
             i = i + 1;
         };
-        vector::append<u8>(v, var);
+
+        vector::append(v, var);
+        if (length == 0) {
+            return
+        };
+
         i = 0;
-        while( i < 31 - (length - 1) % 32 ) {
-            vector::push_back<u8>(v, 0);
+        while (i < 31 - (length - 1) % 32) {
+            vector::push_back(v, 0);
             i = i + 1;
         };
     }
 
     public fun abi_decode_fixed(v: &vector<u8>, pos: u64) : u256 {
-        let var : u256 = 0;
-        let i = 0;
-        while(i < 32) {
+        let mut var = 0u256;
+        let mut i = 0;
+        while (i < 32) {
             var = var << 8;
-            var = var | (*vector::borrow<u8>(v, i + 32 * pos) as u256);
+            var = var | (*vector::borrow(v, i + 32 * pos) as u256);
             i = i + 1;
         };
         var
@@ -83,10 +89,10 @@ module axelar::utils {
     public fun abi_decode_variable(v: &vector<u8>, pos: u64): vector<u8> {
         let start = (abi_decode_fixed(v, pos) as u64);
         let len = (abi_decode_fixed(v, start / 32) as u64);
-        let var = vector::empty<u8>();
-        let i = 0;
-        while(i < len) {
-            vector::push_back<u8>(&mut var, *vector::borrow<u8>(v, i + start + 32));
+        let mut var = vector::empty();
+        let mut i = 0;
+        while (i < len) {
+            vector::push_back(&mut var, *vector::borrow(v, i + start + 32));
             i = i + 1;
         };
         var
@@ -94,19 +100,46 @@ module axelar::utils {
 
     /// Add a prefix to the bytes.
     public fun to_sui_signed(bytes: vector<u8>): vector<u8> {
-        let res = vector[];
-        vector::append<u8>(&mut res, PREFIX);
-        vector::append<u8>(&mut res, bytes);
+        let mut res = vector[];
+        vector::append(&mut res, PREFIX);
+        vector::append(&mut res, bytes);
         res
     }
 
     /// Compute operators hash from the list of `operators` (public keys).
     /// This hash is used in `Axelar.epoch_for_hash`.
     public fun operators_hash(operators: &vector<vector<u8>>, weights: &vector<u128>, threshold: u128): vector<u8> {
-        let data = bcs::to_bytes(operators);
-        vector::append<u8>(&mut data, bcs::to_bytes(weights));
-        vector::append<u8>(&mut data, bcs::to_bytes(&threshold));
+        let mut data = bcs::to_bytes(operators);
+        vector::append(&mut data, bcs::to_bytes(weights));
+        vector::append(&mut data, bcs::to_bytes(&threshold));
         hash::keccak256(&data)
+    }
+
+    public fun is_address_vector_zero(v: &vector<u8>): bool {
+        let length = vector::length(v);
+        let mut i = 0;
+        while(i < length) {
+            if(*vector::borrow(v, i) != 0) return false;
+            i = i + 1;
+        };
+        true
+    }
+
+    public fun compare_address_vectors(v1: &vector<u8>, v2: &vector<u8>): bool {
+        let length = vector::length(v1);
+        assert!(length == vector::length(v1), EVectorLengthMismatch); 
+        let mut i = 0;
+        while(i < length) {
+            let b1 = *vector::borrow(v1, i);
+            let b2 = *vector::borrow(v2, i);
+            if(b1 < b2) {
+                return true
+            } else if(b1 > b2) {
+                return false
+            };
+            i = i + 1;
+        };
+        false
     }
     
     #[test_only]
@@ -124,23 +157,22 @@ module axelar::utils {
 
     #[test]
     fun abi_encode_test() {
-        let v = abi_encode_start(4);
+        let mut v = abi_encode_start(4);
         abi_encode_fixed(&mut v, 0, FIX1);
         abi_encode_fixed(&mut v, 2, FIX2);
         abi_encode_variable(&mut v, 1, VAR1);
         abi_encode_variable(&mut v, 3, VAR2);
 
-        assert!(&v == &RESULT, 1);
+        assert!(v == RESULT, 1);
 
         let fix1 = abi_decode_fixed(&v, 0);
         let var1 = abi_decode_variable(&v, 1);
         let fix2 = abi_decode_fixed(&v, 2);
         let var2 = abi_decode_variable(&v, 3);
 
-        
-        assert!(&fix1 == &FIX1, 1);
-        assert!(&var1 == &VAR1, 1);
-        assert!(&fix2 == &FIX2, 1);
-        assert!(&var2 == &VAR2, 1);
+        assert!(fix1 == FIX1, 1);
+        assert!(var1 == VAR1, 1);
+        assert!(fix2 == FIX2, 1);
+        assert!(var2 == VAR2, 1);
     }
 }

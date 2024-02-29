@@ -5,8 +5,10 @@
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
-  "main": "index.js",
-  "scripts": {},
+  "main": "index.js",  
+  "scripts": {
+    "build": "cd move/axelar && sui move build && cd ../test && sui move build"
+  },
   "keywords": [
     "axelar",
     "sui"
@@ -17,8 +19,8 @@
     "node": ">=16"
   },
   "dependencies": {
+    "@mysten/sui.js": "^0.47.0",
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
-    "@mysten/sui.js": "^0.42.0",
     "child_process": "^1.0.2",
     "dotenv": "^16.3.1",
     "ethers": "^5.0.0",

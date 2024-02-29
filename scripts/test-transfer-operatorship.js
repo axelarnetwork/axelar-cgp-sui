@@ -23,7 +23,7 @@ const { parseEnv } = require('./utils');
 
     await transferOperatorship(allInfo[env.alias], client, keypair, operators.pubKeys, operators.weights, operators.threshold);
 
-    allInfo[env.alias].activeOperators = operators
+    allInfo[env.alias].activeOperators = operators;
 
     fs.writeFileSync(`info/axelar.json`, JSON.stringify(allInfo, null, 4));
 })();
