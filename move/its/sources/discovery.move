@@ -10,8 +10,9 @@ module its::discovery {
     use sui::hex;
     use sui::bcs;
 
+    use abi::abi::{Self, AbiReader};
+
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
-    use axelar::utils;
 
     use its::its::ITS;
     use its::token_id;
@@ -46,18 +47,19 @@ module its::discovery {
         discovery.register_transaction(self.channel(), tx);
     }
 
-    public fun get_call_info(self: &ITS, payload: &vector<u8>): Transaction {
-        let message_type = utils::abi_decode_fixed(payload, 0);
+    public fun get_call_info(self: &ITS, payload: vector<u8>): Transaction {
+        let reader = abi::new_reader(payload);
+        let message_type = reader.read_u256(0);
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            get_interchain_transfer_tx(self, payload)
+            get_interchain_transfer_tx(self, &reader)
         } else {
             assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
-            get_deploy_interchain_token_tx(self, payload)
+            get_deploy_interchain_token_tx(self, &reader)
         }
     }
 
-    fun get_interchain_transfer_tx(self: &ITS, payload: &vector<u8>): Transaction {
-        let data = utils::abi_decode_variable(payload, 5);
+    fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): Transaction {
+        let data = reader.read_bytes(5);
 
         if (vector::is_empty(&data)) {
             let mut arg = vector[0];
@@ -68,7 +70,7 @@ module its::discovery {
                 vector[2]
             ];
 
-            let token_id = token_id::from_u256(utils::abi_decode_fixed(payload, 1));
+            let token_id = token_id::from_u256(reader.read_u256(1));
             let type_name = self.get_registered_coin_type(token_id);
 
             discovery::new_transaction(
@@ -81,12 +83,12 @@ module its::discovery {
                 vector[ type_name::into_string(*type_name) ],
             )
         } else {
-            let transaction = utils::abi_decode_variable(&data, 0);
+            let transaction = abi::new_reader(data).read_bytes(0);
             discovery::new_transaction_from_bcs(&mut bcs::new(transaction))
         }
     }
 
-    fun get_deploy_interchain_token_tx(self: &ITS, payload: &vector<u8>): Transaction {
+    fun get_deploy_interchain_token_tx(self: &ITS, reader: &AbiReader): Transaction {
         let mut arg = vector[0];
         vector::append(&mut arg, address::to_bytes(object::id_address(self)));
 
@@ -95,8 +97,8 @@ module its::discovery {
             vector[2]
         ];
 
-        let symbol = ascii::string(utils::abi_decode_variable(payload, 3));
-        let decimals = (utils::abi_decode_fixed(payload, 4) as u8);
+        let symbol = ascii::string(reader.read_bytes(3));
+        let decimals = (reader.read_u256(4) as u8);
         let type_name = self.get_unregistered_coin_type(&symbol, decimals);
 
         discovery::new_transaction(

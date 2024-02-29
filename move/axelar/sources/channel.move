@@ -167,4 +167,155 @@ module axelar::channel {
             payload,
         )
     }
+
+    #[test_only]
+    public fun destroy_approved_call(self: ApprovedCall) {
+        let ApprovedCall { 
+            cmd_id: _,
+            source_chain: _,
+            source_address: _,
+            target_id: _,
+            payload: _,
+        } = self;
+    }
+    #[test]
+    fun test_new_and_destroy() {
+        let ctx = &mut sui::tx_context::dummy();
+        let channel: Channel = new(ctx);
+        channel.destroy()
+    }
+
+    #[test]
+    fun test_id() {
+        let ctx = &mut sui::tx_context::dummy();
+        let channel: Channel = new(ctx);
+        assert!(channel.id() == object::id(&channel), 0);
+        channel.destroy()
+    }
+
+
+    #[test]
+    fun test_to_address() {
+        let ctx = &mut sui::tx_context::dummy();
+        let channel: Channel = new(ctx);
+        assert!(channel.to_address() == object::id_address(&channel), 0);
+        channel.destroy()
+    }
+
+    #[test]
+    fun test_create_approved_call() {
+        let input_cmd_id = @0x1234;
+        let input_source_chain = std::ascii::string(b"Source Chain");
+        let input_source_address = std::ascii::string(b"Source Address");
+        let input_target_id = @0x5678;
+        let input_payload = b"payload";
+        let approved_call: ApprovedCall = create_approved_call(
+            input_cmd_id,
+            input_source_chain,
+            input_source_address,
+            input_target_id,
+            input_payload
+        );
+
+        let ApprovedCall { 
+            cmd_id,
+            source_chain,
+            source_address,
+            target_id,
+            payload 
+        } = approved_call;
+        assert!(cmd_id == input_cmd_id, 0);
+        assert!(source_chain == input_source_chain, 1);
+        assert!(source_address == input_source_address, 2);
+        assert!(target_id == input_target_id, 3);
+        assert!(payload == input_payload, 4);
+    }
+
+    #[test]
+    fun test_consume_approved_call() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut channel: Channel = new(ctx);
+
+        let input_cmd_id = @0x1234;
+        let input_source_chain = std::ascii::string(b"Source Chain");
+        let input_source_address = std::ascii::string(b"Source Address");
+        let input_target_id = channel.to_address();
+        let input_payload = b"payload";
+        let approved_call: ApprovedCall = create_approved_call(
+            input_cmd_id,
+            input_source_chain,
+            input_source_address,
+            input_target_id,
+            input_payload,
+        );
+
+        let (source_chain, source_address, payload) = consume_approved_call(&mut channel, approved_call);
+
+
+        assert!(source_chain == input_source_chain, 1);
+        assert!(source_address == input_source_address, 2);
+        assert!(payload == input_payload, 4);
+
+        channel.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EDuplicateMessage)]
+    fun test_consume_approved_call_duplicate_message() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut channel: Channel = new(ctx);
+
+        let cmd_id = @0x1234;
+        let source_chain1 = std::ascii::string(b"Source Chain 1");
+        let source_address1 = std::ascii::string(b"Source Address 1");
+        let target_id1 = channel.to_address();
+        let payload1 = b"payload 1";
+        let source_chain2 = std::ascii::string(b"Source Chain");
+        let source_address2 = std::ascii::string(b"Source Address");
+        let target_id2 = channel.to_address();
+        let payload2 = b"payload 2";
+
+        consume_approved_call(&mut channel, create_approved_call(
+            cmd_id,
+            source_chain1,
+            source_address1,
+            target_id1,
+            payload1,
+        ));
+
+        consume_approved_call(&mut channel, create_approved_call(
+            cmd_id,
+            source_chain2,
+            source_address2,
+            target_id2,
+            payload2,
+        ));
+
+        channel.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EWrongDestination)]
+    fun test_consume_approved_call_wrong_destination() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut channel: Channel = new(ctx);
+
+        let cmd_id = @0x1234;
+        let source_chain = std::ascii::string(b"Source Chain");
+        let source_address = std::ascii::string(b"Source Address");
+        let target_id = @0x5678;
+        let payload = b"payload";
+
+        let approved_call = create_approved_call(
+            cmd_id,
+            source_chain,
+            source_address,
+            target_id,
+            payload,
+        );
+
+        consume_approved_call(&mut channel, approved_call);
+
+        channel.destroy();
+    }
 }
