@@ -196,6 +196,38 @@ module axelar::validators {
     /// Expected to be returned from ecrecover.
     const SIGNER: vector<u8> = x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028";
 
+    #[test_only]
+    public fun get_transfer_params(new_operators: &vector<vector<u8>>, new_weights: &vector<u128>, new_threshold: &u128): vector<u8> {
+        let mut bcs = vector::empty<u8>();
+        vector::append(&mut bcs, bcs::to_bytes(new_operators));
+        vector::append(&mut bcs, bcs::to_bytes(new_weights));
+        vector::append(&mut bcs, bcs::to_bytes(new_threshold));
+        bcs
+    }
+
+    #[test_only]
+    public fun test_contains_operators(self: &AxelarValidators, operators: &vector<vector<u8>>, weights: &vector<u128>, threshold: u128): bool {
+        self.epoch_for_hash.contains(
+            &operators_hash(
+                operators,
+                weights,
+                threshold,
+            )
+        )
+    }
+
+
+    #[test_only]
+    public fun test_epoch_for_operators(self: &AxelarValidators, operators: &vector<vector<u8>>, weights: &vector<u128>, threshold: u128): u64 {
+        *self.epoch_for_hash.get(
+            &operators_hash(
+                operators,
+                weights,
+                threshold,
+            )
+        )
+    }
+
     #[test]
     /// Tests `ecrecover`, makes sure external signing process works with Sui ecrecover.
     /// Samples for this test are generated with the `presets/` application.

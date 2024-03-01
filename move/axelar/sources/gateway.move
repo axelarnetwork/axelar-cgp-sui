@@ -151,6 +151,7 @@ module axelar::gateway {
         assert!(vector::length(&params) == commands_len, EInvalidCommands);
 
         while (i < commands_len) {
+            // TODO: this does not store executed cmd_ids in the gateway, which make too many assumptions for the axelar network that it shouldn't.
             let cmd_id = *vector::borrow(&command_ids, i);
             let cmd_selector = vector::borrow(&commands, i);
             let payload = *vector::borrow(&params, i);
@@ -242,6 +243,23 @@ module axelar::gateway {
         })
     }
 
+    fun get_approval_hash(
+        cmd_id: &address,
+        source_chain: &String,
+        source_address: &String,
+        target_id: &address,
+        payload_hash: &address
+    ): vector<u8> {
+        let mut data = vector[];
+        vector::append(&mut data, bcs::to_bytes(cmd_id));
+        vector::append(&mut data, bcs::to_bytes(target_id));
+        vector::append(&mut data, bcs::to_bytes(source_chain));
+        vector::append(&mut data, bcs::to_bytes(source_address));
+        vector::append(&mut data, bcs::to_bytes(payload_hash));
+
+        hash::keccak256(&data)
+    }
+
 
     fun add_approval(
         self: &mut Gateway,
@@ -251,15 +269,14 @@ module axelar::gateway {
         target_id: address,
         payload_hash: address
     ) {
-        let mut data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, address::to_bytes(payload_hash));
-
         table::add(&mut self.approvals, cmd_id, Approval {
-            approval_hash: hash::keccak256(&data),
+            approval_hash: get_approval_hash(
+                &cmd_id,
+                &source_chain,
+                &source_address,
+                &target_id,
+                &payload_hash,
+            ),
         });
     }
 
@@ -271,74 +288,215 @@ module axelar::gateway {
         &mut self.validators
     }
     
-
-    /*#[test_only]
-    use axelar::utils::operators_hash;
     #[test_only]
-    use sui::vec_map;
-
-    #[test_only]
-    /// Test call approval for the `test_execute` test.
-    /// Generated via the `presets` script.
-    const CALL_APPROVAL: vector<u8> = x"ce01010000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020213617070726f7665436f6e747261637443616c6c13617070726f7665436f6e747261637443616c6c022b034554480330783000000000000000000000000000000000000000000000000000000000000004000000002e064158454c415203307831000000000000000000000000000000000000000000000000000000000000040000000087010121037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff59902801640000000000000000000000000000000a00000000000000000000000000000001410359561d86366875003ace8879abf953972034221461896d5098873ebe0b30ed6ef06560cc0adccedc8dd09d2a2bca7bfd22ca09d53c034a1aacfffefad0a6000000";
+    public fun new(ctx: &mut TxContext): Gateway {
+        Gateway {
+            id: object::new(ctx),
+            approvals: table::new(ctx),
+            validators: validators::new(),
+        }
+    }
 
     #[test_only]
-    const TRANSFER_OPERATORSHIP_APPROVAL: vector<u8> = x"8501010000000000000001000000000000000000000000000000000000000000000000000000000000000101147472616e736665724f70657261746f727368697001440121037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff59902801c80000000000000000000000000000001400000000000000000000000000000087010121037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff59902801640000000000000000000000000000000a000000000000000000000000000000014198b04944e2009969c93226ec6c97a7b9cc655b4ac52f7eeefd6cf107981c063a56a419cb149ea8a9cd49e8c745c655c5ccc242d35a9bebe7cebf6751121092a30100";
+    public fun get_approval_params(source_chain: &ascii::String, source_address: &ascii::String, target_id: &address, payload_hash: &address): vector<u8> {
+        let mut bcs = vector::empty<u8>();
+        vector::append(&mut bcs, bcs::to_bytes(source_chain));
+        vector::append(&mut bcs, bcs::to_bytes(source_address));
+        vector::append(&mut bcs, bcs::to_bytes(target_id));
+        vector::append(&mut bcs, bcs::to_bytes(payload_hash));
+        bcs
+    }
 
-    #[test]
-    /// Tests execution with a set of validators.
-    /// Samples for this test are generated with the `presets/` application.
-    fun test_execute() {
-        let ctx = &mut sui::tx_context::dummy();
-
-        // public keys of `operators`
-        let epoch = 1;
-        let operators = vector[
-            x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
-        ];
-
-        let mut epoch_for_hash = vec_map::empty();
-        epoch_for_hash.insert(
-            operators_hash(&operators, &vector[100u128], 10u128),
-            epoch
-        );
-
-        // create validators for testing
-        let mut validators = validators::new(
-            epoch,
-            epoch_for_hash,
-            ctx
-        );
-
-        process_commands(&mut validators, CALL_APPROVAL);
-
-        validators.remove_approval_for_test(@0x1);
-        validators.remove_approval_for_test(@0x2);
-        sui::test_utils::destroy(validators);
+    #[test_only]
+    public fun get_data(chain_id: &u64, command_ids: &vector<address>, commands: &vector<vector<u8>>, params: &vector<vector<u8>>): vector<u8> {
+        let mut bcs = vector::empty<u8>();
+        vector::append(&mut bcs, bcs::to_bytes(chain_id));
+        vector::append(&mut bcs, bcs::to_bytes(command_ids));
+        vector::append(&mut bcs, bcs::to_bytes(commands));
+        vector::append(&mut bcs, bcs::to_bytes(params));
+        bcs
     }
 
     #[test]
-    fun test_transfer_operatorship() {
+    fun test_process_commands() {
         let ctx = &mut sui::tx_context::dummy();
-        // public keys of `operators`
-        let epoch = 1;
-        let operators = vector[
-            x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028"
+        let mut gateway = new(ctx);
+
+        let source_chain = ascii::string(b"Source Chain");
+        let source_address = ascii::string(b"Source Address");
+        let target_id = @0x3;
+        let payload_hash = @0x4;
+        let approval_params = get_approval_params(&source_chain, &source_address, &target_id, &payload_hash);
+
+        let new_operators_1 = vector[x"1234", x"5678"];
+        let new_weights_1 = vector[1u128, 2u128];
+        let new_threshold_1 = 2u128;
+        let transfer_params_1 = validators::get_transfer_params(&new_operators_1, &new_weights_1, &new_threshold_1);
+
+        let new_operators_2 = vector[x"90ab", x"cdef"];
+        let new_weights_2 = vector[3u128, 4u128];
+        let new_threshold_2 = 5u128;
+        let transfer_params_2 = validators::get_transfer_params(&new_operators_2, &new_weights_2, &new_threshold_2);
+
+        let chain_id = 1u64;
+        let command_ids = vector[@0x1, @0x2, @0x3];
+        let commands = vector[SELECTOR_APPROVE_CONTRACT_CALL, SELECTOR_TRANSFER_OPERATORSHIP, SELECTOR_TRANSFER_OPERATORSHIP];
+        let params = vector[
+            approval_params,
+            transfer_params_1,
+            transfer_params_2,
         ];
 
-        let mut epoch_for_hash = vec_map::empty();
-        let operators_hash = operators_hash(&operators, &vector[100u128], 10u128);
-        epoch_for_hash.insert(operators_hash, epoch);
+        let data = get_data(&chain_id, &command_ids, &commands, &params);
+        let proof = x"";
+        let mut input = vector[];
+        
+        vector::append(&mut input, bcs::to_bytes(&data));
+        vector::append(&mut input, bcs::to_bytes(&proof));
 
-        // create validators for testing
-        let mut validators = validators::new(
-            epoch,
-            epoch_for_hash,
-            ctx
+        assert!(gateway.approvals.contains(@0x1) == false, 0);
+        assert!(gateway.validators.epoch() == 0, 3);
+
+        process_commands(&mut gateway, input);
+
+        assert!(gateway.approvals.contains(@0x1) == true, 2);
+        let approval_hash = get_approval_hash(
+            &@0x1, 
+            &source_chain,
+            &source_address,
+            &target_id,
+            &payload_hash,
         );
-        process_commands(&mut validators, TRANSFER_OPERATORSHIP_APPROVAL);
-        assert!(validators.epoch() == 2, 0);
 
-        sui::test_utils::destroy(validators);
-    }*/
+        assert!(approval_hash == gateway.approvals.borrow(@0x1).approval_hash, 3);
+        assert!(gateway.validators.epoch() == 1, 4);
+
+        assert!(gateway.validators.test_contains_operators(
+            &new_operators_1,
+            &new_weights_1,
+            new_threshold_1,
+        ) == true, 5);
+        assert!(gateway.validators.test_contains_operators(
+            &new_operators_2,
+            &new_weights_2,
+            new_threshold_2,
+        ) == false, 6);
+        assert!(gateway.validators.test_epoch_for_operators(
+            &new_operators_1,
+            &new_weights_1,
+            new_threshold_1,
+        ) == 1, 7);
+
+
+        sui::test_utils::destroy(gateway);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidChain)]
+    fun test_process_commands_invalid_chain() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut gateway = new(ctx);
+
+        let chain_id = 2u64;
+        let command_ids = vector[];
+        let commands = vector[];
+        let params = vector[];
+
+        let data = get_data(&chain_id, &command_ids, &commands, &params);
+        let proof = x"";
+        let mut input = vector[];
+        
+        vector::append(&mut input, bcs::to_bytes(&data));
+        vector::append(&mut input, bcs::to_bytes(&proof));
+
+        process_commands(&mut gateway, input);
+
+        sui::test_utils::destroy(gateway);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidCommands)]
+    fun test_process_commands_invalid_commands_commands() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut gateway = new(ctx);
+
+        let chain_id = 1u64;
+        let command_ids = vector[];
+        let commands = vector[SELECTOR_APPROVE_CONTRACT_CALL];
+        let params = vector[];
+
+        let data = get_data(&chain_id, &command_ids, &commands, &params);
+        let proof = x"";
+        let mut input = vector[];
+        
+        vector::append(&mut input, bcs::to_bytes(&data));
+        vector::append(&mut input, bcs::to_bytes(&proof));
+
+        process_commands(&mut gateway, input);
+
+        sui::test_utils::destroy(gateway);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidCommands)]
+    fun test_process_commands_invalid_commands_params() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut gateway = new(ctx);
+
+        let chain_id = 1u64;
+        let command_ids = vector[];
+        let commands = vector[];
+        let params = vector[x""];
+
+        let data = get_data(&chain_id, &command_ids, &commands, &params);
+        let proof = x"";
+        let mut input = vector[];
+        
+        vector::append(&mut input, bcs::to_bytes(&data));
+        vector::append(&mut input, bcs::to_bytes(&proof));
+
+        process_commands(&mut gateway, input);
+
+        sui::test_utils::destroy(gateway);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = sui::dynamic_field::EFieldAlreadyExists)]
+    fun test_process_same_approval_twice() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut gateway = new(ctx);
+
+        let source_chain_1 = ascii::string(b"Source Chain 1");
+        let source_address_1 = ascii::string(b"Source Address 1");
+        let target_id_1 = @0x3;
+        let payload_hash_1 = @0x4;
+        let approval_params_1 = get_approval_params(&source_chain_1, &source_address_1, &target_id_1, &payload_hash_1);
+
+        let source_chain_2 = ascii::string(b"Source Chain 2");
+        let source_address_2 = ascii::string(b"Source Address 2");
+        let target_id_2 = @0x5;
+        let payload_hash_2 = @0x6;
+        let approval_params_2 = get_approval_params(&source_chain_2, &source_address_2, &target_id_2, &payload_hash_2);
+
+        let chain_id = 1u64;
+        let command_ids = vector[@0x1, @0x1];
+        let commands = vector[SELECTOR_APPROVE_CONTRACT_CALL, SELECTOR_APPROVE_CONTRACT_CALL];
+        let params = vector[
+            approval_params_1,
+            approval_params_2,
+        ];
+
+        let data = get_data(&chain_id, &command_ids, &commands, &params);
+        let proof = x"";
+        let mut input = vector[];
+        
+        vector::append(&mut input, bcs::to_bytes(&data));
+        vector::append(&mut input, bcs::to_bytes(&proof));
+
+        assert!(gateway.approvals.contains(@0x1) == false, 0);
+
+        process_commands(&mut gateway, input);
+
+        sui::test_utils::destroy(gateway);
+    }
 }
