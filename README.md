@@ -11,6 +11,10 @@ The copy `.env.exaple` to `.env` and add a valid private key for sui. If you wan
 
 To deploy to testnet run `node scripts/publish-package axelar testnet` 
 
+## Testing
+
+run `npm run test` to run move tests on all the move packages.
+
 ## Scripts
 
 First run `node scripts/publish-package` and then any of `node scripts/<testScritpt>` which can be `test-receive-call`, `test-send-call`, and `test-transfer-operatorship`.
