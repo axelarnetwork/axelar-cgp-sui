@@ -1,12 +1,13 @@
 require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { MIST_PER_SUI } = require('@mysten/sui.js/utils');
+const { SuiClient } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const tmp = require('tmp');
+const { setConfig, getFullObject } = require('./utils');
+const { parseEnv } = require('./utils');
 
 async function publishPackage(packagePath, client, keypair) {
 	// remove all controlled temporary objects on process exit
@@ -17,9 +18,13 @@ async function publishPackage(packagePath, client, keypair) {
 	const { modules, dependencies } = JSON.parse(
 		execSync(
 			`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/' + packagePath} --install-dir ${tmpobj.name}`,
-			{ encoding: 'utf-8' },
+			{ 
+                encoding: 'utf-8',
+                stdio: 'pipe', // silent the output
+             },
 		),
 	);
+    
 	const tx = new TransactionBlock();
 	const cap = tx.publish({
 		modules,
@@ -54,8 +59,10 @@ async function publishPackage(packagePath, client, keypair) {
 	return { packageId, publishTxn };
 }
 
-module.exports = {
-    publishPackage,
+function updateMoveToml(packagePath, packageId) {
+    const path = `${__dirname}/../move/${packagePath}/Move.toml`;
+    const toml = fs.readFileSync(path, 'utf8');
+    fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId));
 }
 
 function insertPublishedAt(toml, packageId) {
@@ -79,9 +86,36 @@ function fillAddresses(toml, address) {
     return lines.join('\n');
 }
 
+async function publishPackageFull(packagePath, client, keypair, env) {
+    let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
+    fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
+
+    const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
+    const info = require(`../move/${packagePath}/info.json`);
+    const config = {};
+    config.packageId = packageId;
+    for(const singleton of info.singletons) {
+        const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
+        config[singleton] = await getFullObject(object, client);
+    }
+    
+    setConfig(packagePath, env.alias, config);
+    updateMoveToml(packagePath, packageId);
+
+    return {packageId, publishTxn};
+}
+
+module.exports = {
+    publishPackage,
+    updateMoveToml,
+    publishPackageFull,
+}
+
+
 if (require.main === module) {
     const packagePath = process.argv[2] || 'axelar';
-    const env = process.argv[3] || 'localnet';
+    const env = parseEnv(process.argv[3] || 'localnet');
+    const faucet = (process.argv[4]?.toLowerCase?.() === 'true');
     
     (async () => {
         const privKey = 
@@ -92,54 +126,21 @@ if (require.main === module) {
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
-        const client = new SuiClient({ url: getFullnodeUrl(env) });
+        const client = new SuiClient({ url: env.url });
 
-        try {
-            await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
-            });
-        } catch (e) {
-            console.log(e);
-        }
-
-
-        let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
-    
-        const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
-        const info = require(`../move/${packagePath}/info.json`);
-        const config = {};
-        config.packageId = packageId;
-        for(const singleton of info.singletons) {
-            const object = publishTxn.objectChanges.find(object => (object.objectType === `${packageId}::${singleton}`));
-            delete object.type;
-            delete object.sender;
-            delete object.owner;
-            config[singleton] = object
-            const objectResponce = await client.getObject({
-                id: object.objectId,
-                options: {
-                    showContent: true,
-                }
-            }); 
-            const fields = objectResponce.data.content.fields;
-            for(const key in fields) {
-                if(key === 'id') continue;
-                if(fields[key].fields) {
-                    object[key] = fields[key].fields.id.id || fields[key].fields.id;
-                } else {
-                    object[key] = fields[key].id;
-                }
+        if (faucet) {
+            try {
+                await requestSuiFromFaucetV0({
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env.alias),
+                recipient: address,
+                });
+            } catch (e) {
+                console.log(e);
             }
         }
-        
-        const allConfigs = require(`../info/${packagePath}.json`) || {};
-        allConfigs[env] = config;
-        fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(allConfigs, null, 4));
 
-        fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(insertPublishedAt(toml, packageId), packageId));
+        await publishPackageFull(packagePath, client, keypair, env);
     })();
 }

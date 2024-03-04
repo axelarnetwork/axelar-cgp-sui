@@ -1,0 +1,16 @@
+[package]
+name = "its"
+version = "0.0.1"
+published-at = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
+#published-at = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
+edition = "2024.alpha"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+Axelar = { local = "../axelar" }
+Governance = { local = "../governance" }
+
+[addresses]
+test = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
+its = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
+dummy_its = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"

@@ -1,12 +1,11 @@
 [package]
-name = "test"
+name = "Abi"
 version = "0.0.1"
-published-at = "0xee3865e069bb36d5500f0cded0821cd5d6f8762e347de4805b1eb6629b9d9ef8"
+published-at = "0xa7b24d8879b2a92c748c030828ba1623dafb148899d971b9eb0367ef579850e3"
 edition = "2024.alpha"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
-Axelar = { local = "../axelar" }
 
 [addresses]
-test = "0xee3865e069bb36d5500f0cded0821cd5d6f8762e347de4805b1eb6629b9d9ef8"
+abi = "0xa7b24d8879b2a92c748c030828ba1623dafb148899d971b9eb0367ef579850e3"

@@ -5,8 +5,16 @@
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
-  "main": "index.js",
-  "scripts": {},
+  "main": "index.js",  
+  "scripts": {
+    "build": "",
+    "test": "npm run test:abi & npm run test:axelar & npm run test:governance & npm run test:gas_service & npm run test:its",
+    "test:abi": "sui move test --path ./move/abi",
+    "test:axelar": "sui move test --path ./move/axelar",
+    "test:governance": "sui move test --path ./move/governance",
+    "test:gas_service": "sui move test --path ./move/gas_service",
+    "test:its": "sui move test --path ./move/its"
+  },
   "keywords": [
     "axelar",
     "sui"
@@ -17,7 +25,8 @@
     "node": ">=16"
   },
   "dependencies": {
-    "@mysten/sui.js": "^0.42.0",
+    "@mysten/sui.js": "^0.47.0",
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "child_process": "^1.0.2",
     "dotenv": "^16.3.1",
     "ethers": "^5.0.0",
