@@ -57,7 +57,7 @@ module axelar::utils {
 
     public fun compare_address_vectors(v1: &vector<u8>, v2: &vector<u8>): bool {
         let length = vector::length(v1);
-        assert!(length == vector::length(v1), EVectorLengthMismatch); 
+        assert!(length == vector::length(v2), EVectorLengthMismatch); 
         let mut i = 0;
         while(i < length) {
             let b1 = *vector::borrow(v1, i);
@@ -71,38 +71,72 @@ module axelar::utils {
         };
         false
     }
-    
-    #[test_only]
-    const VAR1: vector<u8> = x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028";
-    #[test_only]
-    const VAR2: vector<u8> = x"000000000000000000000000000000000000000000000000000000000000007b000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002370000000000000000000000000000000000000000000000000000000000000021037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff59902800000000000000000000000000000000000000000000000000000000000000";
-
-    #[test_only]
-    const FIX1: u256 = 235893452345934825970329407589;
-    #[test_only]
-    const FIX2: u256 = 2343532458234812893949583;
-
-    #[test_only]
-    const RESULT: vector<u8> = x"0000000000000000000000000000000000000002fa367d8b6dacc5919d8f5065000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000001f043262d1572d472ee8f00000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000021037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff5990280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000007b000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002370000000000000000000000000000000000000000000000000000000000000021037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff59902800000000000000000000000000000000000000000000000000000000000000";
 
     #[test]
-    fun abi_encode_test() {
-        let mut v = abi_encode_start(4);
-        abi_encode_fixed(&mut v, 0, FIX1);
-        abi_encode_fixed(&mut v, 2, FIX2);
-        abi_encode_variable(&mut v, 1, VAR1);
-        abi_encode_variable(&mut v, 3, VAR2);
+    #[expected_failure(abort_code = EInvalidSignatureLength)]
+    fun test_normalize_signature() {
+        let prefix = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e02021234025678020574797065310574";
+        let mut signature = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e02021234025678020574797065310574";
+        let inputs = vector[0, 1, 10, 11, 27, 28, 30, 38, 39];
+        let outputs = vector[0, 1, 10, 11, 0, 1, 30, 1, 0]; 
 
-        assert!(v == RESULT, 1);
+        let length = vector::length(&inputs);
+        let mut i = 0;
+        while(i < length) {
+            vector::push_back(&mut signature, *vector::borrow(&inputs, i));
+            normalize_signature(&mut signature);
+            assert!(vector::pop_back(&mut signature) == *vector::borrow(&outputs, i), i);
+            assert!(signature == prefix, i);
+            i = i + 1;
+        };
 
-        let fix1 = abi_decode_fixed(&v, 0);
-        let var1 = abi_decode_variable(&v, 1);
-        let fix2 = abi_decode_fixed(&v, 2);
-        let var2 = abi_decode_variable(&v, 3);
+        normalize_signature(&mut signature);
+    }
 
-        assert!(fix1 == FIX1, 1);
-        assert!(var1 == VAR1, 1);
-        assert!(fix2 == FIX2, 1);
-        assert!(var2 == VAR2, 1);
+    #[test]
+    fun test_to_sui_signed() {
+        let input = b"012345";
+        let output = b"\x19Sui Signed Message:\n012345";
+        assert!(to_sui_signed(input) == output, 0);
+    }
+
+    #[test]
+    fun test_operators_hash() {
+        let operators = vector[x"0123", x"4567", x"890a"];
+        let weights = vector[1, 3, 6];
+        let threshold = 4;
+        let output = x"dd5d3f9c1017e8356ea1858db7b89800b6cd43775c5c1b7c633f6ef933583cfd";
+        
+        assert!(operators_hash(&operators, &weights, threshold) == output, 0);
+    }
+
+    #[test]
+    fun test_is_address_vector_zero() {
+        assert!(is_address_vector_zero(&x"01") == false, 0);
+        assert!(is_address_vector_zero(&x"") == true, 0);
+        assert!(is_address_vector_zero(&x"00") == true, 0);
+        assert!(is_address_vector_zero(&x"00000000000001") == false, 0);
+        assert!(is_address_vector_zero(&x"00000000000000") == true, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EVectorLengthMismatch)]
+    fun test_compare_address_vectors() {
+        let v1 = &x"000000";
+        let v2 = &x"000001";
+        let v2copy = &x"000001";
+        let v3 = &x"010000";
+
+        assert!(compare_address_vectors(v1, v2) == true, 0);
+        assert!(compare_address_vectors(v1, v3) == true, 1);
+        assert!(compare_address_vectors(v2, v3) == true, 2);
+
+        assert!(compare_address_vectors(v2, v1) == false, 3);
+        assert!(compare_address_vectors(v3, v2) == false, 4);
+        assert!(compare_address_vectors(v3, v1) == false, 5);
+
+        assert!(compare_address_vectors(v2, v2copy) == false, 6);
+
+        compare_address_vectors(&x"", &x"01");
     }
 }
