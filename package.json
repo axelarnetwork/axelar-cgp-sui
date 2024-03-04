@@ -7,7 +7,13 @@
   },
   "main": "index.js",  
   "scripts": {
-    "build": "cd move/axelar && sui move build && cd ../test && sui move build"
+    "build": "",
+    "test": "npm run test:abi & npm run test:axelar & npm run test:governance & npm run test:gas_service & npm run test:its",
+    "test:abi": "sui move test --path ./move/abi",
+    "test:axelar": "sui move test --path ./move/axelar",
+    "test:governance": "sui move test --path ./move/governance",
+    "test:gas_service": "sui move test --path ./move/gas_service",
+    "test:its": "sui move test --path ./move/its"
   },
   "keywords": [
     "axelar",
