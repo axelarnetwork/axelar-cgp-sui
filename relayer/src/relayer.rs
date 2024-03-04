@@ -47,7 +47,7 @@ pub struct SuiAxelarRelayer {
     sui_fn_url: String,
     #[clap(long, env, default_value = "wss://rpc.testnet.sui.io:443")]
     sui_ws_url: String,
-    #[clap(long, env, default_value = "127.0.0.1:10000")]
+    #[clap(long, env, default_value = "127.0.0.1:9000")]
     listen_address: SocketAddr,
     #[clap(
         long,
