@@ -169,15 +169,22 @@ module axelar::channel {
     }
 
     #[test_only]
-    public fun destroy_approved_call(self: ApprovedCall) {
-        let ApprovedCall { 
-            cmd_id: _,
-            source_chain: _,
-            source_address: _,
-            target_id: _,
-            payload: _,
-        } = self;
+    public fun create_test_approved_call(
+        cmd_id: address,
+        source_chain: String,
+        source_address: String,
+        target_id: address,
+        payload: vector<u8>,
+    ): ApprovedCall {
+        create_approved_call(
+            cmd_id,
+            source_chain,
+            source_address,
+            target_id,
+            payload,
+        )
     }
+
     #[test]
     fun test_new_and_destroy() {
         let ctx = &mut sui::tx_context::dummy();
