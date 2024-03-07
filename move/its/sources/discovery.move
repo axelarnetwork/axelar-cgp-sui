@@ -33,7 +33,7 @@ module its::discovery {
         ];
 
         let function = discovery::new_function(
-            address_bytes<ITS>(),
+            its_package_id(),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
@@ -75,7 +75,7 @@ module its::discovery {
 
             discovery::new_transaction(
                 discovery::new_function(
-                    address_bytes<ITS>(),
+                    its_package_id(),
                     ascii::string(b"service"),
                     ascii::string(b"receive_interchain_transfer")
                 ),
@@ -103,7 +103,7 @@ module its::discovery {
 
         discovery::new_transaction(
             discovery::new_function(
-                address_bytes<ITS>(),
+                its_package_id(),
                 ascii::string(b"service"),
                 ascii::string(b"receive_deploy_interchain_token")
             ),
@@ -113,7 +113,7 @@ module its::discovery {
     }
 
     /// Returns the address of the ITS module (from the type name).
-    fun address_bytes<ITS>(): address {
+    fun its_package_id(): address {
         address::from_bytes(
             hex::decode(
                 *ascii::as_bytes(
@@ -121,5 +121,125 @@ module its::discovery {
                 )
             )
         )
+    }
+
+    #[test_only]
+    fun get_initial_tx(self: &ITS): Transaction {
+        let mut arg = vector[0];
+        vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
+
+        let arguments = vector[
+            arg,
+            vector[3]
+        ];
+
+        let function = discovery::new_function(
+            its_package_id(),
+            ascii::string(b"discovery"),
+            ascii::string(b"get_call_info")
+        );
+
+        discovery::new_transaction(
+            function,
+            arguments,
+            vector[],
+        )
+    }
+
+    #[test]
+    fun test_discovery_initial() {
+        let ctx = &mut sui::tx_context::dummy();
+        let its = its::its::new();
+        let mut discovery = axelar::discovery::new(ctx);
+
+        register_transaction(&its, &mut discovery);
+
+        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
+
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(discovery);
+    }
+
+    #[test]
+    fun test_discovery_interchain_transfer() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = its::its::new();
+        let mut discovery = axelar::discovery::new(ctx);
+
+        register_transaction(&its, &mut discovery);
+
+        let token_id = @0x1234;
+        let source_address = b"source address";
+        let target_channel = @0x5678;
+        let amount = 1905;
+        let data = b"";
+        let mut writer = abi::new_writer(6);
+        writer            
+            .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
+            .write_u256(address::to_u256(token_id))
+            .write_bytes(source_address)
+            .write_bytes(address::to_bytes(target_channel))
+            .write_u256(amount)
+            .write_bytes(data);
+        let payload = writer.into_bytes();
+
+        let type_arg = std::type_name::get<RelayerDiscovery>();
+        its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
+        let call_info = get_call_info(&its, payload);
+        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
+
+        assert!(call_info.function().package_id() == its_package_id(), 2);
+        assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
+        assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 4);
+        let mut arg = vector[0];
+        vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
+
+        let arguments = vector[
+            arg,
+            vector[2]
+        ];
+        assert!(call_info.arguments() == arguments, 5);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 6);
+
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(discovery);
+    }
+
+    #[test]
+    fun test_discovery_interchain_transfer_with_data() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = its::its::new();
+        let mut discovery = axelar::discovery::new(ctx);
+
+        register_transaction(&its, &mut discovery);
+
+        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
+
+        let token_id = @0x1234;
+        let source_address = b"source address";
+        let target_channel = @0x5678;
+        let amount = 1905;
+        let tx_data = bcs::to_bytes(&get_initial_tx(&its));
+        let mut writer = abi::new_writer(2);
+        writer
+            .write_bytes(tx_data)
+            .write_u256(1245);
+        let data = writer.into_bytes();
+        
+        writer = abi::new_writer(6);
+        writer            
+            .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
+            .write_u256(address::to_u256(token_id))
+            .write_bytes(source_address)
+            .write_bytes(address::to_bytes(target_channel))
+            .write_u256(amount)
+            .write_bytes(data);
+        let payload = writer.into_bytes();
+
+        its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
+        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
+        
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(discovery);
     }
 }

@@ -6,7 +6,7 @@ module its::its {
     use std::type_name::{Self, TypeName};
 
     use sui::bag::{Self, Bag};
-    use sui::object::{Self, UID};
+    use sui::object::{Self, ID, UID};
     use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
@@ -24,6 +24,7 @@ module its::its {
 
     /// Trying to read a token that doesn't exist.
     const ENotFound: u64 = 0;
+    const EUnregisteredCoin: u64 = 1;
 
     public struct ITS has key {
         id: UID,
@@ -79,10 +80,12 @@ module its::its {
     }
 
     public fun get_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
+        assert!(self.registered_coin_types.contains(token_id), EUnregisteredCoin);
         self.registered_coin_types.borrow(token_id)
     }
 
     public fun get_coin_data<T>(self: &ITS, token_id: TokenId): &CoinData<T> {
+        assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         self.registered_coins.borrow(token_id)
     }
 
@@ -108,6 +111,10 @@ module its::its {
 
     public fun is_trusted_address(self: &ITS, source_chain: String, source_address: String): bool {
         self.address_tracker.is_trusted_address(source_chain, source_address)
+    }
+
+    public fun channel_id(self: &ITS): ID {
+        self.channel.id()
     }
 
     // === Friend-only ===
@@ -187,5 +194,44 @@ module its::its {
     #[allow(unused_function)]
     fun remove_registered_coin_type(self: &mut ITS, token_id: TokenId): TypeName {
         self.registered_coin_types.remove(token_id)
+    }
+
+    #[test_only]
+    public fun new(): ITS {
+        let ctx = &mut sui::tx_context::dummy();
+        ITS {
+            id: object::new(ctx),
+            channel: axelar::channel::new(ctx),
+
+            address_tracker: address_tracker::new(
+                ctx,
+            ),
+
+            registered_coins: bag::new(ctx),
+            registered_coin_types: table::new(ctx),
+
+            unregistered_coin_info: bag::new(ctx),
+            unregistered_coin_types: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public fun test_add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {
+        self.add_unregistered_coin_type(token_id, type_name);
+    }
+
+    #[test_only]
+    public fun test_remove_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId): TypeName {
+        self.remove_unregistered_coin_type(token_id)
+    }
+
+    #[test_only]
+    public fun test_add_registered_coin_type(self: &mut ITS, token_id: TokenId, type_name: TypeName) {
+        self.add_registered_coin_type(token_id, type_name);
+    }
+
+    #[test_only]
+    public fun test_remove_registered_coin_type(self: &mut ITS, token_id: TokenId): TypeName {
+        self.remove_registered_coin_type(token_id)
     }
 }

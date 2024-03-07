@@ -149,7 +149,37 @@ module axelar::discovery {
     }
 
     #[test_only]
-    public fun new_discovery(ctx: &mut TxContext): RelayerDiscovery {
+    public fun package_id(self: &Function): address {
+        self.package_id
+    }
+
+    #[test_only]
+    public fun module_name(self: &Function): ascii::String {
+        self.module_name
+    }
+
+    #[test_only]
+    public fun name(self: &Function): ascii::String {
+        self.name
+    }
+
+    #[test_only]
+    public fun function(self: &Transaction): Function {
+        self.function
+    }
+ 
+    #[test_only]
+    public fun arguments(self: &Transaction): vector<vector<u8>> {
+        self.arguments
+    }
+
+    #[test_only]
+    public fun type_arguments(self: &Transaction): vector<ascii::String> {
+        self.type_arguments
+    }
+
+    #[test_only]
+    public fun new(ctx: &mut TxContext): RelayerDiscovery {
         RelayerDiscovery {
             id: object::new(ctx),
             configurations: table::new(ctx),
@@ -203,7 +233,7 @@ module axelar::discovery {
     #[test]
     fun test_register_and_get() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut self = new_discovery(ctx);
+        let mut self = new(ctx);
         let channel = axelar::channel::new(ctx);
 
         let input_transaction = Transaction {

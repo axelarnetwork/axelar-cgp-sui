@@ -76,13 +76,14 @@ module abi::abi {
         var
     }
 
-    public fun write_u256(self: &mut AbiWriter, var: u256) {
+    public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
         let pos = self.pos;
         self.encode_u256(pos, var);
         self.pos = self.pos + 1;
+        self
     }
 
-    public fun write_bytes(self: &mut AbiWriter, var: vector<u8>) {
+    public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
         let pos = self.pos;
         let mut length = vector::length(&self.bytes);
         self.encode_u256(pos, (length as u256));
@@ -92,9 +93,10 @@ module abi::abi {
 
         self.append_bytes(var);
         self.pos = self.pos + 1;
+        self
     }
 
-    public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>) {
+    public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>): &mut AbiWriter {
         let pos = self.pos;
         let mut length = vector::length(&self.bytes);
         self.encode_u256(pos, (length as u256));
@@ -110,9 +112,10 @@ module abi::abi {
         };
 
         self.pos = self.pos + 1;
+        self
     }
 
-    public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>) {
+    public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
         let pos = self.pos;
         let mut length = vector::length(&self.bytes);
         self.encode_u256(pos, (length as u256));
@@ -131,6 +134,7 @@ module abi::abi {
         self.append_bytes(writer.into_bytes());
 
         self.pos = self.pos + 1;
+        self
     }
 
     fun encode_u256(self: &mut AbiWriter, pos: u64, var: u256) {

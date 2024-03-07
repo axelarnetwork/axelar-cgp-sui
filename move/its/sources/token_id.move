@@ -78,7 +78,6 @@ module its::token_id {
 
     #[test]
     fun test() {
-        use std::debug;
         use std::string;
         use its::coin_info;
 
@@ -96,8 +95,6 @@ module its::token_id {
         let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
 
         vector::append<u8>(&mut vec, bcs::to_bytes<CoinInfo<String>>(&coin_info));
-        debug::print<address>(&address::from_u256(PREFIX_SUI_TOKEN_ID));
-        debug::print<vector<u8>>(&vec);
         coin_info::drop(coin_info);
     }
 }
