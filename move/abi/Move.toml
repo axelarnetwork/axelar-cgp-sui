@@ -8,4 +8,4 @@ edition = "2024.alpha"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 [addresses]
-abi = "0xa7b24d8879b2a92c748c030828ba1623dafb148899d971b9eb0367ef579850e3"
+abi = "0x0"

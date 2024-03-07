@@ -11,6 +11,4 @@ Axelar = { local = "../axelar" }
 Governance = { local = "../governance" }
 
 [addresses]
-test = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
-its = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
-dummy_its = "0x95d4d7af5a8df4c591b454b8d2f7b3c95f88f5ec13658d1f7c5fa2867b61e47a"
+its = "0x0"
