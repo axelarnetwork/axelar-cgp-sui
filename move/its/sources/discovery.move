@@ -242,4 +242,50 @@ module its::discovery {
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
     }
+
+    #[test]
+    fun test_discovery_deploy_token() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = its::its::new();
+        let mut discovery = axelar::discovery::new(ctx);
+
+        register_transaction(&its, &mut discovery);
+
+        let token_id = @0x1234;
+        let name = b"name";
+        let symbol = b"symbol";
+        let decimals = 15;
+        let distributor = x"0325";
+        let mut writer = abi::new_writer(6);
+        writer            
+            .write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN)
+            .write_u256(address::to_u256(token_id))
+            .write_bytes(name)
+            .write_bytes(symbol)
+            .write_u256(decimals)
+            .write_bytes(distributor);
+        let payload = writer.into_bytes();
+
+        let type_arg = std::type_name::get<RelayerDiscovery>();
+        its.test_add_unregistered_coin_type(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
+        let call_info = get_call_info(&its, payload);
+        assert!(get_call_info(&its, payload) == get_deploy_interchain_token_tx(&its, &abi::new_reader(payload)), 1);
+
+        assert!(call_info.function().package_id() == its_package_id(), 2);
+        assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
+        assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 4);
+        let mut arg = vector[0];
+        vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
+
+        let arguments = vector[
+            arg,
+            vector[2]
+        ];
+        assert!(call_info.arguments() == arguments, 5);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 6);
+
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(discovery);
+    }
+
 }
