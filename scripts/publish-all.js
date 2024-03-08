@@ -31,6 +31,10 @@ async function publishAll(client, keypair, env) {
     );
 }
 
+module.exports = {
+    publishAll,
+}
+
 if (require.main === module) {
     const env = ((arg) => {
         switch (arg?.toLowerCase()) {

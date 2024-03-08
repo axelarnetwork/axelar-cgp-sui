@@ -155,7 +155,7 @@ module its::service {
     public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_call: ApprovedCall) {
         let (_, payload) = decode_approved_call(self, approved_call);
         let reader = abi::new_reader(payload);
-        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
+        assert!(reader.read_u256(0) == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256(1));
         let name = string::utf8(reader.read_bytes(2));

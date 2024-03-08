@@ -11,21 +11,19 @@ module its::utils {
     const NUMBERS_START: u8 = 48;
     const SPACE: u8 = 32;
     const UNDERSCORE: u8 = 95;
-
-    public fun convert_value(val: u256): u64 {
-        (val as u64)
-    }
+    const ALPHABET_LENGTH: u8 = 26;
+    const NUMBERS_LENGTH: u8 = 10;
 
     public fun is_lowercase(c: u8): bool {
-        c >= LOWERCASE_START && c <= LOWERCASE_START + 25
+        c >= LOWERCASE_START && c < LOWERCASE_START + ALPHABET_LENGTH
     }
 
     public fun is_uppercase(c: u8): bool {
-        c >= UPPERCASE_START && c <= UPPERCASE_START + 25
+        c >= UPPERCASE_START && c < UPPERCASE_START + ALPHABET_LENGTH
     }
 
     public fun is_number(c: u8): bool {
-        c >= NUMBERS_START && c <= NUMBERS_START + 9
+        c >= NUMBERS_START && c < NUMBERS_START + NUMBERS_LENGTH
     }
 
     public fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
@@ -76,5 +74,24 @@ module its::utils {
     fun test_get_module_from_symbol() {
         let symbol = ascii::string(b"1(TheCool1234Coin) _ []!rdt");
         std::debug::print(&get_module_from_symbol(&symbol));
+    }
+
+    #[test]
+    fun test_decode_metadata() {
+        let (version, metadata) = decode_metadata(x"");
+        assert!(version == 0, 0);
+        assert!(metadata == x"", 1);
+
+        let (version, metadata) = decode_metadata(x"012345");
+        assert!(version == 0, 3);
+        assert!(metadata == x"", 4);
+
+        let (version, metadata) = decode_metadata(x"00000004");
+        assert!(version == 4, 5);
+        assert!(metadata == x"", 6);
+
+        let (version, metadata) = decode_metadata(x"000000071ab768cf");
+        assert!(version == 7, 7);
+        assert!(metadata == x"1ab768cf", 8);
     }
 }
