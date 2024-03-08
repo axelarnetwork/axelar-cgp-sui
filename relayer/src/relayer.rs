@@ -43,22 +43,22 @@ pub struct SuiAxelarRelayer {
         default_value = "you parade planet become era edit fuel birth arrow cry grunt snow"
     )]
     signer_mnemonic: String,
-    #[clap(long, env, default_value = "https://rpc.testnet.sui.io:443")]
+    #[clap(long, env, default_value = "http://127.0.0.1:9000")]
     sui_fn_url: String,
-    #[clap(long, env, default_value = "wss://rpc.testnet.sui.io:443")]
+    #[clap(long, env, default_value = "ws://127.0.0.1:9000")]
     sui_ws_url: String,
     #[clap(long, env, default_value = "127.0.0.1:10000")]
     listen_address: SocketAddr,
     #[clap(
         long,
         env,
-        default_value = "0x3ef8140369a7b5270fa2cea453a28de2c55b016d333523aea517f7abc55ce9f4"
+        default_value = "0x8adcad97bc1e3a03ee414a2539e41cc9b312459b092f8e96707f823e0e04e628"
     )]
     gateway_package_id: ObjectID,
     #[clap(
         long,
         env,
-        default_value = "0xb257b11fbeb9b4fcfcdb39185cab984c5772a622a40cd4ce046aa3d92fb1afc4"
+        default_value = "0x85f390983494351c94f83d43d5e178dfbb963a8e31a6194fede3c7f9ffbb5143"
     )]
     validators: ObjectID,
     #[clap(long, env, default_value = "7")]

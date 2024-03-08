@@ -31,6 +31,7 @@ impl SuiListener {
     pub async fn listen<T: Clone + SuiAxelarEvent>(self, mut subject: Subject<T>) {
         // todo: use event query api instead of ws subscription for replay support.
         let event_type = format!("{}::{}::{}", self.gateway, T::EVENT_MODULE, T::EVENT_TYPE);
+        info!("{event_type}");
         let mut events = self
             .client
             .event_api()
