@@ -6,9 +6,11 @@ const { TransactionBlock } = require('@mysten/sui.js/transactions');
 
 const { getConfig } = require('../utils');
 
-async function setItsDiscovery(client, keypair, axelarInfo, testInfo) {
-    const itsPackageId = testInfo.packageId;
-    const itsObjectId = testInfo['its::ITS'].objectId;
+async function setItsDiscovery(client, keypair, envAlias) {
+    const axelarInfo = getConfig('axelar', envAlias);
+    const itsInfo = getConfig('its', envAlias);
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
     const relayerDecovery = axelarInfo['discovery::RelayerDiscovery'].objectId;
 
     let tx = new TransactionBlock();
@@ -65,6 +67,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await setItsDiscovery(client, keypair, getConfig('axelar', env), getConfig('its', env));
+        await setItsDiscovery(client, keypair, env);
     })();
 }
