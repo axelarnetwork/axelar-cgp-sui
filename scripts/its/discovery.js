@@ -2,15 +2,11 @@ require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
-const { publishInterchainToken } = require('./publish-interchain-token');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
-const { registerInterchainToken } = require('./register-token');
-const { arrayify } = require('ethers/lib/utils');
 const { getConfig } = require('../utils');
 
-async function setDiscovery(client, keypair, axelarInfo, testInfo) {
+async function setItsDiscovery(client, keypair, axelarInfo, testInfo) {
     const itsPackageId = testInfo.packageId;
     const itsObjectId = testInfo['its::ITS'].objectId;
     const relayerDecovery = axelarInfo['discovery::RelayerDiscovery'].objectId;
@@ -35,6 +31,10 @@ async function setDiscovery(client, keypair, axelarInfo, testInfo) {
             showContent: true
 		},
 	});
+}
+
+module.exports = {
+    setItsDiscovery,
 }
 
 
@@ -65,6 +65,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await setDiscovery(client, keypair, getConfig('axelar', env), getConfig('its', env));
+        await setItsDiscovery(client, keypair, getConfig('axelar', env), getConfig('its', env));
     })();
 }

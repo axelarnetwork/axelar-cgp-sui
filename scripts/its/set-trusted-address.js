@@ -9,7 +9,7 @@ const { getBcsForGateway, approveContractCall } = require('../gateway');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
 
-async function setTrustedAddress(client, keypair, env, chainName, trustedAddress) {
+async function setTrustedAddresses(client, keypair, env, chainNames, trustedAddresses) {
     const itsInfo = getConfig('its', env);
     const itsPackageId = itsInfo.packageId;
     const itsObjectId = itsInfo['its::ITS'].objectId;
@@ -26,8 +26,8 @@ async function setTrustedAddress(client, keypair, env, chainName, trustedAddress
     });
 
     const trustedAddressInfo = bcs.ser('TrustedAddressInfo', {
-        chainNames: [chainName],
-        trustedAddresses: [trustedAddress],
+        chainNames: chainNames,
+        trustedAddresses: trustedAddresses,
     } ).toBytes();
     const payload = defaultAbiCoder.encode(['bytes32', 'bytes'], ['0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68', trustedAddressInfo]);
 
@@ -77,6 +77,10 @@ async function setTrustedAddress(client, keypair, env, chainName, trustedAddress
     });
 }
 
+module.exports = {
+    setTrustedAddresses,
+}
+
 
 if (require.main === module) {
     const env = process.argv[2] || 'localnet';
@@ -105,6 +109,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await setTrustedAddress(client, keypair, env, chainName, trustedAddress);
+        await setTrustedAddresses(client, keypair, env, [chainName], [trustedAddress]);
     })();
 }
