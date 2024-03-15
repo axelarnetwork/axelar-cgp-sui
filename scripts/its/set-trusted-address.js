@@ -30,6 +30,7 @@ async function setTrustedAddress(client, keypair, env, chainName, trustedAddress
         trustedAddresses: [trustedAddress],
     } ).toBytes();
     const payload = defaultAbiCoder.encode(['bytes32', 'bytes'], ['0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68', trustedAddressInfo]);
+
     const payloadHash = keccak256(payload);
 
     const commandId = await approveContractCall(
@@ -48,11 +49,11 @@ async function setTrustedAddress(client, keypair, env, chainName, trustedAddress
         target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [
             tx.object(axelarInfo['gateway::Gateway'].objectId), 
-            tx.pure(commandId),
+            tx.pure.address(commandId),
             tx.pure.string(governance.trusted_source_chain),
             tx.pure.string(governance.trusted_source_address),
             tx.pure.address(itsInfo['its::ITS'].channel),
-            tx.pure(String.fromCharCode(...arrayify(payload))),
+            tx.pure(bcs.ser('vector<u8>', arrayify(payload)).toBytes()),
         ],
         typeArguments: [],
     });

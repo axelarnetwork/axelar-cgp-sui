@@ -42,7 +42,7 @@ function getModuleNameFromSymbol(symbol) {
 
 function getConfig(packagePath, envAlias) {
     if(!configs[packagePath]) {
-        configs[packagePath] = fs.existsSync(`./info/${packagePath}.json`) ? JSON.parse(fs.readFileSync(`info/${packagePath}.json`)) : {};
+        configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`) ? JSON.parse(fs.readFileSync(`${__dirname}/../info/${packagePath}.json`)) : {};
     }
 
     return configs[packagePath][envAlias];
@@ -50,14 +50,14 @@ function getConfig(packagePath, envAlias) {
 
 function setConfig(packagePath, envAlias, config) {
     if(!configs[packagePath]) {
-        configs[packagePath] = fs.existsSync(`../info/${packagePath}.json`) ? require(`../info/${packagePath}.json`) : {};
+        configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`) ? require(`${__dirname}/../info/${packagePath}.json`) : {};
     }
     configs[packagePath][envAlias] = config;
 
     if (!fs.existsSync('info')){
         fs.mkdirSync('info');
     }
-    fs.writeFileSync(`info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
+    fs.writeFileSync(`${__dirname}/../info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
 }
 
 async function getFullObject(object, client) {

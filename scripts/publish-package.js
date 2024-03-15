@@ -15,9 +15,10 @@ async function publishPackage(packagePath, client, keypair) {
 	tmp.setGracefulCleanup();
 
 	const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+    
 	const { modules, dependencies } = JSON.parse(
 		execSync(
-			`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/' + packagePath} --install-dir ${tmpobj.name}`,
+			`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/../move/' + packagePath} --install-dir ${tmpobj.name}`,
 			{ 
                 encoding: 'utf-8',
                 stdio: 'pipe', // silent the output
@@ -87,11 +88,11 @@ function fillAddresses(toml, address) {
 }
 
 async function publishPackageFull(packagePath, client, keypair, env) {
-    let toml = fs.readFileSync(`move/${packagePath}/Move.toml`, 'utf8');
-    fs.writeFileSync(`move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
+    let toml = fs.readFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, 'utf8');
+    fs.writeFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
 
-    const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
-    const info = require(`../move/${packagePath}/info.json`);
+    const { packageId, publishTxn } = await publishPackage(packagePath, client, keypair);
+    const info = require(`${__dirname}/../move/${packagePath}/info.json`);
     const config = {};
     config.packageId = packageId;
     for(const singleton of info.singletons) {

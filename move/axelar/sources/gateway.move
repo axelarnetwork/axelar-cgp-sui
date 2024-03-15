@@ -204,14 +204,14 @@ module axelar::gateway {
             approval_hash,
         } = table::remove(&mut self.approvals, cmd_id);
 
-        let mut data = vector[];
-        vector::append(&mut data, address::to_bytes(cmd_id));
-        vector::append(&mut data, address::to_bytes(target_id));
-        vector::append(&mut data, *ascii::as_bytes(&source_chain));
-        vector::append(&mut data, *ascii::as_bytes(&source_address));
-        vector::append(&mut data, hash::keccak256(&payload));
-
-        assert!(hash::keccak256(&data) == approval_hash, EPayloadHashMismatch);
+        let computed_approval_hash = get_approval_hash(
+            &cmd_id,
+            &source_chain,
+            &source_address,
+            &target_id,
+            &address::from_bytes(hash::keccak256(&payload)),
+        );
+        assert!(computed_approval_hash == approval_hash, EPayloadHashMismatch);
 
         // Friend only.
         channel::create_approved_call(
