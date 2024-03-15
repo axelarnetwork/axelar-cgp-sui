@@ -54,8 +54,8 @@ function setConfig(packagePath, envAlias, config) {
     }
     configs[packagePath][envAlias] = config;
 
-    if (!fs.existsSync('info')){
-        fs.mkdirSync('info');
+    if (!fs.existsSync(`${__dirname}/../info`)){
+        fs.mkdirSync(`${__dirname}/../info`);
     }
     fs.writeFileSync(`${__dirname}/../info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
 }
