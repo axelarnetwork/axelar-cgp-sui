@@ -4,11 +4,7 @@
 module axelar::channel {
     use std::ascii::String;
     use sui::table::{Self, Table};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
     use sui::event;
-
-    friend axelar::gateway;
 
     /// Generic target for the messaging system.
     ///
@@ -121,7 +117,7 @@ module axelar::channel {
 
     /// Create a new `ApprovedCall` object to be sent to another chain. Is called
     /// by the gateway when a message is "picked up" by the relayer.
-    public(friend) fun create_approved_call(
+    public(package) fun create_approved_call(
         cmd_id: address,
         source_chain: String,
         source_address: String,

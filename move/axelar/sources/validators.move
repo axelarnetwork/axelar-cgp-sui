@@ -2,17 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::validators {
-
-    use std::vector;
-
     use sui::bcs;
     use sui::ecdsa_k1 as ecdsa;
     use sui::event;
     use sui::vec_map:: {Self, VecMap};
 
     use axelar::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
-
-    friend axelar::gateway;
 
     const EInvalidWeights: u64 = 0;
     const EInvalidThreshold: u64 = 1;
@@ -39,7 +34,7 @@ module axelar::validators {
         payload: vector<u8>,
     }
 
-    public(friend) fun new(): AxelarValidators {
+    public(package) fun new(): AxelarValidators {
         AxelarValidators {
             epoch: 0,
             epoch_for_hash: vec_map::empty(),
@@ -49,7 +44,7 @@ module axelar::validators {
     /// Implementation of the `AxelarAuthWeighted.validateProof`.
     /// Does proof validation, fails when proof is invalid or if weight
     /// threshold is not reached.
-    public(friend) fun validate_proof(
+    public(package) fun validate_proof(
         validators: &AxelarValidators,
         approval_hash: vector<u8>,
         proof: vector<u8>
@@ -100,7 +95,7 @@ module axelar::validators {
         abort ELowSignaturesWeight
     }
 
-    public(friend) fun transfer_operatorship(validators: &mut AxelarValidators, payload: vector<u8>) {
+    public(package) fun transfer_operatorship(validators: &mut AxelarValidators, payload: vector<u8>) {
         let mut bcs = bcs::new(payload);
         let new_operators = bcs.peel_vec_vec_u8();
         let new_weights = bcs.peel_vec_u128();

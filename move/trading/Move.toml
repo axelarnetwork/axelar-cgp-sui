@@ -1,0 +1,12 @@
+[package]
+name = "trading"
+version = "0.0.1"
+published-at = "0xc482249178b3d18243a049b10a0b5bc9d4fb3115ed4c7673f89132ba007ce3c6"
+edition = "2024.alpha"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "framework/mainnet" }
+
+[addresses]
+trading = "0xc482249178b3d18243a049b10a0b5bc9d4fb3115ed4c7673f89132ba007ce3c6"

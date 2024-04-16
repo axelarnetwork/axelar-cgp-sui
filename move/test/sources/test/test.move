@@ -1,12 +1,8 @@
 module test::test {
     use std::ascii;
-    use std::vector;
     use std::ascii::{String};
     use std::type_name;
 
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{TxContext};
     use sui::event;
     use sui::address;
     use sui::hex;
@@ -51,25 +47,28 @@ module test::test {
         discovery::register_transaction(discovery, &singleton.channel, tx);
     }
 
-    public fun send_call(singleton: &mut Singleton, destination_chain: String, destination_address: String, payload: vector<u8>) {
-        gateway::call_contract(&mut singleton.channel, destination_chain, destination_address, payload);
+    public fun send_call(singleton: &Singleton, destination_chain: String, destination_address: String, payload: vector<u8>) {
+        gateway::call_contract(&singleton.channel, destination_chain, destination_address, payload);
     }
-    public fun get_call_info(singleton: &Singleton): Transaction {
+
+    public fun get_call_info(singleton: &Singleton): vector<Transaction> {
         let mut arguments = vector::empty<vector<u8>>();
         let mut arg = vector::singleton<u8>(2);
         vector::push_back(&mut arguments, arg);
         arg = vector::singleton<u8>(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
-        discovery::new_transaction(
-            discovery::new_function(
-                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
-                ascii::string(b"test"),
-                ascii::string(b"execute")
-            ),
-            arguments,
-            vector[],
-        )
+        vector[
+            discovery::new_transaction(
+                discovery::new_function(
+                    address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
+                    ascii::string(b"test"),
+                    ascii::string(b"execute")
+                ),
+                arguments,
+                vector[],
+            )
+        ]
     }
 
     public fun execute(call: ApprovedCall, singleton: &mut Singleton) {

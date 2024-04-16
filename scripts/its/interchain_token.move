@@ -1,10 +1,6 @@
 module interchain_token::$module_name {
-    use sui::tx_context::{Self, TxContext};
-    use std::option;
-
     use sui::coin::{Self};
     use sui::url::{Url};
-    use sui::transfer;
 
     public struct $witness has drop {}
 

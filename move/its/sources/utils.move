@@ -1,7 +1,6 @@
 
 module its::utils {
     use std::ascii;
-    use std::vector;
 
     use sui::hash::keccak256;
     use sui::address;

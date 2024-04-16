@@ -1,13 +1,9 @@
 
 
 module its::coin_management {
-    use std::option::{Self, Option};
 
     use sui::coin::{Self, TreasuryCap, Coin};
     use sui::balance::{Self, Balance};
-    use sui::tx_context::TxContext;
-
-    friend its::service;
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
@@ -50,7 +46,7 @@ module its::coin_management {
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user.
-    public(friend) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
+    public(package) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
         if (has_capability(self)) {
             self.treasury_cap
                 .borrow_mut()
@@ -63,7 +59,7 @@ module its::coin_management {
     }
 
     /// Withdraws or mints the given amount of coins.
-    public(friend) fun give_coin<T>(
+    public(package) fun give_coin<T>(
         self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext
     ): Coin<T> {
         if (has_capability(self)) {

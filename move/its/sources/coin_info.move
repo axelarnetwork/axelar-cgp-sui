@@ -5,7 +5,6 @@
 module its::coin_info {
     use std::ascii;
     use std::string::String;
-    use std::option::{Self, Option};
 
     use sui::coin::{Self, CoinMetadata};
 

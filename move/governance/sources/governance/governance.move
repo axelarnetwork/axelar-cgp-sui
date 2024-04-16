@@ -2,12 +2,9 @@ module governance::governance {
     use std::ascii::String;
     use std::type_name;
 
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
     use sui::address;
-    use sui::transfer;
     use sui::hex;
 
     use abi::abi;

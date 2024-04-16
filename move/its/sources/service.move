@@ -1,12 +1,9 @@
 module its::service {
     use std::string;
     use std::ascii::{Self, String};
-    use std::vector;
     use std::type_name;
 
-    use sui::tx_context::TxContext;
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-    use sui::transfer;
     use sui::address;
     use sui::event;
     use sui::bcs;

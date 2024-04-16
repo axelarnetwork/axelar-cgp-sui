@@ -3,7 +3,7 @@ require('dotenv').config();
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const {BCS, fromHEX, getSuiMoveConfig, bcs: bcsEncoder} = require("@mysten/bcs");
+const {BcsReader, BCS, fromHEX, getSuiMoveConfig, bcs: bcsEncoder} = require("@mysten/bcs");
 const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
@@ -35,7 +35,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     });
     
     tx = new TransactionBlock();
-    tx.moveCall(getMoveCallFromTx(tx, resp.results[0].returnValues[0][0], payload));
+    tx.moveCall(decodeTransaction(tx, resp.results[0].returnValues[0][0], payload));
     resp = await client.devInspectTransactionBlock({
         sender: keypair.getPublicKey().toSuiAddress(),
         transactionBlock: tx,
@@ -56,8 +56,11 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         ],
         typeArguments: [],
     });
-    tx.moveCall(getMoveCallFromTx(tx, resp.results[0].returnValues[0][0], null, approvedCall));
-
+    const calls = getTransactionBlock(tx, resp.results[0].returnValues[0][0]);
+    const returns = [];
+    for(const call of calls) {
+        returns.push(tx.moveCall(buildTransaction(tx, call, null, approvedCall, returns)));
+    }
     await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
@@ -67,7 +70,8 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         },
     });
 }
-function getMoveCallFromTx(tx, txData, payload, callContractObj) {
+
+function getTransactionBcs() {
     const bcs = new BCS(getSuiMoveConfig());
 
     // input argument for the tx
@@ -81,8 +85,9 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
         arguments: "vector<vector<u8>>",
         type_arguments: "vector<string>",
     });
-    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
-
+    return bcs;
+}
+function buildTransaction(tx, txInfo, payload, callContractObj, previousReturns) {
     const decodeArgs = (args, tx) => args.map(arg => {
         if(arg[0] === 0) {
             return tx.object(hexlify(arg.slice(1)));
@@ -92,17 +97,28 @@ function getMoveCallFromTx(tx, txData, payload, callContractObj) {
             return callContractObj
         } else if (arg[0] === 3) {
             return tx.pure(bcs.ser('vector<u8>', arrayify(payload)).toBytes());
+        } else if (arg[0] === 4) {
+            return previousReturns[arg[1]][arg[2]];
         } else {
             throw new Error(`Invalid argument prefix: ${arg[0]}`);
         }
     });
     const decodeDescription = (description) => `${description.packageId}::${description.module_name}::${description.name}`;
-
-    return{
+    return {
         target: decodeDescription(txInfo.function),
         arguments: decodeArgs(txInfo.arguments, tx),
         typeArguments: txInfo.type_arguments,
     };
+}
+function decodeTransaction(tx, txData, payload) {
+    const bcs = getTransactionBcs();
+    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
+
+    return buildTransaction(tx, txInfo, payload);
+}
+function getTransactionBlock(tx, txData, callContractObj, previousReturns) {
+    const bcs = getTransactionBcs();
+    return bcs.de('vector<Transaction>', new Uint8Array(txData));
 }
 
 module.exports = {

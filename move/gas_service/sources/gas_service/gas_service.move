@@ -1,12 +1,9 @@
 module gas_service::gas_service {
     use std::ascii::String;
 
-    use sui::object::{Self, UID};
     use sui::sui::SUI;
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
     use sui::address;
     use sui::hash::keccak256;
     use sui::event;

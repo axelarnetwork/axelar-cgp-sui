@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module axelar::utils {
-    use std::vector;
-
     use sui::bcs;
     use sui::hash;
 

@@ -1,7 +1,7 @@
 [package]
 name = "Governance"
 version = "0.0.1"
-published-at = "0xaf770d40e2941fcf38059566ca6bfb566b4436ba4b4b2638fe46bbe31ffd841"
+published-at = "0xa9887f50f7439ad5d54228bc8320e29e659e54a26d593e594f5314433361db1f"
 edition = "2024.alpha"
 
 [dependencies]
@@ -10,4 +10,4 @@ Axelar = { local = "../axelar" }
 Abi = { local = "../abi" }
 
 [addresses]
-governance = "0xaf770d40e2941fcf38059566ca6bfb566b4436ba4b4b2638fe46bbe31ffd841"
+governance = "0xa9887f50f7439ad5d54228bc8320e29e659e54a26d593e594f5314433361db1f"

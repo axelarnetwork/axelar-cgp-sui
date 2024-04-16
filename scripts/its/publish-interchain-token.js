@@ -11,8 +11,6 @@ const { publishPackage } = require('../publish-package');
 const packagePath = 'interchain_token';
 
 async function publishInterchainToken(client, keypair, itsInfo, name, symbol, decimals, skipRegister = false) {
-    const itsPackageId = itsInfo.packageId;
-    const itsObjectId = itsInfo['its::ITS'].objectId;
 
     let file = fs.readFileSync(`scripts/its/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
@@ -42,6 +40,9 @@ async function publishInterchainToken(client, keypair, itsInfo, name, symbol, de
             coinMetadata 
         };
     }
+    
+    const itsPackageId = itsInfo.packageId;
+    const itsObjectId = itsInfo['its::ITS'].objectId;
 
     const tx = new TransactionBlock();
     

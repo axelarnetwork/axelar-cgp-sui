@@ -9,13 +9,9 @@
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
     use std::ascii::{Self, String};
-    use std::vector;
 
     use sui::table::{Self, Table};
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, ID, UID};
     use sui::bcs::{Self, BCS};
-    use sui::transfer;
 
     use axelar::channel::Channel;
 
@@ -146,6 +142,22 @@ module axelar::discovery {
             arguments,
             type_arguments,
         }
+    }
+
+    public fun new_transaction_block_from_bcs(bcs: &mut BCS): vector<Transaction> {
+        let length = bcs.peel_vec_length();
+        let mut transaction_block = vector[];
+        let mut i = 0;
+
+        while (i < length) {
+            vector::push_back(
+                &mut transaction_block, 
+                new_transaction_from_bcs(bcs),
+            );
+            i = i + 1;
+        };
+
+        transaction_block
     }
 
     #[test_only]

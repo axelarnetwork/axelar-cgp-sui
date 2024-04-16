@@ -3,9 +3,7 @@
 module its::discovery {
     use std::ascii;
     use std::type_name;
-    use std::vector;
 
-    use sui::object;
     use sui::address;
     use sui::hex;
     use sui::bcs;
@@ -47,14 +45,14 @@ module its::discovery {
         discovery.register_transaction(self.channel(), tx);
     }
 
-    public fun get_call_info(self: &ITS, payload: vector<u8>): Transaction {
+    public fun get_call_info(self: &ITS, payload: vector<u8>): vector<Transaction> {
         let reader = abi::new_reader(payload);
         let message_type = reader.read_u256(0);
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            get_interchain_transfer_tx(self, &reader)
+            vector[get_interchain_transfer_tx(self, &reader)]
         } else {
             assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
-            get_deploy_interchain_token_tx(self, &reader)
+            vector[get_deploy_interchain_token_tx(self, &reader)]
         }
     }
 

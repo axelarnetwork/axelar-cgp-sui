@@ -6,11 +6,8 @@ module its::its {
     use std::type_name::{Self, TypeName};
 
     use sui::bag::{Self, Bag};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
-    use sui::transfer;
 
     use axelar::channel::Channel;
 
@@ -18,9 +15,6 @@ module its::its {
     use its::address_tracker::{Self, InterchainAddressTracker};
     use its::coin_info::CoinInfo;
     use its::coin_management::CoinManagement;
-
-    friend its::service;
-    friend its::discovery;
 
     /// Trying to read a token that doesn't exist.
     const ENotFound: u64 = 0;
@@ -66,7 +60,7 @@ module its::its {
         });
     }
 
-    public(friend) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+    public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
         address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
     }
 
@@ -118,23 +112,23 @@ module its::its {
     }
 
     // === Friend-only ===
-    public(friend) fun channel(self: &ITS): &Channel {
+    public(package) fun channel(self: &ITS): &Channel {
         &self.channel
     }
 
-    public(friend) fun channel_mut(self: &mut ITS): &mut Channel {
+    public(package) fun channel_mut(self: &mut ITS): &mut Channel {
         &mut self.channel
     }
 
-    public(friend) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
+    public(package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         &mut coin_data_mut<T>(self, token_id).coin_management
     }
 
-    public(friend) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
+    public(package) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
         self.registered_coins.borrow_mut(token_id)
     }
 
-    public(friend) fun add_unregistered_coin<T>(
+    public(package) fun add_unregistered_coin<T>(
         self: &mut ITS,
         token_id: UnregisteredTokenId,
         treasury_cap: TreasuryCap<T>,
@@ -149,7 +143,7 @@ module its::its {
         add_unregistered_coin_type(self, token_id, type_name);
     }
 
-    public(friend) fun remove_unregistered_coin<T>(
+    public(package) fun remove_unregistered_coin<T>(
         self: &mut ITS, token_id: UnregisteredTokenId
     ): (TreasuryCap<T>, CoinMetadata<T>) {
         let UnregisteredCoinData<T> {
@@ -162,7 +156,7 @@ module its::its {
         (treasury_cap, coin_metadata)
     }
 
-    public(friend) fun add_registered_coin<T>(
+    public(package) fun add_registered_coin<T>(
         self: &mut ITS,
         token_id: TokenId,
         coin_management: CoinManagement<T>,

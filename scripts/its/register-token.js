@@ -52,7 +52,7 @@ async function registerInterchainToken(client, keypair, itsInfo, name, symbol, d
         typeArguments: [coinType],
     });
 
-    await client.signAndExecuteTransactionBlock({
+    const result = await client.signAndExecuteTransactionBlock({
 		transactionBlock: tx,
 		signer: keypair,
 		options: {
@@ -61,13 +61,14 @@ async function registerInterchainToken(client, keypair, itsInfo, name, symbol, d
             showContent: true
 		},
 	});
+    const coinObjectId = result.objectChanged.find(change => change.objectType === '0x2::coin::Coin<').objectId;
     
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${itsPackageId}::service::CoinRegistered<${coinType}>`,
     }}));
     const tokenId = eventData.data[0].parsedJson.token_id.id;
 
-    return [tokenId, coinType];
+    return [tokenId, coinType, coinObjectId];
 }
 
 module.exports = {

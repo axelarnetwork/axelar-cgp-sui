@@ -2,10 +2,8 @@
 
 module its::token_id {
     use std::ascii;
-    use std::vector;
     use std::string::String;
     use std::type_name;
-    use std::option;
 
     use sui::hash::keccak256;
     use sui::address;
@@ -13,8 +11,6 @@ module its::token_id {
 
     use its::coin_info::CoinInfo;
     use its::coin_management::CoinManagement;
-
-    friend its::service;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
@@ -55,7 +51,7 @@ module its::token_id {
         TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
 
-    public(friend) fun from_coin_data<T>(
+    public(package) fun from_coin_data<T>(
         coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>
     ): TokenId {
         from_info<T>(

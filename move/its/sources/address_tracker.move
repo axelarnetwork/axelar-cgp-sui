@@ -4,9 +4,6 @@ module its::address_tracker {
     use std::ascii::{String};
 
     use sui::table::{Self, Table};
-    use sui::tx_context::TxContext;
-
-    friend its::its;
 
     /// Attempt to borrow a trusted address but it's not registered.
     const ENoAddress: u64 = 0;
@@ -33,14 +30,14 @@ module its::address_tracker {
     // === Protected ===
 
     /// Create a new interchain address tracker.
-    public(friend) fun new(ctx: &mut TxContext): InterchainAddressTracker {
+    public(package) fun new(ctx: &mut TxContext): InterchainAddressTracker {
         InterchainAddressTracker {
             trusted_addresses: table::new(ctx),
         }
     }
 
     /// Set the trusted address for a chain or adds it if it doesn't exist.
-    public(friend) fun set_trusted_address(
+    public(package) fun set_trusted_address(
         self: &mut InterchainAddressTracker,
         chain_name: String,
         trusted_address: String

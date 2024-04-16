@@ -31,13 +31,9 @@
 ///
 module axelar::gateway {
     use std::ascii::{Self, String};
-    use std::vector;
 
     use sui::bcs;
     use sui::hash;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
     use sui::table::{Self, Table};
     use sui::address;
 
