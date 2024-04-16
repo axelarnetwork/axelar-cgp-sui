@@ -13,10 +13,80 @@ const deepbook = '0xdee9';
 
 const tickSize = 1e6;
 const lotSize = 1e3;
-const takeFeeRate = 0;
-const makerRebateRate = 0;
 const amountBase = 1e6*1e9;
 const amountQuote = amountBase;
+
+async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
+    const {
+        pool,
+        accountCap,
+        base,
+        quote,
+    } = getConfig('trading', env.alias);
+
+
+    const tx = new TransactionBlock();
+    if(isBid) {
+        const coin = tx.moveCall({
+            target: `0x2::coin::split`,
+            arguments: [tx.object(quote.objectId), tx.pure(amount)],
+            typeArguments: [quote.type],
+        });
+       
+        tx.moveCall({
+            target: `0xdee9::clob_v2::deposit_quote`,
+            arguments: [
+                tx.object(pool),
+                coin,
+                tx.object(accountCap),
+            ],
+            typeArguments: [base.type, quote.type],
+        });
+    } else {
+        const coin = tx.moveCall({
+            target: `0x2::coin::split`,
+            arguments: [tx.object(base.objectId), tx.pure(amount)],
+            typeArguments: [base.type],
+        });
+       
+        tx.moveCall({
+            target: `0xdee9::clob_v2::deposit_base`,
+            arguments: [
+                tx.object(pool),
+                coin,
+                tx.object(accountCap),
+            ],
+            typeArguments: [base.type, quote.type],
+        });
+    }
+
+
+    tx.moveCall({
+        target: `0xdee9::clob_v2::place_limit_order`,
+        arguments: [
+            tx.object(pool),
+            tx.pure(0),
+            tx.pure(price),
+            tx.pure(amount),
+            tx.pure(0),
+            tx.pure(isBid),
+            tx.pure(10000000000000000000),
+            tx.pure(3),
+            tx.object('0x6'),
+            tx.object(accountCap),
+        ],
+        typeArguments: [base.type, quote.type],
+    });
+
+    await client.signAndExecuteTransactionBlock({
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+}
 
 async function prepare(client, keypair, env) {
     const address = keypair.getPublicKey().toSuiAddress();
@@ -31,9 +101,9 @@ async function prepare(client, keypair, env) {
         console.log(e);
     }
     
-    await publishPackageFull('trading', client, keypair, env);
+    //await publishPackageFull('trading', client, keypair, env);
 
-    const config = getConfig('trading', env.alias);
+    //const config = getConfig('trading', env.alias);
     
     const [baseId, baseType, baseCoin]  = await registerInterchainToken(
         client,
@@ -72,6 +142,18 @@ async function prepare(client, keypair, env) {
         typeArguments: [baseType, quoteType],
     });
 
+    let account = tx.moveCall({
+        target: `${deepbook}::clob_v2::create_account`,
+        arguments: [],
+        typeArguments: [],
+    });    
+
+    tx.moveCall({
+        target: `0x2::transfer::public_transfer`,
+        arguments: [account, tx.pure(keypair.toSuiAddress())],
+        typeArguments: ['0xdee9::custodian_v2::AccountCap'],
+    });
+
     let result = await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
@@ -79,41 +161,28 @@ async function prepare(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
-    });
+    }); 
     
     const pool = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::clob_v2::Pool<')).objectId;
     const poolCap = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::clob_v2::PoolOwnerCap')).objectId;
-    
-    tx = new TransactionBlock();
-    
-    tx.moveCall({
-        target: `${config.packageId}::trading::initialize`,
-        arguments: [
-            tx.object(base.treasuryCap.objectId),
-            tx.object(quote.treasuryCap.objectId),
-        ],
-        typeArguments: [
-            base.coinType,
-            quote.coinType,
-        ]
-    });
+    const accountCap = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::custodian_v2::AccountCap')).objectId;
+    const suiCoin = result.objectChanges.find(object => object.objectType.startsWith('0x2::coin::Coin<')).objectId;
 
-    result = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
+    setConfig('trading', env.alias, {
+        pool,
+        accountCap,
+        base: {
+            type: baseType,
+            tokenId: baseId,
+            objectId: baseCoin,
         },
+        quote: {
+            type: quoteType,
+            tokenId: quoteId,
+            objectId: quoteCoin,
+        },
+        suiCoin,
     });
-    const storageId = result.objectChanges[1].objectId;
-    config.storage = storageId;
-    config.pool = pool;
-    config.baseType = base.coinType;
-    config.quoteType = quote.coinType;
-    setConfig('trading', env.alias, config);
-
-    return config;
 }
 
 (async() => {
@@ -130,58 +199,17 @@ async function prepare(client, keypair, env) {
 
 
     await prepare(client, keypair, env);
-    const config = getConfig('trading', env.alias);
-    const trading = config.packageId;
-    const tx = new TransactionBlock();
 
-    tx.moveCall({
-        target: `${trading}::trading::add_listing`,
-        arguments: [
-            tx.object(config.storage),
-            tx.object(config.pool),
-            tx.pure(1e9),
-            tx.pure(1e10),
-            tx.pure(true),
-            tx.object('0x6'),
-        ],
-        typeArguments: [
-            config.baseType,
-            config.quoteType,
-        ]
-    });
-
-    tx.moveCall({
-            target: `${trading}::trading::swap_base`,
-        arguments: [
-            tx.object(config.storage),
-            tx.object(config.pool),
-            tx.pure(1e9),
-            tx.object('0x6'),
-        ],
-        typeArguments: [
-            config.baseType,
-            config.quoteType,
-        ]
-    });
-
-    result = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
-        },
-    });
-    let events = await client.queryEvents({
-        query: {
-            MoveEventType: `${trading}::trading::Event`
+    /*for(let i=0; i<100; i++) {console.log(i);
+        price = 1e9 - tickSize * Math.floor(1 + Math.random() * 10);
+        amount = 1e9 * Math.floor(100 + Math.random() * 100);
+        try {
+            await placeLimitOrder(client, keypair, env, true, price, amount);
+        } catch(e) {
+            i--;
         }
-    });
-    console.log(events.data[0].parsedJson);
-    events = await client.queryEvents({
-        query: {
-            MoveEventType: `${trading}::trading::Balances`
-        }
-    });
-    console.log(events.data[0].parsedJson);
+
+    }*/
+
+    
 })();

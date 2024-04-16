@@ -61,7 +61,8 @@ async function registerInterchainToken(client, keypair, itsInfo, name, symbol, d
             showContent: true
 		},
 	});
-    const coinObjectId = result.objectChanged.find(change => change.objectType === '0x2::coin::Coin<').objectId;
+    
+    const coinObjectId = result.objectChanges.find(object => object.objectType.substring(0, 16) === '0x2::coin::Coin<' && object.type == 'created').objectId;
     
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${itsPackageId}::service::CoinRegistered<${coinType}>`,

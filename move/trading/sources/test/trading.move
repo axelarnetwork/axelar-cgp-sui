@@ -1,108 +1,55 @@
 module trading::trading {
     use deepbook::clob_v2::{Self as clob, Pool};
-    use deepbook::custodian_v2::{AccountCap};
-    use sui::coin::{Self, TreasuryCap};
+    use deepbook::custodian_v2::{Self as custodian};
+    use deepbook::order_query::{Self};
+    use sui::coin::{Self, Coin};
     use sui::clock::Clock;
     use sui::event;
 
-    public struct Storage<phantom T1, phantom T2> has key {
-        id: UID,
-        account_cap: AccountCap,
-        account_cap_trader: AccountCap,
-        treasury_cap_base: TreasuryCap<T1>,
-        treasury_cap_quote: TreasuryCap<T2>,
-    }
-
     public struct Event has copy, drop {
-        amount_base: u64,
-        amount_quote: u64,
+        tick_level: u64,
+        quantity: u64,
+        timestamp: u64,
     }
 
-    public struct Balances has copy, drop {
-        base_avail: u64,
-        base_locked: u64,
-        quote_avail: u64,
-        quote_locked: u64,
-    }
-
-
-    public fun initialize<T1, T2>(
-        treasury_cap_base: TreasuryCap<T1>,
-        treasury_cap_quote: TreasuryCap<T2>,
-        ctx: &mut TxContext,
-    ) {
-        transfer::share_object(Storage<T1, T2>{
-            id: object::new(ctx),
-            account_cap: clob::create_account(ctx),
-            account_cap_trader: clob::create_account(ctx),
-            treasury_cap_base,
-            treasury_cap_quote,
-        });
-    }
-
-    public fun add_listing<T1, T2>(this: &mut Storage<T1, T2>, pool: &mut Pool<T1, T2>, price: u64, quantity: u64, is_bid: bool, clock: &Clock, ctx: &mut TxContext) {
-        if(is_bid) {
-            let quote_coin = this.treasury_cap_quote.mint(quantity, ctx);
-            pool.deposit_quote(quote_coin, &this.account_cap);
-        } else {
-            let base_coin = this.treasury_cap_base.mint(quantity, ctx);
-            pool.deposit_base(base_coin, &this.account_cap);
-        };
-        pool.place_limit_order(
-            0,
-            price,
-            quantity,
-            0,
-            is_bid,
-            10000000000000000000,
-            3,
-            clock,
-            &this.account_cap,
-            ctx,
-        );
-        balances(this, pool);
-    }
-    
-    public fun swap_base<T1, T2>(this: &mut Storage<T1, T2>, pool: &mut Pool<T1, T2>, quantity: u64, clock: &Clock, ctx: &mut TxContext) {
+    public fun swap_base<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T1>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
+        let account = clob::create_account(ctx);
         let (base_coin, quote_coin, _) = pool.swap_exact_base_for_quote(
             0,
-            &this.account_cap_trader,
-            quantity,
-            this.treasury_cap_base.mint(quantity, ctx),
+            &account,
+            coin::value(&coin),
+            coin,
             coin::zero<T2>(ctx),
             clock,
             ctx,
         );
-        event::emit( Event {
-            amount_base: this.treasury_cap_base.burn(base_coin),
-            amount_quote: this.treasury_cap_quote.burn(quote_coin),
-        })
+        custodian::delete_account_cap(account);
+        (base_coin, quote_coin)
     }
 
-    public fun swap_quote<T1, T2>(this: &mut Storage<T1, T2>, pool: &mut Pool<T1, T2>, quantity: u64, clock: &Clock, ctx: &mut TxContext) {
+    public fun swap_quote<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T2>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
+        let account = clob::create_account(ctx);
         let (base_coin, quote_coin, _) = pool.swap_exact_quote_for_base(
             0,
-            &this.account_cap_trader,
-            quantity,
+            &account,
+            coin::value(&coin),
             clock,
-            this.treasury_cap_quote.mint(quantity, ctx),
+            coin,
             ctx,
         );
-        event::emit( Event {
-            amount_base: this.treasury_cap_base.burn(base_coin),
-            amount_quote: this.treasury_cap_quote.burn(quote_coin),
-        });
-        balances(this, pool);
+        custodian::delete_account_cap(account);
+        (base_coin, quote_coin)
     }
 
-    public fun balances<T1, T2>(this: &Storage<T1, T2>, pool: &Pool<T1, T2>) {
-        let (base_avail, base_locked, quote_avail, quote_locked) = pool.account_balance(&this.account_cap);
-        event::emit( Balances {
-            base_avail,
-            base_locked,
-            quote_avail,
-            quote_locked,
+    public fun predict_base<T1, T2>(pool: &mut Pool<T1, T2>, amount: u64, clock: &Clock) {
+        let page = order_query::iter_bids(pool, option::none<u64>(), option::none<u64>(), option::none<u64>(), option::none<u64>(), true);
+        let order = vector::borrow(page.orders(), 0);
+        event::emit(Event {
+            tick_level: order.tick_level(),
+            quantity: order.quantity(),
+            timestamp: order.expire_timestamp(),
         });
+        
     }
 
     #[test]
