@@ -53,7 +53,14 @@ function setConfig(packagePath, envAlias, config) {
         try {
             configs[packagePath] = require(`${__dirname}/../info/${packagePath}.json`);
         } catch(e) {
-            configs[packagePath] = {};
+            switch (e.code) {
+                case 'MODULE_NOT_FOUND':
+                case undefined:
+                    configs[packagePath] = {};
+                    break;
+                default:
+                    throw e;
+            }
         }
     }
     configs[packagePath][envAlias] = config;
