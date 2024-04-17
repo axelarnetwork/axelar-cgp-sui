@@ -50,12 +50,11 @@ function getConfig(packagePath, envAlias) {
 
 function setConfig(packagePath, envAlias, config) {
     if(!configs[packagePath]) {
-        if (fs.existsSync(`${__dirname}/../info/${packagePath}.json`)) {
-            const content = fs.readFileSync(`${__dirname}/../info/${packagePath}.json`, 'utf8');
-            console.log(`config for ${packagePath} is: "${content}"`);
+        try {
+            configs[packagePath] = require(`${__dirname}/../info/${packagePath}.json`);
+        } catch(e) {
+            configs[packagePath] = {};
         }
-        configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`) ? require(`${__dirname}/../info/${packagePath}.json`) : {};
-        console.log(configs[packagePath]);
     }
     configs[packagePath][envAlias] = config;
 
