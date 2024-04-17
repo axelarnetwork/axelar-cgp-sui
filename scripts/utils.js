@@ -52,7 +52,7 @@ function setConfig(packagePath, envAlias, config) {
     if(!configs[packagePath]) {
         if (fs.existsSync(`${__dirname}/../info/${packagePath}.json`)) {
             console.log(`config for ${packagePath} is:`);
-            console.log(fs.readFileSync(`${__dirname}/../info/${packagePath}.json`));
+            console.log(fs.readFileSync(`${__dirname}/../info/${packagePath}.json`, 'utf8'));
         }
         configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`) ? require(`${__dirname}/../info/${packagePath}.json`) : {};
         console.log(configs[packagePath]);
