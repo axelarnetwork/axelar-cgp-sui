@@ -1,5 +1,4 @@
 module abi::abi {
-    use std::vector;
 
     public struct AbiReader has copy, drop {
         bytes: vector<u8>,

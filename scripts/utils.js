@@ -50,7 +50,18 @@ function getConfig(packagePath, envAlias) {
 
 function setConfig(packagePath, envAlias, config) {
     if(!configs[packagePath]) {
-        configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`) ? require(`${__dirname}/../info/${packagePath}.json`) : {};
+        try {
+            configs[packagePath] = require(`${__dirname}/../info/${packagePath}.json`);
+        } catch(e) {
+            switch (e.code) {
+                case 'MODULE_NOT_FOUND':
+                case undefined:
+                    configs[packagePath] = {};
+                    break;
+                default:
+                    throw e;
+            }
+        }
     }
     configs[packagePath][envAlias] = config;
 
