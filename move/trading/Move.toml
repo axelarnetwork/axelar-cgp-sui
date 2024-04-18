@@ -9,4 +9,4 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "framework/mainnet" }
 
 [addresses]
-trading = "0xeb825b99b70ca3f4eea4854811d4d8b0c1704d8d48fa6fb0e8f3b2c4d63f168d"
+trading = "0x0"

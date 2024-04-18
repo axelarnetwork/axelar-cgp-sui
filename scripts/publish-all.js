@@ -1,9 +1,9 @@
 require('dotenv').config();
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { publishPackageFull } = require('./publish-package');
 const { initializeGovernance, takeUpgradeCaps } = require('./governance');
+const { requestSuiFromFaucet } = require('./utils');
 
 async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
@@ -61,16 +61,7 @@ if (require.main === module) {
         const client = new SuiClient({ url: env.url });
 
         if (faucet) {
-            try {
-                await requestSuiFromFaucetV0({
-                // use getFaucetHost to make sure you're using correct faucet address
-                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-                host: getFaucetHost(env.alias),
-                recipient: address,
-                });
-            } catch (e) {
-                console.log(e);
-            }
+            requestSuiFromFaucet(env, address);
         }
         await publishAll(client, keypair, env);
     })();

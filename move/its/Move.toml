@@ -1,7 +1,7 @@
 [package]
 name = "its"
 version = "0.0.1"
-published-at = "0xb2e4dafd5033166cf6e2ddde68e0100a05a4366fcaeca3dcf997fb23f9420c41"
+published-at = "0xc97e3da63677b58fe9be72c43c230db756713da342e38de603c4f7504592ce2e"
 #published-at = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
 edition = "2024.alpha"
 
@@ -11,4 +11,4 @@ Axelar = { local = "../axelar" }
 Governance = { local = "../governance" }
 
 [addresses]
-its = "0xb2e4dafd5033166cf6e2ddde68e0100a05a4366fcaeca3dcf997fb23f9420c41"
+its = "0xc97e3da63677b58fe9be72c43c230db756713da342e38de603c4f7504592ce2e"

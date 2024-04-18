@@ -5,7 +5,7 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const { publishPackageFull } = require('./publish-package');
+const { publishPackageFull, publishPackage } = require('./publish-package');
 const { registerInterchainToken } = require('./its/register-token');
 
 const deepbook = '0xdee9';
@@ -26,10 +26,11 @@ async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
 
 
     const tx = new TransactionBlock();
+    console.log(base, quote);
     if(isBid) {
         const coin = tx.moveCall({
             target: `0x2::coin::split`,
-            arguments: [tx.object(quote.objectId), tx.pure(amount)],
+            arguments: [tx.object(quote.objectId), tx.pure(Math.floor(amount * price / 1e9))],
             typeArguments: [quote.type],
         });
        
@@ -199,17 +200,109 @@ async function prepare(client, keypair, env) {
 
 
     await prepare(client, keypair, env);
+    //await placeLimitOrder(client, keypair, env, true, 1e9, 100e9);
+    //await placeLimitOrder(client, keypair, env, true, 1e9, 100e9);
 
-    /*for(let i=0; i<100; i++) {console.log(i);
-        price = 1e9 - tickSize * Math.floor(1 + Math.random() * 10);
-        amount = 1e9 * Math.floor(100 + Math.random() * 100);
+    for(let i=0; i<10; i++) {console.log(i);
+        const price = 1e9 + tickSize * Math.floor(1 + Math.random() * 10);
+        const amount = 1e9 * Math.floor(100 + Math.random() * 100);
         try {
             await placeLimitOrder(client, keypair, env, true, price, amount);
         } catch(e) {
+            console.log(e);
             i--;
         }
 
-    }*/
+    }
 
-    
+    const {
+        pool,
+        base,
+        quote,
+    } = getConfig('trading', env.alias);
+
+    const { packageId } = await publishPackage('trading', client, keypair);
+
+    const tx = new TransactionBlock();
+
+    const amount = 1000e9;
+
+    tx.moveCall({
+        target: `${packageId}::trading::predict_base_for_quote`,
+        arguments: [
+            tx.object(pool),
+            tx.pure(amount),
+            tx.object('0x6'),
+
+        ],
+        typeArguments: [base.type, quote.type],
+    });
+
+    const coin = tx.moveCall({
+        target: `0x2::coin::split`,
+        arguments: [tx.object(base.objectId), tx.pure(amount)],
+        typeArguments: [base.type],
+    });
+
+    const accountCap = tx.moveCall({
+        target: `${deepbook}::clob_v2::create_account`,
+        arguments: [],
+        typeArguments: [],
+    });
+
+    const [leftover_base, leftover_quote] = tx.moveCall({
+        target: `${deepbook}::clob_v2::swap_exact_base_for_quote`,
+        arguments: [
+            tx.object(pool), 
+            tx.pure(0),
+            accountCap,
+            tx.pure(amount),
+            coin,
+            tx.moveCall({target: '0x2::coin::zero', typeArguments: [quote.type]}),
+            tx.object('0x6'),
+        ],
+        typeArguments: [base.type, quote.type],
+    });
+
+    tx.moveCall({
+        target: `${deepbook}::custodian_v2::delete_account_cap`,
+        arguments: [accountCap],
+        typeArguments: [],
+    });
+
+    tx.moveCall({
+        target: `0x2::transfer::public_transfer`,
+        arguments: [leftover_base, tx.pure(keypair.toSuiAddress())],
+        typeArguments: [`0x2::coin::Coin<${base.type}>`],
+    });
+    tx.moveCall({
+        target: `0x2::transfer::public_transfer`,
+        arguments: [leftover_quote, tx.pure(keypair.toSuiAddress())],
+        typeArguments: [`0x2::coin::Coin<${quote.type}>`],
+    });
+
+    const result = await client.signAndExecuteTransactionBlock({
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+
+    const response = await client.queryEvents({
+        query: {
+            MoveEventType: `${packageId}::trading::Event`,
+        },
+    });
+    console.log(response.data.map(event => event.parsedJson));
+
+    const quoteCoinId = result.objectChanges.find(change => change.objectType == `0x2::coin::Coin<${quote.type}>`).objectId;
+    const quoteCoin = await client.getObject({
+        id: quoteCoinId,
+        options: {
+            showContent: true,
+        }
+    });
+    console.log(quoteCoin.data.content.fields);
 })();
