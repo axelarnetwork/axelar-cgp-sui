@@ -183,8 +183,9 @@ module its::discovery {
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
-        let call_info = get_call_info(&its, payload);
-        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
+        let mut tx_block = get_call_info(&its, payload);
+        assert!(tx_block == vector[get_interchain_transfer_tx(&its, &abi::new_reader(payload))], 1);
+        let call_info = vector::pop_back(&mut tx_block);
 
         assert!(call_info.function().package_id() == its_package_id(), 2);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
@@ -235,7 +236,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
-        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
+        assert!(get_call_info(&its, payload) == vector[get_interchain_transfer_tx(&its, &abi::new_reader(payload))], 1);
         
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -266,9 +267,10 @@ module its::discovery {
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
         its.test_add_unregistered_coin_type(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
-        let call_info = get_call_info(&its, payload);
-        assert!(get_call_info(&its, payload) == get_deploy_interchain_token_tx(&its, &abi::new_reader(payload)), 1);
+        let mut tx_block = get_call_info(&its, payload);
+        assert!(tx_block == vector[get_deploy_interchain_token_tx(&its, &abi::new_reader(payload))], 1);
 
+        let call_info = vector::pop_back(&mut tx_block);
         assert!(call_info.function().package_id() == its_package_id(), 2);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
         assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 4);

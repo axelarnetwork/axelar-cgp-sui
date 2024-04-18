@@ -1,10 +1,7 @@
 #[test_only]
 module its::thecool1234coin___ {
-    use sui::tx_context::{Self, TxContext};
     use sui::coin;
-    use std::option;
     use sui::url::{Url};
-    use sui::transfer;
 
     public struct THECOOL1234COIN___ has drop{
 
