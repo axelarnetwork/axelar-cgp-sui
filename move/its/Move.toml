@@ -3,7 +3,7 @@ name = "its"
 version = "0.0.1"
 published-at = "0x77bc7b8c9550fe047e7c488cb4524e2c07e6eae4f5658ac3cf86bfb1ad8919d6"
 #published-at = "0x996939577aed09e0f9bc6690d85c6bbdb0228353cbe4dbb326b3c2d7f59cbff9"
-edition = "2024.alpha"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }

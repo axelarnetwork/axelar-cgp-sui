@@ -2,7 +2,7 @@
 name = "trading"
 version = "0.0.1"
 published-at = "0xeb825b99b70ca3f4eea4854811d4d8b0c1704d8d48fa6fb0e8f3b2c4d63f168d"
-edition = "2024.alpha"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }

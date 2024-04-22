@@ -2,7 +2,7 @@
 name = "Governance"
 version = "0.0.1"
 published-at = "0x3da57d4cc2f50a7184c7052a9c2eb25881ae9cd2e676f5cb45be9d888f55d598"
-edition = "2024.alpha"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
