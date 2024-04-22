@@ -51,12 +51,9 @@ async function publishPackage(packagePath, client, keypair) {
 	});
 	if(publishTxn.effects?.status.status != 'success') throw new Error('Publish Tx failed');
 
-	const id = ((publishTxn.objectChanges?.filter(
+	const packageId = ((publishTxn.objectChanges?.filter(
 		(a) => a.type === 'published',
-	)) ?? [])[0].packageId.replace(/^(0x)(0+)/, '0x');
-
- 	// package ID must have 64 characters even if first digit is less than #A
- 	const packageId = id.length === 65 ? id.replace('0x', '0x0') : id;
+	)) ?? [])[0].packageId;
 
 	console.info(`Published package ${packageId} from address ${address}}`);
 
