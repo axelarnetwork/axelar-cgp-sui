@@ -24,14 +24,14 @@ jobs:
           sudo mv ./target/release/sui-ubuntu-x86_64 /usr/local/bin/sui
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
-
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: npm ci
