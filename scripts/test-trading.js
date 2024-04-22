@@ -15,7 +15,7 @@ const tickSize = 1e6;
 const lotSize = 1e3;
 const amountBase = 1e6*1e9;
 const amountQuote = amountBase;
-const amount = 20000e9;
+const amount = 1000e9;
 
 async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
     const {
@@ -217,7 +217,7 @@ async function placeLimitOrders(client, keypair, env, isBid, n = 10) {
 
 
 async function testBaseForQuote(client, keypair, env) {
-    await placeLimitOrders(client, keypair, env, true, 200);
+    //await placeLimitOrders(client, keypair, env, true, 10);
 
     const {
         pool,
@@ -322,7 +322,7 @@ async function testBaseForQuote(client, keypair, env) {
 }
 
 async function testQuoteForBase(client, keypair, env) {
-    await placeLimitOrders(client, keypair, env, false, 200);
+    await placeLimitOrders(client, keypair, env, false, 10);
 
     const {
         pool,
@@ -441,7 +441,7 @@ async function testQuoteForBase(client, keypair, env) {
 
     //await prepare(client, keypair, env);
 
-    //await testBaseForQuote(client, keypair, env);
-    await testQuoteForBase(client, keypair, env);
+    await testBaseForQuote(client, keypair, env);
+    //await testQuoteForBase(client, keypair, env);
     
 })();
