@@ -62,7 +62,7 @@ module trading::trading {
         );
         balances(this, pool);
     }
-    
+
     public fun swap_base<T1, T2>(this: &mut Storage<T1, T2>, pool: &mut Pool<T1, T2>, quantity: u64, clock: &Clock, ctx: &mut TxContext) {
         let (base_coin, quote_coin, _) = pool.swap_exact_base_for_quote(
             0,
@@ -104,15 +104,4 @@ module trading::trading {
             quote_locked,
         });
     }
-
-    #[test]
-    fun test() {
-        let ctx = &mut tx_context.dummy();
-        clob::create_pool(
-            100,
-            100,
-            coin,
-            ctx,
-        );
-    }   
 }

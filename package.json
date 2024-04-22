@@ -1,19 +1,14 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
-  "main": "index.js",  
+  "main": "index.js",
   "scripts": {
-    "build": "",
-    "test": "npm run test:abi & npm run test:axelar & npm run test:governance & npm run test:gas_service & npm run test:its",
-    "test:abi": "sui move test --path ./move/abi",
-    "test:axelar": "sui move test --path ./move/axelar",
-    "test:governance": "sui move test --path ./move/governance",
-    "test:gas_service": "sui move test --path ./move/gas_service",
-    "test:its": "sui move test --path ./move/its"
+    "build": "for d in ./move/*/; do cd $d; sui move build; cd ../../; done",
+    "test": "for d in ./move/*/; do sui move test --path $d; done"
   },
   "keywords": [
     "axelar",
@@ -22,7 +17,7 @@
   "author": "axelar-network",
   "license": "MIT",
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
     "@mysten/sui.js": "^0.47.0",
