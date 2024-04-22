@@ -2,40 +2,36 @@ name: Run Tests
 
 on: pull_request
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-22.04]
-        arch: [amd64]
+    runs-on: ubuntu-latest
+
     steps:
       - name: Setup Dependencies for Sui Binary
         run: sudo apt-get update && sudo apt-get install -y libpq-dev
 
       - name: Download and Install Sui Binary
+        env:
+          SUI_VERSION: mainnet-v1.22.0
         run: |
-          wget https://github.com/MystenLabs/sui/releases/download/mainnet-v1.22.0/sui-mainnet-v1.22.0-ubuntu-x86_64.tgz
-          tar -xvf sui-mainnet-v1.22.0-ubuntu-x86_64.tgz
+          wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           sudo mv ./target/release/sui-test-validator-ubuntu-x86_64 /usr/local/bin/sui-test-validator
           sudo mv ./target/release/sui-ubuntu-x86_64 /usr/local/bin/sui
+          rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
-      - name: Cleanup
-        run: rm -rf sui-mainnet-v1.22.0-ubuntu-x86_64.tgz
-        
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 18
+          cache: 'npm'
 
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: npm ci
