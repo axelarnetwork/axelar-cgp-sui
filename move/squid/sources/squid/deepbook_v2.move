@@ -1,19 +1,24 @@
-module trading::trading {
+module squid::deepbook_v2 {
+    use std::type_name;
+
+    use sui::coin::{Self, Coin};
+    use sui::clock::Clock;
+    use sui::bcs;
+
     use deepbook::clob_v2::{Self as clob, Pool};
     use deepbook::custodian_v2::{Self as custodian};
     use deepbook::math as clob_math;
 
-    use sui::coin::{Self, Coin};
-    use sui::clock::Clock;
-    use sui::event;
+    use squid::swap_info::{SwapInfo};
 
     const FLOAT_SCALING_U128: u128 = 1_000_000_000;
     const FLOAT_SCALING: u64 = 1_000_000_000;
 
-    public struct Event has copy, drop {
-        amount_left: u64,
-        output: u64,
-    }
+    const SWAP_TYPE: u8 = 1;
+    
+    const EWrongSwapType: u64 = 0;
+    const EWrongPool: u64 = 1;
+    const EWrongCoinType: u64 = 2;
 
     public fun swap_base<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T1>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
         let account = clob::create_account(ctx);
@@ -140,7 +145,7 @@ module trading::trading {
         (filled_quote_quantity, filled_base_quantity)
     }
 
-    public fun predict_base_for_quote<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock) {
+    public fun predict_base_for_quote<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
         let max_price = (1u128 << 64 - 1 as u64);
         let (prices, depths) = clob::get_level2_book_status_bid_side(pool, 0, max_price, clock);
         let mut amount_left = amount;
@@ -158,15 +163,11 @@ module trading::trading {
             output = output + max_out;
             if(amount_left < lot_size) break;
         };
-        event::emit( Event {
-            amount_left,
-            output,
-        })
+        (amount_left, output)
         
     }
 
-
-    public fun predict_quote_for_base<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock) {
+    public fun predict_quote_for_base<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
         let max_price = (1u128 << 64 - 1 as u64);
         let (prices, depths) = clob::get_level2_book_status_ask_side(pool, 0, max_price, clock);
 
@@ -191,12 +192,102 @@ module trading::trading {
             i = i + 1;
         };
         
-        event::emit( Event {
-            amount_left,
-            output,
-        })
-        
+        (amount_left, output)
     }
+
+    public fun estimate<T1, T2>(self: &mut SwapInfo, pool: &Pool<T1, T2>, clock: &Clock) {
+        let mut bcs = bcs::new(self.get_data_estimating());
+
+        assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);
+
+        assert!(bcs.peel_address() == object::id_address(pool), EWrongPool);
+
+        let has_base = bcs.peel_bool();
+
+        assert!(
+            &bcs.peel_vec_u8() == &type_name::get<T1>().into_string().into_bytes(),
+            EWrongCoinType,
+        );
+
+        assert!(
+            &bcs.peel_vec_u8() == &type_name::get<T2>().into_string().into_bytes(),
+            EWrongCoinType,
+        );
+
+        let lot_size = bcs.peel_u64();
+        if(has_base) {
+            let (amount_left, output) = predict_base_for_quote(
+                pool,
+                self.coin_bag().get_estimate<T1>(),
+                lot_size,
+                clock,
+            );
+            self.coin_bag().store_estimate<T1>(amount_left);
+            self.coin_bag().store_estimate<T2>(output);
+        } else {
+            let (amount_left, output) = predict_quote_for_base(
+                pool,
+                self.coin_bag().get_estimate<T2>(),
+                lot_size,
+                clock,
+            );
+            self.coin_bag().store_estimate<T2>(amount_left);
+            self.coin_bag().store_estimate<T1>(output);
+        }
+    }
+
+
+    public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, clock: &Clock, ctx: &mut TxContext) {
+        let data = self.get_data_swapping();
+        if(vector::length(&data) == 0) return;
+        let mut bcs = bcs::new(data);
+
+        assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);
+
+        assert!(bcs.peel_address() == object::id_address(pool), EWrongPool);
+
+        let has_base = bcs.peel_bool();
+
+        assert!(
+            &bcs.peel_vec_u8() == &type_name::get<T1>().into_string().into_bytes(),
+            EWrongCoinType,
+        );
+
+        assert!(
+            &bcs.peel_vec_u8() == &type_name::get<T2>().into_string().into_bytes(),
+            EWrongCoinType,
+        );
+
+        let lot_size = bcs.peel_u64();
+        if(has_base) {
+            let mut base_balance = self.coin_bag().get_balance<T1>().destroy_some();
+            let leftover = base_balance.value() % lot_size;
+            if(leftover > 0) {
+                self.coin_bag().store_balance<T1>(
+                    base_balance.split(leftover),
+                );
+            };
+            let (base_coin, quote_coin) = swap_base(
+                pool,
+                coin::from_balance(base_balance, ctx),
+                clock,
+                ctx,
+            );
+            base_coin.destroy_zero();
+            self.coin_bag().store_balance<T2>(quote_coin.into_balance());
+        } else {
+            let quote_balance = self.coin_bag().get_balance<T2>().destroy_some();
+            let (base_coin, quote_coin) = swap_quote(
+                pool,
+                coin::from_balance(quote_balance, ctx),
+                clock,
+                ctx,
+            );
+            self.coin_bag().store_balance<T1>(base_coin.into_balance());
+            self.coin_bag().store_balance<T2>(quote_coin.into_balance());
+        }
+    }
+
 
     #[test]
     fun test() {
