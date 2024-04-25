@@ -3,6 +3,7 @@ const fs = require('fs');
 
 const configs = {};
 const { getFullnodeUrl } = require('@mysten/sui.js/client');
+const { requestSuiFromFaucetV0, getFaucetHost, getFaucetRequestStatus } = require('@mysten/sui.js/faucet');
 
 function toPure(hexString) {
     return String.fromCharCode(...arrayify(hexString));
@@ -71,6 +72,19 @@ function setConfig(packagePath, envAlias, config) {
     fs.writeFileSync(`${__dirname}/../info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
 }
 
+async function requestSuiFromFaucet(env, address) {
+    try {
+        const resp = await requestSuiFromFaucetV0({
+            // use getFaucetHost to make sure you're using correct faucet address
+            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+            host: getFaucetHost(env.alias),
+            recipient: address,
+        });
+    } catch (e) {
+        console.log(e);
+    }
+}
+
 async function getFullObject(object, client) {
     for(const field of ['type', 'sender', 'owner']) {
         if(object[field]) {
@@ -126,4 +140,5 @@ module.exports = {
     setConfig,
     getFullObject,
     parseEnv,
+    requestSuiFromFaucet,
 };

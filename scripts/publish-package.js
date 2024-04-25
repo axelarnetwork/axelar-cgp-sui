@@ -1,15 +1,18 @@
 require('dotenv').config();
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const tmp = require('tmp');
-const { setConfig, getFullObject } = require('./utils');
+const { setConfig, getFullObject, requestSuiFromFaucet } = require('./utils');
 const { parseEnv } = require('./utils');
 
 async function publishPackage(packagePath, client, keypair) {
+
+    let toml = fs.readFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, 'utf8');
+    fs.writeFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
+
 	// remove all controlled temporary objects on process exit
     const address = keypair.getPublicKey().toSuiAddress();
 	tmp.setGracefulCleanup();
@@ -34,11 +37,6 @@ async function publishPackage(packagePath, client, keypair) {
 
 	// Transfer the upgrade capability to the sender so they can upgrade the package later if they want.
 	tx.transferObjects([cap], tx.pure(address));
-    const coins = await client.getCoins({owner: address});
-    tx.setGasPayment(coins.data.map(coin => {
-        coin.objectId = coin.coinObjectId; 
-        return coin;
-    }));
 
 	const publishTxn = await client.signAndExecuteTransactionBlock({
 		transactionBlock: tx,
@@ -88,8 +86,6 @@ function fillAddresses(toml, address) {
 }
 
 async function publishPackageFull(packagePath, client, keypair, env) {
-    let toml = fs.readFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, 'utf8');
-    fs.writeFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
 
     const { packageId, publishTxn } = await publishPackage(packagePath, client, keypair);
     const info = require(`${__dirname}/../move/${packagePath}/info.json`);
@@ -130,16 +126,7 @@ if (require.main === module) {
         const client = new SuiClient({ url: env.url });
 
         if (faucet) {
-            try {
-                await requestSuiFromFaucetV0({
-                // use getFaucetHost to make sure you're using correct faucet address
-                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-                host: getFaucetHost(env.alias),
-                recipient: address,
-                });
-            } catch (e) {
-                console.log(e);
-            }
+            await requestSuiFromFaucet(env, address);
         }
 
         await publishPackageFull(packagePath, client, keypair, env);

@@ -1,12 +1,14 @@
 [package]
-name = "trading"
+name = "Squid"
 version = "0.0.1"
-published-at = "0xc482249178b3d18243a049b10a0b5bc9d4fb3115ed4c7673f89132ba007ce3c6"
-edition = "2024.alpha"
+published-at = "0x6b3d7de8dda55754c03490d91638c64ac28af14d4fd1c2aab3db6ec9b7b6a32b"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "framework/mainnet" }
+Axelar = { local = "../axelar" }
+ITS = { local = "../its" }
 
 [addresses]
-trading = "0xc482249178b3d18243a049b10a0b5bc9d4fb3115ed4c7673f89132ba007ce3c6"
+squid = "0x6b3d7de8dda55754c03490d91638c64ac28af14d4fd1c2aab3db6ec9b7b6a32b"

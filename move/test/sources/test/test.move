@@ -8,7 +8,7 @@ module test::test {
     use sui::hex;
 
     use axelar::channel::{Self, Channel, ApprovedCall};
-    use axelar::discovery::{Self, RelayerDiscovery, Transaction};
+    use axelar::discovery::{Self, RelayerDiscovery};
 
     use axelar::gateway;
 
@@ -31,44 +31,31 @@ module test::test {
     }
 
     public fun register_transaction(discovery: &mut RelayerDiscovery, singleton: &Singleton) {
-        let mut arguments = vector[];
-        let mut arg = vector::singleton(0);
-        vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
-        vector::push_back(&mut arguments, arg);
-        let tx = discovery::new_transaction(
-            discovery::new_function(
-                address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
-                ascii::string(b"test"),
-                ascii::string(b"get_call_info")
-            ),
-            arguments,
-            vector[],
-        );
-        discovery::register_transaction(discovery, &singleton.channel, tx);
-    }
-
-    public fun send_call(singleton: &Singleton, destination_chain: String, destination_address: String, payload: vector<u8>) {
-        gateway::call_contract(&singleton.channel, destination_chain, destination_address, payload);
-    }
-
-    public fun get_call_info(singleton: &Singleton): vector<Transaction> {
         let mut arguments = vector::empty<vector<u8>>();
         let mut arg = vector::singleton<u8>(2);
         vector::push_back(&mut arguments, arg);
         arg = vector::singleton<u8>(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
         vector::push_back(&mut arguments, arg);
-        vector[
-            discovery::new_transaction(
-                discovery::new_function(
-                    address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
-                    ascii::string(b"test"),
-                    ascii::string(b"execute")
-                ),
-                arguments,
-                vector[],
-            )
-        ]
+        let transaction = discovery::new_transaction( 
+            true,
+            vector[
+                discovery::new_move_call(
+                    discovery::new_function(
+                        address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
+                        ascii::string(b"test"),
+                        ascii::string(b"execute")
+                    ),
+                    arguments,
+                    vector[],
+                )
+            ]
+        );
+        discovery::register_transaction(discovery, &singleton.channel, transaction);
+    }
+
+    public fun send_call(singleton: &Singleton, destination_chain: String, destination_address: String, payload: vector<u8>) {
+        gateway::call_contract(&singleton.channel, destination_chain, destination_address, payload);
     }
 
     public fun execute(call: ApprovedCall, singleton: &mut Singleton) {

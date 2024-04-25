@@ -1,12 +1,12 @@
 [package]
 name = "Governance"
 version = "0.0.1"
-published-at = "0x9c8060bdb1080fadda90fe05057615d9403fbc3be0c17b29b16ac38b50172bf7"
-edition = "2024.alpha"
+published-at = "0x578987b18d4d60ba54533ebf578cb724e4e892bebb9eb35b354e159953995b57"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 Axelar = { local = "../axelar" }
 
 [addresses]
-gas_service = "0x9c8060bdb1080fadda90fe05057615d9403fbc3be0c17b29b16ac38b50172bf7"
+gas_service = "0x578987b18d4d60ba54533ebf578cb724e4e892bebb9eb35b354e159953995b57"
