@@ -1,15 +1,15 @@
-module interchain_token::q {
+module interchain_token::tt {
     use sui::coin::{Self};
     use sui::url::{Url};
 
-    public struct Q has drop {}
+    public struct TT has drop {}
 
-    fun init(witness: Q, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency<Q>(
+    fun init(witness: TT, ctx: &mut TxContext) {
+        let (treasury, metadata) = coin::create_currency<TT>(
             witness,
-            9,
-            b"Q",
-            b"Quote",
+            6,
+            b"TT",
+            b"Test Token",
             b"",
             option::none<Url>(),
             ctx

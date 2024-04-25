@@ -62,7 +62,6 @@ module squid::deepbook_v2 {
         (is_round_down, (x * y / FLOAT_SCALING_U128) as u64)
     }
 
-
     // divide two floating numbers
     // also returns whether the result is rounded down
     fun unsafe_div_round(x: u64, y: u64): (bool, u64) {
@@ -238,7 +237,6 @@ module squid::deepbook_v2 {
             self.coin_bag().store_estimate<T1>(output);
         }
     }
-
 
     public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, clock: &Clock, ctx: &mut TxContext) {
         let data = self.get_data_swapping();
