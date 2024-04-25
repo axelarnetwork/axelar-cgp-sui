@@ -13,13 +13,31 @@ module its::discovery {
     use axelar::discovery::{Self, RelayerDiscovery, Transaction};
 
     use its::its::ITS;
-    use its::token_id;
+    use its::token_id::{Self, TokenId};
 
     const EUnsupportedMessageType: u64 = 0;
+    const EInvalidMessageType: u64 = 0;
 
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+
+    public fun get_interchain_transfer_info(payload: vector<u8>): (TokenId, address, u64, vector<u8>) {
+        let reader = abi::new_reader(payload);
+        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
+
+        let destination = address::from_bytes(reader.read_bytes(3));
+        let token_id = token_id::from_u256(reader.read_u256(1));
+        let amount = (reader.read_u256(4) as u64);
+        let data = reader.read_bytes(5);
+
+        (
+            token_id,
+            destination,
+            amount,
+            data,
+        )
+    }
 
     public fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery) {
         let mut arg = vector[0];
@@ -123,7 +141,7 @@ module its::discovery {
     }
 
     /// Returns the address of the ITS module (from the type name).
-    fun its_package_id(): address {
+    public fun its_package_id(): address {
         address::from_bytes(
             hex::decode(
                 *ascii::as_bytes(

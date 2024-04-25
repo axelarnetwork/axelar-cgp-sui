@@ -596,22 +596,19 @@ async function test(client, keypair, env) {
         type_arguments: [base.type, base.type],
     }
 
-    const swapTx = transaction.serialize({
-        is_final: true,
-        move_calls: [
-            start_swap,
-            estimate_deepbook,
-            estimate_sweep1,
-            estimate_deepbook,
-            estimate_sweep2,
-            post_estimate,
-            swap_deepbook,
-            sweep_dust1,
-            swap_deepbook,
-            sweep_dust2,
-            finalize,
-        ],
-    }).toBytes();
+    const move_calls_old = [
+        start_swap,
+        estimate_deepbook,
+        estimate_sweep1,
+        estimate_deepbook,
+        estimate_sweep2,
+        post_estimate,
+        swap_deepbook,
+        sweep_dust1,
+        swap_deepbook,
+        sweep_dust2,
+        finalize,
+    ];
 
     const swapInfoStruct = bcs.struct('SwapInfo', {
         swap_data: bcs.vector(bcs.vector(bcs.u8())),
@@ -680,6 +677,28 @@ async function test(client, keypair, env) {
         destination_out: destination,
     }).toBytes();
 
+    const swapInfoArg = [1];
+    swapInfoArg.push(...bcs.vector(bcs.u8()).serialize(swapInfoData).toBytes());
+
+    const swapTx = transaction.serialize({
+        is_final: false,
+        move_calls: [
+            {
+                function: {
+                    package_id: squid_info.packageId,
+                    module_name: 'discovery',
+                    name: 'get_transaction',
+                },
+                arguments: [
+                    squid_arg,
+                    its_arg,
+                    [3],
+                ],
+                type_arguments: [],
+            }
+        ],
+    }).toBytes();
+
     const data = defaultAbiCoder.encode(['bytes', 'bytes'], [swapTx, swapInfoData]);
     const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, data]);
 
@@ -715,7 +734,7 @@ async function test(client, keypair, env) {
 
 
     //await prepare(client, keypair, env);
-    //await publishPackageFull('squid', client, keypair, env);
+    await publishPackageFull('squid', client, keypair, env);
 
     await test(client, keypair, env);
 })();

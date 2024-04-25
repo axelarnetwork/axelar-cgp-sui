@@ -51,7 +51,6 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         moveCalls = nextTx.move_calls;
     }
     const tx = new TransactionBlock();
-
     const approvedCall = tx.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [

@@ -1,7 +1,10 @@
 module squid::sweep_dust {
     use std::type_name;
+    use std::ascii;
 
-    use sui::bcs;
+    use sui::bcs::{Self, BCS};
+
+    use axelar::discovery::{Self, MoveCall};
 
     use squid::swap_info::{SwapInfo};
     use squid::squid::Squid;
@@ -43,5 +46,36 @@ module squid::sweep_dust {
             return
         };
         squid.coin_bag().store_balance(option.destroy_some());
+    }
+
+    public(package) fun get_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+        let type_arg = ascii::string(bcs.peel_vec_u8());
+        discovery::new_move_call(
+            discovery::new_function(
+                package_id,
+                ascii::string(b"sweep_dust"),
+                ascii::string(b"estimate"),
+            ),
+            vector[
+                swap_info_arg,
+            ],
+            vector[type_arg],
+        )
+    }
+
+    public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>): MoveCall {
+        let type_arg = ascii::string(bcs.peel_vec_u8());
+        discovery::new_move_call(
+            discovery::new_function(
+                package_id,
+                ascii::string(b"sweep_dust"),
+                ascii::string(b"sweep"),
+            ),
+            vector[
+                swap_info_arg,
+                squid_arg
+            ],
+            vector[type_arg],
+        )
     }
 }

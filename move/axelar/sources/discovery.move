@@ -40,7 +40,7 @@ module axelar::discovery {
     /// Arguments are prefixed with:
     /// - 0 for objects followed by exactly 32 bytes that cointain the object id
     /// - 1 for pures followed by the bcs encoded form of the pure
-    /// - 2 for the call contract objects, followed by nothing (to be passed into the target function)
+    /// - 2 for the call contract object, followed by nothing (to be passed into the target function)
     /// - 3 for the payload of the contract call (to be passed into the intermediate function)
     /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedCall out), and then another u8 specifying which argument to input. 
     public struct MoveCall has store, copy, drop {

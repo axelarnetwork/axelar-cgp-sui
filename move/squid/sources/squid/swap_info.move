@@ -40,21 +40,36 @@ module squid::swap_info {
     const ENotEnoughOutput: u64 = 7;
     const EIncorrectInput: u64 = 8;
 
+    public(package) fun decode_swap_info_data(data: vector<u8>): (vector<vector<u8>>, String, u64, vector<u8>, String, u64, vector<u8>) {
+        let mut bcs = bcs::new(data);
+        
+        let swap_data = bcs.peel_vec_vec_u8();
+        let type_in = ascii::string(bcs.peel_vec_u8());
+        let amount_in = bcs.peel_u64();
+        let destination_in = bcs.peel_vec_u8();
+        let type_out = ascii::string(bcs.peel_vec_u8());
+        let min_out = bcs.peel_u64();
+        let destination_out = bcs.peel_vec_u8();
+
+        (swap_data, type_in, amount_in, destination_in, type_out, min_out, destination_out)
+    }
+
 
     public(package) fun new(data: vector<u8>, ctx: &mut TxContext): SwapInfo {
-        let mut bcs = bcs::new(data);
+        let (swap_data, type_in, amount_in, destination_in, type_out, min_out, destination_out) = decode_swap_info_data(data);
         SwapInfo {
             swap_index: 0,
             estimate_index: 0,
-            swap_data: bcs.peel_vec_vec_u8(),
-            coin_bag: coin_bag::new(ctx),
-            type_in: ascii::string(bcs.peel_vec_u8()),
-            amount_in: bcs.peel_u64(),
-            destination_in: bcs.peel_vec_u8(),
-            type_out: ascii::string(bcs.peel_vec_u8()),
-            min_out: bcs.peel_u64(),
-            destination_out: bcs.peel_vec_u8(),
             status: ESTIMATING,
+            coin_bag: coin_bag::new(ctx),
+
+            swap_data,
+            type_in,
+            amount_in,
+            destination_in,
+            type_out,
+            min_out,
+            destination_out,
         }
     }
 

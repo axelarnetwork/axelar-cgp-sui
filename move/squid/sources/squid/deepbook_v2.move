@@ -1,13 +1,16 @@
 module squid::deepbook_v2 {
     use std::type_name;
+    use std::ascii;
 
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
-    use sui::bcs;
+    use sui::bcs::{Self, BCS};
 
     use deepbook::clob_v2::{Self as clob, Pool};
     use deepbook::custodian_v2::{Self as custodian};
     use deepbook::math as clob_math;
+
+    use axelar::discovery::{Self, MoveCall};
 
     use squid::swap_info::{SwapInfo};
 
@@ -286,6 +289,54 @@ module squid::deepbook_v2 {
             self.coin_bag().store_balance<T1>(base_coin.into_balance());
             self.coin_bag().store_balance<T2>(quote_coin.into_balance());
         }
+    }
+
+    public(package) fun get_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+        let mut pool_arg = vector[0];
+        vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
+
+        let _has_base = bcs.peel_bool();
+
+        let type_base = ascii::string(bcs.peel_vec_u8());
+        let type_quote = ascii::string(bcs.peel_vec_u8());
+
+        discovery::new_move_call(
+            discovery::new_function(
+                package_id,
+                ascii::string(b"deepbook_v2"),
+                ascii::string(b"estimate"),
+            ),
+            vector[
+                swap_info_arg,
+                pool_arg,
+                vector[0, 6],
+            ],
+            vector[type_base, type_quote],
+        )
+    }
+
+    public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+        let mut pool_arg = vector[0];
+        vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
+
+        let _has_base = bcs.peel_bool();
+
+        let type_base = ascii::string(bcs.peel_vec_u8());
+        let type_quote = ascii::string(bcs.peel_vec_u8());
+
+        discovery::new_move_call(
+            discovery::new_function(
+                package_id,
+                ascii::string(b"deepbook_v2"),
+                ascii::string(b"swap"),
+            ),
+            vector[
+                swap_info_arg,
+                pool_arg,
+                vector[0, 6],
+            ],
+            vector[type_base, type_quote] ,
+        )
     }
 
 
