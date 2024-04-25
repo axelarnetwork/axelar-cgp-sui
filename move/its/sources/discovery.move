@@ -21,7 +21,7 @@ module its::discovery {
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
 
-    public fun register_transaction(self: &ITS, discovery: &mut RelayerDiscovery) {
+    public fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery) {
         let mut arg = vector[0];
         vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
 
@@ -36,27 +36,30 @@ module its::discovery {
             ascii::string(b"get_call_info")
         );
 
-        let tx = discovery::new_transaction(
+        let move_call = discovery::new_move_call(
             function,
             arguments,
             vector[],
         );
 
-        discovery.register_transaction(self.channel(), tx);
+        discovery.register_transaction(self.channel(), discovery::new_transaction(
+            false,
+            vector[move_call],
+        ));
     }
 
-    public fun get_call_info(self: &ITS, payload: vector<u8>): vector<Transaction> {
+    public fun get_call_info(self: &ITS, payload: vector<u8>): Transaction {
         let reader = abi::new_reader(payload);
         let message_type = reader.read_u256(0);
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             get_interchain_transfer_tx(self, &reader)
         } else {
             assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
-            vector[get_deploy_interchain_token_tx(self, &reader)]
+            get_deploy_interchain_token_tx(self, &reader)
         }
     }
 
-    fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): vector<Transaction> {
+    fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): Transaction {
         let data = reader.read_bytes(5);
 
         if (vector::is_empty(&data)) {
@@ -71,26 +74,22 @@ module its::discovery {
             let token_id = token_id::from_u256(reader.read_u256(1));
             let type_name = self.get_registered_coin_type(token_id);
 
-            vector[discovery::new_transaction(
-                discovery::new_function(
-                    its_package_id(),
-                    ascii::string(b"service"),
-                    ascii::string(b"receive_interchain_transfer")
-                ),
-                arguments,
-                vector[ type_name::into_string(*type_name) ],
-            )]
+            discovery::new_transaction(
+                true,
+                vector[discovery::new_move_call(
+                    discovery::new_function(
+                        its_package_id(),
+                        ascii::string(b"service"),
+                        ascii::string(b"receive_interchain_transfer")
+                    ),
+                    arguments,
+                    vector[ type_name::into_string(*type_name) ],
+                )],
+            )
         } else {
             let transaction = abi::new_reader(data).read_bytes(0);
             let mut bcs = bcs::new(transaction);
-            let length = bcs.peel_vec_length();
-            let mut block = vector[];
-            let mut i = 0;
-            while ( i < length ) {
-                vector::push_back(&mut block, discovery::new_transaction_from_bcs(&mut bcs));
-                i = i + 1;
-            };
-            block
+            discovery::new_transaction_from_bcs(&mut bcs)
         }
     }
 
@@ -107,7 +106,7 @@ module its::discovery {
         let decimals = (reader.read_u256(4) as u8);
         let type_name = self.get_unregistered_coin_type(&symbol, decimals);
 
-        discovery::new_transaction(
+        let move_call = discovery::new_move_call(
             discovery::new_function(
                 its_package_id(),
                 ascii::string(b"service"),
@@ -115,6 +114,11 @@ module its::discovery {
             ),
             arguments,
             vector[ type_name::into_string(*type_name) ],
+        );
+
+        discovery::new_transaction(
+            true,
+            vector[ move_call ],
         )
     }
 

@@ -10,6 +10,7 @@ module its::its {
     use sui::coin::{TreasuryCap, CoinMetadata};
 
     use axelar::channel::Channel;
+    use axelar::discovery::RelayerDiscovery;
 
     use its::token_id::{Self, TokenId, UnregisteredTokenId};
     use its::address_tracker::{Self, InterchainAddressTracker};
@@ -31,6 +32,8 @@ module its::its {
 
         registered_coin_types: Table<TokenId, TypeName>,
         registered_coins: Bag,
+
+        relayer_discovery_id: ID,
     }
     
     public struct CoinData<phantom T> has store {
@@ -57,7 +60,13 @@ module its::its {
 
             unregistered_coin_info: bag::new(ctx),
             unregistered_coin_types: table::new(ctx),
+
+            relayer_discovery_id: object::id_from_address(@0x0),
         });
+    }
+
+    public(package) fun set_axelar_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
+        self.relayer_discovery_id = object::id(relayer_discovery);
     }
 
     public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {

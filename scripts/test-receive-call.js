@@ -8,7 +8,6 @@ const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
 const { approveContractCall } = require('./gateway');
-const { toPure } = require('./utils');
 
 async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload) {
     const axelarPackageId = axelarInfo.packageId;
@@ -21,29 +20,38 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
     }}));
-    let event = eventData.data[0].parsedJson;
+    const event = eventData.data[0].parsedJson;
 
-    let tx = new TransactionBlock();
+    const discoveryArg = [0];
+    discoveryArg.push(...arrayify(discovery.objectId));
+    const targetIdArg = [1];
+    targetIdArg.push(...arrayify(event.target_id));
+    let moveCalls = [
+        {
+            function: {
+                package_id: axelarPackageId,
+                module_name: 'discovery',
+                name: 'get_transaction',
+            },
+            arguments: [discoveryArg, targetIdArg],
+            type_arguments: [],
+        }
+    ];
+    let is_final = false;
+    while(!is_final) {
+        const tx = new TransactionBlock();
+        makeCalls(tx, moveCalls, payload);
+        const resp = await client.devInspectTransactionBlock({
+            sender: keypair.getPublicKey().toSuiAddress(),
+            transactionBlock: tx,
+        });
+        const txData = resp.results[0].returnValues[0][0];
+        const nextTx = getTransactionBcs().de('Transaction', new Uint8Array(txData));
+        is_final = nextTx.is_final;
+        moveCalls = nextTx.move_calls;
+    }
+    const tx = new TransactionBlock();
 
-    tx.moveCall({
-        target: `${axelarPackageId}::discovery::get_transaction`,
-        arguments: [tx.object(discovery.objectId), tx.pure(event.target_id)],
-    });
-    let resp = await client.devInspectTransactionBlock({
-        sender: keypair.getPublicKey().toSuiAddress(),
-        transactionBlock: tx,
-    });
-    
-    tx = new TransactionBlock();
-    tx.moveCall(decodeTransaction(tx, resp.results[0].returnValues[0][0], payload));
-    resp = await client.devInspectTransactionBlock({
-        sender: keypair.getPublicKey().toSuiAddress(),
-        transactionBlock: tx,
-        
-    });
-    
-    tx = new TransactionBlock();
-    
     const approvedCall = tx.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_call`,
         arguments: [
@@ -56,13 +64,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         ],
         typeArguments: [],
     });
-    const calls = getTransactionBlock(tx, resp.results[0].returnValues[0][0]);
-    const returns = [];
-    for(const call of calls) {
-        let result = tx.moveCall(buildTransaction(tx, call, null, approvedCall, returns));
-        if(!Array.isArray(result)) result = [result];
-        returns.push(result);
-    }
+    makeCalls(tx, moveCalls, payload, approvedCall);
     return await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
@@ -73,28 +75,43 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     });
 }
 
+function makeCalls(tx, moveCalls, payload, approvedCall) {
+    const returns = [];
+    for(const call of moveCalls) {
+        let result = tx.moveCall(
+            buildMoveCall(tx, call, payload, approvedCall, returns)
+        );
+        if(!Array.isArray(result)) result = [result];
+        returns.push(result);
+    }
+}
+
 function getTransactionBcs() {
     const bcs = new BCS(getSuiMoveConfig());
 
     // input argument for the tx
     bcs.registerStructType("Function", {
-        packageId: "address",
+        package_id: "address",
         module_name: "string",
         name: "string",
     });
-    bcs.registerStructType("Transaction", {
+    bcs.registerStructType("MoveCall", {
         function: "Function",
         arguments: "vector<vector<u8>>",
         type_arguments: "vector<string>",
     });
+    bcs.registerStructType("Transaction", {
+        is_final: "bool",
+        move_calls: "vector<MoveCall>",
+    })
     return bcs;
 }
-function buildTransaction(tx, txInfo, payload, callContractObj, previousReturns) {
+function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousReturns) {
     const decodeArgs = (args, tx) => args.map(arg => {
         if(arg[0] === 0) {
             return tx.object(hexlify(arg.slice(1)));
         } else if (arg[0] === 1) {
-            return tx.pure(arg.slice(1));
+            return tx.pure(new Uint8Array(arg.slice(1)));
         } else if (arg[0] === 2) {
             return callContractObj
         } else if (arg[0] === 3) {
@@ -105,21 +122,12 @@ function buildTransaction(tx, txInfo, payload, callContractObj, previousReturns)
             throw new Error(`Invalid argument prefix: ${arg[0]}`);
         }
     });
-    const decodeDescription = (description) => `${description.packageId}::${description.module_name}::${description.name}`;
+    const decodeDescription = (description) => `${description.package_id}::${description.module_name}::${description.name}`;
     return {
-        target: decodeDescription(txInfo.function),
-        arguments: decodeArgs(txInfo.arguments, tx),
-        typeArguments: txInfo.type_arguments,
+        target: decodeDescription(moveCallInfo.function),
+        arguments: decodeArgs(moveCallInfo.arguments, tx),
+        typeArguments: moveCallInfo.type_arguments,
     };
-}
-function decodeTransaction(tx, txData, payload) {
-    const bcs = getTransactionBcs();
-    let txInfo = bcs.de('Transaction', new Uint8Array(txData));
-    return buildTransaction(tx, txInfo, payload);
-}
-function getTransactionBlock(tx, txData, callContractObj, previousReturns) {
-    const bcs = getTransactionBcs();
-    return bcs.de('vector<Transaction>', new Uint8Array(txData));
 }
 
 module.exports = {
@@ -163,7 +171,7 @@ if (require.main === module) {
         });
 
         await receiveCall(client, keypair, axelarInfo, 'Ethereum', '0x0', test.channel, payload);
-        
+
         const event = (await client.queryEvents({query: {
             MoveEventType: `${testPackageId}::test::Executed`,
         }})).data[0].parsedJson;

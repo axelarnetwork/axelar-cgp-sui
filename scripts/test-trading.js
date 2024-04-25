@@ -455,13 +455,18 @@ async function test(client, keypair, env) {
     });
 
     const transaction = bcs.struct("Transaction", {
-        function: bcs.struct("Function", {
-            packageId: address,
-            module_name: bcs.string(),
-            name: bcs.string(),
-        }),
-        arguments: bcs.vector(bcs.vector(bcs.u8())),
-        type_arguments: bcs.vector(bcs.string()),
+        is_final: bcs.bool(),
+        move_calls: bcs.vector(
+            bcs.struct('MoveCall', {
+                function: bcs.struct("Function", {
+                    package_id: address,
+                    module_name: bcs.string(),
+                    name: bcs.string(),
+                }),
+                arguments: bcs.vector(bcs.vector(bcs.u8())),
+                type_arguments: bcs.vector(bcs.string()),
+            })
+        ),
     });
 
     const squid_info = getConfig('squid', env.alias);
@@ -478,7 +483,7 @@ async function test(client, keypair, env) {
 
     const start_swap = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'squid',
             name: 'start_swap',
         },
@@ -492,7 +497,7 @@ async function test(client, keypair, env) {
 
     const estimate_deepbook = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'deepbook_v2',
             name: 'estimate',
         },
@@ -506,7 +511,7 @@ async function test(client, keypair, env) {
     
     const swap_deepbook = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'deepbook_v2',
             name: 'swap',
         },
@@ -520,7 +525,7 @@ async function test(client, keypair, env) {
 
     const estimate_sweep1 = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'sweep_dust',
             name: 'estimate',
         },
@@ -531,7 +536,7 @@ async function test(client, keypair, env) {
     };
     const estimate_sweep2 = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'sweep_dust',
             name: 'estimate',
         },
@@ -543,7 +548,7 @@ async function test(client, keypair, env) {
 
     const sweep_dust1 = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'sweep_dust',
             name: 'sweep',
         },
@@ -555,7 +560,7 @@ async function test(client, keypair, env) {
     };
     const sweep_dust2 = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'sweep_dust',
             name: 'sweep',
         },
@@ -568,7 +573,7 @@ async function test(client, keypair, env) {
 
     const post_estimate = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'swap_info',
             name: 'post_estimate',
         },
@@ -580,7 +585,7 @@ async function test(client, keypair, env) {
 
     const finalize = {
         function: {
-            packageId: squid_info.packageId,
+            package_id: squid_info.packageId,
             module_name: 'swap_info',
             name: 'finalize',
         },
@@ -591,19 +596,22 @@ async function test(client, keypair, env) {
         type_arguments: [base.type, base.type],
     }
 
-    const swapTx = bcs.vector(transaction).serialize([
-        start_swap,
-        estimate_deepbook,
-        estimate_sweep1,
-        estimate_deepbook,
-        estimate_sweep2,
-        post_estimate,
-        swap_deepbook,
-        sweep_dust1,
-        swap_deepbook,
-        sweep_dust2,
-        finalize,
-    ]).toBytes();
+    const swapTx = transaction.serialize({
+        is_final: true,
+        move_calls: [
+            start_swap,
+            estimate_deepbook,
+            estimate_sweep1,
+            estimate_deepbook,
+            estimate_sweep2,
+            post_estimate,
+            swap_deepbook,
+            sweep_dust1,
+            swap_deepbook,
+            sweep_dust2,
+            finalize,
+        ],
+    }).toBytes();
 
     const swapInfoStruct = bcs.struct('SwapInfo', {
         swap_data: bcs.vector(bcs.vector(bcs.u8())),

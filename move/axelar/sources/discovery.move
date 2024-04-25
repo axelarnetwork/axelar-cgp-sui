@@ -42,11 +42,19 @@ module axelar::discovery {
     /// - 1 for pures followed by the bcs encoded form of the pure
     /// - 2 for the call contract objects, followed by nothing (to be passed into the target function)
     /// - 3 for the payload of the contract call (to be passed into the intermediate function)
-    public struct Transaction has store, copy, drop {
+    /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedCall out), and then another u8 specifying which argument to input. 
+    public struct MoveCall has store, copy, drop {
         function: Function,
         arguments: vector<vector<u8>>,
         type_arguments: vector<String>,
     }
+
+    public struct Transaction has store, copy, drop {
+        is_final: bool,
+        move_calls: vector<MoveCall>,
+    }
+
+
 
     fun init(ctx: &mut TxContext) {
         transfer::share_object(RelayerDiscovery {
@@ -111,19 +119,19 @@ module axelar::discovery {
         }
     }
 
-    public fun new_transaction(
+    public fun new_move_call(
         function: Function,
         arguments: vector<vector<u8>>,
         type_arguments: vector<String>
-    ): Transaction {
-        Transaction {
+    ): MoveCall {
+        MoveCall {
             function,
             arguments,
             type_arguments,
         }
     }
 
-    public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
+    public fun new_move_call_from_bcs(bcs: &mut BCS): MoveCall {
         let function = new_function_from_bcs(bcs);
         let arguments = bcs.peel_vec_vec_u8();
         let length = bcs.peel_vec_length();
@@ -137,27 +145,38 @@ module axelar::discovery {
             i = i + 1;
         };
 
-        Transaction {
+        MoveCall {
             function,
             arguments,
             type_arguments,
         }
     }
 
-    public fun new_transaction_block_from_bcs(bcs: &mut BCS): vector<Transaction> {
+    public fun new_transaction(is_final: bool, move_calls: vector<MoveCall>): Transaction {
+        Transaction {
+            is_final,
+            move_calls,
+        }
+    }
+
+    public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
+        let is_final = bcs.peel_bool();
         let length = bcs.peel_vec_length();
-        let mut transaction_block = vector[];
+        let mut move_calls = vector[];
         let mut i = 0;
 
         while (i < length) {
             vector::push_back(
-                &mut transaction_block, 
-                new_transaction_from_bcs(bcs),
+                &mut move_calls, 
+                new_move_call_from_bcs(bcs),
             );
             i = i + 1;
         };
 
-        transaction_block
+        Transaction {
+            is_final,
+            move_calls,
+        }
     }
 
     #[test_only]

@@ -1,11 +1,11 @@
 [package]
 name = "Abi"
 version = "0.0.1"
-published-at = "0x94694b366042017044dd6f1122648d12b54dfb96e4f0eb1d1052220e532cbc26"
+published-at = "0xa103c5426c23e19190c8b4421d034d3b885dc2a744966942c7a231e0b2830fcb"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 [addresses]
-abi = "0x94694b366042017044dd6f1122648d12b54dfb96e4f0eb1d1052220e532cbc26"
+abi = "0xa103c5426c23e19190c8b4421d034d3b885dc2a744966942c7a231e0b2830fcb"
