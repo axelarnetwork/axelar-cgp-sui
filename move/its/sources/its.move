@@ -219,6 +219,8 @@ module its::its {
 
             unregistered_coin_info: bag::new(ctx),
             unregistered_coin_types: table::new(ctx),
+
+            relayer_discovery_id: object::id_from_address(@0x0)
         }
     }
 

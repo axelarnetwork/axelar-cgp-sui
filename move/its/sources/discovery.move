@@ -170,27 +170,33 @@ module its::discovery {
         ];
 
         let function = discovery::new_function(
-             (),
+            discovery::package_id<ITS>(),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
 
-        discovery::new_transaction(
+        let move_call = discovery::new_move_call(
             function,
             arguments,
             vector[],
+        );
+
+        discovery::new_transaction(
+            false,
+            vector[move_call],
         )
     }
 
     #[test]
     fun test_discovery_initial() {
         let ctx = &mut sui::tx_context::dummy();
-        let its = its::its::new();
+        let mut its = its::its::new();
         let mut discovery = axelar::discovery::new(ctx);
 
-        register_transaction(&its, &mut discovery);
+        register_transaction(&mut its, &mut discovery);
 
         assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
+        assert!(its.relayer_discovery_id() == object::id(&discovery), 1);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -202,7 +208,7 @@ module its::discovery {
         let mut its = its::its::new();
         let mut discovery = axelar::discovery::new(ctx);
 
-        register_transaction(&its, &mut discovery);
+        register_transaction(&mut its, &mut discovery);
 
         let token_id = @0x1234;
         let source_address = b"source address";
@@ -221,13 +227,14 @@ module its::discovery {
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
-        let mut tx_block = get_call_info(&its, payload);
-        assert!(tx_block == vector[get_interchain_transfer_tx(&its, &abi::new_reader(payload))], 1);
-        let call_info = vector::pop_back(&mut tx_block);
+        let tx_block = get_call_info(&its, payload);
+        assert!(tx_block == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
+        assert!(tx_block.is_final() && vector::length(&tx_block.move_calls()) == 1, 2);
+        let call_info = vector::pop_back(&mut tx_block.move_calls());
 
-        assert!(call_info.function().package_id() == package_id<ITS>(), 2);
-        assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
-        assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 4);
+        assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 3);
+        assert!(call_info.function().module_name() == ascii::string(b"service"), 4);
+        assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 5);
         let mut arg = vector[0];
         vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
 
@@ -235,8 +242,8 @@ module its::discovery {
             arg,
             vector[2]
         ];
-        assert!(call_info.arguments() == arguments, 5);
-        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 6);
+        assert!(call_info.arguments() == arguments, 6);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 7);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -248,7 +255,7 @@ module its::discovery {
         let mut its = its::its::new();
         let mut discovery = axelar::discovery::new(ctx);
 
-        register_transaction(&its, &mut discovery);
+        register_transaction(&mut its, &mut discovery);
 
         assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
 
@@ -274,7 +281,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
-        assert!(get_call_info(&its, payload) == vector[get_interchain_transfer_tx(&its, &abi::new_reader(payload))], 1);
+        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
         
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -286,7 +293,7 @@ module its::discovery {
         let mut its = its::its::new();
         let mut discovery = axelar::discovery::new(ctx);
 
-        register_transaction(&its, &mut discovery);
+        register_transaction(&mut its, &mut discovery);
 
         let token_id = @0x1234;
         let name = b"name";
@@ -305,13 +312,15 @@ module its::discovery {
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
         its.test_add_unregistered_coin_type(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
-        let mut tx_block = get_call_info(&its, payload);
-        assert!(tx_block == vector[get_deploy_interchain_token_tx(&its, &abi::new_reader(payload))], 1);
-
-        let call_info = vector::pop_back(&mut tx_block);
-        assert!(call_info.function().package_id() == package_id<ITS>(), 2);
-        assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
-        assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 4);
+        let tx_block = get_call_info(&its, payload);
+        assert!(tx_block == get_deploy_interchain_token_tx(&its, &abi::new_reader(payload)), 1);
+        assert!(tx_block.is_final(), 2);
+        let mut move_calls = tx_block.move_calls();
+        assert!(vector::length(&move_calls) == 1, 3);
+        let call_info = vector::pop_back(&mut move_calls);
+        assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 4);
+        assert!(call_info.function().module_name() == ascii::string(b"service"), 5);
+        assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 6);
         let mut arg = vector[0];
         vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
 
@@ -319,8 +328,8 @@ module its::discovery {
             arg,
             vector[2]
         ];
-        assert!(call_info.arguments() == arguments, 5);
-        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 6);
+        assert!(call_info.arguments() == arguments, 7);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 8);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);

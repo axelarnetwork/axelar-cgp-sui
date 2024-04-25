@@ -194,7 +194,7 @@ module axelar::discovery {
     }
 
     #[test_only]
-    public fun package_id(self: &Function): address {
+    public fun package_id_from_function(self: &Function): address {
         self.package_id
     }
 
@@ -209,19 +209,30 @@ module axelar::discovery {
     }
 
     #[test_only]
-    public fun function(self: &Transaction): Function {
+    public fun function(self: &MoveCall): Function {
         self.function
     }
  
     #[test_only]
-    public fun arguments(self: &Transaction): vector<vector<u8>> {
+    public fun arguments(self: &MoveCall): vector<vector<u8>> {
         self.arguments
     }
 
     #[test_only]
-    public fun type_arguments(self: &Transaction): vector<ascii::String> {
+    public fun type_arguments(self: &MoveCall): vector<ascii::String> {
         self.type_arguments
     }
+
+    #[test_only]
+    public fun is_final(self: &Transaction): bool {
+        self.is_final
+    }
+
+    #[test_only]
+    public fun move_calls(self: &Transaction): vector<MoveCall> {
+        self.move_calls
+    }
+
 
     #[test_only]
     public fun new(ctx: &mut TxContext): RelayerDiscovery {
@@ -239,7 +250,7 @@ module axelar::discovery {
             ascii::string(b"string"),
         );
 
-        let _tx = function.new_transaction(
+        let _tx = function.new_move_call(
             vector[ bcs::to_bytes(&b"some_string") ], // arguments
             vector[ ], // type_arguments
         );
@@ -267,7 +278,7 @@ module axelar::discovery {
         let type_arguments = vector[ascii::string(b"type1"), ascii::string(b"type2")];
         let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
     
-        let transaction = new_transaction_from_bcs(&mut bcs::new(input));
+        let transaction = new_move_call_from_bcs(&mut bcs::new(input));
         assert!(transaction.function.package_id == package_id, 0);
         assert!(transaction.function.module_name == module_name, 1);
         assert!(transaction.function.name == name, 2);
@@ -281,7 +292,7 @@ module axelar::discovery {
         let mut self = new(ctx);
         let channel = axelar::channel::new(ctx);
 
-        let input_transaction = Transaction {
+        let move_call = MoveCall {
             function: Function {
                 package_id: @0x1234,
                 module_name: std::ascii::string(b"module"),
@@ -289,6 +300,10 @@ module axelar::discovery {
             },
             arguments: vector::empty<vector<u8>>(),
             type_arguments: vector::empty<ascii::String>(),
+        };
+        let input_transaction = Transaction {
+            is_final: true,
+            move_calls: vector[move_call],
         };
         
         self.register_transaction(&channel, input_transaction);
