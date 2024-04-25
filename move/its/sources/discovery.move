@@ -5,12 +5,11 @@ module its::discovery {
     use std::type_name;
 
     use sui::address;
-    use sui::hex;
     use sui::bcs;
 
     use abi::abi::{Self, AbiReader};
 
-    use axelar::discovery::{Self, RelayerDiscovery, Transaction};
+    use axelar::discovery::{Self, RelayerDiscovery, Transaction, package_id};
 
     use its::its::ITS;
     use its::token_id::{Self, TokenId};
@@ -40,6 +39,7 @@ module its::discovery {
     }
 
     public fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery) {
+        self.set_relayer_discovery_id(discovery);
         let mut arg = vector[0];
         vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
 
@@ -49,7 +49,7 @@ module its::discovery {
         ];
 
         let function = discovery::new_function(
-            its_package_id(),
+            package_id<ITS>(),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
@@ -84,19 +84,20 @@ module its::discovery {
             let mut arg = vector[0];
             vector::append(&mut arg, address::to_bytes(object::id_address(self)));
 
+            let token_id = token_id::from_u256(reader.read_u256(1));
+            let type_name = self.get_registered_coin_type(token_id);
+
             let arguments = vector[
                 arg,
                 vector[2]
             ];
 
-            let token_id = token_id::from_u256(reader.read_u256(1));
-            let type_name = self.get_registered_coin_type(token_id);
 
             discovery::new_transaction(
                 true,
                 vector[discovery::new_move_call(
                     discovery::new_function(
-                        its_package_id(),
+                        package_id<ITS>(),
                         ascii::string(b"service"),
                         ascii::string(b"receive_interchain_transfer")
                     ),
@@ -105,9 +106,27 @@ module its::discovery {
                 )],
             )
         } else {
-            let transaction = abi::new_reader(data).read_bytes(0);
-            let mut bcs = bcs::new(transaction);
-            discovery::new_transaction_from_bcs(&mut bcs)
+            let mut discovery_arg = vector[0];
+            vector::append(&mut discovery_arg, self.relayer_discovery_id().id_to_address().to_bytes());
+
+            let mut channel_id_arg = vector[1];
+            vector::append(&mut channel_id_arg, reader.read_bytes(3));
+
+            discovery::new_transaction(
+                false,
+                vector[discovery::new_move_call(
+                    discovery::new_function(
+                        package_id<RelayerDiscovery>(),
+                        ascii::string(b"discovery"),
+                        ascii::string(b"get_transaction")
+                    ),
+                    vector[
+                        discovery_arg,
+                        channel_id_arg,
+                    ],
+                    vector[],
+                )],
+            )
         }
     }
 
@@ -126,7 +145,7 @@ module its::discovery {
 
         let move_call = discovery::new_move_call(
             discovery::new_function(
-                its_package_id(),
+                package_id<ITS>(),
                 ascii::string(b"service"),
                 ascii::string(b"receive_deploy_interchain_token")
             ),
@@ -137,17 +156,6 @@ module its::discovery {
         discovery::new_transaction(
             true,
             vector[ move_call ],
-        )
-    }
-
-    /// Returns the address of the ITS module (from the type name).
-    public fun its_package_id(): address {
-        address::from_bytes(
-            hex::decode(
-                *ascii::as_bytes(
-                    &type_name::get_address(&type_name::get<ITS>())
-                )
-            )
         )
     }
 
@@ -162,7 +170,7 @@ module its::discovery {
         ];
 
         let function = discovery::new_function(
-            its_package_id(),
+             (),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
@@ -217,7 +225,7 @@ module its::discovery {
         assert!(tx_block == vector[get_interchain_transfer_tx(&its, &abi::new_reader(payload))], 1);
         let call_info = vector::pop_back(&mut tx_block);
 
-        assert!(call_info.function().package_id() == its_package_id(), 2);
+        assert!(call_info.function().package_id() == package_id<ITS>(), 2);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
         assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 4);
         let mut arg = vector[0];
@@ -301,7 +309,7 @@ module its::discovery {
         assert!(tx_block == vector[get_deploy_interchain_token_tx(&its, &abi::new_reader(payload))], 1);
 
         let call_info = vector::pop_back(&mut tx_block);
-        assert!(call_info.function().package_id() == its_package_id(), 2);
+        assert!(call_info.function().package_id() == package_id<ITS>(), 2);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 3);
         assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 4);
         let mut arg = vector[0];

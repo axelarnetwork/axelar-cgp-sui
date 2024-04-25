@@ -23,6 +23,10 @@ module squid::squid {
         });
     }
 
+    public(package) fun borrow_channel(self: &Squid): &Channel {
+        &self.channel
+    }
+
     public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_call: ApprovedCall, ctx: &mut TxContext): SwapInfo {
         let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
             its,
@@ -30,7 +34,7 @@ module squid::squid {
             &self.channel,
             ctx,
         );
-        let mut swap_info = swap_info::new(abi::new_reader(data).read_bytes(1), ctx);
+        let mut swap_info = swap_info::new(data, ctx);
         swap_info.coin_bag().store_balance(
             coin.into_balance(),
         );

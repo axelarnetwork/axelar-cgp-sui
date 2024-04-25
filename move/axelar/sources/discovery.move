@@ -9,9 +9,12 @@
 /// proper discovery / execution mechanism in place.
 module axelar::discovery {
     use std::ascii::{Self, String};
+    use std::type_name;
 
     use sui::table::{Self, Table};
     use sui::bcs::{Self, BCS};
+    use sui::hex;
+    use sui::address;
 
     use axelar::channel::Channel;
 
@@ -177,6 +180,17 @@ module axelar::discovery {
             is_final,
             move_calls,
         }
+    }
+
+    /// Helper function which returns the package id of from a type.
+    public fun package_id<T>(): address {
+        address::from_bytes(
+            hex::decode(
+                *ascii::as_bytes(
+                    &type_name::get_address(&type_name::get<T>())
+                )
+            )
+        )
     }
 
     #[test_only]

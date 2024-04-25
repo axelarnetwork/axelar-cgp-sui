@@ -65,8 +65,12 @@ module its::its {
         });
     }
 
-    public(package) fun set_axelar_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
+    public(package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
         self.relayer_discovery_id = object::id(relayer_discovery);
+    }
+
+    public(package) fun relayer_discovery_id(self: &ITS): ID {
+        self.relayer_discovery_id
     }
 
     public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {

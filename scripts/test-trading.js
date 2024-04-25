@@ -454,161 +454,9 @@ async function test(client, keypair, env) {
         output: (id) => hexlify(id),
     });
 
-    const transaction = bcs.struct("Transaction", {
-        is_final: bcs.bool(),
-        move_calls: bcs.vector(
-            bcs.struct('MoveCall', {
-                function: bcs.struct("Function", {
-                    package_id: address,
-                    module_name: bcs.string(),
-                    name: bcs.string(),
-                }),
-                arguments: bcs.vector(bcs.vector(bcs.u8())),
-                type_arguments: bcs.vector(bcs.string()),
-            })
-        ),
-    });
-
     const squid_info = getConfig('squid', env.alias);
     const {pool, base, quote} = getConfig('trading', env.alias);
     const its_info = getConfig('its', env.alias);
-
-    const its_arg = [0];
-    its_arg.push(...arrayify(its_info['its::ITS'].objectId));
-    const squid_arg = [0];
-    squid_arg.push(...arrayify(squid_info['squid::Squid'].objectId));
-    const swap_info_arg = [4, 0, 0];
-    const pool_arg = [0];
-    pool_arg.push(...arrayify(pool));
-
-    const start_swap = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'squid',
-            name: 'start_swap',
-        },
-        arguments: [
-            squid_arg,
-            its_arg,
-            [2],
-        ],
-        type_arguments: [base.type],
-    };
-
-    const estimate_deepbook = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'deepbook_v2',
-            name: 'estimate',
-        },
-        arguments: [
-            swap_info_arg,
-            pool_arg,
-            [0, 6],
-        ],
-        type_arguments: [base.type, quote.type],
-    };    
-    
-    const swap_deepbook = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'deepbook_v2',
-            name: 'swap',
-        },
-        arguments: [
-            swap_info_arg,
-            pool_arg,
-            [0, 6],
-        ],
-        type_arguments: [base.type, quote.type],
-    };
-
-    const estimate_sweep1 = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'sweep_dust',
-            name: 'estimate',
-        },
-        arguments: [
-            swap_info_arg,
-        ],
-        type_arguments: [base.type],
-    };
-    const estimate_sweep2 = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'sweep_dust',
-            name: 'estimate',
-        },
-        arguments: [
-            swap_info_arg,
-        ],
-        type_arguments: [quote.type],
-    }
-
-    const sweep_dust1 = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'sweep_dust',
-            name: 'sweep',
-        },
-        arguments: [
-            swap_info_arg,
-            squid_arg,
-        ],
-        type_arguments: [base.type],
-    };
-    const sweep_dust2 = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'sweep_dust',
-            name: 'sweep',
-        },
-        arguments: [
-            swap_info_arg,
-            squid_arg,
-        ],
-        type_arguments: [quote.type],
-    }
-
-    const post_estimate = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'swap_info',
-            name: 'post_estimate',
-        },
-        arguments: [
-            swap_info_arg,
-        ],
-        type_arguments: [base.type],
-    }
-
-    const finalize = {
-        function: {
-            package_id: squid_info.packageId,
-            module_name: 'swap_info',
-            name: 'finalize',
-        },
-        arguments: [
-            swap_info_arg,
-            its_arg,
-        ],
-        type_arguments: [base.type, base.type],
-    }
-
-    const move_calls_old = [
-        start_swap,
-        estimate_deepbook,
-        estimate_sweep1,
-        estimate_deepbook,
-        estimate_sweep2,
-        post_estimate,
-        swap_deepbook,
-        sweep_dust1,
-        swap_deepbook,
-        sweep_dust2,
-        finalize,
-    ];
 
     const swapInfoStruct = bcs.struct('SwapInfo', {
         swap_data: bcs.vector(bcs.vector(bcs.u8())),
@@ -677,30 +525,7 @@ async function test(client, keypair, env) {
         destination_out: destination,
     }).toBytes();
 
-    const swapInfoArg = [1];
-    swapInfoArg.push(...bcs.vector(bcs.u8()).serialize(swapInfoData).toBytes());
-
-    const swapTx = transaction.serialize({
-        is_final: false,
-        move_calls: [
-            {
-                function: {
-                    package_id: squid_info.packageId,
-                    module_name: 'discovery',
-                    name: 'get_transaction',
-                },
-                arguments: [
-                    squid_arg,
-                    its_arg,
-                    [3],
-                ],
-                type_arguments: [],
-            }
-        ],
-    }).toBytes();
-
-    const data = defaultAbiCoder.encode(['bytes', 'bytes'], [swapTx, swapInfoData]);
-    const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, data]);
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, swapInfoData]);
 
     const receipt = await receiveCall(client, keypair, getConfig('axelar', env.alias), sourceChain, sourceAddress, its_info['its::ITS'].channel, payload);
 
@@ -719,6 +544,36 @@ async function test(client, keypair, env) {
 
 }
 
+async function registerTransaction(client, keypair, env) {
+    const squid_info = getConfig('squid', env.alias);
+    const itsId = getConfig('its', env.alias)['its::ITS'].objectId;
+    const relayerDiscoveryId = getConfig('axelar', env.alias)['discovery::RelayerDiscovery'].objectId;
+    const tx = new TransactionBlock();
+    console.log(
+        squid_info['squid::Squid'].objectId,
+        itsId,
+        relayerDiscoveryId,
+    );
+    tx.moveCall({
+        target: `${squid_info.packageId}::discovery::register_transaction`,
+        arguments: [
+            tx.object(squid_info['squid::Squid'].objectId),
+            tx.object(itsId),
+            tx.object(relayerDiscoveryId),
+        ],
+        type_arguments: [],
+    });
+
+    await client.signAndExecuteTransactionBlock({
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
+    });
+}
+
 
 (async() => {
     const env = parseEnv(process.argv[2] || 'localnet');
@@ -734,7 +589,7 @@ async function test(client, keypair, env) {
 
 
     //await prepare(client, keypair, env);
-    await publishPackageFull('squid', client, keypair, env);
-
+    //await publishPackageFull('squid', client, keypair, env);
+    //await registerTransaction(client, keypair, env);
     await test(client, keypair, env);
 })();

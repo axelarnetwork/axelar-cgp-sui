@@ -1,14 +1,11 @@
 module squid::discovery {
-    use std::type_name;
     use std::ascii::{Self, String};
 
-    use sui::address;
-    use sui::hex;
     use sui::bcs;
 
     use abi::abi;
 
-    use axelar::discovery::{Self, MoveCall, Transaction};
+    use axelar::discovery::{Self, RelayerDiscovery, MoveCall, Transaction};
 
     use its::its::ITS;
 
@@ -22,10 +19,40 @@ module squid::discovery {
     const SWAP_TYPE_SWEEP_DUST: u8 = 0;
     const SWAP_TYPE_DEEPBOOK_V2: u8 = 1;
 
+    public fun register_transaction(squid: &Squid, its: &ITS, relayer_discovery: &mut RelayerDiscovery) {
+        let mut squid_arg = vector[0];
+        vector::append(&mut squid_arg, object::id(squid).id_to_bytes());
+
+        let mut its_arg = vector[0];
+        vector::append(&mut its_arg, object::id(its).id_to_bytes());
+
+        let transaction = discovery::new_transaction(
+            false,
+            vector[discovery::new_move_call(
+                discovery::new_function(
+                    discovery::package_id<Squid>(),
+                    ascii::string(b"discovery"),
+                    ascii::string(b"get_transaction"),
+                ),
+                vector[
+                    squid_arg,
+                    its_arg,
+                    vector[3],
+                ],
+                vector[],
+            )],
+        );
+
+        relayer_discovery.register_transaction(
+            squid.borrow_channel(),
+            transaction,
+        )
+    }
+
     public fun get_transaction(squid: &Squid, its: &ITS, payload: vector<u8>): Transaction {
         let (_, _, _, data) = its::discovery::get_interchain_transfer_info(payload);
-        let package_id = squid_package_id();
-        let (swap_data, type_in, _amount_in, _destination_in, type_out, _min_out, _destination_out) = swap_info::decode_swap_info_data(abi::new_reader(data).read_bytes(1));
+        let package_id = discovery::package_id<Squid>();
+        let (swap_data, type_in, _amount_in, _destination_in, type_out, _min_out, _destination_out) = swap_info::decode_swap_info_data(data);
         
 
         let mut squid_arg = vector[0];
@@ -80,16 +107,6 @@ module squid::discovery {
         discovery::new_transaction(
             true,
             move_calls,
-        )
-    }
-
-    public fun squid_package_id(): address {
-        address::from_bytes(
-            hex::decode(
-                *ascii::as_bytes(
-                    &type_name::get_address(&type_name::get<Squid>())
-                )
-            )
         )
     }
 
