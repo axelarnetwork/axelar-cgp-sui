@@ -49,14 +49,14 @@ module its::discovery {
         let reader = abi::new_reader(payload);
         let message_type = reader.read_u256(0);
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-            vector[get_interchain_transfer_tx(self, &reader)]
+            get_interchain_transfer_tx(self, &reader)
         } else {
             assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
             vector[get_deploy_interchain_token_tx(self, &reader)]
         }
     }
 
-    fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): Transaction {
+    fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): vector<Transaction> {
         let data = reader.read_bytes(5);
 
         if (vector::is_empty(&data)) {
@@ -71,7 +71,7 @@ module its::discovery {
             let token_id = token_id::from_u256(reader.read_u256(1));
             let type_name = self.get_registered_coin_type(token_id);
 
-            discovery::new_transaction(
+            vector[discovery::new_transaction(
                 discovery::new_function(
                     its_package_id(),
                     ascii::string(b"service"),
@@ -79,10 +79,18 @@ module its::discovery {
                 ),
                 arguments,
                 vector[ type_name::into_string(*type_name) ],
-            )
+            )]
         } else {
             let transaction = abi::new_reader(data).read_bytes(0);
-            discovery::new_transaction_from_bcs(&mut bcs::new(transaction))
+            let mut bcs = bcs::new(transaction);
+            let length = bcs.peel_vec_length();
+            let mut block = vector[];
+            let mut i = 0;
+            while ( i < length ) {
+                vector::push_back(&mut block, discovery::new_transaction_from_bcs(&mut bcs));
+                i = i + 1;
+            };
+            block
         }
     }
 

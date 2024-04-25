@@ -59,9 +59,11 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     const calls = getTransactionBlock(tx, resp.results[0].returnValues[0][0]);
     const returns = [];
     for(const call of calls) {
-        returns.push(tx.moveCall(buildTransaction(tx, call, null, approvedCall, returns)));
+        let result = tx.moveCall(buildTransaction(tx, call, null, approvedCall, returns));
+        if(!Array.isArray(result)) result = [result];
+        returns.push(result);
     }
-    await client.signAndExecuteTransactionBlock({
+    return await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
         options: {
@@ -96,7 +98,7 @@ function buildTransaction(tx, txInfo, payload, callContractObj, previousReturns)
         } else if (arg[0] === 2) {
             return callContractObj
         } else if (arg[0] === 3) {
-            return tx.pure(bcs.ser('vector<u8>', arrayify(payload)).toBytes());
+            return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
         } else if (arg[0] === 4) {
             return previousReturns[arg[1]][arg[2]];
         } else {
@@ -113,7 +115,6 @@ function buildTransaction(tx, txInfo, payload, callContractObj, previousReturns)
 function decodeTransaction(tx, txData, payload) {
     const bcs = getTransactionBcs();
     let txInfo = bcs.de('Transaction', new Uint8Array(txData));
-
     return buildTransaction(tx, txInfo, payload);
 }
 function getTransactionBlock(tx, txData, callContractObj, previousReturns) {
@@ -123,6 +124,7 @@ function getTransactionBlock(tx, txData, callContractObj, previousReturns) {
 
 module.exports = {
     receiveCall,
+    getTransactionBcs,
 }
 if (require.main === module) {
     (async () => {

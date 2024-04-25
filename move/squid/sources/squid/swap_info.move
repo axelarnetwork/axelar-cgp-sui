@@ -58,14 +58,6 @@ module squid::swap_info {
         }
     }
 
-    public fun get_swap_index(self: &SwapInfo): u64 {
-        self.swap_index
-    }
-
-    public fun get_estimate_index(self: &SwapInfo): u64 {
-        self.estimate_index
-    }
-
     public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
         if(self.status == SKIP_SWAP) {
             return vector[]
@@ -104,10 +96,10 @@ module squid::swap_info {
 
         assert!(self.status == ESTIMATING, ENotEstimating);
         assert!(self.estimate_index == vector::length(&self.swap_data), ENotDoneEstimating);
-        if(self.min_out >= self.coin_bag.get_estimate_amount<T>()) {
-            self.status == SWAPPING;
+        if(self.min_out >= self.coin_bag.get_estimate<T>()) {
+            self.status = SWAPPING;
         } else {
-            self.status == SKIP_SWAP;
+            self.status = SKIP_SWAP;
         }
     }
 
@@ -126,8 +118,6 @@ module squid::swap_info {
 
     public fun finalize<T1, T2>(mut self: SwapInfo, its: &mut ITS, ctx: &mut TxContext) {
         let successfull = self.done_and_successfull();
-
-
 
         assert!(&self.type_in == type_name::get<T1>().into_string(), EWrongTypeOut);
         assert!(&self.type_out == type_name::get<T2>().into_string(), EWrongTypeOut);

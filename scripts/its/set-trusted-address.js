@@ -9,15 +9,15 @@ const { getBcsForGateway, approveContractCall } = require('../gateway');
 const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
 
 
-async function setTrustedAddresses(client, keypair, env, chainNames, trustedAddresses) {
-    const itsInfo = getConfig('its', env);
+async function setTrustedAddresses(client, keypair, envAlias, chainNames, trustedAddresses) {
+    const itsInfo = getConfig('its', envAlias);
     const itsPackageId = itsInfo.packageId;
     const itsObjectId = itsInfo['its::ITS'].objectId;
 
-    const axelarInfo = getConfig('axelar', env);
+    const axelarInfo = getConfig('axelar', envAlias);
     const axelarPackageId = axelarInfo.packageId;
 
-    const governance = getConfig('governance', env)['governance::Governance'];
+    const governance = getConfig('governance', envAlias)['governance::Governance'];
     
     const bcs = new BCS(getSuiMoveConfig());
     bcs.registerStructType("TrustedAddressInfo", {

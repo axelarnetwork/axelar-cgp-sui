@@ -6,7 +6,7 @@ module squid::sweep_dust {
     use squid::swap_info::{SwapInfo};
     use squid::squid::Squid;
 
-    const SWAP_TYPE: u8 = 1;
+    const SWAP_TYPE: u8 = 0;
 
     const EWrongSwapType: u64 = 0;
     const EWrongCoinType: u64 = 1;

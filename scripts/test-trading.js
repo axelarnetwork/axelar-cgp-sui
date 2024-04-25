@@ -7,6 +7,14 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { publishPackageFull, publishPackage } = require('./publish-package');
 const { registerInterchainToken } = require('./its/register-token');
+const { bcs } = require('@mysten/bcs');
+const {
+    utils: { arrayify },
+} = require('ethers');
+const { hexlify, defaultAbiCoder } = require('ethers/lib/utils');
+const { receiveCall } = require('./test-receive-call');
+const { setItsDiscovery } = require('./its/discovery');
+const { setTrustedAddresses } = require('./its/set-trusted-address');
 
 const deepbook = '0xdee9';
 
@@ -15,7 +23,14 @@ const tickSize = 1e6;
 const lotSize = 1e3;
 const amountBase = 1e6*1e9;
 const amountQuote = amountBase;
-const amount = 1000e9;
+const amount = lotSize*1000000;
+const sourceChain = 'sourceAddress';
+const sourceAddress = 'trustedITsAddress';
+
+const DEEPBOOK_SWAP_TYPE = 1;
+const SWEEP_SWAP_TYPE = 0;
+
+const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 
 async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
     const {
@@ -184,6 +199,14 @@ async function prepare(client, keypair, env) {
         },
         suiCoin,
     });
+
+    await placeLimitOrder(client, keypair, env, false, 1100e6, amountQuote);
+    await placeLimitOrder(client, keypair, env, true, 990e6, amountBase);
+
+    await setItsDiscovery(client, keypair, env.alias);
+    await setTrustedAddresses(client, keypair, env.alias, [sourceChain], [sourceAddress]);
+
+    await publishPackageFull('squid', client, keypair, env);
 }
 
 async function placeLimitOrders(client, keypair, env, isBid, n = 10) {
@@ -425,6 +448,250 @@ async function testQuoteForBase(client, keypair, env) {
     });
 }
 
+async function test(client, keypair, env) {
+    const address = bcs.fixedArray(32, bcs.u8()).transform({
+        input: (id) => arrayify(id),
+        output: (id) => hexlify(id),
+    });
+
+    const transaction = bcs.struct("Transaction", {
+        function: bcs.struct("Function", {
+            packageId: address,
+            module_name: bcs.string(),
+            name: bcs.string(),
+        }),
+        arguments: bcs.vector(bcs.vector(bcs.u8())),
+        type_arguments: bcs.vector(bcs.string()),
+    });
+
+    const squid_info = getConfig('squid', env.alias);
+    const {pool, base, quote} = getConfig('trading', env.alias);
+    const its_info = getConfig('its', env.alias);
+
+    const its_arg = [0];
+    its_arg.push(...arrayify(its_info['its::ITS'].objectId));
+    const squid_arg = [0];
+    squid_arg.push(...arrayify(squid_info['squid::Squid'].objectId));
+    const swap_info_arg = [4, 0, 0];
+    const pool_arg = [0];
+    pool_arg.push(...arrayify(pool));
+
+    const start_swap = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'squid',
+            name: 'start_swap',
+        },
+        arguments: [
+            squid_arg,
+            its_arg,
+            [2],
+        ],
+        type_arguments: [base.type],
+    };
+
+    const estimate_deepbook = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'deepbook_v2',
+            name: 'estimate',
+        },
+        arguments: [
+            swap_info_arg,
+            pool_arg,
+            [0, 6],
+        ],
+        type_arguments: [base.type, quote.type],
+    };    
+    
+    const swap_deepbook = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'deepbook_v2',
+            name: 'swap',
+        },
+        arguments: [
+            swap_info_arg,
+            pool_arg,
+            [0, 6],
+        ],
+        type_arguments: [base.type, quote.type],
+    };
+
+    const estimate_sweep1 = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'sweep_dust',
+            name: 'estimate',
+        },
+        arguments: [
+            swap_info_arg,
+        ],
+        type_arguments: [base.type],
+    };
+    const estimate_sweep2 = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'sweep_dust',
+            name: 'estimate',
+        },
+        arguments: [
+            swap_info_arg,
+        ],
+        type_arguments: [quote.type],
+    }
+
+    const sweep_dust1 = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'sweep_dust',
+            name: 'sweep',
+        },
+        arguments: [
+            swap_info_arg,
+            squid_arg,
+        ],
+        type_arguments: [base.type],
+    };
+    const sweep_dust2 = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'sweep_dust',
+            name: 'sweep',
+        },
+        arguments: [
+            swap_info_arg,
+            squid_arg,
+        ],
+        type_arguments: [quote.type],
+    }
+
+    const post_estimate = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'swap_info',
+            name: 'post_estimate',
+        },
+        arguments: [
+            swap_info_arg,
+        ],
+        type_arguments: [base.type],
+    }
+
+    const finalize = {
+        function: {
+            packageId: squid_info.packageId,
+            module_name: 'swap_info',
+            name: 'finalize',
+        },
+        arguments: [
+            swap_info_arg,
+            its_arg,
+        ],
+        type_arguments: [base.type, base.type],
+    }
+
+    const swapTx = bcs.vector(transaction).serialize([
+        start_swap,
+        estimate_deepbook,
+        estimate_sweep1,
+        estimate_deepbook,
+        estimate_sweep2,
+        post_estimate,
+        swap_deepbook,
+        sweep_dust1,
+        swap_deepbook,
+        sweep_dust2,
+        finalize,
+    ]).toBytes();
+
+    const swapInfoStruct = bcs.struct('SwapInfo', {
+        swap_data: bcs.vector(bcs.vector(bcs.u8())),
+        type_in: bcs.string(),
+        amount_in: bcs.u64(),
+        destination_in: bcs.vector(bcs.u8()),
+        type_out: bcs.string(),
+        min_out: bcs.u64(),
+        destination_out: bcs.vector(bcs.u8()),
+    });
+
+    const deepbookSwapStruct = bcs.struct('DeepbookSwap', {
+        swap_type: bcs.u8(),
+        pool_id: address,
+        has_base: bcs.bool(),
+        base_type: bcs.string(),
+        quote_type: bcs.string(),
+        lot_size: bcs.u64(),
+    });
+
+    const sweepStruct = bcs.struct('DeepbookSwap', {
+        swap_type: bcs.u8(),
+        type: bcs.string(),
+    });
+
+    const destination = bcs.struct('DestinationLocal', {
+        to_sui: bcs.bool(),
+        address: address,
+    }).serialize({
+        to_sui: true,
+        address: keypair.toSuiAddress(),
+    }).toBytes();
+    
+    const swapInfoData = swapInfoStruct.serialize({
+        swap_data: [
+            deepbookSwapStruct.serialize({
+                swap_type: DEEPBOOK_SWAP_TYPE,
+                pool_id: pool,
+                has_base: true,
+                base_type: base.type.substring(2),
+                quote_type: quote.type.substring(2),
+                lot_size: lotSize,
+            }).toBytes(),
+            sweepStruct.serialize({
+                swap_type: SWEEP_SWAP_TYPE,
+                type: base.type.substring(2),
+            }).toBytes(),
+            deepbookSwapStruct.serialize({
+                swap_type: DEEPBOOK_SWAP_TYPE,
+                pool_id: pool,
+                has_base: false,
+                base_type: base.type.substring(2),
+                quote_type: quote.type.substring(2),
+                lot_size: lotSize,
+            }).toBytes(),
+            sweepStruct.serialize({
+                swap_type: SWEEP_SWAP_TYPE,
+                type: quote.type.substring(2),
+            }).toBytes(),
+        ],
+        type_in: base.type.substring(2),
+        amount_in: amount,
+        destination_in: destination,
+        type_out: base.type.substring(2),
+        min_out: 0,
+        destination_out: destination,
+    }).toBytes();
+
+    const data = defaultAbiCoder.encode(['bytes', 'bytes'], [swapTx, swapInfoData]);
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, data]);
+
+    const receipt = await receiveCall(client, keypair, getConfig('axelar', env.alias), sourceChain, sourceAddress, its_info['its::ITS'].channel, payload);
+
+    const quoteCoinId = receipt.objectChanges.find(change => change.type === 'created' && change.objectType === `0x2::coin::Coin<${base.type}>`).objectId;
+
+    const quoteCoin = await client.getObject({
+        id: quoteCoinId,
+        options: {
+            showContent: true,
+        }
+    });
+
+    console.log({
+        output: quoteCoin.data.content.fields.balance,
+    });
+
+}
+
 
 (async() => {
     const env = parseEnv(process.argv[2] || 'localnet');
@@ -440,8 +707,7 @@ async function testQuoteForBase(client, keypair, env) {
 
 
     //await prepare(client, keypair, env);
+    //await publishPackageFull('squid', client, keypair, env);
 
-    await testBaseForQuote(client, keypair, env);
-    //await testQuoteForBase(client, keypair, env);
-    
+    await test(client, keypair, env);
 })();

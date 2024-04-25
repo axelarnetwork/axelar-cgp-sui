@@ -1,6 +1,8 @@
 module squid::squid {
-
+    use abi::abi;
+    
     use axelar::channel::{Self, Channel, ApprovedCall};
+
     use its::service;
     use its::its::ITS;
 
@@ -28,7 +30,7 @@ module squid::squid {
             &self.channel,
             ctx,
         );
-        let mut swap_info = swap_info::new(data, ctx);
+        let mut swap_info = swap_info::new(abi::new_reader(data).read_bytes(1), ctx);
         swap_info.coin_bag().store_balance(
             coin.into_balance(),
         );
