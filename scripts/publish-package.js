@@ -51,7 +51,7 @@ async function publishPackage(packagePath, client, keypair) {
 
 	const packageId = ((publishTxn.objectChanges?.filter(
 		(a) => a.type === 'published',
-	)) ?? [])[0].packageId.replace(/^(0x)(0+)/, '0x');
+	)) ?? [])[0].packageId;
 
 	console.info(`Published package ${packageId} from address ${address}}`);
 
