@@ -7,23 +7,21 @@ concurrency:
 
 jobs:
   test:
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-16vcpu-ubuntu-2204
 
     steps:
       - name: Setup Dependencies for Sui Binary
         run: sudo apt-get update && sudo apt-get install -y libpq-dev
 
-      - name: Download and Install Brew
-        env:
-          SUI_VERSION: mainnet-v1.22.0
-        run:
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /home/runner/.bashrc && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-                
       - name: Download and Install Sui
         env:
           SUI_VERSION: mainnet-v1.22.0
-        run:
-          brew install sui --debug
+        run: |
+          git clone https://github.com/MystenLabs/sui
+          cd sui
+          git checkout 4a110958451d17854cb0fe277cf7c8dad127ee64
+          cargo build
+          cargo install --debug
 
       - name: Checkout code
         uses: actions/checkout@v4
