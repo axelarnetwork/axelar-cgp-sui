@@ -13,11 +13,16 @@ jobs:
       - name: Setup Dependencies for Sui Binary
         run: sudo apt-get update && sudo apt-get install -y libpq-dev
 
-      - name: Download and Install Sui
+      - name: Download and Install Brew
         env:
           SUI_VERSION: mainnet-v1.22.0
         run:
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                
+      - name: Download and Install Sui
+        env:
+          SUI_VERSION: mainnet-v1.22.0
+        run:
           brew install sui --debug
 
       - name: Checkout code
