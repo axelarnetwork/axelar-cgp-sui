@@ -19,7 +19,7 @@ jobs:
         run: |
           git clone https://github.com/MystenLabs/sui
           cd sui
-          git checout 4a110958451d17854cb0fe277cf7c8dad127ee64
+          git checkout 4a110958451d17854cb0fe277cf7c8dad127ee64
           cargo build
           cargo install --debug
 
