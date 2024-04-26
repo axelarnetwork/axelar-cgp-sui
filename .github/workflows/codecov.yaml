@@ -1,0 +1,44 @@
+name: Run Tests
+
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Dependencies for Sui Binary
+        run: sudo apt-get update && sudo apt-get install -y libpq-dev
+
+      - name: Download and Install Sui
+        env:
+          SUI_VERSION: mainnet-v1.22.0
+        run: |
+          git clone https://github.com/MystenLabs/sui
+          cd sui
+          git checout 4a110958451d17854cb0fe277cf7c8dad127ee64
+          cargo build
+          cargo install --debug
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        timeout-minutes: 15
+        run: npm run test --coverage
