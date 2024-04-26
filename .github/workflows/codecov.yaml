@@ -17,7 +17,7 @@ jobs:
         env:
           SUI_VERSION: mainnet-v1.22.0
         run: |
-          cargo install sui --debug
+          brew install sui --debug
 
       - name: Checkout code
         uses: actions/checkout@v4
