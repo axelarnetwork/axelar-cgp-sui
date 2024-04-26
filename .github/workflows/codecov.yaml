@@ -16,7 +16,8 @@ jobs:
       - name: Download and Install Sui
         env:
           SUI_VERSION: mainnet-v1.22.0
-        run: |
+        run:
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew install sui --debug
 
       - name: Checkout code
