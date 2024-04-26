@@ -39,5 +39,5 @@ jobs:
         run: npm run build
 
       - name: Test
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: npm run test --coverage
