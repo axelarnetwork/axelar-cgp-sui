@@ -17,11 +17,10 @@ jobs:
         env:
           SUI_VERSION: mainnet-v1.22.0
         run: |
-          git clone https://github.com/MystenLabs/sui
-          cd sui
-          git checkout 4a110958451d17854cb0fe277cf7c8dad127ee64
-          cargo build
-          cargo install --debug
+          test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+          test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
+          brew install hello
 
       - name: Checkout code
         uses: actions/checkout@v4
