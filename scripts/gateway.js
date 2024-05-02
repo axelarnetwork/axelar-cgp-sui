@@ -54,6 +54,7 @@ function getBcsForGateway() {
         source_chain: "string",
         source_address: "string",
         target_id: "address",
+        payload_len: "u8",
         payload_hash: "address",
     });
 
@@ -148,6 +149,7 @@ function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destin
                         source_chain: sourceChain,
                         source_address: sourceAddress,
                         payload_hash: payloadHash,
+                        payload_len: 32,
                         target_id: destinationAddress,
                     })
                     .toBytes(),

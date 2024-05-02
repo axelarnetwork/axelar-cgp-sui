@@ -157,10 +157,11 @@ module axelar::gateway {
             // in order, so field reads have to be done carefully and in order!
             if (cmd_selector == &SELECTOR_APPROVE_CONTRACT_CALL) {
                 let mut payload = bcs::new(payload);
-                let (source_chain, source_address, target_id, payload_hash) = (
+                let (source_chain, source_address, target_id, _, payload_hash) = (
                     ascii::string(payload.peel_vec_u8()),
                     ascii::string(payload.peel_vec_u8()),
                     payload.peel_address(),
+                    payload.peel_u8(),
                     payload.peel_address()
                 );
                 add_approval(self,
