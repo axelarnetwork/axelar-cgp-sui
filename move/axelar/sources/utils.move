@@ -55,7 +55,7 @@ module axelar::utils {
 
     public fun compare_address_vectors(v1: &vector<u8>, v2: &vector<u8>): bool {
         let length = vector::length(v1);
-        assert!(length == vector::length(v2), EVectorLengthMismatch); 
+        assert!(length == vector::length(v2), EVectorLengthMismatch);
         let mut i = 0;
         while(i < length) {
             let b1 = *vector::borrow(v1, i);
@@ -76,7 +76,7 @@ module axelar::utils {
         let prefix = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e02021234025678020574797065310574";
         let mut signature = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e02021234025678020574797065310574";
         let inputs = vector[0, 1, 10, 11, 27, 28, 30, 38, 39];
-        let outputs = vector[0, 1, 10, 11, 0, 1, 30, 1, 0]; 
+        let outputs = vector[0, 1, 10, 11, 0, 1, 30, 1, 0];
 
         let length = vector::length(&inputs);
         let mut i = 0;
@@ -104,7 +104,7 @@ module axelar::utils {
         let weights = vector[1, 3, 6];
         let threshold = 4;
         let output = x"dd5d3f9c1017e8356ea1858db7b89800b6cd43775c5c1b7c633f6ef933583cfd";
-        
+
         assert!(operators_hash(&operators, &weights, threshold) == output, 0);
     }
 

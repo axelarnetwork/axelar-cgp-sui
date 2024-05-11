@@ -3,8 +3,6 @@ module squid::discovery {
 
     use sui::bcs;
 
-    use abi::abi;
-
     use axelar::discovery::{Self, RelayerDiscovery, MoveCall, Transaction};
 
     use its::its::ITS;
@@ -53,7 +51,7 @@ module squid::discovery {
         let (_, _, _, data) = its::discovery::get_interchain_transfer_info(payload);
         let package_id = discovery::package_id<Squid>();
         let (swap_data, type_in, _amount_in, _destination_in, type_out, _min_out, _destination_out) = swap_info::decode_swap_info_data(data);
-        
+
 
         let mut squid_arg = vector[0];
         vector::append(&mut squid_arg, object::id(squid).id_to_bytes());

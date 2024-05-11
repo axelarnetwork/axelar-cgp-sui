@@ -1,6 +1,4 @@
 module squid::squid {
-    use abi::abi;
-    
     use axelar::channel::{Self, Channel, ApprovedCall};
 
     use its::service;
