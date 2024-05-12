@@ -14,23 +14,23 @@ module gas_service::gas_service {
         balance: Balance<SUI>,
     }
 
-    public struct RefunderCap has key, store {
+    public struct GasCollectorCap has key, store {
         id: UID,
     }
 
     public struct NativeGasPaidForContractCall has copy, drop {
-        sender: address, 
-        destination_chain: String, 
-        destination_address: String, 
-        payload_hash: address, 
+        sender: address,
+        destination_chain: String,
+        destination_address: String,
+        payload_hash: address,
         value: u64,
         refund_address: address,
     }
 
     public struct NativeGasAdded has copy, drop {
-        tx_hash: address, 
+        tx_hash: address,
         log_index: u64,
-        value: u64, 
+        value: u64,
         refund_address: address,
     }
 
@@ -40,7 +40,7 @@ module gas_service::gas_service {
             balance: balance::zero<SUI>(),
         });
 
-        transfer::public_transfer(RefunderCap {
+        transfer::public_transfer(GasCollectorCap {
             id: object::new(ctx),
         }, ctx.sender());
     }
@@ -85,7 +85,7 @@ module gas_service::gas_service {
         });
     }
 
-    public fun refund(self: &mut GasService, _: &RefunderCap, receiver: address, amount: u64, ctx: &mut TxContext) {
+    public fun refund(self: &mut GasService, _: &GasCollectorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
         transfer::public_transfer(
             coin::take(&mut self.balance, amount, ctx),
             receiver,
