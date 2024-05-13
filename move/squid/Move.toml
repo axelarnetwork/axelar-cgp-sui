@@ -1,7 +1,7 @@
 [package]
 name = "Squid"
 version = "0.0.1"
-published-at = "0x6b3d7de8dda55754c03490d91638c64ac28af14d4fd1c2aab3db6ec9b7b6a32b"
+published-at = "0xb06228aa3a686126919bfc9adaaa7f2bb75a974cd8e1919736ee9e4fc6d4f353"
 edition = "2024.beta"
 
 [dependencies]
@@ -11,4 +11,4 @@ Axelar = { local = "../axelar" }
 ITS = { local = "../its" }
 
 [addresses]
-squid = "0x6b3d7de8dda55754c03490d91638c64ac28af14d4fd1c2aab3db6ec9b7b6a32b"
+squid = "0xb06228aa3a686126919bfc9adaaa7f2bb75a974cd8e1919736ee9e4fc6d4f353"

@@ -15,8 +15,9 @@ module squid::sweep_dust {
     const EWrongCoinType: u64 = 1;
 
     public fun estimate<T>(swap_info: &mut SwapInfo) {
-
-        let mut bcs = bcs::new(swap_info.get_data_estimating());
+        let data = swap_info.get_data_estimating();
+        if (vector::length(&data) == 0) return;
+        let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);
 
@@ -30,7 +31,7 @@ module squid::sweep_dust {
 
     public fun sweep<T>(swap_info: &mut SwapInfo, squid: &mut Squid) {
         let data = swap_info.get_data_swapping();
-        if(vector::length(&data) == 0) return;
+        if (vector::length(&data) == 0) return;
         let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);

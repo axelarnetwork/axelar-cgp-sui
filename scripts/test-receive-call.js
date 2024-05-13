@@ -45,11 +45,12 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
             sender: keypair.getPublicKey().toSuiAddress(),
             transactionBlock: tx,
         });
-        
+        console.log(resp)
         const txData = resp.results[0].returnValues[0][0];
         const nextTx = getTransactionBcs().de('Transaction', new Uint8Array(txData));
         is_final = nextTx.is_final;
         moveCalls = nextTx.move_calls;
+        console.log(moveCalls);
     }
     const tx = new TransactionBlock();
     const approvedCall = tx.moveCall({

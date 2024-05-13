@@ -1,20 +1,20 @@
 require('dotenv').config();
-const { publishInterchainToken } = require("./its/publish-interchain-token");
-const { parseEnv, setConfig, getConfig } = require("./utils");
+const { publishInterchainToken } = require("../its/publish-interchain-token");
+const { parseEnv, setConfig, getConfig } = require("../utils");
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const { publishPackageFull, publishPackage } = require('./publish-package');
-const { registerInterchainToken } = require('./its/register-token');
+const { publishPackageFull, publishPackage } = require('../publish-package');
+const { registerInterchainToken } = require('../its/register-token');
 const { bcs } = require('@mysten/bcs');
 const {
     utils: { arrayify },
 } = require('ethers');
 const { hexlify, defaultAbiCoder } = require('ethers/lib/utils');
-const { receiveCall } = require('./test-receive-call');
-const { setItsDiscovery } = require('./its/discovery');
-const { setTrustedAddresses } = require('./its/set-trusted-address');
+const { receiveCall } = require('../test-receive-call');
+const { setItsDiscovery } = require('../its/discovery');
+const { setTrustedAddresses } = require('../its/set-trusted-address');
 
 const deepbook = '0xdee9';
 
@@ -23,12 +23,14 @@ const tickSize = 1e6;
 const lotSize = 1e3;
 const amountBase = 1e6*1e9;
 const amountQuote = amountBase;
-const amount = lotSize*1000000;
+const amount = lotSize * 1000000;
 const sourceChain = 'sourceAddress';
 const sourceAddress = 'trustedITsAddress';
 
+const SWEEP_DUST_SWAP_TYPE = 0;
 const DEEPBOOK_SWAP_TYPE = 1;
-const SWEEP_SWAP_TYPE = 0;
+const SUI_TRANSFER_SWAP_TYPE = 2;
+const ITS_TRANSFER_SWAP_TYPE = 3;
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER = 0;
 
@@ -206,16 +208,21 @@ async function prepare(client, keypair, env) {
         suiCoin,
     });
 
+    await sleep(300);
     await placeLimitOrder(client, keypair, env, false, 1100e6, amountQuote);
     await sleep(300);
     await placeLimitOrder(client, keypair, env, true, 990e6, amountBase);
-    await sleep(300);
 
+    console.log(`Prepare Done`);
+}
+
+async function postpare(client, keypair, env) {    
+    
     await setItsDiscovery(client, keypair, env.alias);
     await sleep(300);
     await setTrustedAddresses(client, keypair, env.alias, [sourceChain], [sourceAddress]);
 
-    await publishPackageFull('squid', client, keypair, env);
+    console.log(`Postpare Done`);
 }
 
 async function placeLimitOrders(client, keypair, env, isBid, n = 10) {
@@ -469,10 +476,6 @@ async function test(client, keypair, env) {
 
     const swapInfoStruct = bcs.struct('SwapInfo', {
         swap_data: bcs.vector(bcs.vector(bcs.u8())),
-        type_in: bcs.string(),
-        destination_in: bcs.vector(bcs.u8()),
-        type_out: bcs.string(),
-        destination_out: bcs.vector(bcs.u8()),
     });
 
     const deepbookSwapStruct = bcs.struct('DeepbookSwap', {
@@ -483,21 +486,29 @@ async function test(client, keypair, env) {
         base_type: bcs.string(),
         quote_type: bcs.string(),
         lot_size: bcs.u64(),
+        should_sweep: bcs.bool(),
     });
 
-    const sweepStruct = bcs.struct('DeepbookSwap', {
+    const sweepDust = bcs.struct('SweepDust', {
         swap_type: bcs.u8(),
         type: bcs.string(),
+    })
+
+    const suiTransfer = bcs.struct('SuiTransfer', {
+        swap_type: bcs.u8(),
+        type: bcs.string(),
+        destination: address,
     });
 
-    const destination = bcs.struct('DestinationLocal', {
-        to_sui: bcs.bool(),
-        address: address,
-    }).serialize({
-        to_sui: true,
-        address: keypair.toSuiAddress(),
-    }).toBytes();
-    
+    const itsTransfer = bcs.struct('ItsTransfer', {
+        swap_type: bcs.u8(),
+        type: bcs.string(),        
+        token_id: address,
+        destination_chain: bcs.string(),
+        destination_address: bcs.string(),
+        metadata: bcs.vector(bcs.u8()),
+    });
+
     const swapInfoData = swapInfoStruct.serialize({
         swap_data: [
             deepbookSwapStruct.serialize({
@@ -508,29 +519,24 @@ async function test(client, keypair, env) {
                 base_type: base.type.substring(2),
                 quote_type: quote.type.substring(2),
                 lot_size: lotSize,
-            }).toBytes(),
-            sweepStruct.serialize({
-                swap_type: SWEEP_SWAP_TYPE,
-                type: base.type.substring(2),
-            }).toBytes(),
+                should_sweep: true,
+            }).toBytes(),          
             deepbookSwapStruct.serialize({
                 swap_type: DEEPBOOK_SWAP_TYPE,
                 pool_id: pool,
                 has_base: false,
-                min_out: amount,
+                min_out: 0,
                 base_type: base.type.substring(2),
                 quote_type: quote.type.substring(2),
                 lot_size: lotSize,
+                should_sweep: true,
             }).toBytes(),
-            sweepStruct.serialize({
-                swap_type: SWEEP_SWAP_TYPE,
-                type: quote.type.substring(2),
+            suiTransfer.serialize({
+                swap_type: SUI_TRANSFER_SWAP_TYPE,
+                type: base.type.substring(2),
+                destination: keypair.toSuiAddress(),
             }).toBytes(),
         ],
-        type_in: base.type.substring(2),
-        destination_in: destination,
-        type_out: base.type.substring(2),
-        destination_out: destination,
     }).toBytes();
 
     const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, swapInfoData]);
@@ -596,6 +602,7 @@ async function registerTransaction(client, keypair, env) {
 
 
     //await prepare(client, keypair, env);
+    //await postpare(client, keypair, env);
     await publishPackageFull('squid', client, keypair, env);
     await registerTransaction(client, keypair, env);
     await test(client, keypair, env);
