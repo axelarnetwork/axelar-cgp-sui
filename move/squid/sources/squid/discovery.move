@@ -73,9 +73,7 @@ module squid::discovery {
             let mut bcs = bcs::new(*vector::borrow(&swap_data, i));
             let swap_type = bcs.peel_u8();
 
-            if (swap_type == SWAP_TYPE_SWEEP_DUST) {
-                vector::push_back(&mut move_calls, sweep_dust::get_estimate_move_call(package_id, bcs, swap_info_arg));
-            } else if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
+           if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
                 vector::push_back(&mut move_calls, deepbook_v2::get_estimate_move_call(package_id, bcs, swap_info_arg));
             } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
                 vector::push_back(&mut move_calls, transfers::get_sui_estimate_move_call(package_id, bcs, swap_info_arg));

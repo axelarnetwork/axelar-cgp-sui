@@ -530,10 +530,20 @@ async function test(client, keypair, env) {
                 quote_type: quote.type.substring(2),
                 lot_size: lotSize,
                 should_sweep: true,
-            }).toBytes(),
+            }).toBytes(),            
+            deepbookSwapStruct.serialize({
+                swap_type: DEEPBOOK_SWAP_TYPE,
+                pool_id: pool,
+                has_base: true,
+                min_out: 0,
+                base_type: base.type.substring(2),
+                quote_type: quote.type.substring(2),
+                lot_size: lotSize,
+                should_sweep: true,
+            }).toBytes(),  
             suiTransfer.serialize({
                 swap_type: SUI_TRANSFER_SWAP_TYPE,
-                type: base.type.substring(2),
+                type: quote.type.substring(2),
                 destination: keypair.toSuiAddress(),
             }).toBytes(),
         ],
@@ -542,7 +552,7 @@ async function test(client, keypair, env) {
     const payload = defaultAbiCoder.encode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], [MESSAGE_TYPE_INTERCHAIN_TRANSFER, base.tokenId, '0x', squid_info['squid::Squid'].channel, amount, swapInfoData]);
     const receipt = await receiveCall(client, keypair, getConfig('axelar', env.alias), sourceChain, sourceAddress, its_info['its::ITS'].channel, payload);
 
-    const quoteCoinId = receipt.objectChanges.find(change => change.type === 'created' && change.objectType === `0x2::coin::Coin<${base.type}>`).objectId;
+    const quoteCoinId = receipt.objectChanges.find(change => change.type === 'created' && change.objectType === `0x2::coin::Coin<${quote.type}>`).objectId;
 
     const quoteCoin = await client.getObject({
         id: quoteCoinId,
@@ -603,7 +613,7 @@ async function registerTransaction(client, keypair, env) {
 
     //await prepare(client, keypair, env);
     //await postpare(client, keypair, env);
-    await publishPackageFull('squid', client, keypair, env);
-    await registerTransaction(client, keypair, env);
+    //await publishPackageFull('squid', client, keypair, env);
+    //await registerTransaction(client, keypair, env);
     await test(client, keypair, env);
 })();
