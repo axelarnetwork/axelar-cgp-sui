@@ -26,17 +26,14 @@ npm run test
 
 ### Development
 
-If using VS Code, install `move-analyzer` via `cargo`,
+Install the `Move` extension in VS Code. It should come pre-installed with `move-analyzer`.
 
-```sh
-cargo install --git https://github.com/move-language/move move-analyzer --features "address20"
-```
-
-Next, install the `move-analyzer` extension in VS Code.
+Move Book: https://move-book.com
+Move Examples: https://examples.sui.io
 
 ## Deployment
 
-Copy `.env.example` to `.env` and add a valid private key for sui. If you want to deploy to testnet the corresponding address should be funded.
+Copy `.env.example` to `.env` and add a valid private key for Sui. If you want to deploy to testnet the corresponding address should be funded.
 
 Run a [local](https://docs.sui.io/build/sui-local-network) Sui network for local testing, or use testnet.
 
