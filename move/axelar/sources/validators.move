@@ -50,10 +50,6 @@ module axelar::validators {
         proof: vector<u8>
     ): bool {
         let epoch = epoch(validators);
-        // Allow the validators to validate any proof before the first set of operators is set (so that they can be rotated).
-        if (epoch == 0) {
-            return true
-        };
 
         // Turn everything into bcs bytes and split data.
         let mut proof = bcs::new(proof);

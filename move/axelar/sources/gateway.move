@@ -53,6 +53,12 @@ module axelar::gateway {
     /// Trying to `take_approved_call` with a wrong payload.
     const EPayloadHashMismatch: u64 = 5;
 
+    /// Trying to execute the same operatorhsip transfer command again.
+    const EAlreadyTransferedOperatorship: u64 = 6;
+
+    /// Trying to set initial validators again
+    const EAlreadyInitialized: u64 = 6;
+
     // These are currently supported
     const SELECTOR_APPROVE_CONTRACT_CALL: vector<u8> = b"approveContractCall";
     const SELECTOR_TRANSFER_OPERATORSHIP: vector<u8> = b"transferOperatorship";
@@ -63,6 +69,7 @@ module axelar::gateway {
         id: UID,
         approvals: Table<address, Approval>,
         validators: AxelarValidators,
+        operatiorship_transfer_executions: Table<address, bool>,
     }
 
     /// CallApproval struct which can consumed only by a `Channel` object.
@@ -97,9 +104,15 @@ module axelar::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             validators: validators::new(),
+            operatiorship_transfer_executions: table::new(ctx),
         };
 
         transfer::share_object(gateway);
+    }
+
+    public fun set_initial_validators(self: &mut Gateway, payload: vector<u8>) {
+        assert!(self.validators.epoch() == 0, EAlreadyInitialized);
+        self.validators.transfer_operatorship(payload);
     }
 
     #[allow(implicit_const_copy)]
@@ -172,6 +185,8 @@ module axelar::gateway {
                 });
                 continue
             } else if (cmd_selector == &SELECTOR_TRANSFER_OPERATORSHIP) {
+                assert!(!self.operatiorship_transfer_executions.contains(cmd_id), EAlreadyTransferedOperatorship);
+                self.operatiorship_transfer_executions.add(cmd_id, true);
                 if (!allow_operatorship_transfer) {
                     continue
                 };
