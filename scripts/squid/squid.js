@@ -109,6 +109,7 @@ async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 }
 
@@ -185,6 +186,7 @@ async function prepare(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     }); 
     
     const pool = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::clob_v2::Pool<')).objectId;
@@ -329,6 +331,7 @@ async function testBaseForQuote(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 
     const response = await client.queryEvents({
@@ -433,6 +436,7 @@ async function testQuoteForBase(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 
     const response = await client.queryEvents({
@@ -594,6 +598,7 @@ async function registerTransaction(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 }
 
@@ -610,10 +615,9 @@ async function registerTransaction(client, keypair, env) {
     // create a new SuiClient object pointing to the network you want to use
     const client = new SuiClient({ url: env.url });
 
-
-    //await prepare(client, keypair, env);
-    //await postpare(client, keypair, env);
-    //await publishPackageFull('squid', client, keypair, env);
-    //await registerTransaction(client, keypair, env);
+    await prepare(client, keypair, env);
+    await postpare(client, keypair, env);
+    await publishPackageFull('squid', client, keypair, env);
+    await registerTransaction(client, keypair, env);
     await test(client, keypair, env);
 })();

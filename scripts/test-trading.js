@@ -107,6 +107,7 @@ async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 }
 
@@ -183,6 +184,7 @@ async function prepare(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     }); 
     
     const pool = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::clob_v2::Pool<')).objectId;
@@ -322,6 +324,7 @@ async function testBaseForQuote(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 
     const response = await client.queryEvents({
@@ -426,6 +429,7 @@ async function testQuoteForBase(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 
     const response = await client.queryEvents({
@@ -578,6 +582,7 @@ async function registerTransaction(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 }
 

@@ -74,6 +74,7 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForEffectsCert',
     });
 }
 

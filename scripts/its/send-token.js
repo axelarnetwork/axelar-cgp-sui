@@ -72,6 +72,7 @@ async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, dest
 			showObjectChanges: true,
             showContent: true
 		},
+        requestType: 'WaitForEffectsCert',
 	});
 }
 
