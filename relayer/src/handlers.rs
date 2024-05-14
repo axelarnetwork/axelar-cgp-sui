@@ -88,7 +88,7 @@ pub async fn process_commands(
         .execute_transaction_block(
             Transaction::from_data(data, Intent::sui_transaction(), vec![signature]),
             SuiTransactionBlockResponseOptions::default(),
-            Some(ExecuteTransactionRequestType::WaitForEffectsCert),
+            Some(ExecuteTransactionRequestType::WaitForLocalExecution),
         )
         .await?;
 

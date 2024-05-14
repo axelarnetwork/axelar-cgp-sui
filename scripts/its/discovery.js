@@ -32,7 +32,7 @@ async function setItsDiscovery(client, keypair, envAlias) {
 			showObjectChanges: true,
             showContent: true
 		},
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
 	});
 }
 

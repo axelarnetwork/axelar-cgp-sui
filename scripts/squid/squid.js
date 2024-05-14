@@ -109,7 +109,7 @@ async function placeLimitOrder(client, keypair, env, isBid, price, amount) {
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     });
 }
 
@@ -186,7 +186,7 @@ async function prepare(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     }); 
     
     const pool = result.objectChanges.find(object => object.objectType.startsWith('0xdee9::clob_v2::Pool<')).objectId;
@@ -210,9 +210,9 @@ async function prepare(client, keypair, env) {
         suiCoin,
     });
 
-    await sleep(300);
+    await sleep(500);
     await placeLimitOrder(client, keypair, env, false, 1100e6, amountQuote);
-    await sleep(300);
+    await sleep(500);
     await placeLimitOrder(client, keypair, env, true, 990e6, amountBase);
 
     console.log(`Prepare Done`);
@@ -331,7 +331,7 @@ async function testBaseForQuote(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     });
 
     const response = await client.queryEvents({
@@ -436,7 +436,7 @@ async function testQuoteForBase(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     });
 
     const response = await client.queryEvents({
@@ -598,7 +598,7 @@ async function registerTransaction(client, keypair, env) {
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     });
 }
 

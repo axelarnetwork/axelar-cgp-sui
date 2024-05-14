@@ -72,7 +72,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
             showEffects: true,
             showObjectChanges: true,
         },
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
     });
 }
 
@@ -169,7 +169,7 @@ if (require.main === module) {
                 showEffects: true,
                 showObjectChanges: true,
             },
-            requestType: 'WaitForEffectsCert',
+            requestType: 'WaitForLocalExecution',
         });
 
         await receiveCall(client, keypair, axelarInfo, 'Ethereum', '0x0', test.channel, payload);

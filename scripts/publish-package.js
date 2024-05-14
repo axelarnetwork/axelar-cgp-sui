@@ -46,7 +46,7 @@ async function publishPackage(packagePath, client, keypair) {
 			showObjectChanges: true,
             showContent: true
 		},
-        requestType: 'WaitForEffectsCert',
+        requestType: 'WaitForLocalExecution',
 	});
 	if(publishTxn.effects?.status.status != 'success') throw new Error('Publish Tx failed');
 
