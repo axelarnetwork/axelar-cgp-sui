@@ -227,6 +227,7 @@ module squid::deepbook_v2 {
         if(has_base) {
             let (amount_left, output) = predict_base_for_quote(
                 pool,
+                // these are run in sequence before anything is done with balances, so `get_estimate` is the correct function to use.
                 self.coin_bag().get_estimate<T1>(),
                 lot_size,
                 clock,

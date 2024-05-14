@@ -114,6 +114,7 @@ module axelar::validators {
         // Remove old epoch for the operators if it exists
         let epoch = validators.epoch() + 1;
         let epoch_for_hash = validators.epoch_for_hash_mut();
+        // We are likely to change the architecture a bit to conform to our standars better in the future.
         if (epoch_for_hash.contains(&new_operators_hash)) {
             epoch_for_hash.remove(&new_operators_hash);
         };
