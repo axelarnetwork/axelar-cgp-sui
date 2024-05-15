@@ -19,7 +19,7 @@ module squid::deepbook_v2 {
     const FLOAT_SCALING: u64 = 1_000_000_000;
 
     const SWAP_TYPE: u8 = 1;
-    
+
     const EWrongSwapType: u64 = 0;
     const EWrongPool: u64 = 1;
     const EWrongCoinType: u64 = 2;
@@ -158,9 +158,9 @@ module squid::deepbook_v2 {
         while(i > 0) {
             i = i - 1;
             let (used, max_out) = get_max_quote_from_base(
-                pool, 
-                *vector::borrow(&prices, i), 
-                *vector::borrow(&depths, i), 
+                pool,
+                *vector::borrow(&prices, i),
+                *vector::borrow(&depths, i),
                 amount_left
             );
             amount_left = amount_left - used;
@@ -168,7 +168,7 @@ module squid::deepbook_v2 {
             if(amount_left < lot_size) break;
         };
         (amount_left, output)
-        
+
     }
 
     public fun predict_quote_for_base<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
@@ -179,23 +179,23 @@ module squid::deepbook_v2 {
         let mut output = 0;
         let mut i = 0;
         let length = vector::length(&prices);
-        while(i < length) {   
-            let price = *vector::borrow(&prices, i); 
+        while(i < length) {
+            let price = *vector::borrow(&prices, i);
             let (used, max_out) = get_max_base_from_quote(
-                pool, 
-                price, 
-                *vector::borrow(&depths, i), 
-                amount_left, 
+                pool,
+                price,
+                *vector::borrow(&depths, i),
+                amount_left,
                 lot_size
             );
-        
+
             amount_left = amount_left - used;
             output = output + max_out;
             let (_, left_base) = unsafe_div_round(amount_left, price);
             if (left_base < lot_size) break;
             i = i + 1;
         };
-        
+
         (amount_left, output)
     }
 
@@ -368,16 +368,4 @@ module squid::deepbook_v2 {
             vector[type_base, type_quote] ,
         )
     }
-
-
-    #[test]
-    fun test() {
-        let ctx = &mut tx_context.dummy();
-        clob::create_pool(
-            100,
-            100,
-            coin,
-            ctx,
-        );
-    }   
 }
