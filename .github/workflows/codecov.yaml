@@ -19,6 +19,7 @@ jobs:
         run: |
           wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          ls
           sudo mv ./sui-${SUI_VERSION}-ubuntu-x86_64/* /usr/local/bin/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
