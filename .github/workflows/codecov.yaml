@@ -6,7 +6,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  coverage:
     runs-on: blacksmith-16vcpu-ubuntu-2204
 
     steps:
@@ -19,8 +19,7 @@ jobs:
         run: |
           wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-          sudo mv ./target/release/sui-test-validator-ubuntu-x86_64 /usr/local/bin/sui-test-validator
-          sudo mv ./target/release/sui-ubuntu-x86_64 /usr/local/bin/sui
+          sudo mv ./sui-${SUI_VERSION}-ubuntu-x86_64/* /usr/local/bin/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Checkout code
