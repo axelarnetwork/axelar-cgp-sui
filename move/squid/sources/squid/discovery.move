@@ -8,13 +8,11 @@ module squid::discovery {
     use its::its::ITS;
 
     use squid::squid::Squid;
-    use squid::sweep_dust;
     use squid::transfers;
     use squid::deepbook_v2;
 
     const EInvalidSwapType: u64 = 0;
 
-    const SWAP_TYPE_SWEEP_DUST: u8 = 0;
     const SWAP_TYPE_DEEPBOOK_V2: u8 = 1;
     const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
     const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
