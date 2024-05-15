@@ -26,6 +26,7 @@ async function initializeGovernance(upgradeCap, client, keypair, env) {
 			showObjectChanges: true,
             showContent: true
 		},
+        requestType: 'WaitForLocalExecution',
 	});
 
     const governance = publishTxn.objectChanges.find((obj) => obj.objectType == `${packageId}::governance::Governance`);
@@ -59,6 +60,7 @@ async function takeUpgradeCaps(upgradeCaps, client, keypair, env) {
             showObjectChanges: true,
             showContent: true
         },
+        requestType: 'WaitForLocalExecution',
     });
 }
 

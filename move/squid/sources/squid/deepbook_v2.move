@@ -13,6 +13,7 @@ module squid::deepbook_v2 {
     use axelar::discovery::{Self, MoveCall};
 
     use squid::swap_info::{SwapInfo};
+    use squid::squid::Squid;
 
     const FLOAT_SCALING_U128: u128 = 1_000_000_000;
     const FLOAT_SCALING: u64 = 1_000_000_000;
@@ -22,6 +23,7 @@ module squid::deepbook_v2 {
     const EWrongSwapType: u64 = 0;
     const EWrongPool: u64 = 1;
     const EWrongCoinType: u64 = 2;
+    const ENotEnoughOutput: u64 = 3;
 
     public fun swap_base<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T1>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
         let account = clob::create_account(ctx);
@@ -198,13 +200,17 @@ module squid::deepbook_v2 {
     }
 
     public fun estimate<T1, T2>(self: &mut SwapInfo, pool: &Pool<T1, T2>, clock: &Clock) {
-        let mut bcs = bcs::new(self.get_data_estimating());
+        let data = self.get_data_estimating();
+        if(vector::length(&data) == 0) return;
+
+        let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);
 
         assert!(bcs.peel_address() == object::id_address(pool), EWrongPool);
 
         let has_base = bcs.peel_bool();
+        let min_output = bcs.peel_u64();
 
         assert!(
             &bcs.peel_vec_u8() == &type_name::get<T1>().into_string().into_bytes(),
@@ -217,14 +223,20 @@ module squid::deepbook_v2 {
         );
 
         let lot_size = bcs.peel_u64();
+        let should_sweep = bcs.peel_bool();
         if(has_base) {
             let (amount_left, output) = predict_base_for_quote(
                 pool,
+                // these are run in sequence before anything is done with balances, so `get_estimate` is the correct function to use.
                 self.coin_bag().get_estimate<T1>(),
                 lot_size,
                 clock,
             );
-            self.coin_bag().store_estimate<T1>(amount_left);
+            if(min_output > output) {
+                self.skip_swap();
+                return
+            };
+            if(!should_sweep) self.coin_bag().store_estimate<T1>(amount_left);
             self.coin_bag().store_estimate<T2>(output);
         } else {
             let (amount_left, output) = predict_quote_for_base(
@@ -233,12 +245,16 @@ module squid::deepbook_v2 {
                 lot_size,
                 clock,
             );
-            self.coin_bag().store_estimate<T2>(amount_left);
+            if(min_output > output) {
+                self.skip_swap();
+                return
+            };
+            if(!should_sweep) self.coin_bag().store_estimate<T2>(amount_left);
             self.coin_bag().store_estimate<T1>(output);
         }
     }
 
-    public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, clock: &Clock, ctx: &mut TxContext) {
+    public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, squid: &mut Squid, clock: &Clock, ctx: &mut TxContext) {
         let data = self.get_data_swapping();
         if(vector::length(&data) == 0) return;
         let mut bcs = bcs::new(data);
@@ -248,6 +264,7 @@ module squid::deepbook_v2 {
         assert!(bcs.peel_address() == object::id_address(pool), EWrongPool);
 
         let has_base = bcs.peel_bool();
+        let min_output = bcs.peel_u64();
 
         assert!(
             &bcs.peel_vec_u8() == &type_name::get<T1>().into_string().into_bytes(),
@@ -260,13 +277,20 @@ module squid::deepbook_v2 {
         );
 
         let lot_size = bcs.peel_u64();
+        let should_sweep = bcs.peel_bool();
         if(has_base) {
             let mut base_balance = self.coin_bag().get_balance<T1>().destroy_some();
             let leftover = base_balance.value() % lot_size;
             if(leftover > 0) {
-                self.coin_bag().store_balance<T1>(
-                    base_balance.split(leftover),
-                );
+                if(should_sweep) {
+                    squid.coin_bag().store_balance<T1>(
+                        base_balance.split(leftover)
+                    );
+                } else {
+                    self.coin_bag().store_balance<T1>(
+                        base_balance.split(leftover),
+                    );
+                };
             };
             let (base_coin, quote_coin) = swap_base(
                 pool,
@@ -274,6 +298,7 @@ module squid::deepbook_v2 {
                 clock,
                 ctx,
             );
+            assert!(min_output <= quote_coin.value(), ENotEnoughOutput);    
             base_coin.destroy_zero();
             self.coin_bag().store_balance<T2>(quote_coin.into_balance());
         } else {
@@ -284,8 +309,13 @@ module squid::deepbook_v2 {
                 clock,
                 ctx,
             );
+            assert!(min_output <= base_coin.value(), ENotEnoughOutput);    
             self.coin_bag().store_balance<T1>(base_coin.into_balance());
-            self.coin_bag().store_balance<T2>(quote_coin.into_balance());
+            if(should_sweep) {
+                squid.coin_bag().store_balance<T2>(quote_coin.into_balance());
+            } else {
+                self.coin_bag().store_balance<T2>(quote_coin.into_balance());
+            };
         }
     }
 
@@ -294,33 +324,35 @@ module squid::deepbook_v2 {
         vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
 
         let _has_base = bcs.peel_bool();
+        let _min_output = bcs.peel_u64();
 
         let type_base = ascii::string(bcs.peel_vec_u8());
         let type_quote = ascii::string(bcs.peel_vec_u8());
 
         discovery::new_move_call(
-            discovery::new_function(
-                package_id,
-                ascii::string(b"deepbook_v2"),
-                ascii::string(b"estimate"),
-            ),
-            vector[
-                swap_info_arg,
-                pool_arg,
-                vector[0, 6],
-            ],
-            vector[type_base, type_quote],
-        )
+                discovery::new_function(
+                    package_id,
+                    ascii::string(b"deepbook_v2"),
+                    ascii::string(b"estimate"),
+                ),
+                vector[
+                    swap_info_arg,
+                    pool_arg,
+                    vector[0, 6],
+                ],
+                vector[type_base, type_quote],
+            )
     }
 
-    public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+    public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>): MoveCall {
         let mut pool_arg = vector[0];
         vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
 
         let _has_base = bcs.peel_bool();
+        let _min_output = bcs.peel_u64();
 
         let type_base = ascii::string(bcs.peel_vec_u8());
-        let type_quote = ascii::string(bcs.peel_vec_u8());
+        let type_quote = ascii::string(bcs.peel_vec_u8());       
 
         discovery::new_move_call(
             discovery::new_function(
@@ -331,21 +363,10 @@ module squid::deepbook_v2 {
             vector[
                 swap_info_arg,
                 pool_arg,
+                squid_arg,
                 vector[0, 6],
             ],
             vector[type_base, type_quote] ,
         )
     }
-
-
-    #[test]
-    fun test() {
-        let ctx = &mut tx_context.dummy();
-        clob::create_pool(
-            100,
-            100,
-            coin,
-            ctx,
-        );
-    }   
 }

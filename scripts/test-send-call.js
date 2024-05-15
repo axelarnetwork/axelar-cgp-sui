@@ -50,6 +50,7 @@ const { toPure, parseEnv } = require('./utils');
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForLocalExecution',
     });
 
     const event = (await client.queryEvents({query: {

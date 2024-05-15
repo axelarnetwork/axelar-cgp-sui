@@ -199,6 +199,7 @@ async function approveContractCall(client, keypair, axelarInfo, sourceChain, sou
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForLocalExecution',
     });
     return commandId;
 }
@@ -235,6 +236,7 @@ async function transferOperatorship(info, client, keypair, newOperators, newWeig
             showEffects: true,
             showObjectChanges: true,
         },
+        requestType: 'WaitForLocalExecution',
     });
     console.log(approveTxn.effects.status);
 }
