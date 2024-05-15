@@ -69,7 +69,7 @@ module axelar::validators {
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
         let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
-        while (i < total_signatures) {
+        while (i < total_signatures && weight < threshold) {
 
             let mut signature = *vector::borrow(&signatures, i);
             normalize_signature(&mut signature);
@@ -82,11 +82,13 @@ module axelar::validators {
             assert!(operator_index < operators_length, EMalformedSigners);
 
             weight = weight + *vector::borrow(&weights, operator_index);
-            if (weight >= threshold) { return operators_epoch == epoch };
+            
             operator_index = operator_index + 1;
 
             i = i + 1;
         };
+
+        if (weight >= threshold) { return operators_epoch == epoch };
 
         abort ELowSignaturesWeight
     }
@@ -187,6 +189,27 @@ module axelar::validators {
     /// Signer PubKey.
     /// Expected to be returned from ecrecover.
     const SIGNER: vector<u8> = x"037286a4f1177bea06c8e15cf6ec3df0b7747a01ac2329ca2999dfd74eff599028";
+
+    #[test_only]
+    public fun proof_for_testing(): vector<u8> {
+        let mut proof: vector<u8> = vector[];
+        let mut i = 0;
+        while ( i < 19 ) {
+            vector::push_back(&mut proof, 0);
+            i = i + 1;
+        };
+        proof
+    }
+
+    #[test_only]
+    public fun init_for_testing(self: &mut AxelarValidators) {
+        let new_operators_hash = operators_hash(&vector[], &vector[], 0);
+        let epoch = 1;
+
+        self.epoch_for_hash.insert(new_operators_hash, epoch);
+
+        self.set_epoch(epoch);
+    }
 
     #[test_only]
     public fun get_transfer_params(new_operators: &vector<vector<u8>>, new_weights: &vector<u128>, new_threshold: &u128): vector<u8> {

@@ -369,16 +369,4 @@ module squid::deepbook_v2 {
             vector[type_base, type_quote] ,
         )
     }
-
-
-    #[test]
-    fun test() {
-        let ctx = &mut tx_context.dummy();
-        clob::create_pool(
-            100,
-            100,
-            coin,
-            ctx,
-        );
-    }   
 }
