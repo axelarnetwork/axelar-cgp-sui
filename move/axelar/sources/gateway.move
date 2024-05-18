@@ -185,11 +185,12 @@ module axelar::gateway {
                 });
                 continue
             } else if (cmd_selector == &SELECTOR_TRANSFER_OPERATORSHIP) {
-                assert!(!self.operatiorship_transfer_executions.contains(cmd_id), EAlreadyTransferedOperatorship);
-                self.operatiorship_transfer_executions.add(cmd_id, true);
                 if (!allow_operatorship_transfer) {
                     continue
                 };
+
+                assert!(!self.operatiorship_transfer_executions.contains(cmd_id), EAlreadyTransferedOperatorship);
+                self.operatiorship_transfer_executions.add(cmd_id, true);
                 allow_operatorship_transfer = false;
                 borrow_mut_validators(self).transfer_operatorship(payload);
             } else {
