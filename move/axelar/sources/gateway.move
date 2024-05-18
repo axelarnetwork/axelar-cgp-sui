@@ -303,6 +303,7 @@ module axelar::gateway {
     public fun new(ctx: &mut TxContext): Gateway {
         let mut validators = validators::new();
         validators.init_for_testing();
+
         Gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
