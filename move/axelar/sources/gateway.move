@@ -69,7 +69,7 @@ module axelar::gateway {
         id: UID,
         approvals: Table<address, Approval>,
         validators: AxelarValidators,
-        operatiorship_transfer_executions: Table<address, bool>,
+        operatorship_transfers: Table<address, bool>,
     }
 
     /// CallApproval struct which can consumed only by a `Channel` object.
@@ -104,7 +104,7 @@ module axelar::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             validators: validators::new(),
-            operatiorship_transfer_executions: table::new(ctx),
+            operatorship_transfers: table::new(ctx),
         };
 
         transfer::share_object(gateway);
@@ -189,8 +189,8 @@ module axelar::gateway {
                     continue
                 };
 
-                assert!(!self.operatiorship_transfer_executions.contains(cmd_id), EAlreadyTransferedOperatorship);
-                self.operatiorship_transfer_executions.add(cmd_id, true);
+                assert!(!self.operatorship_transfers.contains(cmd_id), EAlreadyTransferedOperatorship);
+                self.operatorship_transfers.add(cmd_id, true);
                 allow_operatorship_transfer = false;
                 borrow_mut_validators(self).transfer_operatorship(payload);
             } else {
@@ -299,7 +299,7 @@ module axelar::gateway {
     fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidators {
         &mut self.validators
     }
-    
+
     #[test_only]
     public fun new(ctx: &mut TxContext): Gateway {
         let mut validators = validators::new();
@@ -309,7 +309,7 @@ module axelar::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             validators,
-            operatiorship_transfer_executions: table::new(ctx),
+            operatorship_transfers: table::new(ctx),
         }
     }
 
@@ -366,7 +366,7 @@ module axelar::gateway {
         let data = get_data(&chain_id, &command_ids, &commands, &params);
         let proof = validators::proof_for_testing();
         let mut input = vector[];
-        
+
         vector::append(&mut input, bcs::to_bytes(&data));
         vector::append(&mut input, bcs::to_bytes(&proof));
 
@@ -377,7 +377,7 @@ module axelar::gateway {
 
         assert!(gateway.approvals.contains(@0x1) == true, 2);
         let approval_hash = get_approval_hash(
-            &@0x1, 
+            &@0x1,
             &source_chain,
             &source_address,
             &target_id,
@@ -421,7 +421,7 @@ module axelar::gateway {
         let data = get_data(&chain_id, &command_ids, &commands, &params);
         let proof = validators::proof_for_testing();
         let mut input = vector[];
-        
+
         vector::append(&mut input, bcs::to_bytes(&data));
         vector::append(&mut input, bcs::to_bytes(&proof));
 
@@ -444,7 +444,7 @@ module axelar::gateway {
         let data = get_data(&chain_id, &command_ids, &commands, &params);
         let proof = validators::proof_for_testing();
         let mut input = vector[];
-        
+
         vector::append(&mut input, bcs::to_bytes(&data));
         vector::append(&mut input, bcs::to_bytes(&proof));
 
@@ -467,7 +467,7 @@ module axelar::gateway {
         let data = get_data(&chain_id, &command_ids, &commands, &params);
         let proof = validators::proof_for_testing();
         let mut input = vector[];
-        
+
         vector::append(&mut input, bcs::to_bytes(&data));
         vector::append(&mut input, bcs::to_bytes(&proof));
 
@@ -505,7 +505,7 @@ module axelar::gateway {
         let data = get_data(&chain_id, &command_ids, &commands, &params);
         let proof = validators::proof_for_testing();
         let mut input = vector[];
-        
+
         vector::append(&mut input, bcs::to_bytes(&data));
         vector::append(&mut input, bcs::to_bytes(&proof));
 
