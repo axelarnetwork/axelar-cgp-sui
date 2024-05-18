@@ -8,30 +8,41 @@ module gas_service::gas_service {
     use sui::hash::keccak256;
     use sui::event;
 
-    public struct GasService
-     has key, store {
+    public struct GasService has key, store {
         id: UID,
         balance: Balance<SUI>,
     }
 
-    public struct RefunderCap has key, store {
+    public struct GasCollectorCap has key, store {
         id: UID,
     }
 
     public struct NativeGasPaidForContractCall has copy, drop {
-        sender: address, 
-        destination_chain: String, 
-        destination_address: String, 
-        payload_hash: address, 
+        sender: address,
+        destination_chain: String,
+        destination_address: String,
+        payload_hash: address,
         value: u64,
         refund_address: address,
     }
 
     public struct NativeGasAdded has copy, drop {
-        tx_hash: address, 
+        tx_hash: address,
         log_index: u64,
-        value: u64, 
+        value: u64,
         refund_address: address,
+    }
+
+    public struct Refunded has copy, drop {
+        tx_hash: address,
+        log_index: u64,
+        value: u64,
+        refund_address: address,
+    }
+
+    public struct GasCollected has copy, drop {
+        receiver: address,
+        value: u64,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -40,7 +51,7 @@ module gas_service::gas_service {
             balance: balance::zero<SUI>(),
         });
 
-        transfer::public_transfer(RefunderCap {
+        transfer::public_transfer(GasCollectorCap {
             id: object::new(ctx),
         }, ctx.sender());
     }
@@ -85,10 +96,29 @@ module gas_service::gas_service {
         });
     }
 
-    public fun refund(self: &mut GasService, _: &RefunderCap, receiver: address, amount: u64, ctx: &mut TxContext) {
+    public fun collect_gas(self: &mut GasService, _: &GasCollectorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
         transfer::public_transfer(
             coin::take(&mut self.balance, amount, ctx),
             receiver,
-        )
+        );
+
+        event::emit(GasCollected {
+            receiver,
+            value: amount,
+        });
+    }
+
+    public fun refund(self: &mut GasService, _: &GasCollectorCap, tx_hash: address, log_index: u64, receiver: address, amount: u64, ctx: &mut TxContext) {
+        transfer::public_transfer(
+            coin::take(&mut self.balance, amount, ctx),
+            receiver,
+        );
+
+        event::emit(Refunded {
+            tx_hash,
+            log_index,
+            value: amount,
+            refund_address: receiver,
+        });
     }
 }
