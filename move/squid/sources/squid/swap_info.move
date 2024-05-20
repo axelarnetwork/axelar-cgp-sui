@@ -79,7 +79,7 @@ module squid::swap_info {
 
     public fun finalize(self: SwapInfo) {
         assert!(
-            self.swap_index == vector::length(&self.swap_data) &&
+            self.estimate_index == vector::length(&self.swap_data) &&
             self.swap_index == vector::length(&self.swap_data),
             ENotDoneSwapping,
         );
