@@ -1,6 +1,3 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-
 module axelar_gateway::auth {
     use sui::bcs;
     use sui::ecdsa_k1 as ecdsa;
