@@ -94,7 +94,7 @@ module axelar_gateway::channel {
         }
     }
 
-    /// Destroy a `Channen` releasing the T. Not constrained and can be performed
+    /// Destroy a `Channel` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
     public fun destroy(self: Channel) {
         let Channel { id, processed_call_approvals } = self;
