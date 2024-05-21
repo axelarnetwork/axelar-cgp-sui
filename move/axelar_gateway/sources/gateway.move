@@ -74,13 +74,13 @@ module axelar_gateway::gateway {
         validators: AxelarValidators,
     }
 
-    /// The State of the message.
-    /// Can be either one of three states:
+    /// The Status of the message.
+    /// Can be either one of three statuses:
     /// - Non-existent: Set to bytes32(0)
     /// - Approved: Set to the hash of the message
     /// - Executed: Set to bytes32(1)
     public struct MessageStatus has store {
-        state: vector<u8>,
+        status: vector<u8>,
     }
 
     /// CallApproval struct which can consumed only by a `Channel` object.
@@ -219,7 +219,7 @@ module axelar_gateway::gateway {
     fun peel_weighted_signers(weighted_signers_data: vector<u8>): weighted_signers::WeightedSigners {
         let mut bcs = bcs::new(weighted_signers_data);
 
-        let weighted_signers = weighted_signers::from_bcs(&mut bcs);
+        let weighted_signers = weighted_signers::peel(&mut bcs);
 
         assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
 
@@ -230,7 +230,7 @@ module axelar_gateway::gateway {
         let mut typed_data = vector::singleton(command_type);
         typed_data.append(data);
 
-        bytes32::new(hash::keccak256(&typed_data))
+        bytes32::from_bytes(hash::keccak256(&typed_data))
     }
 
     fun approve_message(
@@ -246,7 +246,7 @@ module axelar_gateway::gateway {
 
         self.messages.add(
             command_id,
-            MessageStatus { state: bcs::to_bytes(message) }
+            MessageStatus { status: bcs::to_bytes(message) }
         );
 
         sui::event::emit(MessageApproved {
