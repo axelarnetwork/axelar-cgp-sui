@@ -38,7 +38,7 @@ module axelar_gateway::gateway {
     use axelar_gateway::bytes32::{Self, Bytes32};
     use axelar_gateway::utils::{to_sui_signed};
     use axelar_gateway::channel::{Self, Channel, ApprovedCall};
-    use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
+    use axelar_gateway::auth::{Self, AxelarSigners, validate_proof_old};
     use axelar_gateway::weighted_signers::{Self};
 
     /// ------
@@ -123,7 +123,7 @@ module axelar_gateway::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             messages: table::new(ctx),
-            signers: auth::new(),
+            signers: auth::new(ctx),
         };
 
         transfer::share_object(gateway);
@@ -200,7 +200,7 @@ module axelar_gateway::gateway {
     ) {
         let messages = peel_messages(*&message_data);
 
-        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data).to_bytes(), proof);
+        let _ = self.signers.validate_proof_old(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data).to_bytes(), proof);
 
         let mut i = 0;
 
@@ -221,7 +221,7 @@ module axelar_gateway::gateway {
     ) {
         let weighted_signers = peel_weighted_signers(new_signers_data);
 
-        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data).to_bytes(), proof);
+        let _ = self.signers.validate_proof_old(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data).to_bytes(), proof);
 
         // This will fail if signers are duplicated
         self.signers.rotate_signers(weighted_signers);
@@ -309,7 +309,7 @@ module axelar_gateway::gateway {
             bytes.peel_vec_u8(),
             bytes.peel_vec_u8()
         );
-        let mut allow_operatorship_transfer = self.signers.validate_proof(to_sui_signed(*&data), proof);
+        let mut allow_operatorship_transfer = self.signers.validate_proof_old(to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
         let mut data_bcs = bcs::new(data);
