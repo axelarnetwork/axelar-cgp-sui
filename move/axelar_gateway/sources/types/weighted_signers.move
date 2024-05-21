@@ -2,10 +2,10 @@ module axelar_gateway::weighted_signers {
     use sui::bcs::BCS;
 
     use axelar_gateway::bytes32::{Self, Bytes32};
-    use axelar_gateway::weighted_signer::{Self};
+    use axelar_gateway::weighted_signer::{Self, WeightedSigner};
 
     public struct WeightedSigners has copy, drop, store {
-        signers: vector<weighted_signer::WeightedSigner>,
+        signers: vector<WeightedSigner>,
         threshold: u128,
         nonce: Bytes32,
     }
@@ -20,7 +20,7 @@ module axelar_gateway::weighted_signers {
     /// Package Functions
     /// -----------------
     public(package) fun peel(bcs: &mut BCS): WeightedSigners {
-        let mut signers = vector::empty<weighted_signer::WeightedSigner>();
+        let mut signers = vector::empty<WeightedSigner>();
 
         let mut length = bcs.peel_vec_length();
         assert!(length > 0, EInvalidLength);
