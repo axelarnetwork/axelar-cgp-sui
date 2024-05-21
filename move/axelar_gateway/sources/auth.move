@@ -2,11 +2,14 @@ module axelar_gateway::auth {
     use sui::bcs;
     use sui::ecdsa_k1 as ecdsa;
     use sui::event;
-    use sui::vec_map:: {Self, VecMap};
+    use sui::vec_map::{Self, VecMap};
 
     use axelar_gateway::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
     use axelar_gateway::weighted_signers::{Self};
 
+    // ------
+    // Errors
+    // ------
     const EInvalidWeights: u64 = 0;
     const EInvalidThreshold: u64 = 1;
     /// For when operators have changed, and proof is no longer valid.
@@ -16,9 +19,15 @@ module axelar_gateway::auth {
     const ELowSignaturesWeight: u64 = 4;
     const EMalformedSigners: u64 = 5;
 
+    // ---------
+    // Constants
+    // ---------
     /// Used for a check in `validate_proof` function.
-    const OLD_KEY_RETENTION: u64 = 16;
+    const PREVIOUS_KEY_RETENTION: u64 = 16;
 
+    // -----
+    // Types
+    // -----
     public struct AxelarValidators has store {
         /// Epoch of the validators.
         epoch: u64,
@@ -32,6 +41,9 @@ module axelar_gateway::auth {
         payload: vector<u8>,
     }
 
+    // -----------------
+    // Package Functions
+    // -----------------
     public(package) fun new(): AxelarValidators {
         AxelarValidators {
             epoch: 0,
@@ -68,7 +80,7 @@ module axelar_gateway::auth {
             .get(&operators_hash(&operators, &weights, threshold));
 
         // This error cannot be hit because we remove old operators and no set has an epoch of 0.
-        assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
+        assert!(operators_epoch != 0 && epoch - operators_epoch < PREVIOUS_KEY_RETENTION, EInvalidOperators);
         let (mut i, mut weight, mut operator_index) = (0, 0, 0);
         let total_signatures = vector::length(&signatures);
         while (i < total_signatures) {
@@ -121,8 +133,8 @@ module axelar_gateway::auth {
         };
 
         // clean up old epoch
-        if (epoch >= OLD_KEY_RETENTION && epoch_by_signers_hash.size() > 0) {
-            let old_epoch = epoch - OLD_KEY_RETENTION;
+        if (epoch >= PREVIOUS_KEY_RETENTION && epoch_by_signers_hash.size() > 0) {
+            let old_epoch = epoch - PREVIOUS_KEY_RETENTION;
             let (_, epoch) = epoch_by_signers_hash.get_entry_by_idx(0);
             if (*epoch <= old_epoch) {
                 epoch_by_signers_hash.remove_entry_by_idx(0);
