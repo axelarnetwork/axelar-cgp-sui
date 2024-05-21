@@ -1,6 +1,3 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-
 module axelar_gateway::channel {
     use std::ascii::String;
     use sui::table::{Self, Table};
