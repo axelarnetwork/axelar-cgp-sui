@@ -80,7 +80,7 @@ module axelar_gateway::gateway {
     /// - Approved: Set to the hash of the message
     /// - Executed: Set to bytes32(1)
     public struct MessageStatus has store {
-        status: vector<u8>,
+        status: Bytes32,
     }
 
     /// CallApproval struct which can consumed only by a `Channel` object.
@@ -151,6 +151,39 @@ module axelar_gateway::gateway {
             payload,
             payload_hash: address::from_bytes(hash::keccak256(&payload)),
         })
+    }
+
+    public fun is_message_approved(
+        self: &Gateway,
+        source_chain: String,
+        message_id: String,
+        source_address: String,
+        destination_id: address,
+        payload_hash: Bytes32,
+    ): bool {
+        let message = message::new(
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            payload_hash,
+        );
+        let command_id = hash::keccak256(&message.id());
+
+        self.messages[command_id].status == message.hash()
+    }
+
+    public fun is_message_executed(
+        self: &Gateway,
+        source_chain: String,
+        message_id: String,
+    ): bool {
+        let command_id = hash::keccak256(&message::message_to_command_id(
+            source_chain,
+            message_id,
+        ));
+
+        self.messages[command_id].status == bytes32::new(@0x1)
     }
 
     /// -----------
@@ -246,7 +279,7 @@ module axelar_gateway::gateway {
 
         self.messages.add(
             command_id,
-            MessageStatus { status: bcs::to_bytes(message) }
+            MessageStatus { status: message.hash() }
         );
 
         sui::event::emit(MessageApproved {
@@ -417,6 +450,10 @@ module axelar_gateway::gateway {
         &mut self.validators
     }
 
+    // -------------------
+    // Test Only Functions
+    // -------------------
+
     #[test_only]
     public fun new(ctx: &mut TxContext): Gateway {
         Gateway {
@@ -446,6 +483,10 @@ module axelar_gateway::gateway {
         vector::append(&mut bcs, bcs::to_bytes(params));
         bcs
     }
+
+    // -----
+    // Tests
+    // -----
 
     #[test]
     fun test_process_commands() {
