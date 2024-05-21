@@ -1,5 +1,6 @@
 module axelar_gateway::weighted_signers {
-    use sui::bcs::BCS;
+    use sui::bcs::{Self, BCS};
+    use sui::hash;
 
     use axelar_gateway::bytes32::{Self, Bytes32};
     use axelar_gateway::weighted_signer::{Self, WeightedSigner};
@@ -15,6 +16,21 @@ module axelar_gateway::weighted_signers {
     /// ------
     /// Invalid length of the bytes
     const EInvalidLength: u64 = 0;
+
+    /// ----------------
+    /// Public Functions
+    /// ----------------
+    public(package) fun signers(self: &WeightedSigners): vector<WeightedSigner> {
+        self.signers
+    }
+
+    public(package) fun threshold(self: &WeightedSigners): u128 {
+        self.threshold
+    }
+
+    public(package) fun nonce(self: &WeightedSigners): Bytes32 {
+        self.nonce
+    }
 
     /// -----------------
     /// Package Functions
@@ -39,5 +55,9 @@ module axelar_gateway::weighted_signers {
             threshold,
             nonce,
         }
+    }
+
+    public(package) fun hash(self: &WeightedSigners): Bytes32 {
+        bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
     }
 }
