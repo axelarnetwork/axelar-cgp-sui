@@ -1,78 +1,58 @@
 module axelar_gateway::bytes32 {
     use sui::bcs::BCS;
+    use sui::address;
 
     /// -----
     /// Types
     /// -----
     public struct Bytes32 has copy, drop, store {
-        bytes: vector<u8>,
+        bytes: address,
     }
 
     /// ---------
     /// Constants
     /// ---------
-    const LEN: u64 = 32;
-
-    /// ------
-    /// Errors
-    /// ------
-    /// Invalid length for bytes32 cast
-    const EInvalidLength: u64 = 0;
+    const LENGTH: u64 = 32;
 
     /// ----------------
     /// Public Functions
     /// ----------------
-    /// Casts a vector of bytes to a bytes32
-    public fun new(bytes: vector<u8>): Bytes32 {
-        assert!(bytes.length() == LEN, EInvalidLength);
-
+    /// Casts an address to a bytes32
+    public fun new(bytes: address): Bytes32 {
         Bytes32{bytes: bytes}
     }
 
     public fun default(): Bytes32 {
-        let mut bytes: vector<u8> = vector[];
-        let mut i: u64 = 0;
-
-        while (i < LEN) {
-            vector::push_back(&mut bytes, 0);
-            i = i + 1;
-        };
-
-        Bytes32{bytes: bytes}
+        Bytes32{bytes: @0x0}
     }
 
     public fun from_bytes(bytes: vector<u8>): Bytes32 {
-        new(bytes)
+        new(address::from_bytes(bytes))
+    }
+
+    public fun from_address(addr: address): Bytes32 {
+        new(addr)
     }
 
     public fun to_bytes(self: Bytes32): vector<u8> {
-        self.bytes
-    }
-
-    public fun validate(self: &Bytes32) {
-        assert!(self.bytes.length() == 32, EInvalidLength);
+        self.bytes.to_bytes()
     }
 
     public fun length(_self: &Bytes32): u64 {
-        LEN
+        LENGTH
     }
 
     public(package) fun peel(bcs: &mut BCS): Bytes32 {
-        let bytes = bcs.peel_vec_u8();
-        new(bytes)
+        new(bcs.peel_address())
     }
-}
 
-#[test_only]
-module axelar_gateway::bytes32_tests {
-    use axelar_gateway::bytes32::{Self};
-
+    // -----
+    // Tests
+    // -----
     #[test]
-    public fun new() {
-        let bytes =
-            x"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
-        let actual = bytes32::new(bytes);
+    public fun test_new() {
+        let actual = new(@0x1);
 
-        assert!(actual.to_bytes() == bytes, 0);
+        assert!(actual.to_bytes() == @0x1.to_bytes(), 0);
     }
 }

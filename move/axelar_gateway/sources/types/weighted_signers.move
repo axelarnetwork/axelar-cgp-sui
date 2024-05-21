@@ -19,7 +19,7 @@ module axelar_gateway::weighted_signers {
     /// -----------------
     /// Package Functions
     /// -----------------
-    public(package) fun from_bcs(bcs: &mut BCS): WeightedSigners {
+    public(package) fun peel(bcs: &mut BCS): WeightedSigners {
         let mut signers = vector::empty<weighted_signer::WeightedSigner>();
 
         let mut length = bcs.peel_vec_length();
