@@ -4,9 +4,11 @@ module axelar_gateway::auth {
     use sui::event;
     use sui::vec_map::{Self, VecMap};
     use sui::table::{Self, Table};
+    use sui::hash;
 
     use axelar_gateway::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
     use axelar_gateway::weighted_signers::{Self, WeightedSigners};
+    use axelar_gateway::proof::{Self, Proof, Signature};
     use axelar_gateway::bytes32::{Self, Bytes32};
 
     // ------
@@ -20,12 +22,14 @@ module axelar_gateway::auth {
     /// For when number of signatures for the call approvals is below the threshold.
     const ELowSignaturesWeight: u64 = 4;
     const EMalformedSigners: u64 = 5;
+    const EInvalidEpoch: u64 = 6;
 
     // ---------
     // Constants
     // ---------
     /// Used for a check in `validate_proof_old` function.
     const PREVIOUS_KEY_RETENTION: u64 = 16;
+    const DOMAIN_SEPARATOR: vector<u8> = b"sui";
 
     // -----
     // Types
@@ -39,10 +43,25 @@ module axelar_gateway::auth {
         epoch_by_signers_hash_old: VecMap<vector<u8>, u64>,
     }
 
+    public struct MessageToSign has copy, drop, store {
+        domain_separator: Bytes32,
+        signers_hash: Bytes32,
+        data_hash: Bytes32,
+    }
+
+    // ------
+    // Events
+    // ------
     /// Emitted when the operatorship changes.
     public struct OperatorshipTransferred has copy, drop {
         epoch: u64,
         payload: vector<u8>,
+    }
+
+    /// Emitted when signers are rotated.
+    public struct SignersRotated has copy, drop {
+        epoch: u64,
+        signers: WeightedSigners,
     }
 
     // -----------------
@@ -54,6 +73,34 @@ module axelar_gateway::auth {
             epoch_by_signers_hash: table::new(ctx),
             epoch_by_signers_hash_old: vec_map::empty(),
         }
+    }
+
+    public(package) fun validate_proof(
+        self: &AxelarSigners,
+        data_hash: Bytes32,
+        proof: Proof,
+    ): bool {
+        let signers = proof.signers();
+        let signers_hash = signers.hash();
+        let signers_epoch = self.epoch_by_signers_hash[signers_hash];
+        let current_epoch = self.epoch;
+        let is_latest_signers = current_epoch == signers_epoch;
+
+        assert!(signers_epoch == 0 || (current_epoch - signers_epoch) >= PREVIOUS_KEY_RETENTION, EInvalidEpoch);
+
+        let message = MessageToSign {
+            domain_separator: bytes32::from_bytes(DOMAIN_SEPARATOR),
+            signers_hash,
+            data_hash,
+        };
+
+        validate_signatures(
+            bcs::to_bytes(&message),
+            signers,
+            proof.signatures(),
+        );
+
+        is_latest_signers
     }
 
     /// Implementation of the `AxelarAuthWeighted.validateProof`.
@@ -156,6 +203,56 @@ module axelar_gateway::auth {
 
     public(package) fun rotate_signers(self: &mut AxelarSigners, new_signers: weighted_signers::WeightedSigners) {
         transfer_operatorship(self, bcs::to_bytes(&new_signers))
+    }
+
+    // ------------------
+    // Internal Functions
+    // ------------------
+
+    fun message_hash_to_sign(domain_separator: Bytes32, signers_hash: Bytes32, data_hash: Bytes32): Bytes32 {
+        let message_to_sign = MessageToSign {
+            domain_separator,
+            signers_hash,
+            data_hash,
+        };
+
+        bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(&message_to_sign)))
+    }
+
+    fun validate_signatures(
+        message: vector<u8>,
+        signers: &WeightedSigners,
+        signatures: &vector<Signature>,
+    ) {
+        let signers_length = signers.signers().length();
+        let signatures_length = signatures.length();
+        assert!(signatures_length != 0, ELowSignaturesWeight);
+
+        let threshold = signers.threshold();
+        let mut signer_index = 0;
+        let mut total_weight = 0;
+        let mut i = 0;
+
+        while (i < signatures_length) {
+            let pubkey = signatures[i].recover_pubkey(&message);
+
+            while (signer_index < signers_length && signers.signers()[signer_index].pubkey() != pubkey) {
+                signer_index = signer_index + 1;
+            };
+
+            assert!(signer_index < signers_length, EMalformedSigners);
+
+            total_weight = total_weight + signers.signers()[signer_index].weight();
+
+            if (total_weight >= threshold) {
+                return
+            };
+
+            signer_index = signer_index + 1;
+            i = i + 1;
+        };
+
+        abort ELowSignaturesWeight
     }
 
     // === Getters ===

@@ -9,6 +9,14 @@ module axelar_gateway::weighted_signer {
         weight: u128,
     }
 
+    public fun pubkey(self: &WeightedSigner): vector<u8> {
+        self.signer
+    }
+
+    public fun weight(self: &WeightedSigner): u128 {
+        self.weight
+    }
+
     /// -----------------
     /// Package Functions
     /// -----------------

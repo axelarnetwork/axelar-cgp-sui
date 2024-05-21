@@ -452,7 +452,7 @@ module axelar_gateway::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             messages: table::new(ctx),
-            signers: auth::new(),
+            signers: auth::new(ctx),
         }
     }
 
