@@ -15,7 +15,7 @@ jobs:
 
       - name: Download and Install Sui
         env:
-          SUI_VERSION: devnet-v1.24.0
+          SUI_VERSION: devnet-v1.25.0
         run: |
           wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
