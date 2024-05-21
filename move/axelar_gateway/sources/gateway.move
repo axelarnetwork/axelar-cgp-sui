@@ -17,7 +17,7 @@
 /// II. Receiving call approvals
 ///
 /// Approval bytes and signatures are passed into `create` function to generate a CallApproval object.
-///  - Signatures are checked against the known set of validators.
+///  - Signatures are checked against the known set of signers.
 ///  - CallApproval bytes are parsed to determine: source, destination_chain, payload and destination_id
 ///  - `destination_id` points to a `Channel` object
 ///
@@ -38,7 +38,7 @@ module axelar_gateway::gateway {
     use axelar_gateway::bytes32::{Self, Bytes32};
     use axelar_gateway::utils::{to_sui_signed};
     use axelar_gateway::channel::{Self, Channel, ApprovedCall};
-    use axelar_gateway::auth::{Self, AxelarValidators, validate_proof};
+    use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
     use axelar_gateway::weighted_signers::{Self};
 
     /// ------
@@ -71,7 +71,7 @@ module axelar_gateway::gateway {
         id: UID,
         approvals: Table<address, Approval>,  // TODO: remove
         messages: Table<vector<u8>, MessageStatus>,
-        validators: AxelarValidators,
+        signers: AxelarSigners,
     }
 
     /// The Status of the message.
@@ -123,7 +123,7 @@ module axelar_gateway::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             messages: table::new(ctx),
-            validators: auth::new(),
+            signers: auth::new(),
         };
 
         transfer::share_object(gateway);
@@ -200,7 +200,7 @@ module axelar_gateway::gateway {
     ) {
         let messages = peel_messages(*&message_data);
 
-        let _ = self.validators.validate_proof(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data).to_bytes(), proof);
+        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data).to_bytes(), proof);
 
         let mut i = 0;
 
@@ -221,10 +221,10 @@ module axelar_gateway::gateway {
     ) {
         let weighted_signers = peel_weighted_signers(new_signers_data);
 
-        let _ = self.validators.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data).to_bytes(), proof);
+        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data).to_bytes(), proof);
 
         // This will fail if signers are duplicated
-        self.validators.rotate_signers(weighted_signers);
+        self.signers.rotate_signers(weighted_signers);
     }
 
     /// -----------------
@@ -309,7 +309,7 @@ module axelar_gateway::gateway {
             bytes.peel_vec_u8(),
             bytes.peel_vec_u8()
         );
-        let mut allow_operatorship_transfer = validate_proof(borrow_validators(self), to_sui_signed(*&data), proof);
+        let mut allow_operatorship_transfer = self.signers.validate_proof(to_sui_signed(*&data), proof);
 
         // Treat `data` as BCS bytes.
         let mut data_bcs = bcs::new(data);
@@ -362,7 +362,7 @@ module axelar_gateway::gateway {
                     continue
                 };
                 allow_operatorship_transfer = false;
-                borrow_mut_validators(self).transfer_operatorship(payload);
+                self.signers.transfer_operatorship(payload);
             } else {
                 continue
             };
@@ -442,14 +442,6 @@ module axelar_gateway::gateway {
         });
     }
 
-    fun borrow_validators(self: &Gateway): &AxelarValidators {
-        &self.validators
-    }
-
-    fun borrow_mut_validators(self: &mut Gateway): &mut AxelarValidators {
-        &mut self.validators
-    }
-
     // -------------------
     // Test Only Functions
     // -------------------
@@ -460,7 +452,7 @@ module axelar_gateway::gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             messages: table::new(ctx),
-            validators: auth::new(),
+            signers: auth::new(),
         }
     }
 
@@ -526,7 +518,7 @@ module axelar_gateway::gateway {
         vector::append(&mut input, bcs::to_bytes(&proof));
 
         assert!(gateway.approvals.contains(@0x1) == false, 0);
-        assert!(gateway.validators.epoch() == 0, 3);
+        assert!(gateway.signers.epoch() == 0, 3);
 
         process_commands(&mut gateway, input);
 
@@ -540,19 +532,19 @@ module axelar_gateway::gateway {
         );
 
         assert!(approval_hash == gateway.approvals.borrow(@0x1).approval_hash, 3);
-        assert!(gateway.validators.epoch() == 1, 4);
+        assert!(gateway.signers.epoch() == 1, 4);
 
-        assert!(gateway.validators.test_contains_operators(
+        assert!(gateway.signers.test_contains_operators(
             &new_operators_1,
             &new_weights_1,
             new_threshold_1,
         ) == true, 5);
-        assert!(gateway.validators.test_contains_operators(
+        assert!(gateway.signers.test_contains_operators(
             &new_operators_2,
             &new_weights_2,
             new_threshold_2,
         ) == false, 6);
-        assert!(gateway.validators.test_epoch_for_operators(
+        assert!(gateway.signers.test_epoch_for_operators(
             &new_operators_1,
             &new_weights_1,
             new_threshold_1,
