@@ -3,9 +3,11 @@ module axelar_gateway::auth {
     use sui::ecdsa_k1 as ecdsa;
     use sui::event;
     use sui::vec_map::{Self, VecMap};
+    use sui::table::{Self, Table};
 
     use axelar_gateway::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
     use axelar_gateway::weighted_signers::{Self, WeightedSigners};
+    use axelar_gateway::bytes32::{Self, Bytes32};
 
     // ------
     // Errors
@@ -22,7 +24,7 @@ module axelar_gateway::auth {
     // ---------
     // Constants
     // ---------
-    /// Used for a check in `validate_proof` function.
+    /// Used for a check in `validate_proof_old` function.
     const PREVIOUS_KEY_RETENTION: u64 = 16;
 
     // -----
@@ -32,7 +34,9 @@ module axelar_gateway::auth {
         /// Epoch of the signers.
         epoch: u64,
         /// Epoch for the signers hash.
-        epoch_by_signers_hash: VecMap<vector<u8>, u64>,
+        epoch_by_signers_hash: Table<Bytes32, u64>,
+        /// Old store
+        epoch_by_signers_hash_old: VecMap<vector<u8>, u64>,
     }
 
     /// Emitted when the operatorship changes.
@@ -44,17 +48,18 @@ module axelar_gateway::auth {
     // -----------------
     // Package Functions
     // -----------------
-    public(package) fun new(): AxelarSigners {
+    public(package) fun new(ctx: &mut TxContext): AxelarSigners {
         AxelarSigners {
             epoch: 0,
-            epoch_by_signers_hash: vec_map::empty(),
+            epoch_by_signers_hash: table::new(ctx),
+            epoch_by_signers_hash_old: vec_map::empty(),
         }
     }
 
     /// Implementation of the `AxelarAuthWeighted.validateProof`.
     /// Does proof validation, fails when proof is invalid or if weight
     /// threshold is not reached.
-    public(package) fun validate_proof(
+    public(package) fun validate_proof_old(
         self: &AxelarSigners,
         approval_hash: vector<u8>,
         proof: vector<u8>
@@ -76,7 +81,7 @@ module axelar_gateway::auth {
         );
 
         let operators_length = vector::length(&operators);
-        let operators_epoch = *self.epoch_by_signers_hash
+        let operators_epoch = *self.epoch_by_signers_hash_old
             .get(&operators_hash(&operators, &weights, threshold));
 
         // This error cannot be hit because we remove old operators and no set has an epoch of 0.
@@ -127,19 +132,19 @@ module axelar_gateway::auth {
         let new_operators_hash = operators_hash(&new_operators, &new_weights, new_threshold);
         // Remove old epoch for the operators if it exists
         let epoch = self.epoch + 1;
-        if (self.epoch_by_signers_hash.contains(&new_operators_hash)) {
-            self.epoch_by_signers_hash.remove(&new_operators_hash);
+        if (self.epoch_by_signers_hash_old.contains(&new_operators_hash)) {
+            self.epoch_by_signers_hash_old.remove(&new_operators_hash);
         };
 
         // clean up old epoch
-        if (epoch >= PREVIOUS_KEY_RETENTION && self.epoch_by_signers_hash.size() > 0) {
+        if (epoch >= PREVIOUS_KEY_RETENTION && self.epoch_by_signers_hash_old.size() > 0) {
             let old_epoch = epoch - PREVIOUS_KEY_RETENTION;
-            let (_, epoch) = self.epoch_by_signers_hash.get_entry_by_idx(0);
+            let (_, epoch) = self.epoch_by_signers_hash_old.get_entry_by_idx(0);
             if (*epoch <= old_epoch) {
-                self.epoch_by_signers_hash.remove_entry_by_idx(0);
+                self.epoch_by_signers_hash_old.remove_entry_by_idx(0);
             };
         };
-        self.epoch_by_signers_hash.insert(new_operators_hash, epoch);
+        self.epoch_by_signers_hash_old.insert(new_operators_hash, epoch);
 
         self.epoch = epoch;
 
@@ -204,7 +209,7 @@ module axelar_gateway::auth {
 
     #[test_only]
     public fun test_contains_operators(self: &AxelarSigners, operators: &vector<vector<u8>>, weights: &vector<u128>, threshold: u128): bool {
-        self.epoch_by_signers_hash.contains(
+        self.epoch_by_signers_hash_old.contains(
             &operators_hash(
                 operators,
                 weights,
@@ -216,7 +221,7 @@ module axelar_gateway::auth {
 
     #[test_only]
     public fun test_epoch_for_operators(self: &AxelarSigners, operators: &vector<vector<u8>>, weights: &vector<u128>, threshold: u128): u64 {
-        *self.epoch_by_signers_hash.get(
+        *self.epoch_by_signers_hash_old.get(
             &operators_hash(
                 operators,
                 weights,
@@ -253,7 +258,8 @@ module axelar_gateway::auth {
 
     #[test]
     fun test_transfer_operatorship() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let operators = vector[x"0123", x"4567", x"890a"];
         let weights = vector[1, 3, 6];
@@ -262,7 +268,7 @@ module axelar_gateway::auth {
 
         axelar_signers.transfer_operatorship(payload);
 
-        let epoch = axelar_signers.epoch_by_signers_hash.get(&operators_hash(&operators, &weights, threshold));
+        let epoch = axelar_signers.epoch_by_signers_hash_old.get(&operators_hash(&operators, &weights, threshold));
 
         assert!(*epoch == 1, 0);
 
@@ -272,7 +278,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidOperators)]
     fun test_transfer_operatorship_zero_operator_length() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"000301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
 
@@ -284,7 +291,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidOperators)]
     fun test_transfer_operatorship_unsorted_operatros() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"0302456702012302890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
 
@@ -296,7 +304,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidOperators)]
     fun test_transfer_operatorship_duplicate_operatros() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"0302012302890a02890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000004000000000000000000000000000000";
 
@@ -308,7 +317,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidWeights)]
     fun test_transfer_operatorship_invalid_weights() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"0302012302456702890a02010000000000000000000000000000000300000000000000000000000000000004000000000000000000000000000000";
 
@@ -320,7 +330,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidThreshold)]
     fun test_transfer_operatorship_zero_threshold() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"0302012302456702890a0301000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000";
 
@@ -332,7 +343,8 @@ module axelar_gateway::auth {
     #[test]
     #[expected_failure(abort_code = EInvalidThreshold)]
     fun test_transfer_operatorship_threshold_too_high() {
-        let mut axelar_signers = new();
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let payload = x"0302012302456702890a030100000000000000000000000000000003000000000000000000000000000000060000000000000000000000000000000b000000000000000000000000000000";
 
@@ -342,8 +354,9 @@ module axelar_gateway::auth {
     }
 
     #[test]
-    fun test_validate_proof() {
-        let mut axelar_signers = new();
+    fun test_validate_proof_old() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let message = x"123456";
         let payload = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000006000000000000000000000000000000";
@@ -351,25 +364,26 @@ module axelar_gateway::auth {
         let payload2 = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000007000000000000000000000000000000";
 
         axelar_signers.transfer_operatorship(payload);
-        assert!(axelar_signers.validate_proof(to_sui_signed(message), proof) == true, 0);
+        assert!(axelar_signers.validate_proof_old(to_sui_signed(message), proof) == true, 0);
 
         axelar_signers.transfer_operatorship(payload2);
-        assert!(axelar_signers.validate_proof(to_sui_signed(message), proof) == false, 0);
+        assert!(axelar_signers.validate_proof_old(to_sui_signed(message), proof) == false, 0);
 
         sui::test_utils::destroy(axelar_signers);
     }
 
     #[test]
     #[expected_failure(abort_code = EMalformedSigners)]
-    fun test_validate_proof_malformed_signers() {
-        let mut axelar_signers = new();
+    fun test_validate_proof_old_malformed_signers() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut axelar_signers = new(ctx);
 
         let message = x"1234";
         let payload = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000006000000000000000000000000000000";
         let proof = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea1030300000000000000000000000000000003000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000003413de59beca835483688338964eb4c314f387e06aef6c46ca2dc90733e5b7baa9b67b9b8530aacaae4263e369fced014e449166441c21b61fcef5978516d1a740301417b6940537f7fa65d37d0964d5dda49b80b5b7fcde93ba3b3224c3e007ff887ee20a203ac52802c29238353b69636cb71bd1da3bdb0c3ac3d85938531f94dd7570041529af0061fa6321419e0b702dd1ac4e16610efa718ad241e4eda8b65dd92bd2e715cfd58951305f6fc4d75a20d2c19bd4491312cff38b9694b02e2175826a2c800";
 
         axelar_signers.transfer_operatorship(payload);
-        axelar_signers.validate_proof(to_sui_signed(message), proof);
+        axelar_signers.validate_proof_old(to_sui_signed(message), proof);
 
         sui::test_utils::destroy(axelar_signers);
     }
