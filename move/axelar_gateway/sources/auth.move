@@ -7,6 +7,7 @@ module axelar_gateway::auth {
     use sui::hash;
 
     use axelar_gateway::utils::{normalize_signature, operators_hash, is_address_vector_zero, compare_address_vectors};
+    use axelar_gateway::weighted_signer::{Self};
     use axelar_gateway::weighted_signers::{Self, WeightedSigners};
     use axelar_gateway::proof::{Self, Proof, Signature};
     use axelar_gateway::bytes32::{Self, Bytes32};
@@ -201,8 +202,20 @@ module axelar_gateway::auth {
         });
     }
 
-    public(package) fun rotate_signers(self: &mut AxelarSigners, new_signers: weighted_signers::WeightedSigners) {
-        transfer_operatorship(self, bcs::to_bytes(&new_signers))
+    public(package) fun rotate_signers(self: &mut AxelarSigners, new_signers: WeightedSigners) {
+        validate_signers(&new_signers);
+
+        let new_signers_hash = new_signers.hash();
+        let epoch = self.epoch + 1;
+
+        // Returns an error if the key already exists.
+        self.epoch_by_signers_hash.add(new_signers_hash, epoch);
+        self.epoch = epoch;
+
+        event::emit(SignersRotated {
+            epoch,
+            signers: new_signers,
+        })
     }
 
     // ------------------
@@ -253,6 +266,29 @@ module axelar_gateway::auth {
         };
 
         abort ELowSignaturesWeight
+    }
+
+    fun validate_signers(signers: &WeightedSigners) {
+        let signers_length = signers.signers().length();
+        assert!(signers_length != 0, EInvalidOperators);
+
+        let mut total_weight = 0;
+        let mut i = 0;
+        let mut previous_signer = weighted_signer::default();
+
+        while (i < signers_length) {
+            let current_signer = signers.signers()[i];
+            assert!(previous_signer.lt(&current_signer), EInvalidOperators);
+
+            let weight = signers.signers()[i].weight();
+            assert!(weight != 0, EInvalidWeights);
+
+            total_weight = total_weight + weight;
+            i = i + 1;
+            previous_signer = current_signer;
+        };
+
+        assert!(total_weight >= signers.threshold(), EInvalidThreshold);
     }
 
     // === Getters ===
