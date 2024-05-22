@@ -42,6 +42,10 @@ module axelar_gateway::auth {
         epoch_by_signers_hash: Table<Bytes32, u64>,
         /// Old store
         epoch_by_signers_hash_old: VecMap<vector<u8>, u64>,
+        /// Domain separator between chains.
+        domain_separator: Bytes32,
+        /// Minimum rotation delay.
+        minimum_rotation_delay: u64,
     }
 
     public struct MessageToSign has copy, drop, store {
@@ -73,7 +77,28 @@ module axelar_gateway::auth {
             epoch: 0,
             epoch_by_signers_hash: table::new(ctx),
             epoch_by_signers_hash_old: vec_map::empty(),
+            domain_separator: bytes32::from_bytes(DOMAIN_SEPARATOR),
+            minimum_rotation_delay: 0,
         }
+    }
+
+    public(package) fun setup(
+        domain_separator: Bytes32,
+        minimum_rotation_delay: u64,
+        initial_signers: WeightedSigners,
+        ctx: &mut TxContext,
+    ): AxelarSigners {
+        let mut signers = AxelarSigners {
+            epoch: 0,
+            epoch_by_signers_hash: table::new(ctx),
+            epoch_by_signers_hash_old: vec_map::empty(),
+            domain_separator,
+            minimum_rotation_delay,
+        };
+
+        signers.rotate_signers(initial_signers);
+
+        signers
     }
 
     public(package) fun validate_proof(

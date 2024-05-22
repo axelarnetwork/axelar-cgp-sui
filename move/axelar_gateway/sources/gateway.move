@@ -33,13 +33,14 @@ module axelar_gateway::gateway {
     use sui::hash;
     use sui::table::{Self, Table};
     use sui::address;
+    use sui::transfer;
 
     use axelar_gateway::message::{Self};
     use axelar_gateway::bytes32::{Self, Bytes32};
     use axelar_gateway::utils::{to_sui_signed};
     use axelar_gateway::channel::{Self, Channel, ApprovedCall};
     use axelar_gateway::auth::{Self, AxelarSigners, validate_proof_old};
-    use axelar_gateway::weighted_signers::{Self};
+    use axelar_gateway::weighted_signers::{Self, WeightedSigners};
 
     /// ------
     /// Errors
@@ -55,9 +56,9 @@ module axelar_gateway::gateway {
     /// Remaining data after BCS decoding
     const ERemainingData: u64 = 4;
 
-    /// -----
-    /// Types
-    /// -----
+    // -----
+    // Types
+    // -----
     const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
     const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
 
@@ -91,6 +92,13 @@ module axelar_gateway::gateway {
         approval_hash: vector<u8>,
     }
 
+    // ------------
+    // Capabilities
+    // ------------
+    public struct CreatorCap has key, store {
+        id: UID
+    }
+
     /// ------
     /// Events
     /// ------
@@ -118,14 +126,34 @@ module axelar_gateway::gateway {
         message: message::Message,
     }
 
+    /// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
     fun init(ctx: &mut TxContext) {
+        let cap = CreatorCap {
+            id: object::new(ctx),
+        };
+
+        transfer::transfer(cap, tx_context::sender(ctx));
+    }
+
+    /// Setup the module by creating a new Gateway object.
+    public fun setup(
+        cap: CreatorCap,
+        domain_separator: Bytes32,
+        minimum_rotation_delay: u64,
+        initial_signers: WeightedSigners,
+        ctx: &mut TxContext
+    ) {
+        let CreatorCap { id } = cap;
+        id.delete();
+
         let gateway = Gateway {
             id: object::new(ctx),
             approvals: table::new(ctx),
             messages: table::new(ctx),
-            signers: auth::new(ctx),
+            signers: auth::setup(domain_separator, minimum_rotation_delay, initial_signers, ctx),
         };
 
+        // Share the gateway object for anyone to use.
         transfer::share_object(gateway);
     }
 
