@@ -66,15 +66,15 @@ module axelar_gateway::message {
         }
     }
 
-    public(package) fun message_to_command_id(source_chain: String, message_id: String): vector<u8> {
+    public(package) fun message_to_command_id(source_chain: String, message_id: String): Bytes32 {
         let mut id = source_chain.into_bytes();
         id.append(b"_");
         id.append(message_id.into_bytes());
 
-        id
+        bytes32::from_bytes(hash::keccak256(&id))
     }
 
-    public(package) fun id(self: &Message): vector<u8> {
+    public(package) fun command_id(self: &Message): Bytes32 {
         message_to_command_id(self.source_chain, self.message_id)
     }
 
