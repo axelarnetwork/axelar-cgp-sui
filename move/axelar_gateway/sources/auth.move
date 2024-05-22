@@ -129,7 +129,7 @@ module axelar_gateway::auth {
         let new_signers_hash = new_signers.hash();
         let epoch = self.epoch + 1;
 
-        // Returns an error if the key already exists.
+        // Aborts if the signers already exist
         self.epoch_by_signers_hash.add(new_signers_hash, epoch);
         self.epoch = epoch;
 
