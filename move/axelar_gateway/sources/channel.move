@@ -51,12 +51,12 @@ module axelar_gateway::channel {
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
-        processed_call_approvals: Table<address, bool>,
+        message_approvals: Table<address, bool>,
     }
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
     /// matching Channel, otherwise the TX fails.
-    public struct ApprovedCall {
+    public struct ApprovedMessage {
         /// ID of the call approval, guaranteed to be unique by Axelar.
         cmd_id: address,
         /// The target Channel's UID.
@@ -90,16 +90,16 @@ module axelar_gateway::channel {
 
         Channel {
             id,
-            processed_call_approvals: table::new(ctx),
+            message_approvals: table::new(ctx),
         }
     }
 
     /// Destroy a `Channel` releasing the T. Not constrained and can be performed
     /// by any party as long as they own a Channel.
     public fun destroy(self: Channel) {
-        let Channel { id, processed_call_approvals } = self;
+        let Channel { id, message_approvals } = self;
 
-        processed_call_approvals.drop();
+        message_approvals.drop();
         event::emit(ChannelDestroyed { id: id.uid_to_address() });
         id.delete();
     }
@@ -112,16 +112,16 @@ module axelar_gateway::channel {
         object::id_address(self)
     }
 
-    /// Create a new `ApprovedCall` object to be sent to another chain. Is called
+    /// Create a new `ApprovedMessage` object to be sent to another chain. Is called
     /// by the gateway when a message is "picked up" by the relayer.
-    public(package) fun create_approved_call(
+    public(package) fun create_approved_message(
         cmd_id: address,
         source_chain: String,
         source_address: String,
         target_id: address,
         payload: vector<u8>,
-    ): ApprovedCall {
-        ApprovedCall {
+    ): ApprovedMessage {
+        ApprovedMessage {
             cmd_id,
             source_chain,
             source_address,
@@ -135,24 +135,24 @@ module axelar_gateway::channel {
     ///
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
     /// and the `payload` to be used by the consuming application.
-    public fun consume_approved_call(
+    public fun consume_approved_message(
         channel: &mut Channel,
-        approved_call: ApprovedCall
+        approved_message: ApprovedMessage
     ): (String, String, vector<u8>) {
-        let ApprovedCall {
+        let ApprovedMessage {
             cmd_id,
             target_id,
             source_chain,
             source_address,
             payload,
-        } = approved_call;
+        } = approved_message;
 
         // Check if the message has already been processed.
-        assert!(!channel.processed_call_approvals.contains(cmd_id), EDuplicateMessage);
+        assert!(!channel.message_approvals.contains(cmd_id), EDuplicateMessage);
         // Check if the message is sent to the correct destination.
         assert!(target_id == object::id_address(channel), EWrongDestination);
 
-        channel.processed_call_approvals.add(cmd_id, true);
+        channel.message_approvals.add(cmd_id, true);
 
         (
             source_chain,
@@ -162,14 +162,14 @@ module axelar_gateway::channel {
     }
 
     #[test_only]
-    public fun create_test_approved_call(
+    public fun create_test_approved_message(
         cmd_id: address,
         source_chain: String,
         source_address: String,
         target_id: address,
         payload: vector<u8>,
-    ): ApprovedCall {
-        create_approved_call(
+    ): ApprovedMessage {
+        create_approved_message(
             cmd_id,
             source_chain,
             source_address,
@@ -203,13 +203,13 @@ module axelar_gateway::channel {
     }
 
     #[test]
-    fun test_create_approved_call() {
+    fun test_create_approved_message() {
         let input_cmd_id = @0x1234;
         let input_source_chain = std::ascii::string(b"Source Chain");
         let input_source_address = std::ascii::string(b"Source Address");
         let input_target_id = @0x5678;
         let input_payload = b"payload";
-        let approved_call: ApprovedCall = create_approved_call(
+        let approved_message: ApprovedMessage = create_approved_message(
             input_cmd_id,
             input_source_chain,
             input_source_address,
@@ -217,13 +217,13 @@ module axelar_gateway::channel {
             input_payload
         );
 
-        let ApprovedCall {
+        let ApprovedMessage {
             cmd_id,
             source_chain,
             source_address,
             target_id,
             payload
-        } = approved_call;
+        } = approved_message;
         assert!(cmd_id == input_cmd_id, 0);
         assert!(source_chain == input_source_chain, 1);
         assert!(source_address == input_source_address, 2);
@@ -232,7 +232,7 @@ module axelar_gateway::channel {
     }
 
     #[test]
-    fun test_consume_approved_call() {
+    fun test_consume_approved_message() {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
@@ -241,7 +241,7 @@ module axelar_gateway::channel {
         let input_source_address = std::ascii::string(b"Source Address");
         let input_target_id = channel.to_address();
         let input_payload = b"payload";
-        let approved_call: ApprovedCall = create_approved_call(
+        let approved_message: ApprovedMessage = create_approved_message(
             input_cmd_id,
             input_source_chain,
             input_source_address,
@@ -249,7 +249,7 @@ module axelar_gateway::channel {
             input_payload,
         );
 
-        let (source_chain, source_address, payload) = consume_approved_call(&mut channel, approved_call);
+        let (source_chain, source_address, payload) = consume_approved_message(&mut channel, approved_message);
 
 
         assert!(source_chain == input_source_chain, 1);
@@ -261,7 +261,7 @@ module axelar_gateway::channel {
 
     #[test]
     #[expected_failure(abort_code = EDuplicateMessage)]
-    fun test_consume_approved_call_duplicate_message() {
+    fun test_consume_approved_message_duplicate_message() {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
@@ -275,7 +275,7 @@ module axelar_gateway::channel {
         let target_id2 = channel.to_address();
         let payload2 = b"payload 2";
 
-        consume_approved_call(&mut channel, create_approved_call(
+        consume_approved_message(&mut channel, create_approved_message(
             cmd_id,
             source_chain1,
             source_address1,
@@ -283,7 +283,7 @@ module axelar_gateway::channel {
             payload1,
         ));
 
-        consume_approved_call(&mut channel, create_approved_call(
+        consume_approved_message(&mut channel, create_approved_message(
             cmd_id,
             source_chain2,
             source_address2,
@@ -296,7 +296,7 @@ module axelar_gateway::channel {
 
     #[test]
     #[expected_failure(abort_code = EWrongDestination)]
-    fun test_consume_approved_call_wrong_destination() {
+    fun test_consume_approved_message_wrong_destination() {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
@@ -306,7 +306,7 @@ module axelar_gateway::channel {
         let target_id = @0x5678;
         let payload = b"payload";
 
-        let approved_call = create_approved_call(
+        let approved_message = create_approved_message(
             cmd_id,
             source_chain,
             source_address,
@@ -314,7 +314,7 @@ module axelar_gateway::channel {
             payload,
         );
 
-        consume_approved_call(&mut channel, approved_call);
+        consume_approved_message(&mut channel, approved_message);
 
         channel.destroy();
     }
