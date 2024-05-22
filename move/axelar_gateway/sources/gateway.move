@@ -36,7 +36,7 @@ module axelar_gateway::gateway {
 
     use axelar_gateway::message::{Self, Message};
     use axelar_gateway::bytes32::{Self, Bytes32};
-    use axelar_gateway::channel::{Self, Channel, ApprovedCall};
+    use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
     use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
     use axelar_gateway::weighted_signers::{Self, WeightedSigners};
     use axelar_gateway::proof::{Self, Proof};
@@ -44,7 +44,7 @@ module axelar_gateway::gateway {
     /// ------
     /// Errors
     /// ------
-    /// Trying to `take_approved_call` with a wrong payload.
+    /// Trying to `take_approved_message` with a wrong payload.
     const EPayloadHashMismatch: u64 = 2;
     /// Invalid length of vector
     const EInvalidLength: u64 = 3;
@@ -317,14 +317,14 @@ module axelar_gateway::gateway {
     /// by single-owner targets.
     ///
     /// The hot potato approvel call object is returned.
-    public fun take_approved_call(
+    public fun take_approved_message(
         self: &mut Gateway,
         cmd_id: address,
         source_chain: String,
         source_address: String,
         destination_id: address,
         payload: vector<u8>
-    ): ApprovedCall {
+    ): ApprovedMessage {
         let Approval {
             approval_hash,
         } = table::remove(&mut self.approvals, cmd_id);
@@ -339,7 +339,7 @@ module axelar_gateway::gateway {
         assert!(computed_approval_hash == approval_hash, EPayloadHashMismatch);
 
         // Friend only.
-        channel::create_approved_call(
+        channel::consume_approved_message(
             cmd_id,
             source_chain,
             source_address,
