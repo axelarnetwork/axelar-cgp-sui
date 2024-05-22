@@ -33,6 +33,7 @@ module axelar_gateway::gateway {
     use sui::hash;
     use sui::table::{Self, Table};
     use sui::address;
+    use sui::clock::Clock;
 
     use axelar_gateway::message::{Self, Message};
     use axelar_gateway::bytes32::{Self, Bytes32};
@@ -58,6 +59,8 @@ module axelar_gateway::gateway {
     // -----
     const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
     const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
+
+    const MESSAGE_EXECUTED: address = @0x1;
 
     /// An object holding the state of the Axelar bridge.
     /// The central piece in managing call approval creation and signature verification.
@@ -116,6 +119,7 @@ module axelar_gateway::gateway {
         domain_separator: Bytes32,
         minimum_rotation_delay: u64,
         initial_signers: WeightedSigners,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let CreatorCap { id } = cap;
@@ -124,7 +128,7 @@ module axelar_gateway::gateway {
         let gateway = Gateway {
             id: object::new(ctx),
             messages: table::new(ctx),
-            signers: auth::setup(domain_separator, minimum_rotation_delay, initial_signers, ctx),
+            signers: auth::setup(domain_separator, minimum_rotation_delay, initial_signers, clock, ctx),
         };
 
         // Share the gateway object for anyone to use.
@@ -219,6 +223,7 @@ module axelar_gateway::gateway {
     /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
     entry fun rotate_signers(
         self: &mut Gateway,
+        clock: &Clock,
         new_signers_data: vector<u8>,
         proof_data: vector<u8>,
     ) {
@@ -229,7 +234,7 @@ module axelar_gateway::gateway {
         assert!(is_latest_signers, ENotLatestSigners);
 
         // This will fail if signers are duplicated
-        self.signers.rotate_signers(weighted_signers);
+        self.signers.rotate_signers(clock, weighted_signers, false);
     }
 
     /// -----------------
@@ -306,7 +311,7 @@ module axelar_gateway::gateway {
     /// messaging system allows sending private messages which can be consumed
     /// by single-owner targets.
     ///
-    /// The hot potato approvel call object is returned.
+    /// The hot potato approval message object is returned.
     public fun take_approved_message(
         self: &mut Gateway,
         source_chain: String,
@@ -327,7 +332,7 @@ module axelar_gateway::gateway {
 
         assert!(self.messages[command_id].status == message.hash(), EMessageNotApproved);
 
-        self.messages[command_id].status = bytes32::new(@0x1);
+        self.messages[command_id].status = bytes32::new(MESSAGE_EXECUTED);
 
         // Friend only.
         channel::create_approved_message(source_chain, message_id, source_address, destination_id, payload)
