@@ -46,13 +46,13 @@ module axelar_gateway::gateway {
     /// Errors
     /// ------
     /// Trying to `take_approved_message` for a message that is not approved.
-    const EMessageNotApproved: u64 = 2;
+    const EMessageNotApproved: u64 = 0;
     /// Invalid length of vector
-    const EInvalidLength: u64 = 3;
+    const EInvalidLength: u64 = 1;
     /// Remaining data after BCS decoding
-    const ERemainingData: u64 = 4;
+    const ERemainingData: u64 = 2;
     /// Not latest signers
-    const ENotLatestSigners: u64 = 5;
+    const ENotLatestSigners: u64 = 3;
 
     // -----
     // Types

@@ -38,7 +38,7 @@ module axelar_gateway::channel {
     /// For when trying to consume the wrong object.
     const EWrongDestination: u64 = 0;
     /// For when message has already been processed and submitted twice.
-    const EDuplicateMessage: u64 = 2;
+    const EDuplicateMessage: u64 = 1;
 
     /// The Channel object. Acts as a destination for the messages sent through
     /// the bridge. The `destination_id` is compared against the `id` of the `Channel`
