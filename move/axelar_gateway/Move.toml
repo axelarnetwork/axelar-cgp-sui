@@ -8,3 +8,4 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 
 [addresses]
 axelar_gateway = "0x0"
+clock = "0x6"

@@ -2,6 +2,7 @@ module axelar_gateway::auth {
     use sui::bcs;
     use sui::event;
     use sui::table::{Self, Table};
+    use sui::clock::Clock;
 
     use axelar_gateway::weighted_signer::{Self};
     use axelar_gateway::weighted_signers::{WeightedSigners};
@@ -20,6 +21,7 @@ module axelar_gateway::auth {
     const ELowSignaturesWeight: u64 = 4;
     const EMalformedSigners: u64 = 5;
     const EInvalidEpoch: u64 = 6;
+    const EInsufficientRotationDelay: u64 = 7;
 
     // ---------
     // Constants
@@ -39,6 +41,8 @@ module axelar_gateway::auth {
         domain_separator: Bytes32,
         /// Minimum rotation delay.
         minimum_rotation_delay: u64,
+        /// Timestamp of the last rotation
+        last_rotation_timestamp: u64,
     }
 
     public struct MessageToSign has copy, drop, store {
@@ -65,6 +69,7 @@ module axelar_gateway::auth {
             epoch_by_signers_hash: table::new(ctx),
             domain_separator: bytes32::default(),
             minimum_rotation_delay: 0,
+            last_rotation_timestamp: 0,
         }
     }
 
@@ -72,6 +77,7 @@ module axelar_gateway::auth {
         domain_separator: Bytes32,
         minimum_rotation_delay: u64,
         initial_signers: WeightedSigners,
+        clock: &Clock,
         ctx: &mut TxContext,
     ): AxelarSigners {
         let mut signers = AxelarSigners {
@@ -79,9 +85,10 @@ module axelar_gateway::auth {
             epoch_by_signers_hash: table::new(ctx),
             domain_separator,
             minimum_rotation_delay,
+            last_rotation_timestamp: 0,
         };
 
-        signers.rotate_signers(initial_signers);
+        signers.rotate_signers(clock, initial_signers, false);
 
         signers
     }
@@ -114,8 +121,10 @@ module axelar_gateway::auth {
         is_latest_signers
     }
 
-    public(package) fun rotate_signers(self: &mut AxelarSigners, new_signers: WeightedSigners) {
+    public(package) fun rotate_signers(self: &mut AxelarSigners, clock: &Clock, new_signers: WeightedSigners, enforce_rotation_delay: bool) {
         validate_signers(&new_signers);
+
+        self.update_rotation_timestamp(clock, enforce_rotation_delay);
 
         let new_signers_hash = new_signers.hash();
         let epoch = self.epoch + 1;
@@ -191,5 +200,14 @@ module axelar_gateway::auth {
         };
 
         assert!(total_weight >= signers.threshold(), EInvalidThreshold);
+    }
+
+    fun update_rotation_timestamp(self: &mut AxelarSigners, clock: &Clock, enforce_rotation_delay: bool) {
+        let current_timestamp = clock.timestamp_ms();
+
+        // If the rotation delay is enforced, the current timestamp should be greater than the last rotation timestamp plus the minimum rotation delay.
+        assert!(!enforce_rotation_delay || current_timestamp >= self.last_rotation_timestamp + self.minimum_rotation_delay, EInsufficientRotationDelay);
+
+        self.last_rotation_timestamp = current_timestamp;
     }
 }
