@@ -3,6 +3,9 @@ module axelar_gateway::channel {
     use sui::table::{Self, Table};
     use sui::event;
 
+    use axelar_gateway::bytes32::{Bytes32};
+    use axelar_gateway::message::{Self};
+
     /// Generic target for the messaging system.
     ///
     /// This struct is required on the Sui side to be the destination for the
@@ -38,7 +41,7 @@ module axelar_gateway::channel {
     const EDuplicateMessage: u64 = 2;
 
     /// The Channel object. Acts as a destination for the messages sent through
-    /// the bridge. The `target_id` is compared against the `id` of the `Channel`
+    /// the bridge. The `destination_id` is compared against the `id` of the `Channel`
     /// during the message consumption.
     ///
     /// The `T` parameter allows wrapping a Capability or a piece of data into
@@ -51,21 +54,21 @@ module axelar_gateway::channel {
         /// Messages processed by this object for the current axelar epoch. To make system less
         /// centralized, and spread the storage + io costs across multiple
         /// destinations, we can track every `Channel`'s messages.
-        message_approvals: Table<address, bool>,
+        message_approvals: Table<Bytes32, bool>,
     }
 
     /// A HotPotato - call received from the Gateway. Must be delivered to the
     /// matching Channel, otherwise the TX fails.
     public struct ApprovedMessage {
-        /// ID of the call approval, guaranteed to be unique by Axelar.
-        cmd_id: address,
-        /// The target Channel's UID.
-        target_id: address,
         /// Name of the chain where this approval came from.
         source_chain: String,
-        /// Address of the source chain (vector used for compatibility).
+        /// Unique ID of the message.
+        message_id: String,
+        /// Address of the source chain.
         /// UTF8 / ASCII encoded string (for 0x0... eth address gonna be 42 bytes with 0x)
         source_address: String,
+        /// The destination Channel's UID.
+        destination_id: address,
         /// Payload of the command.
         payload: vector<u8>,
     }
@@ -115,22 +118,22 @@ module axelar_gateway::channel {
     /// Create a new `ApprovedMessage` object to be sent to another chain. Is called
     /// by the gateway when a message is "picked up" by the relayer.
     public(package) fun create_approved_message(
-        cmd_id: address,
         source_chain: String,
+        message_id: String,
         source_address: String,
-        target_id: address,
+        destination_id: address,
         payload: vector<u8>,
     ): ApprovedMessage {
         ApprovedMessage {
-            cmd_id,
             source_chain,
+            message_id,
             source_address,
-            target_id,
+            destination_id,
             payload
         }
     }
 
-    /// Consume a approved call hot potato object sent to this `Channel` from another chain.
+    /// Consume an approved message hot potato object sent to this `Channel` from another chain.
     /// For Capability-locking, a mutable reference to the `Channel.data` field is returned.
     ///
     /// Returns a mutable reference to the locked T, the `source_chain`, the `source_address`
@@ -138,24 +141,27 @@ module axelar_gateway::channel {
     public fun consume_approved_message(
         channel: &mut Channel,
         approved_message: ApprovedMessage
-    ): (String, String, vector<u8>) {
+    ): (String, String, String, vector<u8>) {
         let ApprovedMessage {
-            cmd_id,
-            target_id,
             source_chain,
+            message_id,
             source_address,
+            destination_id,
             payload,
         } = approved_message;
+        let command_id = message::message_to_command_id(source_chain, message_id);
 
         // Check if the message has already been processed.
-        assert!(!channel.message_approvals.contains(cmd_id), EDuplicateMessage);
-        // Check if the message is sent to the correct destination.
-        assert!(target_id == object::id_address(channel), EWrongDestination);
+        assert!(!channel.message_approvals.contains(command_id), EDuplicateMessage);
 
-        channel.message_approvals.add(cmd_id, true);
+        // Check if the message is sent to the correct destination.
+        assert!(destination_id == object::id_address(channel), EWrongDestination);
+
+        channel.message_approvals.add(command_id, true);
 
         (
             source_chain,
+            message_id,
             source_address,
             payload,
         )
@@ -163,17 +169,17 @@ module axelar_gateway::channel {
 
     #[test_only]
     public fun create_test_approved_message(
-        cmd_id: address,
         source_chain: String,
+        message_id: String,
         source_address: String,
-        target_id: address,
+        destination_id: address,
         payload: vector<u8>,
     ): ApprovedMessage {
         create_approved_message(
-            cmd_id,
             source_chain,
+            message_id,
             source_address,
-            target_id,
+            destination_id,
             payload,
         )
     }
@@ -204,30 +210,30 @@ module axelar_gateway::channel {
 
     #[test]
     fun test_create_approved_message() {
-        let input_cmd_id = @0x1234;
         let input_source_chain = std::ascii::string(b"Source Chain");
+        let input_message_id = std::ascii::string(b"message id");
         let input_source_address = std::ascii::string(b"Source Address");
-        let input_target_id = @0x5678;
+        let input_destination_id = @0x5678;
         let input_payload = b"payload";
         let approved_message: ApprovedMessage = create_approved_message(
-            input_cmd_id,
             input_source_chain,
+            input_message_id,
             input_source_address,
-            input_target_id,
+            input_destination_id,
             input_payload
         );
 
         let ApprovedMessage {
-            cmd_id,
             source_chain,
+            message_id,
             source_address,
-            target_id,
+            destination_id,
             payload
         } = approved_message;
-        assert!(cmd_id == input_cmd_id, 0);
-        assert!(source_chain == input_source_chain, 1);
+        assert!(source_chain == input_source_chain, 0);
+        assert!(message_id == input_message_id, 1);
         assert!(source_address == input_source_address, 2);
-        assert!(target_id == input_target_id, 3);
+        assert!(destination_id == input_destination_id, 3);
         assert!(payload == input_payload, 4);
     }
 
@@ -236,23 +242,23 @@ module axelar_gateway::channel {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
-        let input_cmd_id = @0x1234;
         let input_source_chain = std::ascii::string(b"Source Chain");
+        let input_message_id = std::ascii::string(b"message id");
         let input_source_address = std::ascii::string(b"Source Address");
-        let input_target_id = channel.to_address();
+        let input_destination_id = channel.to_address();
         let input_payload = b"payload";
         let approved_message: ApprovedMessage = create_approved_message(
-            input_cmd_id,
             input_source_chain,
+            input_message_id,
             input_source_address,
-            input_target_id,
+            input_destination_id,
             input_payload,
         );
 
-        let (source_chain, source_address, payload) = consume_approved_message(&mut channel, approved_message);
-
+        let (source_chain, message_id, source_address, payload) = consume_approved_message(&mut channel, approved_message);
 
         assert!(source_chain == input_source_chain, 1);
+        assert!(message_id == input_message_id, 3);
         assert!(source_address == input_source_address, 2);
         assert!(payload == input_payload, 4);
 
@@ -265,29 +271,29 @@ module axelar_gateway::channel {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
-        let cmd_id = @0x1234;
-        let source_chain1 = std::ascii::string(b"Source Chain 1");
+        let source_chain = std::ascii::string(b"Source Chain 1");
+        let message_id = std::ascii::string(b"message id 1");
+
         let source_address1 = std::ascii::string(b"Source Address 1");
-        let target_id1 = channel.to_address();
+        let destination_id1 = channel.to_address();
         let payload1 = b"payload 1";
-        let source_chain2 = std::ascii::string(b"Source Chain");
         let source_address2 = std::ascii::string(b"Source Address");
-        let target_id2 = channel.to_address();
+        let destination_id2 = channel.to_address();
         let payload2 = b"payload 2";
 
         consume_approved_message(&mut channel, create_approved_message(
-            cmd_id,
-            source_chain1,
+            source_chain,
+            message_id,
             source_address1,
-            target_id1,
+            destination_id1,
             payload1,
         ));
 
         consume_approved_message(&mut channel, create_approved_message(
-            cmd_id,
-            source_chain2,
+            source_chain,
+            message_id,
             source_address2,
-            target_id2,
+            destination_id2,
             payload2,
         ));
 
@@ -300,17 +306,17 @@ module axelar_gateway::channel {
         let ctx = &mut sui::tx_context::dummy();
         let mut channel: Channel = new(ctx);
 
-        let cmd_id = @0x1234;
         let source_chain = std::ascii::string(b"Source Chain");
+        let message_id = std::ascii::string(b"message id");
         let source_address = std::ascii::string(b"Source Address");
-        let target_id = @0x5678;
+        let destination_id = @0x5678;
         let payload = b"payload";
 
         let approved_message = create_approved_message(
-            cmd_id,
             source_chain,
+            message_id,
             source_address,
-            target_id,
+            destination_id,
             payload,
         );
 

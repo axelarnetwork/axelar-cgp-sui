@@ -44,8 +44,8 @@ module axelar_gateway::gateway {
     /// ------
     /// Errors
     /// ------
-    /// Trying to `take_approved_message` with a wrong payload.
-    const EPayloadHashMismatch: u64 = 2;
+    /// Trying to `take_approved_message` for a message that is not approved.
+    const EMessageNotApproved: u64 = 2;
     /// Invalid length of vector
     const EInvalidLength: u64 = 3;
     /// Remaining data after BCS decoding
@@ -63,8 +63,7 @@ module axelar_gateway::gateway {
     /// The central piece in managing call approval creation and signature verification.
     public struct Gateway has key {
         id: UID,
-        approvals: Table<address, Approval>,  // TODO: remove
-        messages: Table<vector<u8>, MessageStatus>,
+        messages: Table<Bytes32, MessageStatus>,
         signers: AxelarSigners,
     }
 
@@ -75,14 +74,6 @@ module axelar_gateway::gateway {
     /// - Executed: Set to bytes32(1)
     public struct MessageStatus has store {
         status: Bytes32,
-    }
-
-    /// CallApproval struct which can consumed only by a `Channel` object.
-    /// Does not require additional generic field to operate as linking
-    /// by `id_bytes` is more than enough.
-    public struct Approval has store {
-        /// Hash of the cmd_id, destination_id, source_chain, source_address, payload_hash
-        approval_hash: vector<u8>,
     }
 
     // ------------
@@ -132,7 +123,6 @@ module axelar_gateway::gateway {
 
         let gateway = Gateway {
             id: object::new(ctx),
-            approvals: table::new(ctx),
             messages: table::new(ctx),
             signers: auth::setup(domain_separator, minimum_rotation_delay, initial_signers, ctx),
         };
@@ -180,7 +170,7 @@ module axelar_gateway::gateway {
             destination_id,
             payload_hash,
         );
-        let command_id = hash::keccak256(&message.id());
+        let command_id = message.command_id();
 
         self.messages[command_id].status == message.hash()
     }
@@ -190,10 +180,10 @@ module axelar_gateway::gateway {
         source_chain: String,
         message_id: String,
     ): bool {
-        let command_id = hash::keccak256(&message::message_to_command_id(
+        let command_id = message::message_to_command_id(
             source_chain,
             message_id,
-        ));
+        );
 
         self.messages[command_id].status == bytes32::new(@0x1)
     }
@@ -295,7 +285,7 @@ module axelar_gateway::gateway {
         self: &mut Gateway,
         message: &message::Message,
     ) {
-        let command_id = hash::keccak256(&message.id());
+        let command_id = message.command_id();
 
         // If the message was already approved, ignore it.
         if (self.messages.contains(command_id)) {
@@ -319,49 +309,27 @@ module axelar_gateway::gateway {
     /// The hot potato approvel call object is returned.
     public fun take_approved_message(
         self: &mut Gateway,
-        cmd_id: address,
         source_chain: String,
+        message_id: String,
         source_address: String,
         destination_id: address,
         payload: vector<u8>
     ): ApprovedMessage {
-        let Approval {
-            approval_hash,
-        } = table::remove(&mut self.approvals, cmd_id);
+        let command_id = message::message_to_command_id(source_chain, message_id);
 
-        let computed_approval_hash = get_approval_hash(
-            &cmd_id,
-            &source_chain,
-            &source_address,
-            &destination_id,
-            &address::from_bytes(hash::keccak256(&payload)),
-        );
-        assert!(computed_approval_hash == approval_hash, EPayloadHashMismatch);
-
-        // Friend only.
-        channel::consume_approved_message(
-            cmd_id,
+        let message = message::new(
             source_chain,
+            message_id,
             source_address,
             destination_id,
-            payload,
-        )
-    }
+            bytes32::from_bytes(hash::keccak256(&payload)),
+        );
 
-    fun get_approval_hash(
-        cmd_id: &address,
-        source_chain: &String,
-        source_address: &String,
-        destination_id: &address,
-        payload_hash: &address
-    ): vector<u8> {
-        let mut data = vector[];
-        vector::append(&mut data, bcs::to_bytes(cmd_id));
-        vector::append(&mut data, bcs::to_bytes(destination_id));
-        vector::append(&mut data, bcs::to_bytes(source_chain));
-        vector::append(&mut data, bcs::to_bytes(source_address));
-        vector::append(&mut data, bcs::to_bytes(payload_hash));
+        assert!(self.messages[command_id].status == message.hash(), EMessageNotApproved);
 
-        hash::keccak256(&data)
+        self.messages[command_id].status = bytes32::new(@0x1);
+
+        // Friend only.
+        channel::create_approved_message(source_chain, message_id, source_address, destination_id, payload)
     }
 }
