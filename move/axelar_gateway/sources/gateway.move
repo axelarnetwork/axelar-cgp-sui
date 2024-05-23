@@ -1,5 +1,4 @@
-#[allow(implicit_const_copy)]
-/// Implementation a cross-chain messaging system for Axelar.
+/// Implementation of the Axelar Gateway for Sui Move.
 ///
 /// This code is based on the following:
 ///
@@ -42,9 +41,9 @@ module axelar_gateway::gateway {
     use axelar_gateway::weighted_signers::{Self, WeightedSigners};
     use axelar_gateway::proof::{Self, Proof};
 
-    /// ------
-    /// Errors
-    /// ------
+    // ------
+    // Errors
+    // ------
     /// Trying to `take_approved_message` for a message that is not approved.
     const EMessageNotApproved: u64 = 0;
     /// Invalid length of vector
@@ -87,9 +86,9 @@ module axelar_gateway::gateway {
         id: UID
     }
 
-    /// ------
-    /// Events
-    /// ------
+    // ------
+    // Events
+    // ------
 
     /// Emitted when a new message is sent from the SUI network.
     public struct ContractCall has copy, drop {
@@ -104,6 +103,10 @@ module axelar_gateway::gateway {
     public struct MessageApproved has copy, drop {
         message: message::Message,
     }
+
+    // -----
+    // Setup
+    // -----
 
     /// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
     fun init(ctx: &mut TxContext) {
@@ -138,9 +141,57 @@ module axelar_gateway::gateway {
         transfer::share_object(gateway);
     }
 
-    /// ----------------
-    /// Public Functions
-    /// ----------------
+    // -----------
+    // Entrypoints
+    // -----------
+
+    /// The main entrypoint for approving Axelar signed messages.
+    /// If proof is valid, message approvals are stored in the Gateway object, if not already approved before.
+    /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
+    entry fun approve_messages(
+        self: &mut Gateway,
+        message_data: vector<u8>,
+        proof_data: vector<u8>,
+    ) {
+        let messages = peel_messages(*&message_data);
+        let proof = peel_proof(proof_data);
+
+        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data), proof);
+
+        let mut i = 0;
+
+        while (i < messages.length()) {
+            self.approve_message(&messages[i]);
+
+            i = i + 1;
+        };
+    }
+
+    /// The main entrypoint for rotating Axelar signers.
+    /// If proof is valid, signers stored on the Gateway object are rotated.
+    /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
+    entry fun rotate_signers(
+        self: &mut Gateway,
+        clock: &Clock,
+        new_signers_data: vector<u8>,
+        proof_data: vector<u8>,
+        ctx: &TxContext,
+    ) {
+        let weighted_signers = peel_weighted_signers(new_signers_data);
+        let proof = peel_proof(proof_data);
+
+        let enforce_rotation_delay = ctx.sender() != self.operator;
+
+        let is_latest_signers = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data), proof);
+        assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
+
+        // This will fail if signers are duplicated
+        self.signers.rotate_signers(clock, weighted_signers, enforce_rotation_delay);
+    }
+
+    // ----------------
+    // Public Functions
+    // ----------------
 
     /// Call a contract on the destination chain by sending an event from an
     /// authorized Channel. Currently we require Channel to be mutable to prevent
@@ -195,57 +246,37 @@ module axelar_gateway::gateway {
         self.messages[command_id].status == bytes32::new(@0x1)
     }
 
-    /// -----------
-    /// Entrypoints
-    /// -----------
-
-    /// The main entrypoint for approving Axelar signed messages.
-    /// If proof is valid, message approvals are stored in the Gateway object, if not already approved before.
-    /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
-    entry fun approve_messages(
+    /// To execute a message, the relayer will call `take_approved_message`
+    /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
+    public fun take_approved_message(
         self: &mut Gateway,
-        message_data: vector<u8>,
-        proof_data: vector<u8>,
-    ) {
-        let messages = peel_messages(*&message_data);
-        let proof = peel_proof(proof_data);
+        source_chain: String,
+        message_id: String,
+        source_address: String,
+        destination_id: address,
+        payload: vector<u8>
+    ): ApprovedMessage {
+        let command_id = message::message_to_command_id(source_chain, message_id);
 
-        let _ = self.signers.validate_proof(data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data), proof);
+        let message = message::new(
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            bytes32::from_bytes(hash::keccak256(&payload)),
+        );
 
-        let mut i = 0;
+        assert!(self.messages[command_id].status == message.hash(), EMessageNotApproved);
 
-        while (i < messages.length()) {
-            self.approve_message(&messages[i]);
+        self.messages[command_id].status = bytes32::new(MESSAGE_EXECUTED);
 
-            i = i + 1;
-        };
+        // Friend only.
+        channel::create_approved_message(source_chain, message_id, source_address, destination_id, payload)
     }
 
-    /// The main entrypoint for rotating Axelar signers.
-    /// If proof is valid, signers stored on the Gateway object are rotated.
-    /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
-    entry fun rotate_signers(
-        self: &mut Gateway,
-        clock: &Clock,
-        new_signers_data: vector<u8>,
-        proof_data: vector<u8>,
-        ctx: &TxContext,
-    ) {
-        let weighted_signers = peel_weighted_signers(new_signers_data);
-        let proof = peel_proof(proof_data);
-
-        let enforce_rotation_delay = ctx.sender() != self.operator;
-
-        let is_latest_signers = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data), proof);
-        assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
-
-        // This will fail if signers are duplicated
-        self.signers.rotate_signers(clock, weighted_signers, enforce_rotation_delay);
-    }
-
-    /// -----------------
-    /// Private Functions
-    /// -----------------
+    // -----------------
+    // Private Functions
+    // -----------------
 
     fun peel_messages(message_data: vector<u8>): vector<Message> {
         let mut bcs = bcs::new(message_data);
@@ -311,36 +342,5 @@ module axelar_gateway::gateway {
         sui::event::emit(MessageApproved {
             message: *message,
         });
-    }
-
-    /// Most common scenario would be to target a shared object, however this
-    /// messaging system allows sending private messages which can be consumed
-    /// by single-owner targets.
-    ///
-    /// The hot potato approval message object is returned.
-    public fun take_approved_message(
-        self: &mut Gateway,
-        source_chain: String,
-        message_id: String,
-        source_address: String,
-        destination_id: address,
-        payload: vector<u8>
-    ): ApprovedMessage {
-        let command_id = message::message_to_command_id(source_chain, message_id);
-
-        let message = message::new(
-            source_chain,
-            message_id,
-            source_address,
-            destination_id,
-            bytes32::from_bytes(hash::keccak256(&payload)),
-        );
-
-        assert!(self.messages[command_id].status == message.hash(), EMessageNotApproved);
-
-        self.messages[command_id].status = bytes32::new(MESSAGE_EXECUTED);
-
-        // Friend only.
-        channel::create_approved_message(source_chain, message_id, source_address, destination_id, payload)
     }
 }
