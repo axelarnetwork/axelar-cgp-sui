@@ -40,12 +40,12 @@ jobs:
 
       - name: Test
         timeout-minutes: 60
-        run: npm run coverage && ls
+        run: npm run coverage
 
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: lcov.info
+          files: move/*/.coverage_map.mvcov move/*/.trace
           fail_ci_if_error: true
