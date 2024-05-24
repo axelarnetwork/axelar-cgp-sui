@@ -20,7 +20,8 @@ jobs:
           wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           sudo mv ./sui-test-validator /usr/local/bin/sui-test-validator
-          sudo mv ./sui-debug /usr/local/bin/sui
+          sudo mv ./sui /usr/local/bin/sui
+          sudo mv ./sui-debug /usr/local/bin/sui-debug
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Checkout code
@@ -47,5 +48,5 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: move/*/.coverage_map.mvcov move/*/.trace
+          files: coverage.info
           fail_ci_if_error: true
