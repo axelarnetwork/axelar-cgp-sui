@@ -6,6 +6,8 @@
 
 move/**/build
 Move.lock
+# Local sui build
+/sui
 
 ### Information Cache ###
 
@@ -26,7 +28,7 @@ coverage
 *.lcov
 .trace
 *.mvcov
-coverage.info
+.coverage.info
 
 # Dependency directories
 node_modules/

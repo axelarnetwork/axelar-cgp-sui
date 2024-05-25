@@ -9,7 +9,7 @@
   "scripts": {
     "build": "for d in ./move/*/; do cd $d; sui move build --lint --warnings-are-errors; cd ../../; done",
     "test": "for d in ./move/*/; do sui move test --path $d; done",
-    "coverage": "echo 'Axelar Move Coverage Report\n\n' > .coverage.info ; for d in ./move/*/; do sui-debug move test --path $d --coverage; sui-debug move coverage summary --path $d >> .coverage.info; done"
+    "coverage": "./scripts/coverage.sh"
   },
   "keywords": [
     "axelar",
