@@ -17,7 +17,7 @@ jobs:
         env:
           SUI_VERSION: devnet-v1.25.0
         run: |
-          wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           sudo mv ./sui-test-validator /usr/local/bin/sui-test-validator
           sudo mv ./sui /usr/local/bin/sui
@@ -41,8 +41,11 @@ jobs:
 
       - name: Test
         timeout-minutes: 60
-        run: npm run coverage
-
+        run: |
+          npm run coverage
+          ls -al
+          ls -al ./move/axelar/
+          cat ./move/axelar/.coverage_map.mvcov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
