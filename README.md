@@ -24,6 +24,27 @@ Run tests for all Move packages
 npm run test
 ```
 
+### Coverage
+
+To run code coverage, Sui debug binary needs to be built locally. You can also see coverage reports from the GH actions.
+
+```sh
+brew install libpq
+brew link --force libpq
+
+git clone https://github.com/MystenLabs/sui.git
+cd sui
+cargo build
+cd ..
+./sui/target/debug/sui version
+
+# Put this sui build on the PATH with the name `sui-debug`
+
+npm run coverage
+```
+
+See `.coverage.info` for the coverage report.
+
 ### Development
 
 Install the `Move` extension in VS Code. It should come pre-installed with `move-analyzer`.

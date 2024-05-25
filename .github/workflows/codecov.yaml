@@ -40,18 +40,7 @@ jobs:
         run: npm run build
 
       - name: Test
-        timeout-minutes: 60
         run: npm run coverage
 
-      - name: debug
-        run: |
-          ls -al
-          ls -al ./move/axelar/
-          cat ./move/axelar/.coverage_map.mvcov
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./move/axelar/.coverage_map.mvcov
-          fail_ci_if_error: true
+      - name: Display coverage report
+        run: cat ./coverage.info
