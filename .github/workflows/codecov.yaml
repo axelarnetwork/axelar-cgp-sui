@@ -41,8 +41,10 @@ jobs:
 
       - name: Test
         timeout-minutes: 60
+        run: npm run coverage
+
+      - name: debug
         run: |
-          npm run coverage
           ls -al
           ls -al ./move/axelar/
           cat ./move/axelar/.coverage_map.mvcov
