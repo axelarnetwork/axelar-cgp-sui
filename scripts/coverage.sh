@@ -20,7 +20,13 @@ echo 'Axelar Move Coverage Report' > .coverage.info
 echo '' >> .coverage.info
 
 for d in ./move/*/; do
-    "$SUI" move test --path "$d" --coverage
+    "$SUI" move test --path "$d" --coverage &
+done
+
+wait
+
+for d in ./move/*/; do
+    echo "Generating coverage info for package $d"
 
     if [ ! -f "$d/.coverage_map.mvcov" ]; then
         echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.info
@@ -30,4 +36,9 @@ for d in ./move/*/; do
     echo "\nCoverage report for module $d\n" >> .coverage.info
 
     "$SUI" move coverage summary --path "$d" >> .coverage.info
+
+    # Display source code with coverage info
+    find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
+        "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
+    done
 done
