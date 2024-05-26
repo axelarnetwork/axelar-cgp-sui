@@ -3,7 +3,7 @@
 export SUI=sui-debug
 
 # Check if sui-debug is available
-if ! type "$SUI" >/dev/null 2>&1; then
+if ! which "$SUI" >/dev/null 2>&1; then
   echo "sui-debug not found. Setting SUI to ./sui/target/debug/sui."
 
   # Default to a local Sui build
