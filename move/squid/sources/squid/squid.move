@@ -1,5 +1,5 @@
 module squid::squid {
-    use axelar::channel::{Self, Channel, ApprovedCall};
+    use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
     use its::service;
     use its::its::ITS;
@@ -25,10 +25,10 @@ module squid::squid {
         &self.channel
     }
 
-    public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_call: ApprovedCall, ctx: &mut TxContext): SwapInfo {
+    public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, ctx: &mut TxContext): SwapInfo {
         let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
             its,
-            approved_call,
+            approved_message,
             &self.channel,
             ctx,
         );

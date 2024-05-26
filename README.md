@@ -89,7 +89,7 @@ First of all, as we mentioned before, for applications to 'validate' themselves 
 - This calldata has the following 3 fields:
   - `target`: the target method, in the form of `packag_iId::module_name::function_name`.
   - `arguments`: an array of arguments that can be:
-    - `contractCall`: the `ApprovedCall` object (see below).
+    - `contractCall`: the `ApprovedMessage` object (see below).
     - `pure:${info}`: a pure argument specified by `$info`.
     - `obj:${objectId}`: a shared object with the specified `id`.
   - `typeArguments`: a list of types to be passed to the function called

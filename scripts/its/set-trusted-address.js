@@ -18,7 +18,7 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
     const axelarPackageId = axelarInfo.packageId;
 
     const governance = getConfig('governance', envAlias)['governance::Governance'];
-    
+
     const bcs = new BCS(getSuiMoveConfig());
     bcs.registerStructType("TrustedAddressInfo", {
         chainNames: "vector<string>",
@@ -34,21 +34,21 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
     const payloadHash = keccak256(payload);
 
     const commandId = await approveContractCall(
-        client, 
+        client,
         keypair,
-        axelarInfo, 
-        governance.trusted_source_chain, 
-        governance.trusted_source_address, 
-        itsInfo['its::ITS'].channel, 
+        axelarInfo,
+        governance.trusted_source_chain,
+        governance.trusted_source_address,
+        itsInfo['its::ITS'].channel,
         payloadHash,
     );
 
     let tx = new TransactionBlock();
 
-    const approvedCall = tx.moveCall({
-        target: `${axelarPackageId}::gateway::take_approved_call`,
+    const ApprovedMessage = tx.moveCall({
+        target: `${axelarPackageId}::gateway::take_approved_message`,
         arguments: [
-            tx.object(axelarInfo['gateway::Gateway'].objectId), 
+            tx.object(axelarInfo['gateway::Gateway'].objectId),
             tx.pure.address(commandId),
             tx.pure.string(governance.trusted_source_chain),
             tx.pure.string(governance.trusted_source_address),
@@ -60,9 +60,9 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
     tx.moveCall({
         target: `${itsPackageId}::service::set_trusted_addresses`,
         arguments: [
-            tx.object(itsObjectId), 
+            tx.object(itsObjectId),
             tx.object(governance.objectId),
-            approvedCall,
+            ApprovedMessage,
         ],
         typeArguments: [],
     });
@@ -87,9 +87,9 @@ if (require.main === module) {
     const env = process.argv[2] || 'localnet';
     const chainName = process.argv[3] || 'Ethereum';
     const trustedAddress = process.argv[4] || '0x1234';
-    
+
     (async () => {
-        const privKey = 
+        const privKey =
         Buffer.from(
             process.env.SUI_PRIVATE_KEY,
             "hex"

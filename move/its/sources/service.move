@@ -10,7 +10,7 @@ module its::service {
 
     use abi::abi;
 
-    use axelar::channel::{Self, ApprovedCall};
+    use axelar_gateway::channel::{Self, ApprovedMessage};
 
     use governance::governance::{Self, Governance};
 
@@ -20,8 +20,8 @@ module its::service {
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
 
-    use axelar::gateway;
-    use axelar::channel::Channel;
+    use axelar_gateway::gateway;
+    use axelar_gateway::channel::Channel;
 
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -102,8 +102,8 @@ module its::service {
         send_payload(self, destination_chain, writer.into_bytes());
     }
 
-    public fun receive_interchain_transfer<T>(self: &mut ITS, approved_call: ApprovedCall, ctx: &mut TxContext) {
-        let (_, payload) = decode_approved_call(self, approved_call);
+    public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, ctx: &mut TxContext) {
+        let (_, payload) = decode_approved_message(self, approved_message);
         let reader = abi::new_reader(payload);
         assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
         assert!(reader.read_bytes(5).is_empty(), EInterchainTransferHasData);
@@ -121,11 +121,11 @@ module its::service {
 
     public fun receive_interchain_transfer_with_data<T>(
         self: &mut ITS,
-        approved_call: ApprovedCall,
+        approved_message: ApprovedMessage,
         channel: &Channel,
         ctx: &mut TxContext
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
-        let (source_chain, payload) = decode_approved_call(self, approved_call);
+        let (source_chain, payload) = decode_approved_message(self, approved_message);
         let reader = abi::new_reader(payload);
         assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
         assert!(address::from_bytes(reader.read_bytes(3)) == channel.to_address(), EWrongDestination);
@@ -149,8 +149,8 @@ module its::service {
         )
     }
 
-    public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_call: ApprovedCall) {
-        let (_, payload) = decode_approved_call(self, approved_call);
+    public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_message: ApprovedMessage) {
+        let (_, payload) = decode_approved_message(self, approved_message);
         let reader = abi::new_reader(payload);
         assert!(reader.read_u256(0) == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
 
@@ -227,9 +227,9 @@ module its::service {
     }
 
     // === Special Call Receiving
-    public fun set_trusted_addresses(its: &mut ITS, governance: &Governance, approved_call: ApprovedCall) {
-        let (source_chain, source_address, payload) = channel::consume_approved_call(
-            its::channel_mut(its), approved_call
+    public fun set_trusted_addresses(its: &mut ITS, governance: &Governance, approved_message: ApprovedMessage) {
+        let (source_chain, _, source_address, payload) = channel::consume_approved_message(
+            its::channel_mut(its), approved_message
         );
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
@@ -260,12 +260,13 @@ module its::service {
     // === Internal functions ===
 
     /// Decode an approved call and check that the source chain is trusted.
-    fun decode_approved_call(self: &mut ITS, approved_call: ApprovedCall): (String, vector<u8>) {
+    fun decode_approved_message(self: &mut ITS, approved_message: ApprovedMessage): (String, vector<u8>) {
         let (
             source_chain,
+            _,
             source_address,
             payload
-        ) = self.channel_mut().consume_approved_call(approved_call);
+        ) = self.channel_mut().consume_approved_message(approved_message);
 
         assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
 

@@ -6,7 +6,7 @@ edition = "2024.alpha"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
-Axelar = { local = "../axelar" }
+AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
 test = "0xc47f50df280836b74a20a862c71a189e9819ba7305173ef99858c095bba373d7"

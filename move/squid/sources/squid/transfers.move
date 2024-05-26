@@ -5,7 +5,7 @@ module squid::transfers {
     use sui::bcs::{Self, BCS};
     use sui::coin;
 
-    use axelar::discovery::{Self, MoveCall};
+    use axelar_gateway::discovery::{Self, MoveCall};
 
     use its::service;
     use its::its::ITS;

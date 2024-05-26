@@ -9,8 +9,8 @@ module its::its {
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
 
-    use axelar::channel::Channel;
-    use axelar::discovery::RelayerDiscovery;
+    use axelar_gateway::channel::Channel;
+    use axelar_gateway::discovery::RelayerDiscovery;
 
     use its::token_id::{Self, TokenId, UnregisteredTokenId};
     use its::address_tracker::{Self, InterchainAddressTracker};
@@ -35,7 +35,7 @@ module its::its {
 
         relayer_discovery_id: ID,
     }
-    
+
     public struct CoinData<phantom T> has store {
         coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
@@ -49,7 +49,7 @@ module its::its {
     fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
-            channel: axelar::channel::new(ctx),
+            channel: axelar_gateway::channel::new(ctx),
 
             address_tracker: address_tracker::new(
                 ctx,
@@ -208,7 +208,7 @@ module its::its {
         let ctx = &mut sui::tx_context::dummy();
         ITS {
             id: object::new(ctx),
-            channel: axelar::channel::new(ctx),
+            channel: axelar_gateway::channel::new(ctx),
 
             address_tracker: address_tracker::new(
                 ctx,

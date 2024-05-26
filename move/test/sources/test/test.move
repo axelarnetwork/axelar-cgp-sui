@@ -7,10 +7,10 @@ module test::test {
     use sui::address;
     use sui::hex;
 
-    use axelar::channel::{Self, Channel, ApprovedCall};
-    use axelar::discovery::{Self, RelayerDiscovery};
+    use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+    use axelar_gateway::discovery::{Self, RelayerDiscovery};
 
-    use axelar::gateway;
+    use axelar_gateway::gateway;
 
     public struct Singleton has key {
         id: UID,
@@ -58,15 +58,14 @@ module test::test {
         gateway::call_contract(&singleton.channel, destination_chain, destination_address, payload);
     }
 
-    public fun execute(call: ApprovedCall, singleton: &mut Singleton) {
+    public fun execute(call: ApprovedMessage, singleton: &mut Singleton) {
         let (
             _,
             _,
+            _,
             payload,
-        ) = channel::consume_approved_call(
-            &mut singleton.channel,
-            call,
-        );
+        ) = singleton.channel.consume_approved_message(call);
+
         event::emit(Executed { data: payload });
     }
   }

@@ -9,7 +9,7 @@ module its::discovery {
 
     use abi::abi::{Self, AbiReader};
 
-    use axelar::discovery::{Self, RelayerDiscovery, Transaction, package_id};
+    use axelar_gateway::discovery::{Self, RelayerDiscovery, Transaction, package_id};
 
     use its::its::ITS;
     use its::token_id::{Self, TokenId};
@@ -191,7 +191,7 @@ module its::discovery {
     fun test_discovery_initial() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = its::its::new();
-        let mut discovery = axelar::discovery::new(ctx);
+        let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
 
@@ -206,7 +206,7 @@ module its::discovery {
     fun test_discovery_interchain_transfer() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = its::its::new();
-        let mut discovery = axelar::discovery::new(ctx);
+        let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
 
@@ -253,7 +253,7 @@ module its::discovery {
     fun test_discovery_interchain_transfer_with_data() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = its::its::new();
-        let mut discovery = axelar::discovery::new(ctx);
+        let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
 
@@ -291,7 +291,7 @@ module its::discovery {
     fun test_discovery_deploy_token() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = its::its::new();
-        let mut discovery = axelar::discovery::new(ctx);
+        let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
 

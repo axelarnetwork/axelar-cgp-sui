@@ -16,7 +16,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     const payloadHash = keccak256(payload);
 
     await approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash);
- 
+
     const eventData = (await client.queryEvents({query: {
         MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
     }}));
@@ -45,17 +45,17 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
             sender: keypair.getPublicKey().toSuiAddress(),
             transactionBlock: tx,
         });
-        
+
         const txData = resp.results[0].returnValues[0][0];
         const nextTx = getTransactionBcs().de('Transaction', new Uint8Array(txData));
         is_final = nextTx.is_final;
         moveCalls = nextTx.move_calls;
     }
     const tx = new TransactionBlock();
-    const approvedCall = tx.moveCall({
-        target: `${axelarPackageId}::gateway::take_approved_call`,
+    const ApprovedMessage = tx.moveCall({
+        target: `${axelarPackageId}::gateway::take_approved_message`,
         arguments: [
-            tx.object(gateway.objectId), 
+            tx.object(gateway.objectId),
             tx.pure(event.cmd_id),
             tx.pure(event.source_chain),
             tx.pure(event.source_address),
@@ -64,7 +64,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         ],
         typeArguments: [],
     });
-    makeCalls(tx, moveCalls, payload, approvedCall);
+    makeCalls(tx, moveCalls, payload, ApprovedMessage);
     return await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
@@ -76,11 +76,11 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
     });
 }
 
-function makeCalls(tx, moveCalls, payload, approvedCall) {
+function makeCalls(tx, moveCalls, payload, ApprovedMessage) {
     const returns = [];
     for(const call of moveCalls) {
         let result = tx.moveCall(
-            buildMoveCall(tx, call, payload, approvedCall, returns)
+            buildMoveCall(tx, call, payload, ApprovedMessage, returns)
         );
         if(!Array.isArray(result)) result = [result];
         returns.push(result);
@@ -151,10 +151,10 @@ if (require.main === module) {
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         // create a new SuiClient object pointing to the network you want to use
         const client = new SuiClient({ url: getFullnodeUrl(env) });
-        
+
         const testPackageId = testInfo.packageId;
         const test = testInfo['test::Singleton'];
-        
+
         const payload = '0x1234';
 
         let tx = new TransactionBlock();
@@ -162,7 +162,7 @@ if (require.main === module) {
             target: `${testPackageId}::test::register_transaction`,
             arguments: [tx.object(discovery.objectId), tx.object(test.objectId)],
         });
-        await client.signAndExecuteTransactionBlock({       
+        await client.signAndExecuteTransactionBlock({
             transactionBlock: tx,
             signer: keypair,
             options: {
@@ -177,8 +177,8 @@ if (require.main === module) {
         const event = (await client.queryEvents({query: {
             MoveEventType: `${testPackageId}::test::Executed`,
         }})).data[0].parsedJson;
-        
+
         if ( hexlify(event.data) != payload ) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
-        
+
     })();
 }
