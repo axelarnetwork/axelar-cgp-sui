@@ -36,6 +36,7 @@ jobs:
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Save Sui binaries
+        if: steps.cache-sui.outputs.cache-hit != 'true'
         id: cache-sui-save
         uses: actions/cache/save@v4
         with:
