@@ -6,6 +6,8 @@
 
 move/**/build
 Move.lock
+# Local sui build
+/sui
 
 ### Information Cache ###
 
@@ -24,6 +26,9 @@ lerna-debug.log*
 # Coverage directory used by tools like istanbul
 coverage
 *.lcov
+.trace
+*.mvcov
+.coverage.info
 
 # Dependency directories
 node_modules/

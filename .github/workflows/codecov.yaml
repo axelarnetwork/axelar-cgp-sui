@@ -7,7 +7,7 @@ concurrency:
 
 jobs:
   coverage:
-    runs-on: blacksmith-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
 
     steps:
       - name: Setup Dependencies for Sui Binary
@@ -15,12 +15,13 @@ jobs:
 
       - name: Download and Install Sui
         env:
-          SUI_VERSION: devnet-v1.24.0
+          SUI_VERSION: devnet-v1.25.0
         run: |
-          wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           sudo mv ./sui-test-validator /usr/local/bin/sui-test-validator
           sudo mv ./sui /usr/local/bin/sui
+          sudo mv ./sui-debug /usr/local/bin/sui-debug
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Checkout code
@@ -39,5 +40,7 @@ jobs:
         run: npm run build
 
       - name: Test
-        timeout-minutes: 60
-        run: npm run test --coverage
+        run: npm run coverage
+
+      - name: Display coverage report
+        run: cat ./.coverage.info

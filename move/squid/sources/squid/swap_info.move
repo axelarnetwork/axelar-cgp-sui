@@ -58,7 +58,7 @@ module squid::swap_info {
 
         self.estimate_index = index + 1;
 
-        if(self.status == SKIP_SWAP) {
+        if (self.status == SKIP_SWAP) {
             vector[]
         } else {
             assert!(self.status == ESTIMATING, ENotEstimating);
@@ -79,7 +79,7 @@ module squid::swap_info {
 
     public fun finalize(self: SwapInfo) {
         assert!(
-            self.swap_index == vector::length(&self.swap_data) &&
+            self.estimate_index == vector::length(&self.swap_data) &&
             self.swap_index == vector::length(&self.swap_data),
             ENotDoneSwapping,
         );
