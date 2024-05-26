@@ -14,8 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Dependencies for Sui Binary
-        run: sudo apt-get update && sudo apt-get install -y libpq-dev
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
 
       - name: Cache Sui binaries
         id: cache-sui
@@ -27,22 +29,15 @@ jobs:
       - name: Download and Install Sui
         if: steps.cache-sui.outputs.cache-hit != 'true'
         run: |
-          curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
-          mv ./target/release/sui-ubuntu-x86_64 sui-binaries/sui
+          mv ./target/release/sui-ubuntu-x86_64 ./sui-binaries/sui
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-
-      - name: Save Sui binaries to cache
-        if: steps.cache-sui.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
-        with:
-          path: sui-binaries
-          key: sui-${{ env.SUI_VERSION }}
 
       - name: Add Sui binaries to PATH
         run: |
-          sudo mv ./sui-binaries/sui /usr/local/bin/sui
+          echo "$(pwd)/sui-binaries" >> $GITHUB_PATH
 
       - name: Checkout code
         uses: actions/checkout@v4
