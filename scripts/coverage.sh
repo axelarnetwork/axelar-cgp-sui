@@ -39,7 +39,7 @@ for d in ./move/*/; do
 
     echo "\nCoverage report for module $d\n" >> .coverage.info
 
-    "$SUI" move coverage summary --path "$d" >> .coverage.info
+    "$SUI" move coverage summary --summarize-functions --path "$d" >> .coverage.info
 
     # Display source code with coverage info
     # find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do

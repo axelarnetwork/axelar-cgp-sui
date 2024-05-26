@@ -61,11 +61,10 @@ jobs:
         run: npm ci
 
       - name: Coverage
-        run: echo 'Hi\nBye\n' > .coverage.info # npm run coverage
-
-      - name: Display coverage report
         id: coverage
-        run: echo "summary=$(cat .coverage.info)" >> $GITHUB_OUTPUT
+        run: |
+          npm run coverage
+          echo "summary=$(cat .coverage.info)" >> $GITHUB_OUTPUT
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
