@@ -60,11 +60,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
-      - name: Test
+      - name: Coverage
         run: npm run coverage
 
-      - name: Display coverage report
-        run: cat ./.coverage.info
+      - name: Create comment body
+        run: |
+          {
+            echo "### Code Coverage Summary"
+            echo ""
+            echo "<details>"
+            echo "  <summary>Click to see the code coverage report</summary>"
+            echo ""
+            echo '```'
+            cat .coverage.info
+            echo '```'
+            echo ""
+            echo "</details>"
+          } > comment.md
+
+      - name: Find Code Coverage comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Code Coverage Summary
+
+      - name: Create or update Code Coverage comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: ./comment.md
+          edit-mode: replace
