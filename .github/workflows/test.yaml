@@ -32,8 +32,8 @@ jobs:
           wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
-          mv ./sui ./sui-binaries/sui
-          mv ./sui-debug ./sui-binaries/sui
+          mv ./sui ./sui-binaries/
+          mv ./sui-debug ./sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Add Sui binaries to PATH
