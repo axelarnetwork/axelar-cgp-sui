@@ -8,7 +8,7 @@ module governance::governance {
     use sui::hex;
 
     use abi::abi;
-    use axelar::channel::{Self, Channel, ApprovedCall};
+    use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
     const EUntrustedAddress: u64 = 0;
     const EInvalidMessageType: u64 = 1;
@@ -50,11 +50,11 @@ module governance::governance {
             caps: table::new<ID, UpgradeCap>(ctx),
         })
     }
-    
+
 
     public fun is_governance(
-        self: &Governance, 
-        chain_name: String, 
+        self: &Governance,
+        chain_name: String,
         addr: String
     ): bool{
         &chain_name == &self.trusted_source_chain && &addr == &self.trusted_source_address
@@ -70,8 +70,8 @@ module governance::governance {
         )
     }
 
-    public fun authorize_upgrade(self: &mut Governance, approved_call: ApprovedCall): UpgradeTicket {
-        let (source_chain, source_address, payload) = self.channel.consume_approved_call(approved_call);
+    public fun authorize_upgrade(self: &mut Governance, approved_message: ApprovedMessage): UpgradeTicket {
+        let (source_chain, _, source_address, payload) = self.channel.consume_approved_message(approved_message);
 
         assert!(is_governance(self, source_chain, source_address), EUntrustedAddress);
 
@@ -84,8 +84,8 @@ module governance::governance {
         let digest = abi.read_bytes(3);
 
         package::authorize_upgrade(
-            table::borrow_mut(&mut self.caps, cap_id), 
-            policy, 
+            table::borrow_mut(&mut self.caps, cap_id),
+            policy,
             digest,
         )
     }
@@ -96,14 +96,14 @@ module governance::governance {
     ) {
         package::commit_upgrade(
             table::borrow_mut(
-                &mut self.caps, 
+                &mut self.caps,
                 package::receipt_cap(&receipt),
-            ), 
+            ),
             receipt
         )
     }
 
-    
+
     fun is_cap_new(cap: &UpgradeCap) {
         assert!(package::version(cap) == 1, ENotNewPackage);
     }

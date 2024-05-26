@@ -10,7 +10,7 @@ module squid::deepbook_v2 {
     use deepbook::custodian_v2::{Self as custodian};
     use deepbook::math as clob_math;
 
-    use axelar::discovery::{Self, MoveCall};
+    use axelar_gateway::discovery::{Self, MoveCall};
 
     use squid::swap_info::{SwapInfo};
     use squid::squid::Squid;
