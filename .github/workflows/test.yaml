@@ -1,6 +1,11 @@
-name: Run Tests
+name: Tests
 
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - releases/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
