@@ -61,10 +61,22 @@ jobs:
         run: npm ci
 
       - name: Coverage
-        id: coverage
+        run: npm run coverage
+
+      - name: Create comment body
         run: |
-          npm run coverage
-          echo "summary='$(cat .coverage.info)'" >> $GITHUB_OUTPUT
+          cat << 'EOF' > comment.md
+          ### Code Coverage Summary
+
+          <details>
+            <summary>Click to see the code coverage report</summary>
+
+            \`\`\`
+          $(cat .coverage.info)
+            \`\`\`
+
+          </details>
+          EOF
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
@@ -79,14 +91,5 @@ jobs:
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ### Code Coverage Summary
-
-            <details>
-              <summary>Click to see the code coverage report</summary>
-
-              ```
-              ${{ steps.coverage.outputs.summary }}
-              ```
-            </details>
+          body-path: ./comment.md
           edit-mode: replace
