@@ -7,7 +7,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SUI_VERSION: mainnet-v1.22.0
+  SUI_VERSION: mainnet-v1.25.0
 
 jobs:
   test:
@@ -30,8 +30,7 @@ jobs:
           curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
-          mv ./sui sui-binaries/
-          mv ./sui-debug sui-binaries/
+          mv ./target/release/sui-ubuntu-x86_64 sui-binaries/sui
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Save Sui binaries to cache
@@ -44,7 +43,6 @@ jobs:
       - name: Add Sui binaries to PATH
         run: |
           sudo mv ./sui-binaries/sui /usr/local/bin/sui
-          sudo mv ./sui-binaries/sui-debug /usr/local/bin/sui-debug
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,5 +60,4 @@ jobs:
         run: npm run build
 
       - name: Test
-        timeout-minutes: 15
         run: npm run test
