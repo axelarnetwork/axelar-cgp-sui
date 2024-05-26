@@ -16,9 +16,6 @@ if ! which "$SUI" >/dev/null 2>&1; then
   fi
 fi
 
-echo 'Axelar Move Coverage Report' > .coverage.info
-echo '' >> .coverage.info
-
 for d in ./move/*/; do
     "$SUI" move test --path "$d" --coverage &
 done

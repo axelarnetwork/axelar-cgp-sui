@@ -69,7 +69,9 @@ jobs:
           {
             echo "### Code Coverage Summary"
             echo ""
+            echo '```'
             cat .coverage.info
+            echo '```'
             echo ""
             echo "<details>"
             echo "  <summary>Click to see the extended report</summary>"
