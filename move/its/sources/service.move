@@ -26,10 +26,10 @@ module its::service {
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
-    
+
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
-    
+
     const EUntrustedAddress: u64 = 0;
     const EInvalidMessageType: u64 = 1;
     const EWrongDestination: u64 = 2;
@@ -106,7 +106,7 @@ module its::service {
         let (_, payload) = decode_approved_call(self, approved_call);
         let reader = abi::new_reader(payload);
         assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(vector::is_empty(&reader.read_bytes(5)), EInterchainTransferHasData);
+        assert!(reader.read_bytes(5).is_empty(), EInterchainTransferHasData);
 
         let token_id = token_id::from_u256(reader.read_u256(1));
         let destination_address = address::from_bytes(reader.read_bytes(3));
@@ -135,7 +135,7 @@ module its::service {
         let amount = (reader.read_u256(4) as u64);
         let data = reader.read_bytes(5);
 
-        assert!(!vector::is_empty(&data), EInterchainTransferHasNoData);
+        assert!(!data.is_empty(), EInterchainTransferHasNoData);
 
         let coin = self
             .coin_management_mut(token_id)
@@ -243,9 +243,9 @@ module its::service {
         let mut chain_names = trusted_address_info.peel_vec_vec_u8();
         let mut trusted_addresses = trusted_address_info.peel_vec_vec_u8();
 
-        let length = vector::length(&chain_names);
+        let length = chain_names.length();
 
-        assert!(length == vector::length(&trusted_addresses), EMalformedTrustedAddresses);
+        assert!(length == trusted_addresses.length(), EMalformedTrustedAddresses);
 
         let mut i = 0;
         while(i < length) {

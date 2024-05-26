@@ -78,12 +78,12 @@ module axelar::utils {
         let inputs = vector[0, 1, 10, 11, 27, 28, 30, 38, 39];
         let outputs = vector[0, 1, 10, 11, 0, 1, 30, 1, 0];
 
-        let length = vector::length(&inputs);
+        let length = inputs.length();
         let mut i = 0;
         while(i < length) {
-            vector::push_back(&mut signature, *vector::borrow(&inputs, i));
+            signature.push_back(inputs[i]);
             normalize_signature(&mut signature);
-            assert!(vector::pop_back(&mut signature) == *vector::borrow(&outputs, i), i);
+            assert!(signature.pop_back() == outputs[i], i);
             assert!(signature == prefix, i);
             i = i + 1;
         };

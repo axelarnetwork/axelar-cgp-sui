@@ -61,28 +61,28 @@ module axelar::validators {
             proof.peel_vec_vec_u8()
         );
 
-        let operators_length = vector::length(&operators);
+        let operators_length = operators.length();
         let operators_epoch = *epoch_for_hash(validators)
             .get(&operators_hash(&operators, &weights, threshold));
 
         // This error cannot be hit because we remove old operators and no set has an epoch of 0.
         assert!(operators_epoch != 0 && epoch - operators_epoch < OLD_KEY_RETENTION, EInvalidOperators);
         let (mut i, mut weight, mut operator_index) = (0, 0, 0);
-        let total_signatures = vector::length(&signatures);
+        let total_signatures = signatures.length();
         while (i < total_signatures && weight < threshold) {
 
-            let mut signature = *vector::borrow(&signatures, i);
+            let mut signature = signatures[i];
             normalize_signature(&mut signature);
 
             let signed_by: vector<u8> = ecdsa::secp256k1_ecrecover(&signature, &approval_hash, 0);
-            while (operator_index < operators_length && &signed_by != vector::borrow(&operators, operator_index)) {
+            while (operator_index < operators_length && &signed_by != operators[operator_index]) {
                 operator_index = operator_index + 1;
             };
 
             assert!(operator_index < operators_length, EMalformedSigners);
 
-            weight = weight + *vector::borrow(&weights, operator_index);
-            
+            weight = weight + weights[operator_index];
+
             operator_index = operator_index + 1;
 
             i = i + 1;
@@ -99,15 +99,15 @@ module axelar::validators {
         let new_weights = bcs.peel_vec_u128();
         let new_threshold = bcs.peel_u128();
 
-        let operators_length = vector::length(&new_operators);
-        let weight_length = vector::length(&new_weights);
+        let operators_length = new_operators.length();
+        let weight_length = new_weights.length();
 
         assert!(operators_length != 0 && is_sorted_asc_and_contains_no_duplicate(&new_operators), EInvalidOperators);
 
         assert!(weight_length == operators_length, EInvalidWeights);
         let (mut total_weight, mut i) = (0, 0);
         while (i < weight_length) {
-            total_weight = total_weight + *vector::borrow(&new_weights, i);
+            total_weight = total_weight + new_weights[i];
             i = i + 1;
         };
         assert!(!(new_threshold == 0 || total_weight < new_threshold), EInvalidThreshold);
@@ -195,7 +195,7 @@ module axelar::validators {
         let mut proof: vector<u8> = vector[];
         let mut i = 0;
         while ( i < 19 ) {
-            vector::push_back(&mut proof, 0);
+            proof.push_back(0);
             i = i + 1;
         };
         proof
@@ -272,7 +272,7 @@ module axelar::validators {
     #[test]
     fun test_transfer_operatorship() {
         let mut validators = new();
-        
+
         let operators = vector[x"0123", x"4567", x"890a"];
         let weights = vector[1, 3, 6];
         let threshold = 4;
@@ -367,7 +367,7 @@ module axelar::validators {
         let payload = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000006000000000000000000000000000000";
         let proof = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea1030300000000000000000000000000000003000000000000000000000000000000030000000000000000000000000000000600000000000000000000000000000003413de59beca835483688338964eb4c314f387e06aef6c46ca2dc90733e5b7baa9b67b9b8530aacaae4263e369fced014e449166441c21b61fcef5978516d1a740301417b6940537f7fa65d37d0964d5dda49b80b5b7fcde93ba3b3224c3e007ff887ee20a203ac52802c29238353b69636cb71bd1da3bdb0c3ac3d85938531f94dd7570041529af0061fa6321419e0b702dd1ac4e16610efa718ad241e4eda8b65dd92bd2e715cfd58951305f6fc4d75a20d2c19bd4491312cff38b9694b02e2175826a2c800";
         let payload2 = x"032102dd7312374396c51c50f95e0c1f370435292de4809b755aca09b49fcd8d0fe9c02103595d141e66c2c1e8e0c114b71ddc9db53a65743e7679a02a4c8c71af16d4522821039494a3cde8ae663d21a0b8692549c56887901c7e4529b0fdb6ce3d39b382bea10303000000000000000000000000000000030000000000000000000000000000000300000000000000000000000000000007000000000000000000000000000000";
-        
+
         validators.transfer_operatorship(payload);
         assert!(validators.validate_proof(to_sui_signed(message), proof) == true, 0);
 

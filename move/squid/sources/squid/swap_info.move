@@ -38,23 +38,23 @@ module squid::swap_info {
     public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
         let index = self.swap_index;
         if(index == 0 && self.status == ESTIMATING) {
-            assert!(self.estimate_index == vector::length(&self.swap_data), ENotDoneEstimating);
+            assert!(self.estimate_index == self.swap_data.length(), ENotDoneEstimating);
             self.status = SWAPPING;
         };
-        assert!(index < vector::length(&self.swap_data), EOutOfSwaps);
+        assert!(index < self.swap_data.length(), EOutOfSwaps);
 
         self.swap_index = index + 1;
         if(self.status == SKIP_SWAP) {
             vector[]
         } else {
             assert!(self.status == SWAPPING, ENotSwapping);
-            *vector::borrow(&self.swap_data, index)
+            self.swap_data[index]
         }
     }
 
     public(package) fun get_data_estimating(self: &mut SwapInfo): vector<u8> {
         let index = self.estimate_index;
-        assert!(index < vector::length(&self.swap_data), EOutOfEstimates);
+        assert!(index < self.swap_data.length(), EOutOfEstimates);
 
         self.estimate_index = index + 1;
 
@@ -62,7 +62,7 @@ module squid::swap_info {
             vector[]
         } else {
             assert!(self.status == ESTIMATING, ENotEstimating);
-            *vector::borrow(&self.swap_data, index)
+            self.swap_data[index]
         }
     }
 
@@ -70,7 +70,7 @@ module squid::swap_info {
         &mut self.coin_bag
     }
     public(package) fun swap_data(self: &SwapInfo, i: u64): vector<u8> {
-        *vector::borrow(&self.swap_data, i)
+        self.swap_data[i]
     }
 
     public(package) fun skip_swap(self: &mut SwapInfo) {
@@ -79,19 +79,19 @@ module squid::swap_info {
 
     public fun finalize(self: SwapInfo) {
         assert!(
-            self.estimate_index == vector::length(&self.swap_data) &&
-            self.swap_index == vector::length(&self.swap_data),
+            self.estimate_index == self.swap_data.length() &&
+            self.swap_index == self.swap_data.length(),
             ENotDoneSwapping,
         );
         assert!(
-            self.status == SWAPPING || 
+            self.status == SWAPPING ||
             self.status == SKIP_SWAP, ENotDoneSwapping
         );
         self.destroy();
     }
 
     fun destroy(self: SwapInfo) {
-        let SwapInfo { 
+        let SwapInfo {
             swap_index: _,
             estimate_index: _,
             swap_data: _,

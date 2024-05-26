@@ -45,7 +45,7 @@ module axelar::discovery {
     /// - 1 for pures followed by the bcs encoded form of the pure
     /// - 2 for the call contract object, followed by nothing (to be passed into the target function)
     /// - 3 for the payload of the contract call (to be passed into the intermediate function)
-    /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedCall out), and then another u8 specifying which argument to input. 
+    /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedCall out), and then another u8 specifying which argument to input.
     public struct MoveCall has store, copy, drop {
         function: Function,
         arguments: vector<vector<u8>>,
@@ -144,7 +144,7 @@ module axelar::discovery {
         while (i < length) {
             let mut type_argument = ascii::try_string(bcs.peel_vec_u8());
             assert!(type_argument.is_some(), EInvalidString);
-            vector::push_back(&mut type_arguments, type_argument.extract());
+            type_arguments.push_back(type_argument.extract());
             i = i + 1;
         };
 
@@ -169,10 +169,7 @@ module axelar::discovery {
         let mut i = 0;
 
         while (i < length) {
-            vector::push_back(
-                &mut move_calls, 
-                new_move_call_from_bcs(bcs),
-            );
+            move_calls.push_back(new_move_call_from_bcs(bcs));
             i = i + 1;
         };
 
@@ -212,7 +209,7 @@ module axelar::discovery {
     public fun function(self: &MoveCall): Function {
         self.function
     }
- 
+
     #[test_only]
     public fun arguments(self: &MoveCall): vector<vector<u8>> {
         self.arguments
@@ -262,7 +259,7 @@ module axelar::discovery {
         let module_name = std::ascii::string(b"module");
         let name = std::ascii::string(b"function");
         let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
-    
+
         let function = new_function_from_bcs(&mut bcs::new(input));
         assert!(function.package_id == package_id, 0);
         assert!(function.module_name == module_name, 1);
@@ -277,7 +274,7 @@ module axelar::discovery {
         let arguments = vector[x"1234", x"5678"];
         let type_arguments = vector[ascii::string(b"type1"), ascii::string(b"type2")];
         let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
-    
+
         let transaction = new_move_call_from_bcs(&mut bcs::new(input));
         assert!(transaction.function.package_id == package_id, 0);
         assert!(transaction.function.module_name == module_name, 1);
@@ -305,12 +302,12 @@ module axelar::discovery {
             is_final: true,
             move_calls: vector[move_call],
         };
-        
+
         self.register_transaction(&channel, input_transaction);
 
         let transaction = self.get_transaction(channel.id());
         assert!(transaction == input_transaction, 0);
-        
+
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(channel);
     }

@@ -141,7 +141,7 @@ module axelar_gateway::discovery {
         while (i < length) {
             let mut type_argument = ascii::try_string(bcs.peel_vec_u8());
             assert!(type_argument.is_some(), EInvalidString);
-            vector::push_back(&mut type_arguments, type_argument.extract());
+            type_arguments.push_back(type_argument.extract());
             i = i + 1;
         };
 
@@ -166,10 +166,7 @@ module axelar_gateway::discovery {
         let mut i = 0;
 
         while (i < length) {
-            vector::push_back(
-                &mut move_calls,
-                new_move_call_from_bcs(bcs),
-            );
+            move_calls.push_back(new_move_call_from_bcs(bcs));
             i = i + 1;
         };
 

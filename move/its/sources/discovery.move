@@ -80,7 +80,7 @@ module its::discovery {
     fun get_interchain_transfer_tx(self: &ITS, reader: &AbiReader): Transaction {
         let data = reader.read_bytes(5);
 
-        if (vector::is_empty(&data)) {
+        if (data.is_empty()) {
             let mut arg = vector[0];
             vector::append(&mut arg, address::to_bytes(object::id_address(self)));
 
@@ -216,7 +216,7 @@ module its::discovery {
         let amount = 1905;
         let data = b"";
         let mut writer = abi::new_writer(6);
-        writer            
+        writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(address::to_u256(token_id))
             .write_bytes(source_address)
@@ -229,7 +229,7 @@ module its::discovery {
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
         let tx_block = get_call_info(&its, payload);
         assert!(tx_block == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
-        assert!(tx_block.is_final() && vector::length(&tx_block.move_calls()) == 1, 2);
+        assert!(tx_block.is_final() && tx_block.move_calls().length() == 1, 2);
         let call_info = vector::pop_back(&mut tx_block.move_calls());
 
         assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 3);
@@ -269,9 +269,9 @@ module its::discovery {
             .write_bytes(tx_data)
             .write_u256(1245);
         let data = writer.into_bytes();
-        
+
         writer = abi::new_writer(6);
-        writer            
+        writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(address::to_u256(token_id))
             .write_bytes(source_address)
@@ -282,7 +282,7 @@ module its::discovery {
 
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
         assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &abi::new_reader(payload)), 1);
-        
+
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
     }
@@ -301,7 +301,7 @@ module its::discovery {
         let decimals = 15;
         let distributor = x"0325";
         let mut writer = abi::new_writer(6);
-        writer            
+        writer
             .write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN)
             .write_u256(address::to_u256(token_id))
             .write_bytes(name)
@@ -316,7 +316,7 @@ module its::discovery {
         assert!(tx_block == get_deploy_interchain_token_tx(&its, &abi::new_reader(payload)), 1);
         assert!(tx_block.is_final(), 2);
         let mut move_calls = tx_block.move_calls();
-        assert!(vector::length(&move_calls) == 1, 3);
+        assert!(move_calls.length() == 1, 3);
         let call_info = vector::pop_back(&mut move_calls);
         assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 4);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 5);

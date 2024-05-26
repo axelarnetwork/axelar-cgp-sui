@@ -36,11 +36,11 @@ module its::utils {
         while (i < length) {
             let b = *vector::borrow(symbolBytes, i);
             if (is_lowercase(b) || is_number(b) ) {
-                vector::push_back(&mut moduleName, b);
+                moduleName.push_back(b);
             } else if (is_uppercase(b) ) {
-                vector::push_back(&mut moduleName, b - UPPERCASE_START + LOWERCASE_START);
+                moduleName.push_back(b - UPPERCASE_START + LOWERCASE_START);
             } else if (b == UNDERSCORE || b == SPACE) {
-                vector::push_back(&mut moduleName, UNDERSCORE);
+                moduleName.push_back(UNDERSCORE);
             };
 
             i = i + 1;
@@ -55,7 +55,7 @@ module its::utils {
     }
 
     public fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
-        if (vector::length(&metadata) < 4) {
+        if (metadata.length() < 4) {
             (0, vector[])
         } else {
             let mut i = 0;

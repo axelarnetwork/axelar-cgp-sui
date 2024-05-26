@@ -152,18 +152,18 @@ module axelar::gateway {
         let params = data_bcs.peel_vec_vec_u8();
         assert!(chain_id == 1, EInvalidChain);
 
-        let (mut i, commands_len) = (0, vector::length(&commands));
+        let (mut i, commands_len) = (0, commands.length());
 
         // make sure number of commands passed matches command IDs
-        assert!(vector::length(&command_ids) == commands_len, EInvalidCommands);
+        assert!(command_ids.length() == commands_len, EInvalidCommands);
         // make sure number of commands passed matches params
-        assert!(vector::length(&params) == commands_len, EInvalidCommands);
+        assert!(params.length() == commands_len, EInvalidCommands);
 
         while (i < commands_len) {
             // TODO: this does not store executed cmd_ids in the gateway, which make too many assumptions for the axelar network that it shouldn't.
-            let cmd_id = *vector::borrow(&command_ids, i);
-            let cmd_selector = vector::borrow(&commands, i);
-            let payload = *vector::borrow(&params, i);
+            let cmd_id = command_ids[i];
+            let cmd_selector = commands[i];
+            let payload = params[i];
             i = i + 1;
 
             // Build a `CallApproval` object from the `params[i]`. BCS serializes data

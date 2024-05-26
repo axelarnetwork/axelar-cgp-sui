@@ -19,7 +19,7 @@ module abi::abi {
         let mut bytes = vector::empty<u8>();
         let mut i = 0;
         while (i < 32 * length) {
-            vector::push_back<u8>(&mut bytes, 0);
+            bytes.push_back(0);
             i = i + 1;
         };
         AbiWriter {
@@ -38,7 +38,7 @@ module abi::abi {
         let mut i = 0;
         while (i < 32) {
             var = var << 8;
-            var = var | (*vector::borrow(&self.bytes, i + 32 * pos) as u256);
+            var = var | (self.bytes[i + 32 * pos] as u256);
             i = i + 1;
         };
         var
@@ -56,7 +56,7 @@ module abi::abi {
         let mut var = vector::empty<u256>();
         let mut i = 0;
         while (i < length) {
-            vector::push_back(&mut var, self.read_u256(start_pos + i + 1));
+            var.push_back(self.read_u256(start_pos + i + 1));
             i = i + 1;
         };
         var
@@ -69,7 +69,7 @@ module abi::abi {
         let mut i = 0;
         while (i < length) {
             let start_pos_nested = (self.read_u256(start_pos + i + 1) as u64) / 32;
-            vector::push_back(&mut var, self.decode_variable(start_pos + start_pos_nested + 1));
+            var.push_back(self.decode_variable(start_pos + start_pos_nested + 1));
             i = i + 1;
         };
         var
@@ -84,10 +84,10 @@ module abi::abi {
 
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = vector::length(&self.bytes);
+        let mut length = self.bytes.length();
         self.encode_u256(pos, (length as u256));
 
-        length = vector::length(&var);
+        length = var.length();
         self.append_u256((length as u256));
 
         self.append_bytes(var);
@@ -97,16 +97,16 @@ module abi::abi {
 
     public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = vector::length(&self.bytes);
+        let mut length = self.bytes.length();
         self.encode_u256(pos, (length as u256));
-        
-        length = vector::length(&var);
+
+        length = var.length();
 
         self.append_u256((length as u256));
 
         let mut i = 0;
         while (i < length) {
-            self.append_u256(*vector::borrow(&var, i));
+            self.append_u256(var[i]);
             i = i + 1;
         };
 
@@ -116,17 +116,17 @@ module abi::abi {
 
     public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = vector::length(&self.bytes);
+        let mut length = self.bytes.length();
         self.encode_u256(pos, (length as u256));
-        
-        length = vector::length(&var);
+
+        length = var.length();
 
         self.append_u256((length as u256));
 
         let mut i = 0;
         let mut writer = new_writer(length);
         while (i < length) {
-            writer.write_bytes(*vector::borrow(&var, i));
+            writer.write_bytes(var[i]);
             i = i + 1;
         };
 
@@ -151,13 +151,13 @@ module abi::abi {
         let v = &mut self.bytes;
         let mut i = 0;
         while (i < 32) {
-            vector::push_back(v, ((var >> ((31 - i) * 8 as u8)) & 255 as u8));
+            v.push_back(((var >> ((31 - i) * 8 as u8)) & 255 as u8));
             i = i + 1;
         };
     }
 
     fun append_bytes(self: &mut AbiWriter, var: vector<u8>) {
-        let length = vector::length(&var);
+        let length = var.length();
 
         let v = &mut self.bytes;
         vector::append(v, var);
@@ -167,7 +167,7 @@ module abi::abi {
 
         let mut i: u64 = 0;
         while (i < 31 - (length - 1) % 32) {
-            vector::push_back(v, 0);
+            v.push_back(0);
             i = i + 1;
         };
     }
@@ -178,7 +178,7 @@ module abi::abi {
         let mut var = vector::empty();
         let mut i = 0;
         while (i < len) {
-            vector::push_back(&mut var, *vector::borrow(v, i + (start_pos + 1) * 32));
+            var.push_back(*vector::borrow(v, i + (start_pos + 1) * 32));
             i = i + 1;
         };
         var

@@ -33,11 +33,11 @@ module test::test {
     public fun register_transaction(discovery: &mut RelayerDiscovery, singleton: &Singleton) {
         let mut arguments = vector::empty<vector<u8>>();
         let mut arg = vector::singleton<u8>(2);
-        vector::push_back(&mut arguments, arg);
+        arguments.push_back(arg);
         arg = vector::singleton<u8>(0);
         vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
-        vector::push_back(&mut arguments, arg);
-        let transaction = discovery::new_transaction( 
+        arguments.push_back(arg);
+        let transaction = discovery::new_transaction(
             true,
             vector[
                 discovery::new_move_call(

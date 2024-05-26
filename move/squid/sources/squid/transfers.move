@@ -5,8 +5,8 @@ module squid::transfers {
     use sui::bcs::{Self, BCS};
     use sui::coin;
 
-    use axelar::discovery::{Self, MoveCall};   
-    
+    use axelar::discovery::{Self, MoveCall};
+
     use its::service;
     use its::its::ITS;
     use its::token_id;
@@ -21,7 +21,7 @@ module squid::transfers {
 
     public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
         let data = swap_info.get_data_estimating();
-        if (vector::length(&data) == 0) return;
+        if (data.length() == 0) return;
         let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
@@ -36,7 +36,7 @@ module squid::transfers {
 
     public fun its_estimate<T>(swap_info: &mut SwapInfo) {
         let data = swap_info.get_data_estimating();
-        if (vector::length(&data) == 0) return;
+        if (data.length() == 0) return;
         let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
@@ -51,7 +51,7 @@ module squid::transfers {
 
     public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
-        if (vector::length(&data) == 0) return;
+        if (data.length() == 0) return;
         let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
@@ -72,7 +72,7 @@ module squid::transfers {
 
     public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
-        if (vector::length(&data) == 0) return;
+        if (data.length() == 0) return;
         let mut bcs = bcs::new(data);
 
         assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
@@ -86,7 +86,7 @@ module squid::transfers {
         if(option.is_none()) {
             option.destroy_none();
             return
-        };            
+        };
         let token_id = token_id::from_address(bcs.peel_address());
         let destination_chain = ascii::string(bcs.peel_vec_u8());
         let destination_address = bcs.peel_vec_u8();
