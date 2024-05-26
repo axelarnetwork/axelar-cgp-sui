@@ -31,15 +31,9 @@ To run code coverage, Sui debug binary needs to be built locally. You can also s
 ```sh
 brew install libpq
 brew link --force libpq
+```
 
-git clone https://github.com/MystenLabs/sui.git
-cd sui
-cargo build
-cd ..
-./sui/target/debug/sui version
-
-# Put this sui build on the PATH with the name `sui-debug`
-
+```sh
 npm run coverage
 ```
 

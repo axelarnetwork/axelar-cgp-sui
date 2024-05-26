@@ -9,10 +9,13 @@ if ! which "$SUI" >/dev/null 2>&1; then
   # Default to a local Sui build
   export SUI="./sui/target/debug/sui"
 
-  # Check if the file exists
+  # Check if the file exists, install it otherwise
   if [ ! -f "$SUI" ]; then
-    echo "Error: $SUI not found. Exiting."
-    exit 1
+    echo "Warning: $SUI not found. Installing sui-debug from scratch."
+
+    git clone https://github.com/MystenLabs/sui.git
+    ( cd sui && cargo build )
+    ./sui/target/debug/sui version
   fi
 fi
 
