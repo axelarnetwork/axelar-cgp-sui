@@ -110,7 +110,8 @@ module abi::abi {
         let length = self.bytes.length();
         self.encode_u256(pos, length as u256);
 
-        self.append_u256(var.length() as u256);
+        let length = var.length();
+        self.append_u256(length as u256);
 
         let mut i = 0u64;
         while (i < length) {
@@ -127,7 +128,8 @@ module abi::abi {
         let length = self.bytes.length();
         self.encode_u256(pos, length as u256);
 
-        self.append_u256(var.length() as u256);
+        let length = var.length();
+        self.append_u256(length as u256);
 
         let mut i = 0;
         let mut writer = new_writer(length);
