@@ -104,6 +104,11 @@ module axelar_gateway::gateway {
         message: message::Message,
     }
 
+    /// Emitted when a message is taken to be executed by a channel.
+    public struct MessageExecuted has copy, drop {
+        message: message::Message,
+    }
+
     // -----
     // Setup
     // -----
@@ -269,6 +274,10 @@ module axelar_gateway::gateway {
         assert!(self.messages[command_id].status == message.hash(), EMessageNotApproved);
 
         self.messages[command_id].status = bytes32::new(MESSAGE_EXECUTED);
+
+        sui::event::emit(MessageExecuted {
+            message,
+        });
 
         // Friend only.
         channel::create_approved_message(source_chain, message_id, source_address, destination_id, payload)
