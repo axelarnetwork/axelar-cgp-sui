@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "build": "for d in ./move/*/; do cd $d; sui move build --lint --warnings-are-errors; cd ../../; done",
-    "test": "for d in ./move/*/; do sui move test --path $d; done"
+    "test": "for d in ./move/*/; do sui move test --path $d; done",
+    "coverage": "./scripts/coverage.sh"
   },
   "keywords": [
     "axelar",

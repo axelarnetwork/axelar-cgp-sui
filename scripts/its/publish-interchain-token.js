@@ -64,6 +64,7 @@ async function publishInterchainToken(client, keypair, itsInfo, name, symbol, de
 			showObjectChanges: true,
             showContent: true
 		},
+        requestType: 'WaitForLocalExecution',
 	});
 
     return {
