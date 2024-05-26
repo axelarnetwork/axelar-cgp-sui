@@ -20,9 +20,9 @@ jobs:
 
       - name: Cache Sui binaries
         id: cache-sui
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: ./sui-binaries
+          path: sui-binaries/
           key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui
@@ -34,6 +34,13 @@ jobs:
           mv ./sui sui-binaries/
           mv ./sui-debug sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+
+      - name: Save Sui binaries
+        id: cache-sui-save
+        uses: actions/cache/save@v4
+        with:
+          path: sui-binaries/
+          key: ${{ steps.cache-sui.outputs.cache-primary-key }}
 
       - name: Add Sui binaries to PATH
         run: |
