@@ -61,11 +61,11 @@ jobs:
         run: npm ci
 
       - name: Coverage
-        run: echo 'Hi' > .coverage.info # npm run coverage
+        run: echo 'Hi\nBye\n' > .coverage.info # npm run coverage
 
       - name: Display coverage report
         id: coverage
-        run: cat ./.coverage.info
+        run: cat .coverage.info
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
@@ -73,7 +73,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
-          body-includes: Axelar Code Coverage Summary
+          body-includes: Code Coverage Summary
 
       - name: Create or update Code Coverage comment
         uses: peter-evans/create-or-update-comment@v4
@@ -81,10 +81,10 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Axelar Code Coverage Summary
+            ### Code Coverage Summary
 
             <details>
-              <summary>Click to expand the full report</summary>
+              <summary>Click to see the code coverage report</summary>
 
               ```
               ${{ steps.coverage.outputs.cmd_output }}
