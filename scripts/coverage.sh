@@ -38,7 +38,7 @@ for d in ./move/*/; do
     "$SUI" move coverage summary --path "$d" >> .coverage.info
 
     # Display source code with coverage info
-    find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
-        "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
-    done
+    # find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
+    #     "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
+    # done
 done
