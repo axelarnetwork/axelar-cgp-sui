@@ -65,7 +65,7 @@ jobs:
 
       - name: Display coverage report
         id: coverage
-        run: cat .coverage.info
+        run: echo "summary=$(cat .coverage.info)" >> $GITHUB_OUTPUT
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
@@ -87,7 +87,7 @@ jobs:
               <summary>Click to see the code coverage report</summary>
 
               ```
-              ${{ steps.coverage.outputs.cmd_output }}
+              ${{ steps.coverage.outputs.summary }}
               ```
             </details>
           edit-mode: replace
