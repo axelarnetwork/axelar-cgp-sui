@@ -32,14 +32,17 @@ for d in ./move/*/; do
 
     if [ ! -f "$d/.coverage_map.mvcov" ]; then
         echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.info
+        echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.extended.info
         continue
     fi
 
     found=1
 
     echo "\nCoverage report for module $d\n" >> .coverage.info
+    echo "\nCoverage report for module $d\n" >> .coverage.extended.info
 
-    "$SUI" move coverage summary --summarize-functions --path "$d" >> .coverage.info
+    "$SUI" move coverage summary --path "$d" >> .coverage.info
+    "$SUI" move coverage summary --summarize-functions --path "$d" >> .coverage.extended.info
 
     # Display source code with coverage info
     # find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
