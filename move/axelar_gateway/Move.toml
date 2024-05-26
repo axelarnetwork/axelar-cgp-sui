@@ -1,0 +1,11 @@
+[package]
+name = "AxelarGateway"
+version = "0.1.0"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+
+[addresses]
+axelar_gateway = "0x0"
+clock = "0x6"
