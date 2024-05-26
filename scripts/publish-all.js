@@ -4,11 +4,14 @@ const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { publishPackageFull } = require('./publish-package');
 const { initializeGovernance, takeUpgradeCaps } = require('./governance');
 const { requestSuiFromFaucet } = require('./utils');
+const { setSquidDiscovery } = require('./squid/discovery.js');
+const { setItsDiscovery } = require('./its/discovery.js');
+
 
 async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
     const packageIds = {};
-    for(const packagePath of ['abi', 'axelar', 'governance', 'gas_service', 'its']) {
+    for(const packagePath of ['abi', 'axelar', 'governance', 'gas_service', 'its', 'squid']) {
         console.log(packagePath);
         while (true) try {
             const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
@@ -29,6 +32,10 @@ async function publishAll(client, keypair, env) {
         keypair,
         env,
     );
+
+    await setItsDiscovery(client, keypair, env.alias);
+    await setSquidDiscovery(client, keypair, env.alias);
+
 }
 
 module.exports = {

@@ -1,50 +1,46 @@
 require('dotenv').config();
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
+const { getConfig } = require("../utils");
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
+const { SuiClient } = require('@mysten/sui.js/client');
+const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-
-const { getConfig } = require('../utils');
-
-async function setItsDiscovery(client, keypair, envAlias) {
-    const axelarInfo = getConfig('axelar', envAlias);
-    const itsInfo = getConfig('its', envAlias);
-    const itsPackageId = itsInfo.packageId;
-    const itsObjectId = itsInfo['its::ITS'].objectId;
-    const relayerDecovery = axelarInfo['discovery::RelayerDiscovery'].objectId;
-
-    let tx = new TransactionBlock();
-
+async function setSquidDiscovery(client, keypair, env) {
+    const squid_info = getConfig('squid', env.alias);
+    const itsId = getConfig('its', env.alias)['its::ITS'].objectId;
+    const relayerDiscoveryId = getConfig('axelar', env.alias)['discovery::RelayerDiscovery'].objectId;
+    const tx = new TransactionBlock();
+    console.log(
+        squid_info['squid::Squid'].objectId,
+        itsId,
+        relayerDiscoveryId,
+    );
     tx.moveCall({
-        target: `${itsPackageId}::discovery::register_transaction`,
+        target: `${squid_info.packageId}::discovery::register_transaction`,
         arguments: [
-            tx.object(itsObjectId),
-            tx.object(relayerDecovery),
+            tx.object(squid_info['squid::Squid'].objectId),
+            tx.object(itsId),
+            tx.object(relayerDiscoveryId),
         ],
-        typeArguments: [],
+        type_arguments: [],
     });
 
     await client.signAndExecuteTransactionBlock({
-		transactionBlock: tx,
-		signer: keypair,
-		options: {
-			showEffects: true,
-			showObjectChanges: true,
-            showContent: true
-		},
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+        },
         requestType: 'WaitForLocalExecution',
-	});
+    });
 }
 
 module.exports = {
-    setItsDiscovery,
+    setSquidDiscovery,
 }
-
 
 if (require.main === module) {
     const env = process.argv[2] || 'localnet';
-    const chainName = process.argv[3] || 'Ethereum';
-    const trustedAddress = process.argv[4] || '0x1234';
     
     (async () => {
         const privKey = 
@@ -68,6 +64,6 @@ if (require.main === module) {
             console.log(e);
         }
 
-        await setItsDiscovery(client, keypair, env);
+        await setSquidDiscovery(client, keypair, env);
     })();
 }

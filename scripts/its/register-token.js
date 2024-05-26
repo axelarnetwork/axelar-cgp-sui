@@ -60,6 +60,7 @@ async function registerInterchainToken(client, keypair, itsInfo, name, symbol, d
 			showObjectChanges: true,
             showContent: true
 		},
+        requestType: 'WaitForLocalExecution',
 	});
     const coinObjectId = mintAmount ? result.objectChanges.find(object => object.objectType === `0x2::coin::Coin<${coinType}>`).objectId : null;
     
