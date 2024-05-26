@@ -3,7 +3,7 @@
 export SUI=sui-debug
 
 # Check if sui-debug is available
-if ! type "$SUI" >/dev/null 2>&1; then
+if ! which "$SUI" >/dev/null 2>&1; then
   echo "sui-debug not found. Setting SUI to ./sui/target/debug/sui."
 
   # Default to a local Sui build
@@ -25,6 +25,8 @@ done
 
 wait
 
+found=0
+
 for d in ./move/*/; do
     echo "Generating coverage info for package $d"
 
@@ -33,12 +35,19 @@ for d in ./move/*/; do
         continue
     fi
 
+    found=1
+
     echo "\nCoverage report for module $d\n" >> .coverage.info
 
     "$SUI" move coverage summary --path "$d" >> .coverage.info
 
     # Display source code with coverage info
-    find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
-        "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
-    done
+    # find "$d/sources" -type f -name '*.move' | while IFS= read -r f; do
+    #     "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
+    # done
 done
+
+if [ $found -eq 0 ]; then
+    echo "No coverage info found. Coverage failed."
+    exit 1
+fi

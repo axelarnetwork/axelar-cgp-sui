@@ -5,24 +5,48 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SUI_VERSION: mainnet-v1.25.1
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Dependencies for Sui Binary
-        run: sudo apt-get update && sudo apt-get install -y libpq-dev
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+
+      - name: Cache Sui binaries
+        id: cache-sui
+        uses: actions/cache/restore@v4
+        with:
+          path: sui-binaries/
+          key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui
-        env:
-          SUI_VERSION: devnet-v1.25.0
+        if: steps.cache-sui.outputs.cache-hit != 'true'
         run: |
           curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-          sudo mv ./sui-test-validator /usr/local/bin/sui-test-validator
-          sudo mv ./sui /usr/local/bin/sui
-          sudo mv ./sui-debug /usr/local/bin/sui-debug
+          mkdir -p sui-binaries
+          mv ./sui sui-binaries/
+          mv ./sui-debug sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+
+      - name: Save Sui binaries
+        if: steps.cache-sui.outputs.cache-hit != 'true'
+        id: cache-sui-save
+        uses: actions/cache/save@v4
+        with:
+          path: sui-binaries/
+          key: ${{ steps.cache-sui.outputs.cache-primary-key }}
+
+      - name: Add Sui binaries to PATH
+        run: |
+          sudo cp ./sui-binaries/sui /usr/local/bin/sui
+          sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
 
       - name: Checkout code
         uses: actions/checkout@v4
