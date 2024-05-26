@@ -64,7 +64,7 @@ jobs:
         id: coverage
         run: |
           npm run coverage
-          echo "summary=$(cat .coverage.info)" >> $GITHUB_OUTPUT
+          echo "summary='$(cat .coverage.info)'" >> $GITHUB_OUTPUT
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
