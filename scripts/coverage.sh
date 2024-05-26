@@ -20,10 +20,8 @@ echo 'Axelar Move Coverage Report' > .coverage.info
 echo '' >> .coverage.info
 
 for d in ./move/*/; do
-    "$SUI" move test --path "$d" --coverage &
+    "$SUI" move test --path "$d" --coverage
 done
-
-wait
 
 for d in ./move/*/; do
     echo "Generating coverage info for package $d"

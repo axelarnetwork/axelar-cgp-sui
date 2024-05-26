@@ -37,7 +37,8 @@ jobs:
 
       - name: Add Sui binaries to PATH
         run: |
-          echo "$(pwd)/sui-binaries" >> $GITHUB_PATH
+          sudo cp ./sui-binaries/sui /usr/local/bin/sui
+          sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
 
       - name: Checkout code
         uses: actions/checkout@v4
