@@ -16,12 +16,14 @@ module abi::abi {
     }
 
     public fun new_writer(length: u64): AbiWriter {
-        let mut bytes = vector::empty<u8>();
+        let mut bytes = vector[];
         let mut i = 0;
+
         while (i < 32 * length) {
             bytes.push_back(0);
             i = i + 1;
         };
+
         AbiWriter {
             bytes,
             pos: 0,
@@ -30,17 +32,20 @@ module abi::abi {
 
     public fun into_bytes(self: AbiWriter): vector<u8> {
         let AbiWriter {bytes, pos: _} = self;
+
         bytes
     }
 
     public fun read_u256(self: &AbiReader, pos: u64): u256 {
         let mut var = 0u256;
         let mut i = 0;
+
         while (i < 32) {
             var = var << 8;
             var = var | (self.bytes[i + 32 * pos] as u256);
             i = i + 1;
         };
+
         var
     }
 
@@ -53,25 +58,31 @@ module abi::abi {
     public fun read_vector_u256(self: &AbiReader, pos: u64): vector<u256> {
         let start_pos = (self.read_u256(pos) as u64) / 32;
         let length = (self.read_u256(start_pos) as u64);
-        let mut var = vector::empty<u256>();
+
+        let mut var = vector[];
         let mut i = 0;
+
         while (i < length) {
             var.push_back(self.read_u256(start_pos + i + 1));
             i = i + 1;
         };
+
         var
     }
 
     public fun read_vector_bytes(self: &AbiReader, pos: u64): vector<vector<u8>> {
         let start_pos = (self.read_u256(pos) as u64) / 32;
         let length = (self.read_u256(start_pos) as u64);
-        let mut var = vector::empty<vector<u8>>();
+
+        let mut var = vector[];
         let mut i = 0;
+
         while (i < length) {
             let start_pos_nested = (self.read_u256(start_pos + i + 1) as u64) / 32;
             var.push_back(self.decode_variable(start_pos + start_pos_nested + 1));
             i = i + 1;
         };
+
         var
     }
 
@@ -84,11 +95,10 @@ module abi::abi {
 
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = self.bytes.length();
-        self.encode_u256(pos, (length as u256));
+        let length = self.bytes.length() as u256;
+        self.encode_u256(pos, length);
 
-        length = var.length();
-        self.append_u256((length as u256));
+        self.append_u256(var.length() as u256);
 
         self.append_bytes(var);
         self.pos = self.pos + 1;
@@ -97,14 +107,12 @@ module abi::abi {
 
     public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = self.bytes.length();
-        self.encode_u256(pos, (length as u256));
+        let length = self.bytes.length();
+        self.encode_u256(pos, length as u256);
 
-        length = var.length();
+        self.append_u256(var.length() as u256);
 
-        self.append_u256((length as u256));
-
-        let mut i = 0;
+        let mut i = 0u64;
         while (i < length) {
             self.append_u256(var[i]);
             i = i + 1;
@@ -116,15 +124,14 @@ module abi::abi {
 
     public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
         let pos = self.pos;
-        let mut length = self.bytes.length();
-        self.encode_u256(pos, (length as u256));
+        let length = self.bytes.length();
+        self.encode_u256(pos, length as u256);
 
-        length = var.length();
-
-        self.append_u256((length as u256));
+        self.append_u256(var.length() as u256);
 
         let mut i = 0;
         let mut writer = new_writer(length);
+
         while (i < length) {
             writer.write_bytes(var[i]);
             i = i + 1;
@@ -137,50 +144,50 @@ module abi::abi {
     }
 
     fun encode_u256(self: &mut AbiWriter, pos: u64, var: u256) {
-        let v = &mut self.bytes;
         let mut i = 0;
+
         while (i < 32) {
-            let val = vector::borrow_mut<u8>(v, i + 32 * pos);
             let exp = ((31 - i) * 8 as u8);
-            *val = (var >> exp & 255 as u8);
+            *self.bytes.borrow_mut(i + 32 * pos) = (var >> exp & 255 as u8);
             i = i + 1;
         };
     }
 
     fun append_u256(self: &mut AbiWriter, var: u256) {
-        let v = &mut self.bytes;
         let mut i = 0;
         while (i < 32) {
-            v.push_back(((var >> ((31 - i) * 8 as u8)) & 255 as u8));
+            self.bytes.push_back(((var >> ((31 - i) * 8 as u8)) & 255 as u8));
             i = i + 1;
         };
     }
 
     fun append_bytes(self: &mut AbiWriter, var: vector<u8>) {
         let length = var.length();
-
-        let v = &mut self.bytes;
-        vector::append(v, var);
         if (length == 0) {
             return
         };
 
-        let mut i: u64 = 0;
+        self.bytes.append(var);
+
+        let mut i = 0u64;
+
         while (i < 31 - (length - 1) % 32) {
-            v.push_back(0);
+            self.bytes.push_back(0);
             i = i + 1;
         };
     }
 
     fun decode_variable(self: &AbiReader, start_pos: u64): vector<u8> {
-        let v = &self.bytes;
-        let len = (self.read_u256(start_pos) as u64);
-        let mut var = vector::empty();
+        let length = self.read_u256(start_pos) as u64;
+
+        let mut var = vector[];
         let mut i = 0;
-        while (i < len) {
-            var.push_back(*vector::borrow(v, i + (start_pos + 1) * 32));
+
+        while (i < length) {
+            var.push_back(self.bytes[i + (start_pos + 1) * 32]);
             i = i + 1;
         };
+
         var
     }
 
