@@ -60,8 +60,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test
+      - name: Coverage
         run: echo 'Hi' > .coverage.info # npm run coverage
+
+      - name: Display coverage report
+        id: coverage
+        run: cat ./.coverage.info
 
       - name: Find Code Coverage comment
         uses: peter-evans/find-comment@v3
@@ -83,7 +87,7 @@ jobs:
               <summary>Click to expand the full report</summary>
 
               ```
-              $( cat ./.coverage.info )
+              ${{ steps.coverage.outputs.cmd_output }}
               ```
             </details>
           edit-mode: replace
