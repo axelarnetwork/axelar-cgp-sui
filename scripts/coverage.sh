@@ -20,8 +20,12 @@ echo 'Axelar Move Coverage Report' > .coverage.info
 echo '' >> .coverage.info
 
 for d in ./move/*/; do
-    "$SUI" move test --path "$d" --coverage
+    "$SUI" move test --path "$d" --coverage &
 done
+
+wait
+
+found=0
 
 for d in ./move/*/; do
     echo "Generating coverage info for package $d"
@@ -30,6 +34,8 @@ for d in ./move/*/; do
         echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.info
         continue
     fi
+
+    found=1
 
     echo "\nCoverage report for module $d\n" >> .coverage.info
 
@@ -40,3 +46,8 @@ for d in ./move/*/; do
     #     "$SUI" move coverage source --path "$d" --module "$(basename "$f" .move)"
     # done
 done
+
+if [ $found -eq 0 ]; then
+    echo "No coverage info found. Coverage failed."
+    exit 1
+fi

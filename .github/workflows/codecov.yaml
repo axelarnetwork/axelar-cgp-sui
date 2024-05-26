@@ -22,7 +22,7 @@ jobs:
         id: cache-sui
         uses: actions/cache@v4
         with:
-          path: sui-binaries
+          path: ./sui-binaries
           key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui

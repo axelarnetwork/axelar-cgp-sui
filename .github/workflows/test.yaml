@@ -23,13 +23,13 @@ jobs:
         id: cache-sui
         uses: actions/cache@v4
         with:
-          path: sui-binaries
+          path: ./sui-binaries
           key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui
         if: steps.cache-sui.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
+          curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
           mv ./sui ./sui-binaries/
