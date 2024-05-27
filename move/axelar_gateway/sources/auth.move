@@ -56,6 +56,7 @@ module axelar_gateway::auth {
     /// Emitted when signers are rotated.
     public struct SignersRotated has copy, drop {
         epoch: u64,
+        signers_hash: Bytes32,
         signers: WeightedSigners,
     }
 
@@ -134,6 +135,7 @@ module axelar_gateway::auth {
 
         event::emit(SignersRotated {
             epoch,
+            signers_hash: new_signers_hash,
             signers: new_signers,
         })
     }
