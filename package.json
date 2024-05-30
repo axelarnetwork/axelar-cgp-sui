@@ -9,7 +9,9 @@
   "scripts": {
     "build": "for d in ./move/*/; do cd $d; sui move build --lint --warnings-are-errors & cd ../../; done; wait",
     "test": "for d in ./move/*/; do sui move test --path $d ; done",
-    "coverage": "./scripts/coverage.sh"
+    "coverage": "./scripts/coverage.sh",
+    "lint": "eslint --fix '**/*.js'",
+    "prettier": "prettier --write '**/*.js' 'package.json' '.github/**/*.yaml'"
   },
   "keywords": [
     "axelar",
@@ -28,7 +30,10 @@
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
     "secp256k1": "^5.0.0",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "prettier": "^2.8.7",
+    "eslint": "^8.57.0",
+    "eslint-config-richardpringle": "^2.0.0"
   },
-  "description": ""
+  "description": "Axelar Sui Move contracts"
 }

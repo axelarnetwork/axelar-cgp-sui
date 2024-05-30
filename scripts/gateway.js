@@ -63,8 +63,8 @@ function getBcsForGateway() {
 function getOperators(axelarInfo) {
     if(!axelarInfo.activeOperators) {
         return {
-            privKeys: [], 
-            weights: [], 
+            privKeys: [],
+            weights: [],
             threshold: 0,
         };
     }
@@ -108,13 +108,13 @@ function getInputForMessage(info, message) {
     const operators = getOperators(info);
     // get the public key in a compressed format
     const pubKeys = operators.privKeys.map(privKey => secp256k1.publicKeyCreate(Buffer.from(privKey, 'hex')));
-    
+
     const hashed = fromHEX(hashMessage(message));
     const signatures = operators.privKeys.map(privKey => {
         const {signature, recid} = secp256k1.ecdsaSign(hashed, Buffer.from(privKey, 'hex'));
         return new Uint8Array([...signature, recid]);
     })
-    
+
     const bcs = getBcsForGateway();
     const proof =  bcs
         .ser("Proof", {
@@ -124,7 +124,7 @@ function getInputForMessage(info, message) {
             signatures,
         })
         .toBytes();
-    
+
     const input = bcs
         .ser("Input", {
             data: message,
@@ -136,7 +136,7 @@ function getInputForMessage(info, message) {
 
 function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash, commandId = keccak256((new Date()).getTime())) {
     const bcs = getBcsForGateway();
-    
+
     const message = bcs
         .ser("AxelarMessage", {
             chain_id: 1,
@@ -154,7 +154,7 @@ function approveContractCallInput(axelarInfo, sourceChain, sourceAddress, destin
             ],
         })
         .toBytes();
-        
+
         return getInputForMessage(axelarInfo, message);
 }
 
@@ -186,7 +186,7 @@ async function approveContractCall(client, keypair, axelarInfo, sourceChain, sou
     const packageId = axelarInfo.packageId;
     const validators = axelarInfo['gateway::Gateway'];
 
-	const tx = new TransactionBlock(); 
+	const tx = new TransactionBlock();
     tx.moveCall({
         target: `${packageId}::gateway::process_commands`,
         arguments: [tx.object(validators.objectId), tx.pure(String.fromCharCode(...input))],
@@ -223,7 +223,7 @@ async function transferOperatorship(info, client, keypair, newOperators, newWeig
     const packageId = info.packageId;
     const gateway = info['gateway::Gateway'];
 
-	const tx = new TransactionBlock(); 
+	const tx = new TransactionBlock();
     tx.moveCall({
         target: `${packageId}::gateway::process_commands`,
         arguments: [tx.object(gateway.objectId), tx.pure(String.fromCharCode(...input))],
