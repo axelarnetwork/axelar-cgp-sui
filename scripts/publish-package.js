@@ -8,9 +8,9 @@ const { parseEnv } = require('./utils');
 const tmp = require('tmp');
 const fs = require('fs');
 
-async function publishPackage(packagePath, client, keypair) {
-    let toml = fs.readFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, 'utf8');
-    fs.writeFileSync(`${__dirname}/../move/${packagePath}/Move.toml`, fillAddresses(toml, '0x0'));
+async function publishPackage(packageName, client, keypair) {
+    let toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
+    fs.writeFileSync(`${__dirname}/../move/${packageName}/Move.toml`, fillAddresses(toml, '0x0', packageName));
 
     // remove all controlled temporary objects on process exit
     const address = keypair.getPublicKey().toSuiAddress();
@@ -19,7 +19,7 @@ async function publishPackage(packagePath, client, keypair) {
     const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
     const { modules, dependencies } = JSON.parse(
-        execSync(`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/../move/' + packagePath} --install-dir ${tmpobj.name}`, {
+        execSync(`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/../move/' + packageName} --install-dir ${tmpobj.name}`, {
             encoding: 'utf-8',
             stdio: 'pipe', // silent the output
         }),
@@ -53,10 +53,10 @@ async function publishPackage(packagePath, client, keypair) {
     return { packageId, publishTxn };
 }
 
-function updateMoveToml(packagePath, packageId) {
-    const path = `${__dirname}/../move/${packagePath}/Move.toml`;
+function updateMoveToml(packageName, packageId) {
+    const path = `${__dirname}/../move/${packageName}/Move.toml`;
     const toml = fs.readFileSync(path, 'utf8');
-    fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId));
+    fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId, packageName));
 }
 
 function insertPublishedAt(toml, packageId) {
@@ -69,20 +69,25 @@ function insertPublishedAt(toml, packageId) {
     return lines.join('\n');
 }
 
-function fillAddresses(toml, address) {
+function fillAddresses(toml, address, packageName) {
     const lines = toml.split('\n');
     const addressesIndex = lines.findIndex((line) => line.slice(0, 11) === '[addresses]');
     for (let i = addressesIndex + 1; i < lines.length; i++) {
         const line = lines[i];
         const eqIndex = line.indexOf('=');
+
+        if (eqIndex < 0 || line.slice(0, eqIndex - 1) !== packageName) {
+            continue;
+        }
+
         lines[i] = line.slice(0, eqIndex + 1) + ` "${address}"`;
     }
     return lines.join('\n');
 }
 
-async function publishPackageFull(packagePath, client, keypair, env) {
-    const { packageId, publishTxn } = await publishPackage(packagePath, client, keypair);
-    const info = require(`${__dirname}/../move/${packagePath}/info.json`);
+async function publishPackageFull(packageName, client, keypair, env) {
+    const { packageId, publishTxn } = await publishPackage(packageName, client, keypair);
+    const info = require(`${__dirname}/../move/${packageName}/info.json`);
     const config = {};
     config.packageId = packageId;
     for (const singleton of info.singletons) {
@@ -90,8 +95,8 @@ async function publishPackageFull(packagePath, client, keypair, env) {
         config[singleton] = await getFullObject(object, client);
     }
 
-    setConfig(packagePath, env.alias, config);
-    updateMoveToml(packagePath, packageId);
+    setConfig(packageName, env.alias, config);
+    updateMoveToml(packageName, packageId);
 
     return { packageId, publishTxn };
 }
@@ -103,7 +108,7 @@ module.exports = {
 };
 
 if (require.main === module) {
-    const packagePath = process.argv[2] || 'axelar';
+    const packageName = process.argv[2] || 'axelar';
     const env = parseEnv(process.argv[3] || 'localnet');
     const faucet = process.argv[4]?.toLowerCase?.() === 'true';
 
@@ -118,6 +123,6 @@ if (require.main === module) {
             await requestSuiFromFaucet(env, address);
         }
 
-        await publishPackageFull(packagePath, client, keypair, env);
+        await publishPackageFull(packageName, client, keypair, env);
     })();
 }
