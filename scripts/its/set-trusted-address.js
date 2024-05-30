@@ -1,13 +1,12 @@
 require('dotenv').config();
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
+const { defaultAbiCoder, keccak256, arrayify } = require('ethers/lib/utils');
+const { getBcsForGateway, approveContractCall } = require('../gateway');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
+const { BCS, getSuiMoveConfig } = require('@mysten/bcs');
 const { getConfig } = require('../utils');
-const { defaultAbiCoder, keccak256, arrayify } = require('ethers/lib/utils');
-const { getBcsForGateway, approveContractCall } = require('../gateway');
-const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
-
 
 async function setTrustedAddresses(client, keypair, envAlias, chainNames, trustedAddresses) {
     const itsInfo = getConfig('its', envAlias);
@@ -20,16 +19,21 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
     const governance = getConfig('governance', envAlias)['governance::Governance'];
 
     const bcs = new BCS(getSuiMoveConfig());
-    bcs.registerStructType("TrustedAddressInfo", {
-        chainNames: "vector<string>",
-        trustedAddresses: "vector<string>",
+    bcs.registerStructType('TrustedAddressInfo', {
+        chainNames: 'vector<string>',
+        trustedAddresses: 'vector<string>',
     });
 
-    const trustedAddressInfo = bcs.ser('TrustedAddressInfo', {
-        chainNames: chainNames,
-        trustedAddresses: trustedAddresses,
-    } ).toBytes();
-    const payload = defaultAbiCoder.encode(['bytes32', 'bytes'], ['0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68', trustedAddressInfo]);
+    const trustedAddressInfo = bcs
+        .ser('TrustedAddressInfo', {
+            chainNames: chainNames,
+            trustedAddresses: trustedAddresses,
+        })
+        .toBytes();
+    const payload = defaultAbiCoder.encode(
+        ['bytes32', 'bytes'],
+        ['0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68', trustedAddressInfo],
+    );
 
     const payloadHash = keccak256(payload);
 
@@ -59,11 +63,7 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
     });
     tx.moveCall({
         target: `${itsPackageId}::service::set_trusted_addresses`,
-        arguments: [
-            tx.object(itsObjectId),
-            tx.object(governance.objectId),
-            ApprovedMessage,
-        ],
+        arguments: [tx.object(itsObjectId), tx.object(governance.objectId), ApprovedMessage],
         typeArguments: [],
     });
 
@@ -80,8 +80,7 @@ async function setTrustedAddresses(client, keypair, envAlias, chainNames, truste
 
 module.exports = {
     setTrustedAddresses,
-}
-
+};
 
 if (require.main === module) {
     const env = process.argv[2] || 'localnet';
@@ -89,11 +88,7 @@ if (require.main === module) {
     const trustedAddress = process.argv[4] || '0x1234';
 
     (async () => {
-        const privKey =
-        Buffer.from(
-            process.env.SUI_PRIVATE_KEY,
-            "hex"
-        );
+        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
@@ -101,10 +96,10 @@ if (require.main === module) {
 
         try {
             await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env),
+                recipient: address,
             });
         } catch (e) {
             console.log(e);

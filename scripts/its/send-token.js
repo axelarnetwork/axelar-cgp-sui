@@ -3,10 +3,10 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const {BCS, getSuiMoveConfig} = require("@mysten/bcs");
+const { BCS, getSuiMoveConfig } = require('@mysten/bcs');
 
-const { registerInterchainToken } = require('./register-token');
 const { arrayify, defaultAbiCoder } = require('ethers/lib/utils');
+const { registerInterchainToken } = require('./register-token');
 const { getConfig } = require('../utils');
 
 async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, destinationChain, destiantionAddress) {
@@ -17,18 +17,13 @@ async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, dest
 
     let tokenIdObj = tx.moveCall({
         target: `${itsPackageId}::token_id::from_address`,
-        arguments: [
-            tx.pure(tokenId),
-        ],
+        arguments: [tx.pure(tokenId)],
         typeArguments: [],
     });
 
     tx.moveCall({
         target: `${itsPackageId}::its::get_registered_coin_type`,
-        arguments: [
-            tx.object(itsObjectId),
-            tokenIdObj,
-        ],
+        arguments: [tx.object(itsObjectId), tokenIdObj],
         typeArguments: [],
     });
 
@@ -45,9 +40,7 @@ async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, dest
 
     tokenIdObj = tx.moveCall({
         target: `${itsPackageId}::token_id::from_address`,
-        arguments: [
-            tx.pure(tokenId),
-        ],
+        arguments: [tx.pure(tokenId)],
         typeArguments: [],
     });
 
@@ -65,17 +58,16 @@ async function sendInterchainToken(client, keypair, itsInfo, tokenId, coin, dest
     });
 
     await client.signAndExecuteTransactionBlock({
-		transactionBlock: tx,
-		signer: keypair,
-		options: {
-			showEffects: true,
-			showObjectChanges: true,
-            showContent: true
-		},
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showContent: true,
+        },
         requestType: 'WaitForLocalExecution',
-	});
+    });
 }
-
 
 if (require.main === module) {
     const env = process.argv[2] || 'localnet';
@@ -87,11 +79,7 @@ if (require.main === module) {
     const decimals = process.argv[8] || 6;
 
     (async () => {
-        const privKey =
-        Buffer.from(
-            process.env.SUI_PRIVATE_KEY,
-            "hex"
-        );
+        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
@@ -99,10 +87,10 @@ if (require.main === module) {
 
         try {
             await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env),
+                recipient: address,
             });
         } catch (e) {
             console.log(e);
@@ -120,12 +108,17 @@ if (require.main === module) {
 
         await sendInterchainToken(client, keypair, itsInfo, tokenId, coin, destinationChain, destiantionAddress);
 
-        const eventData = (await client.queryEvents({query: {
-            MoveEventType: `${axelarInfo.packageId}::gateway::ContractCall`,
-        }}));
+        const eventData = await client.queryEvents({
+            query: {
+                MoveEventType: `${axelarInfo.packageId}::gateway::ContractCall`,
+            },
+        });
         const payload = eventData.data[0].parsedJson.payload;
         {
-            const [, tokenId, sourceAddress, destinationAddress, amount, data] = defaultAbiCoder.decode(['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'], payload);
+            const [, tokenId, sourceAddress, destinationAddress, amount, data] = defaultAbiCoder.decode(
+                ['uint256', 'bytes32', 'bytes', 'bytes', 'uint256', 'bytes'],
+                payload,
+            );
             console.log([tokenId, sourceAddress, destinationAddress, Number(amount), data]);
         }
     })();

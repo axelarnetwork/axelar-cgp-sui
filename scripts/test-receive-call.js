@@ -1,12 +1,12 @@
 require('dotenv').config();
 
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
-const { TransactionBlock } = require('@mysten/sui.js/transactions');
-const {BcsReader, BCS, fromHEX, getSuiMoveConfig, bcs: bcsEncoder} = require("@mysten/bcs");
+const { BcsReader, BCS, fromHEX, getSuiMoveConfig, bcs: bcsEncoder } = require('@mysten/bcs');
 const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
+const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
+const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
+const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { approveContractCall } = require('./gateway');
 
 async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payload) {
@@ -17,9 +17,11 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
 
     await approveContractCall(client, keypair, axelarInfo, sourceChain, sourceAddress, destinationAddress, payloadHash);
 
-    const eventData = (await client.queryEvents({query: {
-        MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
-    }}));
+    const eventData = await client.queryEvents({
+        query: {
+            MoveEventType: `${axelarPackageId}::gateway::ContractCallApproved`,
+        },
+    });
     const event = eventData.data[0].parsedJson;
 
     const discoveryArg = [0];
@@ -35,10 +37,10 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
             },
             arguments: [discoveryArg, targetIdArg],
             type_arguments: [],
-        }
+        },
     ];
     let is_final = false;
-    while(!is_final) {
+    while (!is_final) {
         const tx = new TransactionBlock();
         makeCalls(tx, moveCalls, payload);
         const resp = await client.devInspectTransactionBlock({
@@ -78,11 +80,9 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
 
 function makeCalls(tx, moveCalls, payload, ApprovedMessage) {
     const returns = [];
-    for(const call of moveCalls) {
-        let result = tx.moveCall(
-            buildMoveCall(tx, call, payload, ApprovedMessage, returns)
-        );
-        if(!Array.isArray(result)) result = [result];
+    for (const call of moveCalls) {
+        let result = tx.moveCall(buildMoveCall(tx, call, payload, ApprovedMessage, returns));
+        if (!Array.isArray(result)) result = [result];
         returns.push(result);
     }
 }
@@ -91,38 +91,39 @@ function getTransactionBcs() {
     const bcs = new BCS(getSuiMoveConfig());
 
     // input argument for the tx
-    bcs.registerStructType("Function", {
-        package_id: "address",
-        module_name: "string",
-        name: "string",
+    bcs.registerStructType('Function', {
+        package_id: 'address',
+        module_name: 'string',
+        name: 'string',
     });
-    bcs.registerStructType("MoveCall", {
-        function: "Function",
-        arguments: "vector<vector<u8>>",
-        type_arguments: "vector<string>",
+    bcs.registerStructType('MoveCall', {
+        function: 'Function',
+        arguments: 'vector<vector<u8>>',
+        type_arguments: 'vector<string>',
     });
-    bcs.registerStructType("Transaction", {
-        is_final: "bool",
-        move_calls: "vector<MoveCall>",
-    })
+    bcs.registerStructType('Transaction', {
+        is_final: 'bool',
+        move_calls: 'vector<MoveCall>',
+    });
     return bcs;
 }
 function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousReturns) {
-    const decodeArgs = (args, tx) => args.map(arg => {
-        if(arg[0] === 0) {
-            return tx.object(hexlify(arg.slice(1)));
-        } else if (arg[0] === 1) {
-            return tx.pure(new Uint8Array(arg.slice(1)));
-        } else if (arg[0] === 2) {
-            return callContractObj
-        } else if (arg[0] === 3) {
-            return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
-        } else if (arg[0] === 4) {
-            return previousReturns[arg[1]][arg[2]];
-        } else {
-            throw new Error(`Invalid argument prefix: ${arg[0]}`);
-        }
-    });
+    const decodeArgs = (args, tx) =>
+        args.map((arg) => {
+            if (arg[0] === 0) {
+                return tx.object(hexlify(arg.slice(1)));
+            } else if (arg[0] === 1) {
+                return tx.pure(new Uint8Array(arg.slice(1)));
+            } else if (arg[0] === 2) {
+                return callContractObj;
+            } else if (arg[0] === 3) {
+                return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
+            } else if (arg[0] === 4) {
+                return previousReturns[arg[1]][arg[2]];
+            } else {
+                throw new Error(`Invalid argument prefix: ${arg[0]}`);
+            }
+        });
     const decodeDescription = (description) => `${description.package_id}::${description.module_name}::${description.name}`;
     return {
         target: decodeDescription(moveCallInfo.function),
@@ -134,16 +135,13 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
 module.exports = {
     receiveCall,
     getTransactionBcs,
-}
+};
 if (require.main === module) {
     (async () => {
         const env = process.argv[2] || 'localnet';
         const axelarInfo = require('../info/axelar.json')[env];
         const testInfo = require('../info/test.json')[env];
-        const privKey = Buffer.from(
-            process.env.SUI_PRIVATE_KEY,
-            "hex"
-        );
+        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
 
         const discovery = axelarInfo['discovery::RelayerDiscovery'];
 
@@ -174,11 +172,14 @@ if (require.main === module) {
 
         await receiveCall(client, keypair, axelarInfo, 'Ethereum', '0x0', test.channel, payload);
 
-        const event = (await client.queryEvents({query: {
-            MoveEventType: `${testPackageId}::test::Executed`,
-        }})).data[0].parsedJson;
+        const event = (
+            await client.queryEvents({
+                query: {
+                    MoveEventType: `${testPackageId}::test::Executed`,
+                },
+            })
+        ).data[0].parsedJson;
 
-        if ( hexlify(event.data) != payload ) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
-
+        if (hexlify(event.data) != payload) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
     })();
 }

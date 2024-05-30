@@ -17,41 +17,33 @@ async function setItsDiscovery(client, keypair, envAlias) {
 
     tx.moveCall({
         target: `${itsPackageId}::discovery::register_transaction`,
-        arguments: [
-            tx.object(itsObjectId),
-            tx.object(relayerDecovery),
-        ],
+        arguments: [tx.object(itsObjectId), tx.object(relayerDecovery)],
         typeArguments: [],
     });
 
     await client.signAndExecuteTransactionBlock({
-		transactionBlock: tx,
-		signer: keypair,
-		options: {
-			showEffects: true,
-			showObjectChanges: true,
-            showContent: true
-		},
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showContent: true,
+        },
         requestType: 'WaitForLocalExecution',
-	});
+    });
 }
 
 module.exports = {
     setItsDiscovery,
-}
-
+};
 
 if (require.main === module) {
     const env = process.argv[2] || 'localnet';
     const chainName = process.argv[3] || 'Ethereum';
     const trustedAddress = process.argv[4] || '0x1234';
-    
+
     (async () => {
-        const privKey = 
-        Buffer.from(
-            process.env.SUI_PRIVATE_KEY,
-            "hex"
-        );
+        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
@@ -59,10 +51,10 @@ if (require.main === module) {
 
         try {
             await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env),
+                recipient: address,
             });
         } catch (e) {
             console.log(e);

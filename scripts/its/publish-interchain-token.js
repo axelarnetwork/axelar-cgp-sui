@@ -11,7 +11,6 @@ const { publishPackage } = require('../publish-package');
 const packagePath = 'interchain_token';
 
 async function publishInterchainToken(client, keypair, itsInfo, name, symbol, decimals, skipRegister = false) {
-
     let file = fs.readFileSync(`scripts/its/interchain_token.move`, 'utf8');
     let moduleName = getModuleNameFromSymbol(symbol);
     let witness = moduleName.toUpperCase();
@@ -23,71 +22,63 @@ async function publishInterchainToken(client, keypair, itsInfo, name, symbol, de
     fs.writeFileSync(`move/${packagePath}/sources/interchain_token.move`, file);
 
     const { packageId, publishTxn } = await publishPackage(`../move/${packagePath}`, client, keypair);
-    
-    const treasuryCap = publishTxn.objectChanges.find(object => {
+
+    const treasuryCap = publishTxn.objectChanges.find((object) => {
         return object.objectType && object.objectType.startsWith('0x2::coin::TreasuryCap');
     });
-    const coinMetadata = publishTxn.objectChanges.find(object => {
+    const coinMetadata = publishTxn.objectChanges.find((object) => {
         return object.objectType && object.objectType.startsWith('0x2::coin::CoinMetadata');
     });
 
     coinType = `${packageId}::${moduleName}::${witness}`;
 
-    if(skipRegister) {
-        return { 
-            coinType, 
-            treasuryCap, 
-            coinMetadata 
+    if (skipRegister) {
+        return {
+            coinType,
+            treasuryCap,
+            coinMetadata,
         };
     }
-    
+
     const itsPackageId = itsInfo.packageId;
     const itsObjectId = itsInfo['its::ITS'].objectId;
 
     const tx = new TransactionBlock();
-    
+
     tx.moveCall({
         target: `${itsPackageId}::service::give_unregistered_coin`,
-        arguments: [
-            tx.object(itsObjectId),
-            tx.object(treasuryCap.objectId),
-            tx.object(coinMetadata.objectId),
-        ],
+        arguments: [tx.object(itsObjectId), tx.object(treasuryCap.objectId), tx.object(coinMetadata.objectId)],
         typeArguments: [`${packageId}::${moduleName}::${witness}`],
     });
 
     await client.signAndExecuteTransactionBlock({
-		transactionBlock: tx,
-		signer: keypair,
-		options: {
-			showEffects: true,
-			showObjectChanges: true,
-            showContent: true
-		},
+        transactionBlock: tx,
+        signer: keypair,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showContent: true,
+        },
         requestType: 'WaitForLocalExecution',
-	});
+    });
 
     return {
-        coinType
-    }
+        coinType,
+    };
 }
 
 module.exports = {
     publishInterchainToken,
-}
+};
 
 if (require.main === module) {
     const symbol = process.argv[2] || 'TT';
     const decimals = process.argv[3] || 6;
     const skipRegister = process.argv[4] ? process.argv[4] != 'false' : false;
     const env = process.argv[5] || 'localnet';
-    
+
     (async () => {
-        const privKey = 
-        Buffer.from(
-            process.env.SUI_PRIVATE_KEY,
-            "hex"
-        );
+        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
         // create a new SuiClient object pointing to the network you want to use
@@ -95,10 +86,10 @@ if (require.main === module) {
 
         try {
             await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env),
-            recipient: address,
+                // use getFaucetHost to make sure you're using correct faucet address
+                // you can also just use the address (see Sui Typescript SDK Quick Start for values)
+                host: getFaucetHost(env),
+                recipient: address,
             });
         } catch (e) {
             console.log(e);

@@ -1,18 +1,15 @@
 require('dotenv').config();
-const { transferOperatorship, getRandomOperators } = require("./gateway");
-const secp256k1 = require('secp256k1');
-const { SuiClient } = require('@mysten/sui.js/client');
+const { transferOperatorship, getRandomOperators } = require('./gateway');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
-const fs = require('fs');
+const { SuiClient } = require('@mysten/sui.js/client');
 const { parseEnv } = require('./utils');
+const secp256k1 = require('secp256k1');
+const fs = require('fs');
 
 (async () => {
     const env = parseEnv(process.argv[2] || 'localnet');
     const allInfo = require(`../info/axelar.json`);
-    const privKey = Buffer.from(
-        process.env.SUI_PRIVATE_KEY,
-        "hex"
-    );
+    const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
 
     // get the public key in a compressed format
     const keypair = Ed25519Keypair.fromSecretKey(privKey);
