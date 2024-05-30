@@ -13,22 +13,26 @@ function getModuleNameFromSymbol(symbol) {
     function isNumber(char) {
         return char >= '0' && char <= '9';
     }
+
     function isLowercase(char) {
         return char >= 'a' && char <= 'z';
     }
+
     function isUppercase(char) {
         return char >= 'A' && char <= 'Z';
     }
 
     let i = 0;
-    let length = symbol.length;
+    const length = symbol.length;
     let moduleName = '';
 
     while (isNumber(symbol[i])) {
         i++;
     }
+
     while (i < length) {
-        let char = symbol[i];
+        const char = symbol[i];
+
         if (isLowercase(char) || isNumber(char)) {
             moduleName += char;
         } else if (isUppercase(char)) {
@@ -36,8 +40,10 @@ function getModuleNameFromSymbol(symbol) {
         } else if (char == '_' || char == ' ') {
             moduleName += '_';
         }
+
         i++;
     }
+
     return moduleName;
 }
 
@@ -66,11 +72,13 @@ function setConfig(packagePath, envAlias, config) {
             }
         }
     }
+
     configs[packagePath][envAlias] = config;
 
     if (!fs.existsSync(`${__dirname}/../info`)) {
         fs.mkdirSync(`${__dirname}/../info`);
     }
+
     fs.writeFileSync(`${__dirname}/../info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
 }
 
@@ -93,6 +101,7 @@ async function getFullObject(object, client) {
             delete object[field];
         }
     }
+
     const objectResponce = await client.getObject({
         id: object.objectId,
         options: {
@@ -104,6 +113,7 @@ async function getFullObject(object, client) {
     function decodeFields(fields, object) {
         for (const key in fields) {
             if (key === 'id') continue;
+
             if (fields[key].fields) {
                 if (!fields[key].fields.id) {
                     object[key] = {};
@@ -117,8 +127,10 @@ async function getFullObject(object, client) {
                 object[key] = fields[key];
             }
         }
+
         return object;
     }
+
     decodeFields(fields, object);
     return object;
 }

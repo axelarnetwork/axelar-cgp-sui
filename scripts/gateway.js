@@ -10,7 +10,7 @@ const secp256k1 = require('secp256k1');
 function hashMessage(data) {
     // sorry for putting it here...
     const messagePrefix = new Uint8Array(Buffer.from('\x19Sui Signed Message:\n', 'ascii'));
-    let hashed = new Uint8Array(messagePrefix.length + data.length);
+    const hashed = new Uint8Array(messagePrefix.length + data.length);
     hashed.set(messagePrefix);
     hashed.set(data, messagePrefix.length);
 
@@ -66,11 +66,13 @@ function getOperators(axelarInfo) {
             threshold: 0,
         };
     }
+
     return axelarInfo.activeOperators;
 }
 
 function getRandomOperators(n = 5) {
     let privKeys = [];
+
     for (let i = 0; i < n; i++) {
         privKeys.push(keccak256(Math.floor(Math.random() * 10000000)).slice(2));
     }
@@ -85,6 +87,7 @@ function getRandomOperators(n = 5) {
             const bByte = pubKeys[b][i];
             if (aByte != bByte) return aByte - bByte;
         }
+
         return 0;
     });
     pubKeys = indices.map((i) => pubKeys[i]);
@@ -124,7 +127,7 @@ function getInputForMessage(info, message) {
     const input = bcs
         .ser('Input', {
             data: message,
-            proof: proof,
+            proof,
         })
         .toBytes();
     return input;

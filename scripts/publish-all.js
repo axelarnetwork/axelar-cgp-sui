@@ -10,8 +10,10 @@ const { requestSuiFromFaucet } = require('./utils');
 async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
     const packageIds = {};
+
     for (const packagePath of ['abi', 'axelar', 'governance', 'gas_service', 'its', 'squid']) {
         console.log(packagePath);
+
         while (true)
             try {
                 const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
@@ -65,6 +67,7 @@ if (require.main === module) {
         if (faucet) {
             requestSuiFromFaucet(env, address);
         }
+
         await publishAll(client, keypair, env);
     })();
 }

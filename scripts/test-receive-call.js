@@ -40,6 +40,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         },
     ];
     let is_final = false;
+
     while (!is_final) {
         const tx = new TransactionBlock();
         makeCalls(tx, moveCalls, payload);
@@ -53,6 +54,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
         is_final = nextTx.is_final;
         moveCalls = nextTx.move_calls;
     }
+
     const tx = new TransactionBlock();
     const ApprovedMessage = tx.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_message`,
@@ -80,6 +82,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
 
 function makeCalls(tx, moveCalls, payload, ApprovedMessage) {
     const returns = [];
+
     for (const call of moveCalls) {
         let result = tx.moveCall(buildMoveCall(tx, call, payload, ApprovedMessage, returns));
         if (!Array.isArray(result)) result = [result];
@@ -107,6 +110,7 @@ function getTransactionBcs() {
     });
     return bcs;
 }
+
 function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousReturns) {
     const decodeArgs = (args, tx) =>
         args.map((arg) => {
@@ -120,9 +124,10 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
                 return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
             } else if (arg[0] === 4) {
                 return previousReturns[arg[1]][arg[2]];
-            } else {
-                throw new Error(`Invalid argument prefix: ${arg[0]}`);
             }
+ 
+                throw new Error(`Invalid argument prefix: ${arg[0]}`);
+            
         });
     const decodeDescription = (description) => `${description.package_id}::${description.module_name}::${description.name}`;
     return {
@@ -136,6 +141,7 @@ module.exports = {
     receiveCall,
     getTransactionBcs,
 };
+
 if (require.main === module) {
     (async () => {
         const env = process.argv[2] || 'localnet';
@@ -155,7 +161,7 @@ if (require.main === module) {
 
         const payload = '0x1234';
 
-        let tx = new TransactionBlock();
+        const tx = new TransactionBlock();
         tx.moveCall({
             target: `${testPackageId}::test::register_transaction`,
             arguments: [tx.object(discovery.objectId), tx.object(test.objectId)],

@@ -9,7 +9,7 @@ const tmp = require('tmp');
 const fs = require('fs');
 
 async function publishPackage(packageName, client, keypair) {
-    let toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
+    const toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
     fs.writeFileSync(`${__dirname}/../move/${packageName}/Move.toml`, fillAddresses(toml, '0x0', packageName));
 
     // remove all controlled temporary objects on process exit
@@ -62,9 +62,11 @@ function updateMoveToml(packageName, packageId) {
 function insertPublishedAt(toml, packageId) {
     const lines = toml.split('\n');
     const versionLineIndex = lines.findIndex((line) => line.slice(0, 7) === 'version');
+
     if (!(lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
         lines.splice(versionLineIndex + 1, 0, '');
     }
+
     lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
     return lines.join('\n');
 }
@@ -72,6 +74,7 @@ function insertPublishedAt(toml, packageId) {
 function fillAddresses(toml, address, packageName) {
     const lines = toml.split('\n');
     const addressesIndex = lines.findIndex((line) => line.slice(0, 11) === '[addresses]');
+
     for (let i = addressesIndex + 1; i < lines.length; i++) {
         const line = lines[i];
         const eqIndex = line.indexOf('=');
@@ -82,6 +85,7 @@ function fillAddresses(toml, address, packageName) {
 
         lines[i] = line.slice(0, eqIndex + 1) + ` "${address}"`;
     }
+
     return lines.join('\n');
 }
 
@@ -90,6 +94,7 @@ async function publishPackageFull(packageName, client, keypair, env) {
     const info = require(`${__dirname}/../move/${packageName}/info.json`);
     const config = {};
     config.packageId = packageId;
+
     for (const singleton of info.singletons) {
         const object = publishTxn.objectChanges.find((object) => object.objectType === `${packageId}::${singleton}`);
         config[singleton] = await getFullObject(object, client);

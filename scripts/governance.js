@@ -5,7 +5,7 @@ async function initializeGovernance(upgradeCap, client, keypair, env) {
     const governanceConfig = getConfig('governance', env.alias);
     const packageId = governanceConfig.packageId;
 
-    let tx = new TransactionBlock();
+    const tx = new TransactionBlock();
     tx.moveCall({
         target: `${packageId}::governance::new`,
         arguments: [
@@ -27,7 +27,7 @@ async function initializeGovernance(upgradeCap, client, keypair, env) {
         requestType: 'WaitForLocalExecution',
     });
 
-    const governance = publishTxn.objectChanges.find((obj) => obj.objectType == `${packageId}::governance::Governance`);
+    const governance = publishTxn.objectChanges.find((obj) => obj.objectType === `${packageId}::governance::Governance`);
 
     governanceConfig['governance::Governance'] = await getFullObject(governance, client);
     setConfig('governance', env.alias, governanceConfig);
@@ -39,6 +39,7 @@ async function takeUpgradeCaps(upgradeCaps, client, keypair, env) {
     const governanceConfig = getConfig('governance', env.alias);
     const packageId = governanceConfig.packageId;
     tx = new TransactionBlock();
+
     for (const upgradeCap of upgradeCaps) {
         tx.moveCall({
             target: `${packageId}::governance::take_upgrade_cap`,
