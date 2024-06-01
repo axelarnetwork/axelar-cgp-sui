@@ -1,12 +1,10 @@
 [package]
-name = "Governance"
-version = "0.0.1"
-published-at = "0x83187fc09392a9d547acd16caeca3bf8662452d75d1853d5a454074103161161"
+name = "GasService"
+version = "0.1.0"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
-AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-gas_service = "0x83187fc09392a9d547acd16caeca3bf8662452d75d1853d5a454074103161161"
+gas_service = "0x0"
