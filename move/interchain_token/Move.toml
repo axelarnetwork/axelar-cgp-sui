@@ -1,7 +1,6 @@
 [package]
-name = "Test"
-version = "0.0.1"
-published-at = "0x0"
+name = "InterchainToken"
+version = "0.1.0"
 edition = "2024.beta"
 
 [dependencies]

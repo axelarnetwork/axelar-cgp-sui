@@ -1,8 +1,8 @@
 [package]
 name = "test"
-version = "0.0.1"
+version = "0.1.0"
 published-at = "0xc47f50df280836b74a20a862c71a189e9819ba7305173ef99858c095bba373d7"
-edition = "2024.alpha"
+edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
