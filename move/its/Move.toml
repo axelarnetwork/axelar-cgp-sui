@@ -9,4 +9,4 @@ AxelarGateway = { local = "../axelar_gateway" }
 Governance = { local = "../governance" }
 
 [addresses]
-its = "0x1"
+its = "0x102"

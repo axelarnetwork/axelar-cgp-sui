@@ -7,4 +7,4 @@ edition = "2024.beta"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 [addresses]
-gas_service = "0x0"
+gas_service = "0x105"

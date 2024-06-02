@@ -10,4 +10,4 @@ AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 
 [addresses]
-squid = "0x2"
+squid = "0x104"
