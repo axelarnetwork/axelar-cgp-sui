@@ -104,13 +104,16 @@ module its::service {
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, ctx: &mut TxContext) {
         let (_, payload) = decode_approved_message(self, approved_message);
-        let reader = abi::new_reader(payload);
-        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(reader.read_bytes(5).is_empty(), EInterchainTransferHasData);
+        let mut reader = abi::new_reader(payload);
+        assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
-        let token_id = token_id::from_u256(reader.read_u256(1));
-        let destination_address = address::from_bytes(reader.read_bytes(3));
-        let amount = (reader.read_u256(4) as u64);
+        let token_id = token_id::from_u256(reader.read_u256());
+        let _source_address = reader.read_bytes();
+        let destination_address = address::from_bytes(reader.read_bytes());
+        let amount = (reader.read_u256() as u64);
+        let data = reader.read_bytes();
+
+        assert!(data.is_empty(), EInterchainTransferHasData);
 
         let coin = self
             .coin_management_mut(token_id)
@@ -126,15 +129,16 @@ module its::service {
         ctx: &mut TxContext
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
         let (source_chain, payload) = decode_approved_message(self, approved_message);
-        let reader = abi::new_reader(payload);
-        assert!(reader.read_u256(0) == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
-        assert!(address::from_bytes(reader.read_bytes(3)) == channel.to_address(), EWrongDestination);
+        let mut reader = abi::new_reader(payload);
+        assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
-        let token_id = token_id::from_u256(reader.read_u256(1));
-        let source_address = reader.read_bytes(2);
-        let amount = (reader.read_u256(4) as u64);
-        let data = reader.read_bytes(5);
+        let token_id = token_id::from_u256(reader.read_u256());
+        let source_address = reader.read_bytes();
+        let destination_address = reader.read_bytes();
+        let amount = (reader.read_u256() as u64);
+        let data = reader.read_bytes();
 
+        assert!(address::from_bytes(destination_address) == channel.to_address(), EWrongDestination);
         assert!(!data.is_empty(), EInterchainTransferHasNoData);
 
         let coin = self
@@ -151,14 +155,14 @@ module its::service {
 
     public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_message: ApprovedMessage) {
         let (_, payload) = decode_approved_message(self, approved_message);
-        let reader = abi::new_reader(payload);
-        assert!(reader.read_u256(0) == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
+        let mut reader = abi::new_reader(payload);
+        assert!(reader.read_u256() == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
 
-        let token_id = token_id::from_u256(reader.read_u256(1));
-        let name = string::utf8(reader.read_bytes(2));
-        let symbol = ascii::string(reader.read_bytes(3));
-        let decimals = (reader.read_u256(4) as u8);
-        let distributor = address::from_bytes(reader.read_bytes(5));
+        let token_id = token_id::from_u256(reader.read_u256());
+        let name = string::utf8(reader.read_bytes());
+        let symbol = ascii::string(reader.read_bytes());
+        let decimals = (reader.read_u256() as u8);
+        let distributor = address::from_bytes(reader.read_bytes());
 
         let (treasury_cap, mut coin_metadata) = self.remove_unregistered_coin<T>(
             token_id::unregistered_token_id(&symbol, decimals)
@@ -234,11 +238,11 @@ module its::service {
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
 
-        let reader = abi::new_reader(payload);
-        let message_type = reader.read_u256(0);
+        let mut reader = abi::new_reader(payload);
+        let message_type = reader.read_u256();
         assert!(message_type == MESSAGE_TYPE_SET_TRUSTED_ADDRESSES, EInvalidMessageType);
 
-        let mut trusted_address_info = bcs::new(reader.read_bytes(1));
+        let mut trusted_address_info = bcs::new(reader.read_bytes());
 
         let mut chain_names = trusted_address_info.peel_vec_vec_u8();
         let mut trusted_addresses = trusted_address_info.peel_vec_vec_u8();
