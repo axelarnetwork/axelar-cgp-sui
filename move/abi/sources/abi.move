@@ -1,7 +1,12 @@
 module abi::abi {
+    // -----
+    // Types
+    // -----
 
     public struct AbiReader has copy, drop {
         bytes: vector<u8>,
+        head: u64,
+        pos: u64,
     }
 
     public struct AbiWriter has copy, drop {
@@ -9,9 +14,15 @@ module abi::abi {
         pos: u64,
     }
 
+    // ----------------
+    // Public Functions
+    // ----------------
+
     public fun new_reader(bytes: vector<u8>): AbiReader {
         AbiReader {
             bytes,
+            head: 0,
+            pos: 0,
         }
     }
 
@@ -36,54 +47,109 @@ module abi::abi {
         bytes
     }
 
-    public fun read_u256(self: &AbiReader, pos: u64): u256 {
+    // TODO: check that all bytes were decoded
+    public fun into_remaining_bytes(self: AbiReader): vector<u8> {
+        let AbiReader {bytes, head: _, pos: _} = self;
+
+        bytes
+    }
+
+    public fun read_u256_from_slot(self: &AbiReader, pos: u64): u256 {
         let mut var = 0u256;
         let mut i = 0;
 
         while (i < 32) {
             var = var << 8;
-            var = var | (self.bytes[i + 32 * pos] as u256);
+            var = var | (self.bytes[i + pos] as u256);
             i = i + 1;
         };
 
         var
     }
 
-    public fun read_bytes(self: &AbiReader, pos: u64): vector<u8> {
-        let start_pos = (self.read_u256(pos) as u64) / 32;
-        let var = self.decode_variable(start_pos);
+    public fun read_u256(self: &mut AbiReader): u256 {
+        let mut var = 0u256;
+        let mut i = 0;
+        let pos = self.pos;
+
+        while (i < 32) {
+            var = (var << 8) | (self.bytes[i + pos] as u256);
+            i = i + 1;
+        };
+
+        self.pos = pos + 32;
+
         var
     }
 
-    public fun read_vector_u256(self: &AbiReader, pos: u64): vector<u256> {
-        let start_pos = (self.read_u256(pos) as u64) / 32;
-        let length = (self.read_u256(start_pos) as u64);
+    public fun read_u8(self: &mut AbiReader): u8 {
+        self.read_u256() as u8
+    }
 
-        let mut var = vector[];
+    public fun read_bytes(self: &mut AbiReader): vector<u8> {
+        let pos = self.pos;
+
+        // Move position to the start of the bytes
+        let offset = self.read_u256() as u64;
+        self.pos = self.head + offset;
+
+        let bytes = self.decode_bytes();
+
+        // Move position to the next slot
+        self.pos = pos + 32;
+
+        bytes
+    }
+
+    public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
+        let mut bytes = vector[];
+        let pos = self.pos;
+
+        // Move position to the start of the dynamic data
+        let offset = self.read_u256() as u64;
+        self.pos = self.head + offset;
+
+        let length = self.read_u256() as u64;
+
         let mut i = 0;
 
         while (i < length) {
-            var.push_back(self.read_u256(start_pos + i + 1));
+            bytes.push_back(self.read_u256());
             i = i + 1;
         };
 
-        var
+        self.pos = pos + 32;
+
+        bytes
     }
 
-    public fun read_vector_bytes(self: &AbiReader, pos: u64): vector<vector<u8>> {
-        let start_pos = (self.read_u256(pos) as u64) / 32;
-        let length = (self.read_u256(start_pos) as u64);
+    /// Decode ABI-encoded 'bytes[]'
+    public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
+        let mut bytes = vector[];
 
-        let mut var = vector[];
+        let pos = self.pos;
+        let head = self.head;
+
+        // Move position to the start of the dynamic data
+        let offset = self.read_u256() as u64;
+        self.pos = head + offset;
+
+        let length = self.read_u256() as u64;
+        self.head = self.pos;
+
         let mut i = 0;
 
         while (i < length) {
-            let start_pos_nested = (self.read_u256(start_pos + i + 1) as u64) / 32;
-            var.push_back(self.decode_variable(start_pos + start_pos_nested + 1));
+            bytes.push_back(self.read_bytes());
+
             i = i + 1;
         };
 
-        var
+        // Move position to the next slot
+        self.pos = pos + 32;
+        self.head = head;
+
+        bytes
     }
 
     public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
@@ -91,6 +157,10 @@ module abi::abi {
         self.encode_u256(pos, var);
         self.pos = self.pos + 1;
         self
+    }
+
+    public fun write_u8(self: &mut AbiWriter, var: u8): &mut AbiWriter {
+        self.write_u256(var as u256)
     }
 
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
@@ -145,6 +215,10 @@ module abi::abi {
         self
     }
 
+    // ------------------
+    // Internal Functions
+    // ------------------
+
     fun encode_u256(self: &mut AbiWriter, pos: u64, var: u256) {
         let mut i = 0;
 
@@ -179,19 +253,24 @@ module abi::abi {
         };
     }
 
-    fun decode_variable(self: &AbiReader, start_pos: u64): vector<u8> {
-        let length = self.read_u256(start_pos) as u64;
+    fun decode_bytes(self: &mut AbiReader): vector<u8> {
+        let length = self.read_u256() as u64;
+        let pos = self.pos;
 
-        let mut var = vector[];
+        let mut bytes = vector[];
         let mut i = 0;
 
         while (i < length) {
-            var.push_back(self.bytes[i + (start_pos + 1) * 32]);
+            bytes.push_back(self.bytes[i + pos]);
             i = i + 1;
         };
 
-        var
+        bytes
     }
+
+    // -----
+    // Tests
+    // -----
 
     #[test]
     fun test_u256() {
@@ -202,8 +281,8 @@ module abi::abi {
         writer.write_u256(input);
         assert!(writer.into_bytes() == output, 0);
 
-        let reader = new_reader(output);
-        assert!(reader.read_u256(0) == input, 1);
+        let mut reader = new_reader(output);
+        assert!(reader.read_u256() == input, 1);
     }
 
     #[test]
@@ -215,8 +294,8 @@ module abi::abi {
         writer.write_bytes(input);
         assert!(writer.into_bytes() == output, 0);
 
-        let reader = new_reader(output);
-        assert!(reader.read_bytes(0) == input, 1);
+        let mut reader = new_reader(output);
+        assert!(reader.read_bytes() == input, 1);
     }
 
     #[test]
@@ -228,21 +307,21 @@ module abi::abi {
         writer.write_vector_u256(input);
         assert!(writer.into_bytes() == output, 0);
 
-        let reader = new_reader(output);
-        assert!(reader.read_vector_u256(0) == input, 1);
+        let mut reader = new_reader(output);
+        assert!(reader.read_vector_u256() == input, 1);
     }
 
     #[test]
     fun test_read_vector_bytes() {
-        let input = vector[x"01", x"02", x"03"];
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010300000000000000000000000000000000000000000000000000000000000000";
+        let input = vector[x"01", x"02", x"03", x"04"];
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000102000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000000000";
 
         let mut writer = new_writer(1);
         writer.write_vector_bytes(input);
         assert!(writer.into_bytes() == output, 0);
 
-        let reader = new_reader(output);
-        assert!(reader.read_vector_bytes(0) == input, 1);
+        let mut reader = new_reader(output);
+        assert!(reader.read_vector_bytes() == input, 1);
     }
 
     #[test]
@@ -257,10 +336,10 @@ module abi::abi {
         writer.write_vector_bytes(input4);
         assert!(writer.into_bytes() == output, 0);
 
-        let reader = new_reader(output);
-        assert!(reader.read_u256(0) == input1, 1);
-        assert!(reader.read_bytes(1) == input2, 2);
-        assert!(reader.read_vector_u256(2) == input3, 3);
-        assert!(reader.read_vector_bytes(3) == input4, 4);
+        let mut reader = new_reader(output);
+        assert!(reader.read_u256() == input1, 1);
+        assert!(reader.read_bytes() == input2, 2);
+        assert!(reader.read_vector_u256() == input3, 3);
+        assert!(reader.read_vector_bytes() == input4, 4);
     }
 }

@@ -2,21 +2,24 @@ module axelar_gateway::bytes32 {
     use sui::bcs::BCS;
     use sui::address;
 
-    /// -----
-    /// Types
-    /// -----
+    // -----
+    // Types
+    // -----
+
     public struct Bytes32 has copy, drop, store {
         bytes: address,
     }
 
-    /// ---------
-    /// Constants
-    /// ---------
+    // ---------
+    // Constants
+    // ---------
+
     const LENGTH: u64 = 32;
 
-    /// ----------------
-    /// Public Functions
-    /// ----------------
+    // ----------------
+    // Public Functions
+    // ----------------
+
     /// Casts an address to a bytes32
     public fun new(bytes: address): Bytes32 {
         Bytes32{bytes: bytes}
@@ -49,6 +52,7 @@ module axelar_gateway::bytes32 {
     // -----
     // Tests
     // -----
+
     #[test]
     public fun test_new() {
         let actual = new(@0x1);

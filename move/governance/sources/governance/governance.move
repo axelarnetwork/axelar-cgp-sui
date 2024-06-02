@@ -75,13 +75,13 @@ module governance::governance {
 
         assert!(is_governance(self, source_chain, source_address), EUntrustedAddress);
 
-        let abi = abi::new_reader(payload);
-        let message_type = abi.read_u256(0);
+        let mut abi = abi::new_reader(payload);
+        let message_type = abi.read_u256();
         assert!(message_type == self.message_type, EInvalidMessageType);
 
-        let cap_id = object::id_from_address(address::from_u256(abi.read_u256(1)));
-        let policy = (abi.read_u256(2) as u8);
-        let digest = abi.read_bytes(3);
+        let cap_id = object::id_from_address(address::from_u256(abi.read_u256()));
+        let policy = abi.read_u8();
+        let digest = abi.read_bytes();
 
         package::authorize_upgrade(
             table::borrow_mut(&mut self.caps, cap_id),
