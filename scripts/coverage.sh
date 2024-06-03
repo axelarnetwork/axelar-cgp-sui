@@ -19,30 +19,30 @@ if ! which "$SUI" >/dev/null 2>&1; then
   fi
 fi
 
-for d in ./move/*/; do
-    "$SUI" move test --path "$d" --coverage &
+for module in ./move/*/; do
+    "$SUI" move test --path "$module" --coverage &
 done
 
 wait
 
 found=0
 
-for d in ./move/*/; do
-    echo "Generating coverage info for package $d"
+for module in ./move/*/; do
+    echo "Generating coverage info for package ${module}"
 
-    if [ ! -f "$d/.coverage_map.mvcov" ]; then
-        echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.info
-        echo "\n NO tests found for module $d. Skipped.\n" >> .coverage.extended.info
+    if [ ! -f "${module}/.coverage_map.mvcov" ]; then
+        echo "\n NO tests found for module ${module}. Skipped.\n" >> .coverage.info
+        echo "\n NO tests found for module ${module}. Skipped.\n" >> .coverage.extended.info
         continue
     fi
 
     found=1
 
-    echo "Coverage report for module $d\n" >> .coverage.info
-    echo "Coverage report for module $d\n" >> .coverage.extended.info
+    echo "Coverage report for module ${module}\n" >> .coverage.info
+    echo "Coverage report for module ${module}\n" >> .coverage.extended.info
 
-    "$SUI" move coverage summary --path "$d" >> .coverage.info
-    "$SUI" move coverage summary --summarize-functions --path "$d" >> .coverage.extended.info
+    "$SUI" move coverage summary --path "${module}" >> .coverage.info
+    "$SUI" move coverage summary --summarize-functions --path "${module}" >> .coverage.extended.info
 
     echo "" >> .coverage.info
     echo "" >> .coverage.extended.info
