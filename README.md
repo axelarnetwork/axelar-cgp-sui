@@ -16,8 +16,6 @@ npm ci
 npm run build
 ```
 
-Sui framework dependency points to the [framework/mainnet](https://github.com/MystenLabs/sui/tree/framework/mainnet) branch.
-
 ## Testing
 
 Run tests for all Move packages
@@ -47,6 +45,8 @@ Install the `Move` extension in VS Code. It should come pre-installed with `move
 
 Move Book: https://move-book.com
 Move Examples: https://examples.sui.io
+
+Sui framework dependency is pinned to a specific mainnet [release](https://github.com/MystenLabs/sui/releases) for all packages for consistency.
 
 ## Deployment
 
