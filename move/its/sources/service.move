@@ -66,12 +66,13 @@ module its::service {
         let decimals = coin_info.decimals();
         let mut writer = abi::new_writer(6);
 
-        writer.write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN);
-        writer.write_u256(token_id.to_u256());
-        writer.write_bytes(*string::bytes(&name));
-        writer.write_bytes(*ascii::as_bytes(&symbol));
-        writer.write_u256((decimals as u256));
-        writer.write_bytes(vector::empty());
+        writer
+            .write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_bytes(*string::bytes(&name))
+            .write_bytes(*ascii::as_bytes(&symbol))
+            .write_u256((decimals as u256))
+            .write_bytes(vector::empty());
 
         send_payload(self, destination_chain, writer.into_bytes());
     }
@@ -89,12 +90,13 @@ module its::service {
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
 
-        writer.write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER);
-        writer.write_u256(token_id.to_u256());
-        writer.write_bytes(address::to_bytes(ctx.sender()));
-        writer.write_bytes(destination_address);
-        writer.write_u256(amount);
-        writer.write_bytes(data);
+        writer
+            .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
+            .write_u256(token_id.to_u256())
+            .write_bytes(address::to_bytes(ctx.sender()))
+            .write_bytes(destination_address)
+            .write_u256(amount)
+            .write_bytes(data);
 
         self.coin_management_mut(token_id)
             .take_coin(coin);
