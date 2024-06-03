@@ -20,10 +20,8 @@ if ! which "$SUI" >/dev/null 2>&1; then
 fi
 
 for module in ./move/*/; do
-    "$SUI" move test --path "$module" --coverage &
+    "$SUI" move test --path "$module" --coverage
 done
-
-wait
 
 found=0
 
