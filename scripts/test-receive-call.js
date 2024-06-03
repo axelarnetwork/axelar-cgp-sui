@@ -125,9 +125,8 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
             } else if (arg[0] === 4) {
                 return previousReturns[arg[1]][arg[2]];
             }
- 
-                throw new Error(`Invalid argument prefix: ${arg[0]}`);
-            
+
+            throw new Error(`Invalid argument prefix: ${arg[0]}`);
         });
     const decodeDescription = (description) => `${description.package_id}::${description.module_name}::${description.name}`;
     return {
