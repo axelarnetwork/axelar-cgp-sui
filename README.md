@@ -16,6 +16,8 @@ npm ci
 npm run build
 ```
 
+Sui framework dependency points to the [framework/mainnet](https://github.com/MystenLabs/sui/tree/framework/mainnet) branch.
+
 ## Testing
 
 Run tests for all Move packages
