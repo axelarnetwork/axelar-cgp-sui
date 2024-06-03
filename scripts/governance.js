@@ -38,7 +38,7 @@ async function initializeGovernance(upgradeCap, client, keypair, env) {
 async function takeUpgradeCaps(upgradeCaps, client, keypair, env) {
     const governanceConfig = getConfig('governance', env.alias);
     const packageId = governanceConfig.packageId;
-    tx = new TransactionBlock();
+    const tx = new TransactionBlock();
 
     for (const upgradeCap of upgradeCaps) {
         tx.moveCall({

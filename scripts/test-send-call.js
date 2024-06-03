@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
+const { SuiClient } = require('@mysten/sui.js/client');
 
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
@@ -55,5 +55,6 @@ const { toPure, parseEnv } = require('./utils');
     ).data[0].parsedJson;
     console.log(event);
 
-    if (hexlify(event.source_id) != test.channel) throw new Error(`Emmited payload missmatch: ${hexlify(event.source)} != ${test.channel}`);
+    if (hexlify(event.source_id) !== test.channel)
+        throw new Error(`Emmited payload missmatch: ${hexlify(event.source)} != ${test.channel}`);
 })();

@@ -7,8 +7,8 @@
   },
   "main": "index.js",
   "scripts": {
-    "build": "for d in ./move/*/; do cd $d; sui move build --lint --warnings-are-errors & cd ../../; done; wait",
-    "test": "for d in ./move/*/; do sui move test --path $d ; done",
+    "build": "./scripts/run.sh build",
+    "test": "./scripts/run.sh test",
     "coverage": "./scripts/coverage.sh",
     "lint": "eslint --fix './scripts/*.js'",
     "prettier": "prettier --write './scripts/*.js'"

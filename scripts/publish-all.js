@@ -17,7 +17,7 @@ async function publishAll(client, keypair, env) {
         while (true)
             try {
                 const { packageId, publishTxn } = await publishPackageFull(packagePath, client, keypair, env);
-                upgradeCaps[packagePath] = publishTxn.objectChanges.find((obj) => obj.objectType == '0x2::package::UpgradeCap');
+                upgradeCaps[packagePath] = publishTxn.objectChanges.find((obj) => obj.objectType === '0x2::package::UpgradeCap');
                 packageIds[packagePath] = packageId;
                 break;
             } catch (e) {
