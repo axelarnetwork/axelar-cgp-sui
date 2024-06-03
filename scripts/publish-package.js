@@ -7,6 +7,7 @@ const { execSync } = require('child_process');
 const { parseEnv } = require('./utils');
 const tmp = require('tmp');
 const fs = require('fs');
+const path = require('path');
 
 async function publishPackage(packageName, client, keypair) {
     const toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
@@ -19,7 +20,7 @@ async function publishPackage(packageName, client, keypair) {
     const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
     const { modules, dependencies } = JSON.parse(
-        execSync(`sui move build --dump-bytecode-as-base64 --path ${__dirname + '/../move/' + packageName} --install-dir ${tmpobj.name}`, {
+        execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(__dirname, '/../move/', packageName)} --install-dir ${tmpobj.name}`, {
             encoding: 'utf-8',
             stdio: 'pipe', // silent the output
         }),
@@ -44,7 +45,7 @@ async function publishPackage(packageName, client, keypair) {
         },
         requestType: 'WaitForLocalExecution',
     });
-    if (publishTxn.effects?.status.status != 'success') throw new Error('Publish Tx failed');
+    if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 
     const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
 

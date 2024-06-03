@@ -37,7 +37,7 @@ function getModuleNameFromSymbol(symbol) {
             moduleName += char;
         } else if (isUppercase(char)) {
             moduleName += char.toLowerCase();
-        } else if (char == '_' || char == ' ') {
+        } else if (char === '_' || char === ' ') {
             moduleName += '_';
         }
 
@@ -84,7 +84,7 @@ function setConfig(packagePath, envAlias, config) {
 
 async function requestSuiFromFaucet(env, address) {
     try {
-        const resp = await requestSuiFromFaucetV0({
+        await requestSuiFromFaucetV0({
             // use getFaucetHost to make sure you're using correct faucet address
             // you can also just use the address (see Sui Typescript SDK Quick Start for values)
             host: getFaucetHost(env.alias),

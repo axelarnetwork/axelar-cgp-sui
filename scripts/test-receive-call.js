@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { BcsReader, BCS, fromHEX, getSuiMoveConfig, bcs: bcsEncoder } = require('@mysten/bcs');
+const { BCS, getSuiMoveConfig, bcs: bcsEncoder } = require('@mysten/bcs');
 const {
     utils: { keccak256, arrayify, hexlify },
 } = require('ethers');
@@ -39,9 +39,9 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
             type_arguments: [],
         },
     ];
-    let is_final = false;
+    let isFinal = false;
 
-    while (!is_final) {
+    while (!isFinal) {
         const tx = new TransactionBlock();
         makeCalls(tx, moveCalls, payload);
         const resp = await client.devInspectTransactionBlock({
@@ -51,7 +51,7 @@ async function receiveCall(client, keypair, axelarInfo, sourceChain, sourceAddre
 
         const txData = resp.results[0].returnValues[0][0];
         const nextTx = getTransactionBcs().de('Transaction', new Uint8Array(txData));
-        is_final = nextTx.is_final;
+        isFinal = nextTx.isFinal;
         moveCalls = nextTx.move_calls;
     }
 
@@ -105,7 +105,7 @@ function getTransactionBcs() {
         type_arguments: 'vector<string>',
     });
     bcs.registerStructType('Transaction', {
-        is_final: 'bool',
+        isFinal: 'bool',
         move_calls: 'vector<MoveCall>',
     });
     return bcs;
@@ -185,6 +185,6 @@ if (require.main === module) {
             })
         ).data[0].parsedJson;
 
-        if (hexlify(event.data) != payload) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
+        if (hexlify(event.data) !== payload) throw new Error(`Emmited payload missmatch: ${hexlify(event.data)} != ${payload}`);
     })();
 }

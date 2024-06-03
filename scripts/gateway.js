@@ -85,7 +85,7 @@ function getRandomOperators(n = 5) {
         for (let i = 0; i < pubKeyLength; i++) {
             const aByte = pubKeys[a][i];
             const bByte = pubKeys[b][i];
-            if (aByte != bByte) return aByte - bByte;
+            if (aByte !== bByte) return aByte - bByte;
         }
 
         return 0;
@@ -198,7 +198,7 @@ async function approveContractCall(client, keypair, axelarInfo, sourceChain, sou
         arguments: [tx.object(validators.objectId), tx.pure(String.fromCharCode(...input))],
         typeArguments: [],
     });
-    const approveTxn = await client.signAndExecuteTransactionBlock({
+    await client.signAndExecuteTransactionBlock({
         transactionBlock: tx,
         signer: keypair,
         options: {

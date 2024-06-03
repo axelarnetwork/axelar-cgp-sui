@@ -3,7 +3,6 @@ const { transferOperatorship, getRandomOperators } = require('./gateway');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { parseEnv } = require('./utils');
-const secp256k1 = require('secp256k1');
 const fs = require('fs');
 
 (async () => {
