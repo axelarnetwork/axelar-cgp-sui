@@ -20,10 +20,15 @@ async function publishPackage(packageName, client, keypair) {
     const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
     const { modules, dependencies } = JSON.parse(
-        execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(__dirname, '/../move/', packageName)} --install-dir ${tmpobj.name}`, {
-            encoding: 'utf-8',
-            stdio: 'pipe', // silent the output
-        }),
+        execSync(
+            `sui move build --dump-bytecode-as-base64 --path ${path.join(__dirname, '/../move/', packageName)} --install-dir ${
+                tmpobj.name
+            }`,
+            {
+                encoding: 'utf-8',
+                stdio: 'pipe', // silent the output
+            },
+        ),
     );
 
     const tx = new TransactionBlock();
