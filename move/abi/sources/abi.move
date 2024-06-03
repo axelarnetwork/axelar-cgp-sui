@@ -1,3 +1,6 @@
+/// This module implements ABI encoding/decoding methods for interoperability with EVM message format.
+///
+/// ABI Specification: https://docs.soliditylang.org/en/v0.8.26/abi-spec.html
 module abi::abi {
     // -----
     // Types
@@ -54,19 +57,6 @@ module abi::abi {
         bytes
     }
 
-    public fun read_u256_from_slot(self: &AbiReader, pos: u64): u256 {
-        let mut var = 0u256;
-        let mut i = 0;
-
-        while (i < 32) {
-            var = var << 8;
-            var = var | (self.bytes[i + pos] as u256);
-            i = i + 1;
-        };
-
-        var
-    }
-
     public fun read_u256(self: &mut AbiReader): u256 {
         let mut var = 0u256;
         let mut i = 0;
@@ -93,16 +83,16 @@ module abi::abi {
         let offset = self.read_u256() as u64;
         self.pos = self.head + offset;
 
-        let bytes = self.decode_bytes();
+        let var = self.decode_bytes();
 
         // Move position to the next slot
         self.pos = pos + 32;
 
-        bytes
+        var
     }
 
     public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
-        let mut bytes = vector[];
+        let mut var = vector[];
         let pos = self.pos;
 
         // Move position to the start of the dynamic data
@@ -114,18 +104,18 @@ module abi::abi {
         let mut i = 0;
 
         while (i < length) {
-            bytes.push_back(self.read_u256());
+            var.push_back(self.read_u256());
             i = i + 1;
         };
 
         self.pos = pos + 32;
 
-        bytes
+        var
     }
 
     /// Decode ABI-encoded 'bytes[]'
     public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
-        let mut bytes = vector[];
+        let mut var = vector[];
 
         let pos = self.pos;
         let head = self.head;
@@ -140,7 +130,7 @@ module abi::abi {
         let mut i = 0;
 
         while (i < length) {
-            bytes.push_back(self.read_bytes());
+            var.push_back(self.read_bytes());
 
             i = i + 1;
         };
@@ -149,13 +139,22 @@ module abi::abi {
         self.pos = pos + 32;
         self.head = head;
 
-        bytes
+        var
     }
 
     public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
         let pos = self.pos;
-        self.encode_u256(pos, var);
-        self.pos = self.pos + 1;
+        let mut i = 0;
+
+        while (i < 32) {
+            let exp = ((31 - i) * 8 as u8);
+            let byte = (var >> exp & 255 as u8);
+            *self.bytes.borrow_mut(i + pos) = byte;
+            i = i + 1;
+        };
+
+        self.pos = pos + 32;
+
         self
     }
 
@@ -164,45 +163,41 @@ module abi::abi {
     }
 
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
-        let pos = self.pos;
-        let length = self.bytes.length() as u256;
-        self.encode_u256(pos, length);
+        let offset = self.bytes.length() as u256;
+        self.write_u256(offset);
 
+        // Write dynamic data length and bytes at the tail
         self.append_u256(var.length() as u256);
-
         self.append_bytes(var);
-        self.pos = self.pos + 1;
+
         self
     }
 
     public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>): &mut AbiWriter {
-        let pos = self.pos;
-        let length = self.bytes.length();
-        self.encode_u256(pos, length as u256);
-
-        let length = var.length();
-        self.append_u256(length as u256);
-
-        let mut i = 0u64;
-        while (i < length) {
-            self.append_u256(var[i]);
-            i = i + 1;
-        };
-
-        self.pos = self.pos + 1;
-        self
-    }
-
-    public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
-        let pos = self.pos;
-        let length = self.bytes.length();
-        self.encode_u256(pos, length as u256);
+        let offset = self.bytes.length() as u256;
+        self.write_u256(offset);
 
         let length = var.length();
         self.append_u256(length as u256);
 
         let mut i = 0;
+        while (i < length) {
+            self.append_u256(var[i]);
+            i = i + 1;
+        };
+
+        self
+    }
+
+    public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
+        let offset = self.bytes.length() as u256;
+        self.write_u256(offset);
+
+        let length = var.length();
+        self.append_u256(length as u256);
+
         let mut writer = new_writer(length);
+        let mut i = 0;
 
         while (i < length) {
             writer.write_bytes(var[i]);
@@ -211,23 +206,12 @@ module abi::abi {
 
         self.append_bytes(writer.into_bytes());
 
-        self.pos = self.pos + 1;
         self
     }
 
     // ------------------
     // Internal Functions
     // ------------------
-
-    fun encode_u256(self: &mut AbiWriter, pos: u64, var: u256) {
-        let mut i = 0;
-
-        while (i < 32) {
-            let exp = ((31 - i) * 8 as u8);
-            *self.bytes.borrow_mut(i + 32 * pos) = (var >> exp & 255 as u8);
-            i = i + 1;
-        };
-    }
 
     fun append_u256(self: &mut AbiWriter, var: u256) {
         let mut i = 0;
