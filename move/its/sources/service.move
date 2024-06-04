@@ -14,7 +14,7 @@ module its::service {
 
     use governance::governance::{Self, Governance};
 
-    use its::its::{Self, ITS};
+    use its::its::{ITS};
     use its::coin_info::{Self, CoinInfo};
     use its::token_id::{Self, TokenId};
     use its::coin_management::{Self, CoinManagement};
@@ -93,7 +93,7 @@ module its::service {
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(address::to_bytes(ctx.sender()))
+            .write_bytes(ctx.sender().to_bytes())
             .write_bytes(destination_address)
             .write_u256(amount)
             .write_bytes(data);
@@ -235,7 +235,7 @@ module its::service {
     // === Special Call Receiving
     public fun set_trusted_addresses(its: &mut ITS, governance: &Governance, approved_message: ApprovedMessage) {
         let (source_chain, _, source_address, payload) = channel::consume_approved_message(
-            its::channel_mut(its), approved_message
+            its.channel_mut(), approved_message
         );
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);

@@ -41,7 +41,7 @@ module its::token_id {
         has_metadata: &bool,
         has_treasury: &bool
     ): TokenId {
-        let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+        let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(&type_name::get<T>()));
         vec.append(bcs::to_bytes(name));
         vec.append(bcs::to_bytes(symbol));
@@ -88,7 +88,7 @@ module its::token_id {
         let symbol = ascii::string(b"Symbol");
         let decimals: u8 = 56;
         let coin_info = coin_info::from_info<String>(name, symbol, decimals);
-        let mut vec = address::to_bytes(address::from_u256(PREFIX_SUI_TOKEN_ID));
+        let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
 
         vec.append<u8>(bcs::to_bytes<CoinInfo<String>>(&coin_info));
         coin_info.drop();
