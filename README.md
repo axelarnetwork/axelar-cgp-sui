@@ -48,21 +48,13 @@ Move Examples: https://examples.sui.io
 
 Sui framework dependency is pinned to a specific mainnet [release](https://github.com/MystenLabs/sui/releases) for all packages for consistency.
 
-## Deployment
+## Deployment and Operations
 
-Copy `.env.example` to `.env` and add a valid private key for Sui. If you want to deploy to testnet the corresponding address should be funded.
-
-Run a [local](https://docs.sui.io/build/sui-local-network) Sui network for local testing, or use testnet.
-
-To deploy to testnet run `node scripts/publish-package axelar testnet`
-
-## Scripts
-
-First run `node scripts/publish-package` and then any of `node scripts/<testScritpt>` which can be `test-receive-call`, `test-send-call`, and `test-transfer-operatorship`.
+Official Sui deployment and operations scripts can be found [here](https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/sui#sui-deployment-scripts).
 
 ## Gateway
 
-The gateway lives in a few modules but has all of its storage in a single shared object called `AxelarValidators`. This is not very aptly named and we might rename it.
+The gateway lives in a few modules but has all of its storage in a single shared object called `AxelarSigners`.
 
 ## Relayer Spec
 
