@@ -149,7 +149,7 @@ module abi::abi {
         while (i < 32) {
             let exp = ((31 - i) * 8 as u8);
             let byte = (var >> exp & 255 as u8);
-            *self.bytes.borrow_mut(i + pos) = byte;
+            *&mut self.bytes[i + pos] = byte;
             i = i + 1;
         };
 
