@@ -5,7 +5,6 @@ module its::discovery {
     use std::type_name;
 
     use sui::address;
-    use sui::bcs;
 
     use abi::abi::{Self, AbiReader};
 
@@ -171,7 +170,7 @@ module its::discovery {
     #[test_only]
     fun get_initial_tx(self: &ITS): Transaction {
         let mut arg = vector[0];
-        arg.append(bcs::to_bytes(&object::id(self)));
+        arg.append(sui::bcs::to_bytes(&object::id(self)));
 
         let arguments = vector[
             arg,
@@ -277,7 +276,7 @@ module its::discovery {
         let source_address = b"source address";
         let target_channel = @0x5678;
         let amount = 1905;
-        let tx_data = bcs::to_bytes(&get_initial_tx(&its));
+        let tx_data = sui::bcs::to_bytes(&get_initial_tx(&its));
         let mut writer = abi::new_writer(2);
         writer
             .write_bytes(tx_data)
