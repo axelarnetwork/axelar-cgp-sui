@@ -74,7 +74,7 @@ module its::its {
     }
 
     public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
+        self.address_tracker.set_trusted_address(chain_name, trusted_address);
     }
 
     public fun get_unregistered_coin_type(

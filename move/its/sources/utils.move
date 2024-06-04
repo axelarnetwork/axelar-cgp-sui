@@ -50,7 +50,7 @@ module its::utils {
 
     public fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
         let mut v = vector[*decimals];
-        vector::append(&mut v, *symbol.as_bytes());
+        v.append(*symbol.as_bytes());
         address::from_bytes(keccak256(&v))
     }
 
@@ -61,7 +61,7 @@ module its::utils {
             let mut i = 0;
             let mut version: u32 = 0;
             while (i < 4) {
-                version = (version << (8 as u8) as u32) + (vector::remove<u8>(&mut metadata, 0) as u32);
+                version = (version << (8 as u8) as u32) + (metadata.remove<u8>(0) as u32);
                 i = i + 1;
             };
 

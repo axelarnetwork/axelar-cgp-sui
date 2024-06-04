@@ -35,7 +35,7 @@ module test::test {
         let mut arg = vector::singleton<u8>(2);
         arguments.push_back(arg);
         arg = vector::singleton<u8>(0);
-        vector::append(&mut arg, address::to_bytes(object::id_address(singleton)));
+        arg.append(address::to_bytes(object::id_address(singleton)));
         arguments.push_back(arg);
         let transaction = discovery::new_transaction(
             true,

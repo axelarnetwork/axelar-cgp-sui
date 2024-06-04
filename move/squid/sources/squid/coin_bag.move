@@ -95,13 +95,13 @@ module squid::coin_bag {
 
     fun get_balance_key<T>(): address {
         let mut data = vector[0];
-        vector::append(&mut data, type_name::get<T>().into_string().into_bytes());
+        data.append(type_name::get<T>().into_string().into_bytes());
         address::from_bytes(keccak256(&data))
     }
 
     fun get_estimate_key<T>(): address {
         let mut data = vector[1];
-        vector::append(&mut data, type_name::get<T>().into_string().into_bytes());
+        data.append(type_name::get<T>().into_string().into_bytes());
         address::from_bytes(keccak256(&data))
     }
 }
