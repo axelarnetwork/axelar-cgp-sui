@@ -256,8 +256,8 @@ module its::service {
         let mut i = 0;
         while(i < length) {
             its.set_trusted_address(
-                ascii::string(vector::pop_back(&mut chain_names)),
-                ascii::string(vector::pop_back(&mut trusted_addresses)),
+                ascii::string(chain_names.pop_back()),
+                ascii::string(trusted_addresses.pop_back()),
             );
             i = i + 1;
         }

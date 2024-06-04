@@ -96,7 +96,7 @@ module axelar_gateway::discovery {
         channel_id: ID,
     ): Transaction {
         assert!(self.configurations.contains(channel_id), EChannelNotFound);
-        *self.configurations.borrow(channel_id)
+        self.configurations[channel_id]
     }
 
     // === Tx Building ===

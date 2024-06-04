@@ -18,7 +18,7 @@ module its::address_tracker {
         self: &InterchainAddressTracker, chain_name: String
     ): &String {
         assert!(self.trusted_addresses.contains(chain_name), ENoAddress);
-        self.trusted_addresses.borrow(chain_name)
+        &self.trusted_addresses[chain_name]
     }
 
     /// Check if the given address is trusted for the given chain.
@@ -46,7 +46,7 @@ module its::address_tracker {
             if (trusted_address.length() == 0) {
                 self.trusted_addresses.remove(chain_name);
             } else {
-                *self.trusted_addresses.borrow_mut(chain_name) = trusted_address;
+                *&mut self.trusted_addresses[chain_name] = trusted_address;
             }
         } else {
             if (trusted_address.length() > 0) {
