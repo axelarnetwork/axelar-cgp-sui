@@ -134,11 +134,8 @@ module its::its {
     }
 
     public(package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
-        &mut coin_data_mut<T>(self, token_id).coin_management
-    }
-
-    public(package) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
-        &mut self.registered_coins[token_id]
+        let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
+        &mut coin_data.coin_management
     }
 
     public(package) fun add_unregistered_coin<T>(
