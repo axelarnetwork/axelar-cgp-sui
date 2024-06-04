@@ -110,7 +110,7 @@ module its::service {
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let _source_address = reader.read_bytes();
+        reader.skip_slot(); // skip source_address
         let destination_address = address::from_bytes(reader.read_bytes());
         let amount = (reader.read_u256() as u64);
         let data = reader.read_bytes();
