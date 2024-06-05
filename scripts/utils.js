@@ -5,10 +5,6 @@ const configs = {};
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { getFullnodeUrl } = require('@mysten/sui.js/client');
 
-function toPure(hexString) {
-    return String.fromCharCode(...arrayify(hexString));
-}
-
 function getModuleNameFromSymbol(symbol) {
     function isNumber(char) {
         return char >= '0' && char <= '9';
@@ -47,41 +43,6 @@ function getModuleNameFromSymbol(symbol) {
     return moduleName;
 }
 
-function getConfig(packagePath, envAlias) {
-    if (!configs[packagePath]) {
-        configs[packagePath] = fs.existsSync(`${__dirname}/../info/${packagePath}.json`)
-            ? JSON.parse(fs.readFileSync(`${__dirname}/../info/${packagePath}.json`))
-            : {};
-    }
-
-    return configs[packagePath][envAlias];
-}
-
-function setConfig(packagePath, envAlias, config) {
-    if (!configs[packagePath]) {
-        try {
-            configs[packagePath] = require(`${__dirname}/../info/${packagePath}.json`);
-        } catch (e) {
-            switch (e.code) {
-                case 'MODULE_NOT_FOUND':
-                case undefined:
-                    configs[packagePath] = {};
-                    break;
-                default:
-                    throw e;
-            }
-        }
-    }
-
-    configs[packagePath][envAlias] = config;
-
-    if (!fs.existsSync(`${__dirname}/../info`)) {
-        fs.mkdirSync(`${__dirname}/../info`);
-    }
-
-    fs.writeFileSync(`${__dirname}/../info/${packagePath}.json`, JSON.stringify(configs[packagePath], null, 4));
-}
-
 async function requestSuiFromFaucet(env, address) {
     try {
         await requestSuiFromFaucetV0({
@@ -95,44 +56,38 @@ async function requestSuiFromFaucet(env, address) {
     }
 }
 
-async function getFullObject(object, client) {
-    for (const field of ['type', 'sender', 'owner']) {
-        if (object[field]) {
-            delete object[field];
-        }
+function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`) {
+    
+    const path = `${moveDir}/${packageName}/Move.toml`;
+    
+    let toml = fs.readFileSync(path, 'utf8');
+
+    const lines = toml.split('\n');
+
+    const versionLineIndex = lines.findIndex((line) => line.slice(0, 7) === 'version');
+
+    if (!(lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
+        lines.splice(versionLineIndex + 1, 0, '');
     }
 
-    const objectResponce = await client.getObject({
-        id: object.objectId,
-        options: {
-            showContent: true,
-        },
-    });
-    const fields = objectResponce.data.content.fields;
+    lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
 
-    function decodeFields(fields, object) {
-        for (const key in fields) {
-            if (key === 'id') continue;
+    const addressesIndex = lines.findIndex((line) => line.slice(0, 11) === '[addresses]');
 
-            if (fields[key].fields) {
-                if (!fields[key].fields.id) {
-                    object[key] = {};
-                    decodeFields(fields[key].fields, object[key]);
-                } else {
-                    object[key] = fields[key].fields.id.id || fields[key].fields.id;
-                }
-            } else if (fields[key].id) {
-                object[key] = fields[key].id;
-            } else {
-                object[key] = fields[key];
-            }
+    for (let i = addressesIndex + 1; i < lines.length; i++) {
+        const line = lines[i];
+        const eqIndex = line.indexOf('=');
+        
+        if (eqIndex < 0 || line.slice(0, packageName.length) !== packageName || line.slice(packageName.length, eqIndex) !== Array(eqIndex - packageName.length + 1).join(' ') ) {
+            continue;
         }
 
-        return object;
+        lines[i] = line.slice(0, eqIndex + 1) + ` "${packageId}"`;
     }
 
-    decodeFields(fields, object);
-    return object;
+    toml = lines.join('\n');
+    
+    fs.writeFileSync(path, toml);
 }
 
 function parseEnv(arg) {
@@ -148,11 +103,8 @@ function parseEnv(arg) {
 }
 
 module.exports = {
-    toPure,
     getModuleNameFromSymbol,
-    getConfig,
-    setConfig,
-    getFullObject,
     parseEnv,
     requestSuiFromFaucet,
+    updateMoveToml,
 };

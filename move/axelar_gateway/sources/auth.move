@@ -104,7 +104,7 @@ module axelar_gateway::auth {
         let current_epoch = self.epoch;
         let is_latest_signers = current_epoch == signers_epoch;
 
-        assert!(signers_epoch == 0 || (current_epoch - signers_epoch) >= PREVIOUS_KEY_RETENTION, EInvalidEpoch);
+        assert!(signers_epoch == 0 || (current_epoch - signers_epoch) <= PREVIOUS_KEY_RETENTION, EInvalidEpoch);
 
         let message = MessageToSign {
             domain_separator: self.domain_separator,

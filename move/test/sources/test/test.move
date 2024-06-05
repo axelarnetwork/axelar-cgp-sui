@@ -68,4 +68,8 @@ module test::test {
 
         event::emit(Executed { data: payload });
     }
+
+    public fun test(arg1: vector<u8>, arg2: u64, arg3: u256) {
+
+    }
   }

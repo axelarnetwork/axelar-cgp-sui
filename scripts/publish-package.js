@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { setConfig, getFullObject, requestSuiFromFaucet } = require('./utils');
+const { setConfig, getFullObject, requestSuiFromFaucet, updateMoveToml } = require('./utils');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { SuiClient } = require('@mysten/sui.js/client');
@@ -10,8 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function publishPackage(packageName, client, keypair) {
-    const toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
-    fs.writeFileSync(`${__dirname}/../move/${packageName}/Move.toml`, fillAddresses(toml, '0x0', packageName));
+    updateMoveToml(packageName, '0x0');
 
     // remove all controlled temporary objects on process exit
     const address = keypair.getPublicKey().toSuiAddress();
@@ -47,8 +46,7 @@ async function publishPackage(packageName, client, keypair) {
             showEffects: true,
             showObjectChanges: true,
             showContent: true,
-        },
-        requestType: 'WaitForLocalExecution',
+        }
     });
     if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 
@@ -56,57 +54,6 @@ async function publishPackage(packageName, client, keypair) {
 
     console.info(`Published package ${packageId} from address ${address}}`);
 
-    return { packageId, publishTxn };
-}
-
-function updateMoveToml(packageName, packageId) {
-    const path = `${__dirname}/../move/${packageName}/Move.toml`;
-    const toml = fs.readFileSync(path, 'utf8');
-    fs.writeFileSync(path, fillAddresses(insertPublishedAt(toml, packageId), packageId, packageName));
-}
-
-function insertPublishedAt(toml, packageId) {
-    const lines = toml.split('\n');
-    const versionLineIndex = lines.findIndex((line) => line.slice(0, 7) === 'version');
-
-    if (!(lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
-        lines.splice(versionLineIndex + 1, 0, '');
-    }
-
-    lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
-    return lines.join('\n');
-}
-
-function fillAddresses(toml, address, packageName) {
-    const lines = toml.split('\n');
-    const addressesIndex = lines.findIndex((line) => line.slice(0, 11) === '[addresses]');
-
-    for (let i = addressesIndex + 1; i < lines.length; i++) {
-        const line = lines[i];
-        const eqIndex = line.indexOf('=');
-
-        if (eqIndex < 0 || line.slice(0, eqIndex - 1) !== packageName) {
-            continue;
-        }
-
-        lines[i] = line.slice(0, eqIndex + 1) + ` "${address}"`;
-    }
-
-    return lines.join('\n');
-}
-
-async function publishPackageFull(packageName, client, keypair, env) {
-    const { packageId, publishTxn } = await publishPackage(packageName, client, keypair);
-    const info = require(`${__dirname}/../move/${packageName}/info.json`);
-    const config = {};
-    config.packageId = packageId;
-
-    for (const singleton of info.singletons) {
-        const object = publishTxn.objectChanges.find((object) => object.objectType === `${packageId}::${singleton}`);
-        config[singleton] = await getFullObject(object, client);
-    }
-
-    setConfig(packageName, env.alias, config);
     updateMoveToml(packageName, packageId);
 
     return { packageId, publishTxn };
@@ -114,8 +61,6 @@ async function publishPackageFull(packageName, client, keypair, env) {
 
 module.exports = {
     publishPackage,
-    updateMoveToml,
-    publishPackageFull,
 };
 
 if (require.main === module) {
@@ -134,6 +79,6 @@ if (require.main === module) {
             await requestSuiFromFaucet(env, address);
         }
 
-        await publishPackageFull(packageName, client, keypair, env);
+        await publishPackage(packageName, client, keypair, env);
     })();
 }
