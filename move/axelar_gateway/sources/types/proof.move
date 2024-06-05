@@ -45,12 +45,13 @@ module axelar_gateway::proof {
     // -----------------
     // Package Functions
     // -----------------
-    public(package) fun new_signature(bytes: vector<u8>): Signature {
+    public(package) fun new_signature(mut bytes: vector<u8>): Signature {
         assert!(bytes.length() == SIGNATURE_LENGTH, EInvalidLength);
 
         // Check if recovery id matches EVM spec
         let recovery_id = bytes[64];
         assert!(recovery_id == 27 || recovery_id == 28, EInvalidRecoveryId);
+        *&mut bytes[64] = recovery_id - 27;
 
         Signature {
             bytes: bytes,
