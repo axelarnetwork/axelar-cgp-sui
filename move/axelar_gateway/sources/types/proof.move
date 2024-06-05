@@ -27,7 +27,6 @@ module axelar_gateway::proof {
     // ------
     /// Invalid length of the bytes
     const EInvalidLength: u64 = 0;
-    const EInvalidRecoveryId: u64 = 1;
 
     // ----------------
     // Public Functions
