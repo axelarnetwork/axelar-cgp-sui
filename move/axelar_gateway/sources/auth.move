@@ -130,7 +130,7 @@ module axelar_gateway::auth {
         let epoch = self.epoch + 1;
 
         // Aborts if the signers already exist
-        self.epoch_by_signers_hash.add(new_signers_hash, epoch);
+        // self.epoch_by_signers_hash.add(new_signers_hash, epoch);
         self.epoch = epoch;
 
         event::emit(SignersRotated {
