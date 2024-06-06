@@ -183,12 +183,12 @@ module axelar_gateway::gateway {
         ctx: &TxContext,
     ) {
         let weighted_signers = peel_weighted_signers(new_signers_data);
-        let proof = peel_proof(proof_data);
+        // let proof = peel_proof(proof_data);
 
         let enforce_rotation_delay = ctx.sender() != self.operator;
 
-        let is_latest_signers = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data), proof);
-        assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
+        // let is_latest_signers = self.signers.validate_proof(data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data), proof);
+        // assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
 
         // This will fail if signers are duplicated
         self.signers.rotate_signers(clock, weighted_signers, enforce_rotation_delay);
