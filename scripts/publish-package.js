@@ -1,12 +1,11 @@
 require('dotenv').config();
-const { setConfig, getFullObject, requestSuiFromFaucet, updateMoveToml } = require('./utils');
+const { requestSuiFromFaucet, updateMoveToml } = require('./utils');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { SuiClient } = require('@mysten/sui.js/client');
 const { execSync } = require('child_process');
 const { parseEnv } = require('./utils');
 const tmp = require('tmp');
-const fs = require('fs');
 const path = require('path');
 
 async function publishPackage(packageName, client, keypair) {
@@ -46,7 +45,7 @@ async function publishPackage(packageName, client, keypair) {
             showEffects: true,
             showObjectChanges: true,
             showContent: true,
-        }
+        },
     });
     if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 

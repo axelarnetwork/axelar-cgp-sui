@@ -1,7 +1,4 @@
-const { arrayify } = require('ethers/lib/utils');
 const fs = require('fs');
-
-const configs = {};
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
 const { getFullnodeUrl } = require('@mysten/sui.js/client');
 
@@ -57,9 +54,8 @@ async function requestSuiFromFaucet(env, address) {
 }
 
 function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`) {
-    
     const path = `${moveDir}/${packageName}/Move.toml`;
-    
+
     let toml = fs.readFileSync(path, 'utf8');
 
     const lines = toml.split('\n');
@@ -77,8 +73,12 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`
     for (let i = addressesIndex + 1; i < lines.length; i++) {
         const line = lines[i];
         const eqIndex = line.indexOf('=');
-        
-        if (eqIndex < 0 || line.slice(0, packageName.length) !== packageName || line.slice(packageName.length, eqIndex) !== Array(eqIndex - packageName.length + 1).join(' ') ) {
+
+        if (
+            eqIndex < 0 ||
+            line.slice(0, packageName.length) !== packageName ||
+            line.slice(packageName.length, eqIndex) !== Array(eqIndex - packageName.length + 1).join(' ')
+        ) {
             continue;
         }
 
@@ -86,7 +86,7 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`
     }
 
     toml = lines.join('\n');
-    
+
     fs.writeFileSync(path, toml);
 }
 
