@@ -76,6 +76,10 @@ module abi::abi {
         self.read_u256() as u8
     }
 
+    public fun skip_slot(self: &mut AbiReader) {
+        self.pos = self.pos + 32;
+    }
+
     public fun read_bytes(self: &mut AbiReader): vector<u8> {
         let pos = self.pos;
 
@@ -149,7 +153,7 @@ module abi::abi {
         while (i < 32) {
             let exp = ((31 - i) * 8 as u8);
             let byte = (var >> exp & 255 as u8);
-            *self.bytes.borrow_mut(i + pos) = byte;
+            *&mut self.bytes[i + pos] = byte;
             i = i + 1;
         };
 
@@ -266,6 +270,20 @@ module abi::abi {
         assert!(writer.into_bytes() == output, 0);
 
         let mut reader = new_reader(output);
+        assert!(reader.read_u256() == input, 1);
+    }
+
+    #[test]
+    fun test_skip_slot() {
+        let input = 56;
+        let output = x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000038";
+
+        let mut writer = new_writer(2);
+        writer.write_u256(1).write_u256(input);
+        assert!(writer.into_bytes() == output, 0);
+
+        let mut reader = new_reader(output);
+        reader.skip_slot();
         assert!(reader.read_u256() == input, 1);
     }
 

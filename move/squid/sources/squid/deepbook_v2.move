@@ -321,7 +321,7 @@ module squid::deepbook_v2 {
 
     public(package) fun get_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let mut pool_arg = vector[0];
-        vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
+        pool_arg.append(bcs.peel_address().to_bytes());
 
         let _has_base = bcs.peel_bool();
         let _min_output = bcs.peel_u64();
@@ -346,7 +346,7 @@ module squid::deepbook_v2 {
 
     public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>): MoveCall {
         let mut pool_arg = vector[0];
-        vector::append(&mut pool_arg, bcs.peel_address().to_bytes());
+        pool_arg.append(bcs.peel_address().to_bytes());
 
         let _has_base = bcs.peel_bool();
         let _min_output = bcs.peel_u64();

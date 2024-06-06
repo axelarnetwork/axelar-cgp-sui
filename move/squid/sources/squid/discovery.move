@@ -20,10 +20,10 @@ module squid::discovery {
 
     public fun register_transaction(squid: &Squid, its: &ITS, relayer_discovery: &mut RelayerDiscovery) {
         let mut squid_arg = vector[0];
-        vector::append(&mut squid_arg, object::id(squid).id_to_bytes());
+        squid_arg.append(object::id(squid).id_to_bytes());
 
         let mut its_arg = vector[0];
-        vector::append(&mut its_arg, object::id(its).id_to_bytes());
+        its_arg.append(object::id(its).id_to_bytes());
 
         let transaction = discovery::new_transaction(
             false,
@@ -56,10 +56,10 @@ module squid::discovery {
 
 
         let mut squid_arg = vector[0];
-        vector::append(&mut squid_arg, object::id(squid).id_to_bytes());
+        squid_arg.append(object::id(squid).id_to_bytes());
 
         let mut its_arg = vector[0];
-        vector::append(&mut its_arg, object::id(its).id_to_bytes());
+        its_arg.append(object::id(its).id_to_bytes());
         let swap_info_arg = vector[4, 0, 0];
 
         let mut move_calls = vector [

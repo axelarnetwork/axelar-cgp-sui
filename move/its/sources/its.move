@@ -74,7 +74,7 @@ module its::its {
     }
 
     public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        address_tracker::set_trusted_address(&mut self.address_tracker, chain_name, trusted_address);
+        self.address_tracker.set_trusted_address(chain_name, trusted_address);
     }
 
     public fun get_unregistered_coin_type(
@@ -83,17 +83,17 @@ module its::its {
         let key = token_id::unregistered_token_id(symbol, decimals);
 
         assert!(self.unregistered_coin_types.contains(key), ENotFound);
-        self.unregistered_coin_types.borrow(key)
+        &self.unregistered_coin_types[key]
     }
 
     public fun get_registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
         assert!(self.registered_coin_types.contains(token_id), EUnregisteredCoin);
-        self.registered_coin_types.borrow(token_id)
+        &self.registered_coin_types[token_id]
     }
 
     public fun get_coin_data<T>(self: &ITS, token_id: TokenId): &CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
-        self.registered_coins.borrow(token_id)
+        &self.registered_coins[token_id]
     }
 
     public fun get_coin_info<T>(self: &ITS, token_id: TokenId): &CoinInfo<T> {
@@ -134,11 +134,8 @@ module its::its {
     }
 
     public(package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
-        &mut coin_data_mut<T>(self, token_id).coin_management
-    }
-
-    public(package) fun coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
-        self.registered_coins.borrow_mut(token_id)
+        let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
+        &mut coin_data.coin_management
     }
 
     public(package) fun add_unregistered_coin<T>(

@@ -5,7 +5,6 @@ module its::discovery {
     use std::type_name;
 
     use sui::address;
-    use sui::bcs;
 
     use abi::abi::{Self, AbiReader};
 
@@ -26,7 +25,7 @@ module its::discovery {
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let _source_address = reader.read_bytes();
+        reader.skip_slot(); // skip source_address
         let destination = address::from_bytes(reader.read_bytes());
         let amount = (reader.read_u256() as u64);
         let data = reader.read_bytes();
@@ -42,7 +41,7 @@ module its::discovery {
     public fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery) {
         self.set_relayer_discovery_id(discovery);
         let mut arg = vector[0];
-        vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
+        arg.append(object::id(self).to_bytes());
 
         let arguments = vector[
             arg,
@@ -81,14 +80,14 @@ module its::discovery {
 
     fun get_interchain_transfer_tx(self: &ITS, reader: &mut AbiReader): Transaction {
         let token_id = token_id::from_u256(reader.read_u256());
-        let _source_address = reader.read_bytes();
+        reader.skip_slot(); // skip source_address
         let destination_address = address::from_bytes(reader.read_bytes());
-        let _amount = (reader.read_u256() as u64);
+        reader.skip_slot(); // skip amount
         let data = reader.read_bytes();
 
         if (data.is_empty()) {
             let mut arg = vector[0];
-            vector::append(&mut arg, address::to_bytes(object::id_address(self)));
+            arg.append(object::id_address(self).to_bytes());
 
             let type_name = self.get_registered_coin_type(token_id);
 
@@ -112,10 +111,10 @@ module its::discovery {
             )
         } else {
             let mut discovery_arg = vector[0];
-            vector::append(&mut discovery_arg, self.relayer_discovery_id().id_to_address().to_bytes());
+            discovery_arg.append(self.relayer_discovery_id().id_to_address().to_bytes());
 
             let mut channel_id_arg = vector[1];
-            vector::append(&mut channel_id_arg, destination_address.to_bytes());
+            channel_id_arg.append(destination_address.to_bytes());
 
             discovery::new_transaction(
                 false,
@@ -137,18 +136,18 @@ module its::discovery {
 
     fun get_deploy_interchain_token_tx(self: &ITS, reader: &mut AbiReader): Transaction {
         let mut arg = vector[0];
-        vector::append(&mut arg, address::to_bytes(object::id_address(self)));
+        arg.append(object::id_address(self).to_bytes());
 
         let arguments = vector[
             arg,
             vector[2]
         ];
 
-        let _token_id = token_id::from_u256(reader.read_u256());
-        let _name = reader.read_bytes();
+        reader.skip_slot(); // skip token_id
+        reader.skip_slot(); // skip _name
         let symbol = ascii::string(reader.read_bytes());
         let decimals = (reader.read_u256() as u8);
-        let _distributor = address::from_bytes(reader.read_bytes());
+        reader.skip_slot(); // skip distributor
 
         let type_name = self.get_unregistered_coin_type(&symbol, decimals);
 
@@ -171,7 +170,7 @@ module its::discovery {
     #[test_only]
     fun get_initial_tx(self: &ITS): Transaction {
         let mut arg = vector[0];
-        vector::append(&mut arg, bcs::to_bytes(&object::id(self)));
+        arg.append(sui::bcs::to_bytes(&object::id(self)));
 
         let arguments = vector[
             arg,
@@ -229,7 +228,7 @@ module its::discovery {
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(address::to_u256(token_id))
             .write_bytes(source_address)
-            .write_bytes(address::to_bytes(target_channel))
+            .write_bytes(target_channel.to_bytes())
             .write_u256(amount)
             .write_bytes(data);
         let payload = writer.into_bytes();
@@ -239,18 +238,18 @@ module its::discovery {
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);
-        let _message_type = reader.read_u256();
+        reader.skip_slot(); // skip message_type
 
         assert!(tx_block == get_interchain_transfer_tx(&its, &mut reader), 1);
         assert!(tx_block.is_final() && tx_block.move_calls().length() == 1, 2);
 
-        let call_info = vector::pop_back(&mut tx_block.move_calls());
+        let call_info = tx_block.move_calls().pop_back();
 
         assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 3);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 4);
         assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 5);
         let mut arg = vector[0];
-        vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
+        arg.append(object::id_address(&its).to_bytes());
 
         let arguments = vector[
             arg,
@@ -277,7 +276,7 @@ module its::discovery {
         let source_address = b"source address";
         let target_channel = @0x5678;
         let amount = 1905;
-        let tx_data = bcs::to_bytes(&get_initial_tx(&its));
+        let tx_data = sui::bcs::to_bytes(&get_initial_tx(&its));
         let mut writer = abi::new_writer(2);
         writer
             .write_bytes(tx_data)
@@ -289,7 +288,7 @@ module its::discovery {
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(address::to_u256(token_id))
             .write_bytes(source_address)
-            .write_bytes(address::to_bytes(target_channel))
+            .write_bytes(target_channel.to_bytes())
             .write_u256(amount)
             .write_bytes(data);
         let payload = writer.into_bytes();
@@ -297,7 +296,7 @@ module its::discovery {
         its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
 
         let mut reader = abi::new_reader(payload);
-        let _message_type = reader.read_u256();
+        reader.skip_slot(); // skip message_type
 
         assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &mut reader), 1);
 
@@ -333,19 +332,19 @@ module its::discovery {
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);
-        let _message_type = reader.read_u256();
+        reader.skip_slot(); // skip message_type
 
         assert!(tx_block == get_deploy_interchain_token_tx(&its, &mut reader), 1);
 
         assert!(tx_block.is_final(), 2);
         let mut move_calls = tx_block.move_calls();
         assert!(move_calls.length() == 1, 3);
-        let call_info = vector::pop_back(&mut move_calls);
+        let call_info = move_calls.pop_back();
         assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 4);
         assert!(call_info.function().module_name() == ascii::string(b"service"), 5);
         assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 6);
         let mut arg = vector[0];
-        vector::append(&mut arg, address::to_bytes(object::id_address(&its)));
+        arg.append(object::id_address(&its).to_bytes());
 
         let arguments = vector[
             arg,

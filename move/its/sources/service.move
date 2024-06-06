@@ -14,7 +14,7 @@ module its::service {
 
     use governance::governance::{Self, Governance};
 
-    use its::its::{Self, ITS};
+    use its::its::{ITS};
     use its::coin_info::{Self, CoinInfo};
     use its::token_id::{Self, TokenId};
     use its::coin_management::{Self, CoinManagement};
@@ -93,7 +93,7 @@ module its::service {
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(address::to_bytes(ctx.sender()))
+            .write_bytes(ctx.sender().to_bytes())
             .write_bytes(destination_address)
             .write_u256(amount)
             .write_bytes(data);
@@ -110,7 +110,7 @@ module its::service {
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let _source_address = reader.read_bytes();
+        reader.skip_slot(); // skip source_address
         let destination_address = address::from_bytes(reader.read_bytes());
         let amount = (reader.read_u256() as u64);
         let data = reader.read_bytes();
@@ -235,7 +235,7 @@ module its::service {
     // === Special Call Receiving
     public fun set_trusted_addresses(its: &mut ITS, governance: &Governance, approved_message: ApprovedMessage) {
         let (source_chain, _, source_address, payload) = channel::consume_approved_message(
-            its::channel_mut(its), approved_message
+            its.channel_mut(), approved_message
         );
 
         assert!(governance::is_governance(governance, source_chain, source_address), EUntrustedAddress);
@@ -256,8 +256,8 @@ module its::service {
         let mut i = 0;
         while(i < length) {
             its.set_trusted_address(
-                ascii::string(vector::pop_back(&mut chain_names)),
-                ascii::string(vector::pop_back(&mut trusted_addresses)),
+                ascii::string(chain_names.pop_back()),
+                ascii::string(trusted_addresses.pop_back()),
             );
             i = i + 1;
         }
