@@ -1,7 +1,7 @@
 [package]
 name = "Test"
 version = "0.1.0"
-published-at = "0x5a53377722f36628ee281bcae8b9e8989f198d33f548f1f6e2eb9fcc8ae1c322"
+published-at = "0x5de4d52cd17c6e0483598bebb3243a886edefeb216e5ecc7c578edfeb8a7b4a9"
 edition = "2024.beta"
 
 [dependencies]
@@ -9,4 +9,4 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-test = "0x5a53377722f36628ee281bcae8b9e8989f198d33f548f1f6e2eb9fcc8ae1c322"
+test = "0x5de4d52cd17c6e0483598bebb3243a886edefeb216e5ecc7c578edfeb8a7b4a9"
