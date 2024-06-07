@@ -5,7 +5,14 @@ const {
 } = require('ethers');
 
 function getObject(tx, object) {
-    if (typeof object === 'string' || Array.isArray(object)) return tx.object(object);
+    if (Array.isArray(object)) {
+        object = hexlify(object);
+    }
+
+    if (typeof object === 'string') {
+        return tx.object(object);
+    }
+
     return object;
 }
 
@@ -40,15 +47,27 @@ function getTypeName(type) {
 }
 
 function getNestedStruct(tx, type, arg) {
+    let inside = type;
+
+    while (inside.Vector) {
+        inside = inside.Vector;
+    }
+
+    if (!inside.Struct && !inside.Reference && !inside.MutableReference) {
+        return null;
+    }
+
+    if (isString(inside)) {
+        return null;
+    }
+
     if (type.Struct || type.Reference || type.MutableReference) {
         return getObject(tx, arg);
     }
 
     if (!type.Vector) return null;
     const nested = arg.map((arg) => getNestedStruct(tx, type.Vector, arg));
-    if (!nested) return null;
     const typeName = getTypeName(type.Vector);
-
     return tx.makeMoveVec({
         type: typeName,
         objects: nested,
@@ -72,11 +91,15 @@ function serialize(tx, type, arg) {
         bcs.vector(bcs.u8()).transform({
             input(input) {
                 if (typeof input === 'string') input = arrayify(input);
-                return bcs.vector(bcs.u8()).serialize(input).toBytes();
+                return input;
             },
         });
 
     const serializer = (type) => {
+        if (isString(type)) {
+            return bcs.string();
+        }
+
         if (typeof type === 'string') {
             return bcs[type.toLowerCase()]();
         } else if (type.Vector) {
@@ -101,12 +124,20 @@ function isTxContext(parameter) {
     return parameter.address === '0x2' && parameter.module === 'tx_context' && parameter.name === 'TxContext';
 }
 
+function isString(parameter) {
+    if (parameter.MutableReference) parameter = parameter.MutableReference;
+    if (parameter.Reference) parameter = parameter.Reference;
+    parameter = parameter.Struct;
+    if (!parameter) return false;
+    const isAsciiString = parameter.address === '0x1' && parameter.module === 'ascii' && parameter.name === 'String';
+    const isStringString = parameter.address === '0x1' && parameter.module === 'string' && parameter.name === 'String';
+    return isAsciiString || isStringString;
+}
+
 class TxBuilder {
-    constructor(client, keypair) {
+    constructor(client) {
         this.client = client;
-        this.keypair = keypair;
         this.tx = new TransactionBlock();
-        this.tx.object;
     }
 
     async moveCall(target, args, typeArguments = []) {
@@ -142,10 +173,25 @@ class TxBuilder {
         });
     }
 
-    async signAndExecute(options) {
+    async signAndExecute(keypair, options) {
         const result = await this.client.signAndExecuteTransactionBlock({
             transactionBlock: this.tx,
-            signer: this.keypair,
+            signer: keypair,
+            options: {
+                showEffects: true,
+                showObjectChanges: true,
+                showContent: true,
+                ...options,
+            },
+        });
+        return result;
+    }
+
+    async devInspect(sender, options) {
+        const result = await this.client.devInspectTransactionBlock({
+            transactionBlock: this.tx,
+            sender,
+
             options: {
                 showEffects: true,
                 showObjectChanges: true,
