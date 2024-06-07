@@ -49,7 +49,7 @@ async function publishPackage(packageName, client, keypair) {
     });
     if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 
-    const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
+    const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
 
     console.info(`Published package ${packageId} from address ${address}}`);
 
