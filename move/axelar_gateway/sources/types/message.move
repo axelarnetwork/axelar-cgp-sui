@@ -1,7 +1,6 @@
 module axelar_gateway::message {
     use std::ascii::String;
     use sui::bcs::{Self, BCS};
-    use sui::address;
     use sui::hash;
 
     use axelar_gateway::bytes32::{Self, Bytes32};
@@ -17,12 +16,6 @@ module axelar_gateway::message {
         destination_id: address,
         payload_hash: Bytes32,
     }
-
-    /// ------
-    /// Errors
-    /// ------
-    /// Invalid bytes length
-    const EInvalidLength: u64 = 0;
 
     /// -----------------
     /// Public Functions
@@ -51,17 +44,14 @@ module axelar_gateway::message {
         let source_chain = bcs.peel_vec_u8().to_ascii_string();
         let message_id = bcs.peel_vec_u8().to_ascii_string();
         let source_address = bcs.peel_vec_u8().to_ascii_string();
-
-        let destination_id_bytes = bcs.peel_vec_u8();
-        assert!(destination_id_bytes.length() == 32, EInvalidLength);
-
+        let destination_id = bcs.peel_address();
         let payload_hash = bytes32::peel(bcs);
 
         Message {
             source_chain,
             message_id,
             source_address,
-            destination_id: address::from_bytes(destination_id_bytes),
+            destination_id,
             payload_hash,
         }
     }
