@@ -1,6 +1,4 @@
 const { bcs } = require('@mysten/sui.js/bcs');
-
-
 function getAxelarStructs() {
     const Bytes32 = bcs.struct('Bytes32', {
         bytes: bcs.Address,
@@ -10,7 +8,7 @@ function getAxelarStructs() {
         source_chain: bcs.String,
         message_id: bcs.String,
         source_address: bcs.String,
-        destination_id: Address,
+        destination_id: bcs.Address,
         payload_hash: Bytes32,
     });
 
@@ -27,12 +25,12 @@ function getAxelarStructs() {
 
     const Signature = bcs.struct('Signature', {
         bytes: bcs.vector(bcs.U8),
-    })
+    });
 
     const Proof = bcs.struct('Proof', {
         signers: WeightedSigners,
         signatures: bcs.vector(Signature),
-    })
+    });
 
     const MessageToSign = bcs.struct('MessageToSign', {
         domain_separator: Bytes32,
@@ -80,11 +78,10 @@ function getAxelarStructs() {
         MoveCall,
         Transaction,
         EncodedMessage,
-    }
-};
+    };
+}
 
 function getSquidStructs() {
-
     const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
         swap_type: bcs.U8,
         pool_id: bcs.Address,
@@ -115,12 +112,10 @@ function getSquidStructs() {
         DeepbookV2SwapData,
         SuiTransferSwapData,
         ItsTransferSwapData,
-    }
+    };
 }
 
 module.exports = {
     axelarStructs: getAxelarStructs(),
     squidStructs: getSquidStructs(),
-}
-
-
+};
