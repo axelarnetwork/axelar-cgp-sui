@@ -188,6 +188,22 @@ module operators::operators {
         destroy_operators(operators);
     }
 
+
+    #[test]
+    #[expected_failure(abort_code = 0, location = operators::operators)]
+    fun test_remove_operator_fail() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+
+        let owner_id = object::id(&owner_cap);
+
+        remove_operator(&mut operators, &owner_cap, owner_id);
+
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
+
     #[test]
     #[expected_failure(abort_code = 0, location = operators::operators)]
     fun test_borrow_cap_not_operator() {
@@ -204,6 +220,24 @@ module operators::operators {
         remove_operator(&mut operators, &owner_cap, operator_id);
 
         borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
+
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
+
+
+    #[test]
+    #[expected_failure(abort_code = 1, location = operators::operators)]
+    fun test_borrow_cap_no_such_cap() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+
+        let operator_id = object::id(&operator_cap);
+
+        borrow_cap<OwnerCap>(&operators, &operator_cap, operator_id);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
