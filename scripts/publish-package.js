@@ -71,6 +71,7 @@ if (require.main === module) {
         const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
+        console.log(address);
         // create a new SuiClient object pointing to the network you want to use
         const client = new SuiClient({ url: env.url });
 

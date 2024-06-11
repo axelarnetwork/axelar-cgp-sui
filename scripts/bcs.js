@@ -67,6 +67,7 @@ function getAxelarStructs() {
         message_type: bcs.U8,
         data: bcs.vector(bcs.U8),
     });
+
     return {
         Bytes32,
         Message,
@@ -81,5 +82,45 @@ function getAxelarStructs() {
         EncodedMessage,
     }
 };
+
+function getSquidStructs() {
+
+    const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
+        swap_type: bcs.U8,
+        pool_id: bcs.Address,
+        has_base: bcs.Bool,
+        min_output: bcs.U64,
+        base_type: bcs.String,
+        quote_type: bcs.String,
+        lot_size: bcs.U64,
+        should_sweep: bcs.Bool,
+    });
+
+    const SuiTransferSwapData = bcs.struct('SuiTransferSwapData', {
+        swap_type: bcs.U8,
+        coin_type: bcs.String,
+        recipient: bcs.Address,
+    });
+
+    const ItsTransferSwapData = bcs.struct('ItsTransferSwapData', {
+        swap_type: bcs.U8,
+        coin_type: bcs.String,
+        token_id: bcs.Address,
+        destination_chain: bcs.String,
+        destination_address: bcs.vector(bcs.U8),
+        metadata: bcs.vector(bcs.U8),
+    });
+
+    return {
+        DeepbookV2SwapData,
+        SuiTransferSwapData,
+        ItsTransferSwapData,
+    }
+}
+
+module.exports = {
+    axelarStructs: getAxelarStructs(),
+    squidStructs: getSquidStructs(),
+}
 
 

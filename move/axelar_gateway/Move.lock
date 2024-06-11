@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "10303CE6C59BAA2CE814E3D11BACC8CB24BE0F8D66753B02190E291CA40F0D39"
+manifest_digest = "CA371CB4070828EC012CA6D0738C0BDB1C6F855975C764AB0D480873887AB680"
 deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { name = "Sui" },
@@ -21,6 +21,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.22.0"
-edition = "legacy"
+compiler-version = "1.26.1"
+edition = "2024.beta"
 flavor = "sui"
