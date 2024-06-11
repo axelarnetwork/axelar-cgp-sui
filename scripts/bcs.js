@@ -1,4 +1,5 @@
 const { bcs } = require('@mysten/sui.js/bcs');
+
 function getAxelarStructs() {
     const Bytes32 = bcs.struct('Bytes32', {
         bytes: bcs.Address,
