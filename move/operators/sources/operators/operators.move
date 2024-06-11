@@ -50,14 +50,14 @@ module operators::operators {
         };
         let operator_id = object::id(&operator_cap);
         transfer::public_transfer(operator_cap, new_operator);
-        vector::push_back(&mut self.operator_ids, operator_id);
+        self.operator_ids.push_back(operator_id);
     }
 
     /// Removes an operator by ID, revoking their `OperatorCap`.
     public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator_id: ID) {
-        let (found, index) = vector::index_of(&self.operator_ids, &operator_id);
+        let (found, index) = self.operator_ids.index_of(&operator_id);
         assert!(found, 0);
-        vector::remove(&mut self.operator_ids, index);
+        self.operator_ids.remove(index);
     }
 
     /// Stores a capability in the `Operators` struct.
@@ -70,7 +70,7 @@ module operators::operators {
     public fun borrow_cap<T: key + store>(self: &Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
         let operator_id = object::id(operator_cap);
 
-        assert!(vector::contains(&self.operator_ids, &operator_id), 0);
+        assert!(self.operator_ids.contains(&operator_id), 0);
         assert!(self.caps.contains(cap_id), 1);
 
         &self.caps[cap_id]
@@ -104,7 +104,7 @@ module operators::operators {
         while (!operator_ids.is_empty()) {
             operator_ids.pop_back();
         };
-        vector::destroy_empty(operator_ids);
+        operator_ids.destroy_empty();
     }
 
     #[test_only]
@@ -127,7 +127,7 @@ module operators::operators {
         };
         let operator_id = object::id(&operator_cap);
 
-        vector::push_back(&mut self.operator_ids, operator_id);
+        self.operator_ids.push_back(operator_id);
         operator_cap
     }
 
@@ -154,11 +154,11 @@ module operators::operators {
 
         let new_operator = @0x1;
         add_operator(&mut operators, &owner_cap, new_operator, ctx);
-        assert!(vector::length(&operators.operator_ids) == 1, 0);
+        assert!(operators.operator_ids.length() == 1, 0);
 
         let operator_id = operators.operator_ids[0];
         remove_operator(&mut operators, &owner_cap, operator_id);
-        assert!(vector::is_empty(&operators.operator_ids), 1);
+        assert!(operators.operator_ids.is_empty(), 1);
 
         destroy_owner_cap(owner_cap);
         destroy_operators(operators);
@@ -203,7 +203,7 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         remove_operator(&mut operators, &owner_cap, operator_id);
 
-        let _ = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
+        borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
