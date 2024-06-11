@@ -4,7 +4,7 @@ module operators::operators {
     // -----
     // Types
     // -----
-    
+
     /// The `OwnerCap` capability representing the owner of the contract.
     public struct OwnerCap has key, store {
         id: UID,
@@ -67,8 +67,11 @@ module operators::operators {
     }
 
     /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap<T: key + store>(self: &Operators, _: &OperatorCap, cap_id: ID): &T {
-        assert!(self.caps.contains(cap_id), 0);
+    public fun borrow_cap<T: key + store>(self: &Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
+        let operator_id = object::id(operator_cap);
+
+        assert!(vector::contains(&self.operator_ids, &operator_id), 0);
+        assert!(self.caps.contains(cap_id), 1);
 
         &self.caps[cap_id]
     }
@@ -93,10 +96,15 @@ module operators::operators {
 
     #[test_only]
     fun destroy_operators(operators: Operators) {
-        let Operators { id, operator_ids, caps } = operators;
-        object::delete(id);
-        vector::destroy_empty(operator_ids);
+        let Operators { id, mut operator_ids, caps } = operators;
+
+        id.delete();
         caps.destroy_empty();
+
+        while (!operator_ids.is_empty()) {
+            operator_ids.pop_back();
+        };
+        vector::destroy_empty(operator_ids);
     }
 
     #[test_only]
@@ -113,10 +121,14 @@ module operators::operators {
     }
 
     #[test_only]
-    fun new_operator_cap(ctx: &mut TxContext): OperatorCap {
-        OperatorCap {
+    fun new_operator_cap(self: &mut Operators, ctx: &mut TxContext): OperatorCap {
+        let operator_cap = OperatorCap {
             id: object::new(ctx),
-        }
+        };
+        let operator_id = object::id(&operator_cap);
+
+        vector::push_back(&mut self.operator_ids, operator_id);
+        operator_cap
     }
 
     #[test_only]
@@ -157,7 +169,7 @@ module operators::operators {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
         let owner_cap = new_owner_cap(ctx);
-        let operator_cap = new_operator_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
         let external_cap = new_owner_cap(ctx);
 
         let external_id = object::id(&external_cap);
@@ -170,6 +182,28 @@ module operators::operators {
 
         transfer_cap<OwnerCap>(&mut operators, &owner_cap, external_id, @0x3);
         assert!(!operators.caps.contains(external_id), 2);
+
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 0, location = operators::operators)]
+    fun test_borrow_cap_not_operator() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+        let external_cap = new_owner_cap(ctx);
+
+        let external_id = object::id(&external_cap);
+        let operator_id = object::id(&operator_cap);
+
+        store_cap(&mut operators, &owner_cap, external_cap);
+        remove_operator(&mut operators, &owner_cap, operator_id);
+
+        let _ = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
