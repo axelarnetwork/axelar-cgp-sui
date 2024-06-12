@@ -30,7 +30,7 @@ module operators::operators {
     fun init(ctx: &mut TxContext) {
         transfer::share_object(Operators {
             id: object::new(ctx),
-            operator_ids: vector::empty(),
+            operator_ids: vector[],
             caps: bag::new(ctx),
         });
 
