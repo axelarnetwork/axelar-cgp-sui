@@ -34,9 +34,11 @@ module operators::operators {
             caps: bag::new(ctx),
         });
 
-        transfer::public_transfer(OwnerCap {
+        let cap = OwnerCap {
             id: object::new(ctx),
-        }, tx_context::sender(ctx));
+        };
+
+        transfer::transfer(cap, ctx.sender());
     }
 
     // ----------------
