@@ -1,5 +1,6 @@
 module operators::operators {
     use sui::bag::{Self, Bag};
+    use sui::vec_set::{Self, VecSet};
 
     // -----
     // Types
@@ -18,7 +19,9 @@ module operators::operators {
     /// The main `Operators` struct storing the capabilities and operator IDs.
     public struct Operators has key {
         id: UID,
-        operators: VecSet<address>,
+        // number of operators should small and under the Sui vector limits
+        operators: VecSet<ID>,
+        // map-like collection of capabilities stored as Sui objects
         caps: Bag,
     }
 
@@ -30,7 +33,7 @@ module operators::operators {
     fun init(ctx: &mut TxContext) {
         transfer::share_object(Operators {
             id: object::new(ctx),
-            operator_ids: vector[],
+            operators: vec_set::empty(),
             caps: bag::new(ctx),
         });
 
@@ -52,14 +55,12 @@ module operators::operators {
         };
         let operator_id = object::id(&operator_cap);
         transfer::transfer(operator_cap, new_operator);
-        self.operator_ids.push_back(operator_id);
+        self.operators.insert(operator_id);
     }
 
     /// Removes an operator by ID, revoking their `OperatorCap`.
     public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator_id: ID) {
-        let (found, index) = self.operator_ids.index_of(&operator_id);
-        assert!(found, 0);
-        self.operator_ids.remove(index);
+        self.operators.remove(&operator_id);
     }
 
     /// Stores a capability in the `Operators` struct.
@@ -72,7 +73,7 @@ module operators::operators {
     public fun borrow_cap<T: key + store>(self: &Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
         let operator_id = object::id(operator_cap);
 
-        assert!(self.operator_ids.contains(&operator_id), 0);
+        assert!(self.operators.contains(&operator_id), 0);
         assert!(self.caps.contains(cap_id), 1);
 
         &self.caps[cap_id]
@@ -82,7 +83,7 @@ module operators::operators {
     public fun borrow_cap_mut<T: key + store>(self: &mut Operators, operator_cap: &OperatorCap, cap_id: ID): &mut T {
         let operator_id = object::id(operator_cap);
 
-        assert!(self.operator_ids.contains(&operator_id), 0);
+        assert!(self.operators.contains(&operator_id), 0);
         assert!(self.caps.contains(cap_id), 1);
 
         &mut self.caps[cap_id]
@@ -101,22 +102,24 @@ module operators::operators {
     fun new_operators(ctx: &mut TxContext): Operators {
         Operators {
             id: object::new(ctx),
-            operator_ids: vector::empty(),
+            operators: vec_set::empty(),
             caps: bag::new(ctx),
         }
     }
 
     #[test_only]
     fun destroy_operators(operators: Operators) {
-        let Operators { id, mut operator_ids, caps } = operators;
+        let Operators { id, operators, caps } = operators;
 
         id.delete();
         caps.destroy_empty();
 
-        while (!operator_ids.is_empty()) {
-            operator_ids.pop_back();
+        let mut keys = operators.into_keys();
+
+        while (!keys.is_empty()) {
+            keys.pop_back();
         };
-        operator_ids.destroy_empty();
+        keys.destroy_empty();
     }
 
     #[test_only]
@@ -139,7 +142,7 @@ module operators::operators {
         };
         let operator_id = object::id(&operator_cap);
 
-        self.operator_ids.push_back(operator_id);
+        self.operators.insert(operator_id);
         operator_cap
     }
 
@@ -166,11 +169,11 @@ module operators::operators {
 
         let new_operator = @0x1;
         add_operator(&mut operators, &owner_cap, new_operator, ctx);
-        assert!(operators.operator_ids.length() == 1, 0);
+        assert!(operators.operators.keys().length() == 1, 0);
 
-        let operator_id = operators.operator_ids[0];
+        let operator_id = operators.operators.keys()[0];
         remove_operator(&mut operators, &owner_cap, operator_id);
-        assert!(operators.operator_ids.is_empty(), 1);
+        assert!(operators.operators.is_empty(), 1);
 
         destroy_owner_cap(owner_cap);
         destroy_operators(operators);
@@ -205,7 +208,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0, location = operators::operators)]
+    #[expected_failure(abort_code = vec_set::EKeyDoesNotExist)]
     fun test_remove_operator_fail() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
@@ -298,7 +301,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0, location = operators::operators)]
+    #[expected_failure(abort_code = sui::dynamic_field::EFieldDoesNotExist)]
     fun test_remove_cap_fail() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
