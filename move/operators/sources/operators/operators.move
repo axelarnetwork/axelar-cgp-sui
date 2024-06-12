@@ -49,7 +49,7 @@ module operators::operators {
             id: object::new(ctx),
         };
         let operator_id = object::id(&operator_cap);
-        transfer::public_transfer(operator_cap, new_operator);
+        transfer::transfer(operator_cap, new_operator);
         self.operator_ids.push_back(operator_id);
     }
 
