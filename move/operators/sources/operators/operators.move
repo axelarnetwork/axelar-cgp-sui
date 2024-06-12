@@ -88,8 +88,6 @@ module operators::operators {
 
     /// Removes a capability from the `Operators` struct.
     public fun remove_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap_id: ID): T {
-        assert!(self.caps.contains(cap_id), 0);
-
         self.caps.remove<ID, T>(cap_id)
     }
 
