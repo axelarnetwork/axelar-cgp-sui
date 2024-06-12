@@ -3,6 +3,8 @@ const { bcs } = require('@mysten/bcs');
 const {
     utils: { arrayify, hexlify },
 } = require('ethers');
+const tmp = require('tmp');
+const path = require('path');
 
 const objectCache = {};
 
@@ -155,7 +157,7 @@ class TxBuilder {
         this.tx = new TransactionBlock();
     }
 
-    async moveCall(target, args, typeArguments = []) {
+    async moveCall({target, args, typeArguments = []}) {
         // If target is string, convert to object that `getNormalizedMoveFunction` accepts.
         if (typeof target === 'string') {
             const first = target.indexOf(':');
@@ -186,6 +188,62 @@ class TxBuilder {
             arguments: convertedArgs,
             typeArguments,
         });
+    }
+
+    async publishPackage(packageName, moveDir = `${__dirname}/../move`) {
+        updateMoveToml(packageName, '0x0', moveDir);
+
+        tmp.setGracefulCleanup();
+
+        const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+
+        const { modules, dependencies } = JSON.parse(
+            execSync(
+                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
+                    tmpobj.name
+                }`,
+                {
+                    encoding: 'utf-8',
+                    stdio: 'pipe', // silent the output
+                },
+            ),
+        );
+        
+
+        const tx = new TransactionBlock();
+        return tx.publish({
+            modules,
+            dependencies,
+        });
+    }
+
+    async publishPackageAndTransferCap(packageName, to, moveDir = `${__dirname}/../move`) {
+        updateMoveToml(packageName, '0x0', moveDir);
+
+        tmp.setGracefulCleanup();
+
+        const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+
+        const { modules, dependencies } = JSON.parse(
+            execSync(
+                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
+                    tmpobj.name
+                }`,
+                {
+                    encoding: 'utf-8',
+                    stdio: 'pipe', // silent the output
+                },
+            ),
+        );
+        
+
+        const tx = new TransactionBlock();
+        const cap = tx.publish({
+            modules,
+            dependencies,
+        });
+
+        tx.transferObjects([cap], to);
     }
 
     async signAndExecute(keypair, options) {
