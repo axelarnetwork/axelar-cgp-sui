@@ -18,7 +18,7 @@ module operators::operators {
     /// The main `Operators` struct storing the capabilities and operator IDs.
     public struct Operators has key {
         id: UID,
-        operator_ids: vector<ID>,
+        operators: VecSet<address>,
         caps: Bag,
     }
 
