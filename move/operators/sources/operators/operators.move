@@ -77,7 +77,7 @@ module operators::operators {
     }
 
     /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap_mut<T: key + store>(self: &mut Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
+    public fun borrow_cap_mut<T: key + store>(self: &mut Operators, operator_cap: &OperatorCap, cap_id: ID): &mut T {
         let operator_id = object::id(operator_cap);
 
         assert!(self.operator_ids.contains(&operator_id), 0);
