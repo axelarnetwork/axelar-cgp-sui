@@ -1,6 +1,7 @@
 module operators::operators {
     use sui::bag::{Self, Bag};
     use sui::vec_set::{Self, VecSet};
+    use sui::event;
 
     // -----
     // Types
@@ -23,6 +24,40 @@ module operators::operators {
         operators: VecSet<ID>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
+    }
+
+    // -----
+    // Error constants
+    // -----
+
+    /// When the operator is not found in the set of approved operators.
+    const EOperatorNotFound: u64 = 0;
+
+    /// When the capability is not found.
+    const ECapNotFound: u64 = 1;
+
+    // -----
+    // Events
+    // -----
+
+    /// Event emitted when a new operator is added.
+    public struct OperatorAdded has copy, drop {
+        operator_id: ID,
+    }
+
+    /// Event emitted when an operator is removed.
+    public struct OperatorRemoved has copy, drop {
+        operator_id: ID,
+    }
+
+    /// Event emitted when a capability is stored.
+    public struct CapabilityStored has copy, drop {
+        cap_id: ID,
+    }
+
+    /// Event emitted when a capability is removed.
+    public struct CapabilityRemoved has copy, drop {
+        cap_id: ID,
     }
 
     // -----
@@ -56,25 +91,37 @@ module operators::operators {
         let operator_id = object::id(&operator_cap);
         transfer::transfer(operator_cap, new_operator);
         self.operators.insert(operator_id);
+
+        event::emit(OperatorAdded {
+            operator_id,
+        });
     }
 
     /// Removes an operator by ID, revoking their `OperatorCap`.
     public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator_id: ID) {
         self.operators.remove(&operator_id);
+
+        event::emit(OperatorRemoved {
+            operator_id,
+        });
     }
 
     /// Stores a capability in the `Operators` struct.
     public fun store_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap: T) {
         let cap_id = object::id(&cap);
         self.caps.add(cap_id, cap);
+
+        event::emit(CapabilityStored {
+            cap_id,
+        });
     }
 
     /// Allows an approved operator to borrow a capability by its ID.
     public fun borrow_cap<T: key + store>(self: &Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
         let operator_id = object::id(operator_cap);
 
-        assert!(self.operators.contains(&operator_id), 0);
-        assert!(self.caps.contains(cap_id), 1);
+        assert!(self.operators.contains(&operator_id), EOperatorNotFound);
+        assert!(self.caps.contains(cap_id), ECapNotFound);
 
         &self.caps[cap_id]
     }
@@ -83,14 +130,18 @@ module operators::operators {
     public fun borrow_cap_mut<T: key + store>(self: &mut Operators, operator_cap: &OperatorCap, cap_id: ID): &mut T {
         let operator_id = object::id(operator_cap);
 
-        assert!(self.operators.contains(&operator_id), 0);
-        assert!(self.caps.contains(cap_id), 1);
+        assert!(self.operators.contains(&operator_id), EOperatorNotFound);
+        assert!(self.caps.contains(cap_id), ECapNotFound);
 
         &mut self.caps[cap_id]
     }
 
     /// Removes a capability from the `Operators` struct.
     public fun remove_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap_id: ID): T {
+        event::emit(CapabilityRemoved {
+            cap_id,
+        });
+
         self.caps.remove<ID, T>(cap_id)
     }
 
@@ -223,7 +274,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0, location = operators::operators)]
+    #[expected_failure(abort_code = EOperatorNotFound)]
     fun test_borrow_cap_not_operator() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
@@ -245,7 +296,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1, location = operators::operators)]
+    #[expected_failure(abort_code = ECapNotFound)]
     fun test_borrow_cap_no_such_cap() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
@@ -262,7 +313,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0, location = operators::operators)]
+    #[expected_failure(abort_code = EOperatorNotFound)]
     fun test_borrow_cap_mut_not_operator() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
@@ -284,7 +335,7 @@ module operators::operators {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1, location = operators::operators)]
+    #[expected_failure(abort_code = ECapNotFound)]
     fun test_borrow_cap_mut_no_such_cap() {
         let ctx = &mut tx_context::dummy();
         let mut operators = new_operators(ctx);
