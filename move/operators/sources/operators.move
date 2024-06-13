@@ -26,9 +26,9 @@ module operators::operators {
         caps: Bag,
     }
 
-    // -----
-    // Error constants
-    // -----
+    // ------
+    // Errors
+    // ------
 
     /// When the operator is not found in the set of approved operators.
     const EOperatorNotFound: u64 = 0;
