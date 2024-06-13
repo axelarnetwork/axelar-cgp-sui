@@ -23,7 +23,7 @@ module operators::operators {
     public struct Operators has key {
         id: UID,
         // The number of operators are small in practice, and under the Sui object size limit, so a dynamic collection doesn't need to be used
-        operators: VecSet<ID>,
+        operators: VecSet<address>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
     }
@@ -44,13 +44,12 @@ module operators::operators {
 
     /// Event emitted when a new operator is added.
     public struct OperatorAdded has copy, drop {
-        operator_id: ID,
-        operator_address: address,
+        operator: address,
     }
 
     /// Event emitted when an operator is removed.
     public struct OperatorRemoved has copy, drop {
-        operator_id: ID,
+        operator: address,
     }
 
     /// Event emitted when a capability is stored.
@@ -93,22 +92,21 @@ module operators::operators {
         let operator_cap = OperatorCap {
             id: object::new(ctx),
         };
-        let operator_id = object::id(&operator_cap);
+
         transfer::transfer(operator_cap, new_operator);
-        self.operators.insert(operator_id);
+        self.operators.insert(new_operator);
 
         event::emit(OperatorAdded {
-            operator_id,
-            operator_address: new_operator,
+            operator: new_operator,
         });
     }
 
     /// Removes an operator by ID, revoking their `OperatorCap`.
-    public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator_id: ID) {
-        self.operators.remove(&operator_id);
+    public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator: address) {
+        self.operators.remove(&operator);
 
         event::emit(OperatorRemoved {
-            operator_id,
+            operator,
         });
     }
 
@@ -124,20 +122,26 @@ module operators::operators {
     }
 
     /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap<T: key + store>(self: &Operators, operator_cap: &OperatorCap, cap_id: ID): &T {
-        let operator_id = object::id(operator_cap);
-
-        assert!(self.operators.contains(&operator_id), EOperatorNotFound);
+    public fun borrow_cap<T: key + store>(
+        self: &Operators,
+        _operator_cap: &OperatorCap,
+        cap_id: ID,
+        ctx: &mut TxContext
+    ): &T {
+        assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
         &self.caps[cap_id]
     }
 
     /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap_mut<T: key + store>(self: &mut Operators, operator_cap: &OperatorCap, cap_id: ID): &mut T {
-        let operator_id = object::id(operator_cap);
-
-        assert!(self.operators.contains(&operator_id), EOperatorNotFound);
+    public fun borrow_cap_mut<T: key + store>(
+        self: &mut Operators,
+        _operator_cap: &OperatorCap,
+        cap_id: ID,
+        ctx: &mut TxContext
+    ): &mut T {
+        assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
         &mut self.caps[cap_id]
@@ -200,9 +204,8 @@ module operators::operators {
         let operator_cap = OperatorCap {
             id: object::new(ctx),
         };
-        let operator_id = object::id(&operator_cap);
 
-        self.operators.insert(operator_id);
+        self.operators.insert(ctx.sender());
         operator_cap
     }
 
@@ -252,10 +255,10 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         assert!(operators.caps.contains(external_id), 0);
 
-        let borrowed_cap = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
+        let borrowed_cap = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
         assert!(object::id(borrowed_cap) == external_id, 1);
 
-        let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id);
+        let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
         assert!(object::id(borrowed_mut_cap) == external_id, 1);
 
         let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
@@ -274,9 +277,7 @@ module operators::operators {
         let mut operators = new_operators(ctx);
         let owner_cap = new_owner_cap(ctx);
 
-        let owner_id = object::id(&owner_cap);
-
-        remove_operator(&mut operators, &owner_cap, owner_id);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
         destroy_owner_cap(owner_cap);
         destroy_operators(operators);
@@ -292,12 +293,11 @@ module operators::operators {
         let external_cap = new_owner_cap(ctx);
 
         let external_id = object::id(&external_cap);
-        let operator_id = object::id(&operator_cap);
 
         store_cap(&mut operators, &owner_cap, external_cap);
-        remove_operator(&mut operators, &owner_cap, operator_id);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-        borrow_cap<OwnerCap>(&operators, &operator_cap, external_id);
+        borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -314,7 +314,7 @@ module operators::operators {
 
         let operator_id = object::id(&operator_cap);
 
-        borrow_cap<OwnerCap>(&operators, &operator_cap, operator_id);
+        borrow_cap<OwnerCap>(&operators, &operator_cap, operator_id, ctx);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -331,12 +331,11 @@ module operators::operators {
         let external_cap = new_owner_cap(ctx);
 
         let external_id = object::id(&external_cap);
-        let operator_id = object::id(&operator_cap);
 
         store_cap(&mut operators, &owner_cap, external_cap);
-        remove_operator(&mut operators, &owner_cap, operator_id);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id);
+        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -353,7 +352,7 @@ module operators::operators {
 
         let operator_id = object::id(&operator_cap);
 
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id);
+        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
