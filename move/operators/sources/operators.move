@@ -36,9 +36,9 @@ module operators::operators {
     /// When the capability is not found.
     const ECapNotFound: u64 = 1;
 
-    // -----
+    // ------
     // Events
-    // -----
+    // ------
 
     /// Event emitted when a new operator is added.
     public struct OperatorAdded has copy, drop {
