@@ -2,6 +2,8 @@ module operators::operators {
     use sui::bag::{Self, Bag};
     use sui::vec_set::{Self, VecSet};
     use sui::event;
+    use std::ascii::String;
+    use std::type_name;
 
     // -----
     // Types
@@ -43,6 +45,7 @@ module operators::operators {
     /// Event emitted when a new operator is added.
     public struct OperatorAdded has copy, drop {
         operator_id: ID,
+        operator_address: address,
     }
 
     /// Event emitted when an operator is removed.
@@ -53,11 +56,13 @@ module operators::operators {
     /// Event emitted when a capability is stored.
     public struct CapabilityStored has copy, drop {
         cap_id: ID,
+        cap_name: String,
     }
 
     /// Event emitted when a capability is removed.
     public struct CapabilityRemoved has copy, drop {
         cap_id: ID,
+        cap_name: String,
     }
 
     // -----
@@ -94,6 +99,7 @@ module operators::operators {
 
         event::emit(OperatorAdded {
             operator_id,
+            operator_address: new_operator,
         });
     }
 
@@ -113,6 +119,7 @@ module operators::operators {
 
         event::emit(CapabilityStored {
             cap_id,
+            cap_name: type_name::get<T>().into_string(),
         });
     }
 
@@ -140,6 +147,7 @@ module operators::operators {
     public fun remove_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap_id: ID): T {
         event::emit(CapabilityRemoved {
             cap_id,
+            cap_name: type_name::get<T>().into_string(),
         });
 
         self.caps.remove<ID, T>(cap_id)
