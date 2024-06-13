@@ -170,6 +170,7 @@ module operators::operators {
         while (!keys.is_empty()) {
             keys.pop_back();
         };
+
         keys.destroy_empty();
     }
 
