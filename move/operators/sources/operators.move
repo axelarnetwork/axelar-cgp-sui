@@ -20,7 +20,7 @@ module operators::operators {
     /// The main `Operators` struct storing the capabilities and operator IDs.
     public struct Operators has key {
         id: UID,
-        // number of operators should small and under the Sui vector limits
+        // The number of operators are small in practice, and under the Sui object size limit, so a dynamic collection doesn't need to be used
         operators: VecSet<ID>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
