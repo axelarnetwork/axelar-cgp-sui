@@ -221,7 +221,7 @@ module operators::operators {
 
         let new_operator = @0x1;
         add_operator(&mut operators, &owner_cap, new_operator, ctx);
-        assert!(operators.operators.keys().length() == 1, 0);
+        assert!(operators.operators.size() == 1, 0);
 
         let operator_id = operators.operators.keys()[0];
         remove_operator(&mut operators, &owner_cap, operator_id);
