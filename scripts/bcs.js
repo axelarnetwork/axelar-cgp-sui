@@ -1,9 +1,7 @@
 const { bcs } = require('@mysten/sui.js/bcs');
 
 function getAxelarStructs() {
-    const Bytes32 = bcs.struct('Bytes32', {
-        bytes: bcs.Address,
-    });
+    const Bytes32 = bcs.Address;
 
     const Message = bcs.struct('Message', {
         source_chain: bcs.String,
@@ -24,9 +22,7 @@ function getAxelarStructs() {
         nonce: Bytes32,
     });
 
-    const Signature = bcs.struct('Signature', {
-        bytes: bcs.vector(bcs.U8),
-    });
+    const Signature = bcs.vector(bcs.U8);
 
     const Proof = bcs.struct('Proof', {
         signers: WeightedSigners,

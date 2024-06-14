@@ -5,6 +5,8 @@ const {
 } = require('ethers');
 const tmp = require('tmp');
 const path = require('path');
+const { updateMoveToml } = require('./utils');
+const { execSync } = require('child_process');
 
 const objectCache = {};
 
@@ -24,7 +26,9 @@ function getObject(tx, object) {
         const cached = objectCache[object];
 
         if (cached) {
-            return tx.object(cached);
+            // TODO: figure out how to load the object version/digest into the TransactionBlock because it seems impossible for non gas payment objects
+            const txObject = tx.object(object);
+            return txObject;
         }
 
         return tx.object(object);
@@ -134,10 +138,15 @@ function serialize(tx, type, arg) {
 }
 
 function isTxContext(parameter) {
-    parameter = parameter.MutableReference;
-    if (!parameter) return false;
-    parameter = parameter.Struct;
-    if (!parameter) return false;
+    if(parameter.MutableReference) {
+        parameter = parameter.MutableReference.Struct;
+        if (!parameter) return false;
+    } else if (parameter.Reference) {
+        parameter = parameter.Reference.Struct;
+        if (!parameter) return false;
+    } else {
+        return false;
+    }
     return parameter.address === '0x2' && parameter.module === 'tx_context' && parameter.name === 'TxContext';
 }
 
@@ -157,7 +166,8 @@ class TxBuilder {
         this.tx = new TransactionBlock();
     }
 
-    async moveCall({target, args, typeArguments = []}) {
+    async moveCall(moveCallInfo) {
+        let target = moveCallInfo.target;
         // If target is string, convert to object that `getNormalizedMoveFunction` accepts.
         if (typeof target === 'string') {
             const first = target.indexOf(':');
@@ -176,17 +186,17 @@ class TxBuilder {
 
         let length = moveFn.parameters.length;
         if (isTxContext(moveFn.parameters[length - 1])) length = length - 1;
-        if (length !== args.length)
+        if (length !== moveCallInfo.arguments.length)
             throw new Error(
-                `Function ${target.package}::${target.module}::${target.function} takes ${moveFn.parameters.length} arguments but given ${args.length}`,
+                `Function ${target.package}::${target.module}::${target.function} takes ${moveFn.parameters.length} arguments but given ${moveCallInfo.arguments.length}`,
             );
 
-        const convertedArgs = args.map((arg, index) => serialize(this.tx, moveFn.parameters[index], arg));
+        const convertedArgs = moveCallInfo.arguments.map((arg, index) => serialize(this.tx, moveFn.parameters[index], arg));
 
         return this.tx.moveCall({
             target: `${target.package}::${target.module}::${target.function}`,
             arguments: convertedArgs,
-            typeArguments,
+            typeArguments: moveCallInfo.typeArguments,
         });
     }
 
@@ -198,56 +208,26 @@ class TxBuilder {
         const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
         const { modules, dependencies } = JSON.parse(
-            execSync(
-                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
-                    tmpobj.name
-                }`,
-                {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                },
-            ),
+            execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpobj.name}`, {
+                encoding: 'utf-8',
+                stdio: 'pipe', // silent the output
+            }),
         );
-        
 
-        const tx = new TransactionBlock();
-        return tx.publish({
+        return this.tx.publish({
             modules,
             dependencies,
         });
     }
 
     async publishPackageAndTransferCap(packageName, to, moveDir = `${__dirname}/../move`) {
-        updateMoveToml(packageName, '0x0', moveDir);
+        const cap = await this.publishPackage(packageName, moveDir);
 
-        tmp.setGracefulCleanup();
-
-        const tmpobj = tmp.dirSync({ unsafeCleanup: true });
-
-        const { modules, dependencies } = JSON.parse(
-            execSync(
-                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
-                    tmpobj.name
-                }`,
-                {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                },
-            ),
-        );
-        
-
-        const tx = new TransactionBlock();
-        const cap = tx.publish({
-            modules,
-            dependencies,
-        });
-
-        tx.transferObjects([cap], to);
+        this.tx.transferObjects([cap], to);
     }
 
     async signAndExecute(keypair, options) {
-        const result = await this.client.signAndExecuteTransactionBlock({
+        let result = await this.client.signAndExecuteTransactionBlock({
             transactionBlock: this.tx,
             signer: keypair,
             options: {
@@ -257,6 +237,25 @@ class TxBuilder {
                 ...options,
             },
         });
+        if(!result.confirmedLocalExecution) {
+            while(true) {
+                try {
+                    result = await this.client.getTransactionBlock({
+                        digest: result.digest,
+                        options: {
+                            showEffects: true,
+                            showObjectChanges: true,
+                            showContent: true,
+                            ...options,
+                        }
+                    });
+                    break;
+                } catch(e) {
+                    console.log(e);
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+            }
+        }
         updateCache(result.objectChanges);
         return result;
     }
