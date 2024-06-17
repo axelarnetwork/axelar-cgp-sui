@@ -13,7 +13,7 @@
     "lint": "eslint --fix './scripts/*.js'",
     "prettier": "prettier --write './scripts/*.js'",
     "compile": "npx tsc",
-    "postinstall": "npx run compile"
+    "postinstall": "npm run compile"
   },
   "keywords": [
     "axelar",
