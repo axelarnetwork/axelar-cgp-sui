@@ -120,6 +120,12 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
         }
 
         if (typeof type === 'string') {
+            if(type === 'Address') {
+                return bcs.fixedArray(32, bcs.u8()).transform({
+                    input: (id) => arrayify(id as any),
+                    output: (id) => hexlify(id),
+                });
+            }
             return (bcs as any)[(type as string).toLowerCase()]();
         } else if ((type as any).Vector) {
             if ((type as any).Vector === 'U8') {
