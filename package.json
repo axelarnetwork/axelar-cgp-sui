@@ -12,7 +12,7 @@
     "coverage": "./scripts/coverage.sh",
     "lint": "eslint --fix './scripts/*.js'",
     "prettier": "prettier --write './scripts/*.js'",
-    "compile": "tsc",
+    "compile": "npx tsc",
     "postinstall": "npx run compile"
   },
   "keywords": [
