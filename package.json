@@ -5,7 +5,7 @@
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
-  "main": "dist",
+  "main": "dist/index.js",
   "scripts": {
     "build": "./scripts/run.sh build",
     "test": "./scripts/run.sh test",
