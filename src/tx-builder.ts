@@ -1,8 +1,8 @@
-import { TransactionArgument, TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
+import { TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
 import { SuiObjectChange, SuiMoveNormalizedType, SuiClient, SuiTransactionBlockResponseOptions } from '@mysten/sui.js/client';
-import { bcs, BcsType, SerializedBcs } from '@mysten/bcs';
-import ethers from 'ethers';
-const { utils: { arrayify, hexlify }} = ethers;
+import { bcs, BcsType } from '@mysten/bcs';
+import { utils as ethersUtils} from 'ethers';
+const { arrayify, hexlify } = ethersUtils;
 const tmp = require('tmp');
 import path from 'path';
 import { updateMoveToml } from './utils';
