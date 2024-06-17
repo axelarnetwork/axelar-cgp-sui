@@ -120,7 +120,7 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
         }
 
         if (typeof type === 'string') {
-            return (bcs as any)[(type as string).toLowerCase()]();
+            return (bcs as any)[(type as string)];
         } else if ((type as any).Vector) {
             if ((type as any).Vector === 'U8') {
                 return vectorU8() as any;
