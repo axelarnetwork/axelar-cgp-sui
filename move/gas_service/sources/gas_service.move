@@ -279,4 +279,57 @@ module gas_service::gas_service {
         cap.destroy_cap();
         service.destroy();
     }
+
+    #[test]
+    #[expected_failure(abort_code = sui::balance::ENotEnough)]
+    fun test_collect_gas_insufficient_balance() {
+        let ctx = &mut sui::tx_context::dummy();
+        let (mut service, cap) = new(ctx);
+        let value = 10;
+        let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
+
+        service.add_gas(
+            c,
+            std::ascii::string(b"message id"),
+            @0x0,
+            vector[],
+        );
+
+        service.collect_gas(
+            &cap,
+            ctx.sender(),
+            value + 1,
+            ctx,
+        );
+
+        cap.destroy_cap();
+        service.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = sui::balance::ENotEnough)]
+    fun test_refund_insufficient_balance() {
+        let ctx = &mut sui::tx_context::dummy();
+        let (mut service, cap) = new(ctx);
+        let value = 10;
+        let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
+
+        service.add_gas(
+            c,
+            std::ascii::string(b"message id"),
+            @0x0,
+            vector[],
+        );
+
+        service.refund(
+            &cap,
+            std::ascii::string(b"message id"),
+            ctx.sender(),
+            value + 1,
+            ctx,
+        );
+
+        cap.destroy_cap();
+        service.destroy();
+    }
 }
