@@ -5,8 +5,8 @@ import { SuiClient, SuiMoveNormalizedType, SuiObjectChange, SuiTransactionBlockR
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
 import { TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
 import { utils as ethersUtils } from 'ethers';
-import { updateMoveToml } from './utils';
 import tmp from 'tmp';
+import { updateMoveToml } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -14,12 +14,21 @@ const objectCache = {} as { [id in string]: SuiObjectChange };
 
 function updateCache(objectChanges: SuiObjectChange[]) {
     for (const change of objectChanges) {
-        if (!(change as {
-            objectId: string;
-        }).objectId) continue;
-        objectCache[(change as {
-            objectId: string;
-        }).objectId] = change;
+        if (
+            !(
+                change as {
+                    objectId: string;
+                }
+            ).objectId
+        )
+            continue;
+        objectCache[
+            (
+                change as {
+                    objectId: string;
+                }
+            ).objectId
+        ] = change;
     }
 }
 
@@ -62,14 +71,14 @@ function getTypeName(type: SuiMoveNormalizedType): string {
         return name;
     }
 
-    if ((type as {Struct: Type}).Struct) {
-        return get((type as {Struct: Type}).Struct);
-    } else if ((type as {Reference: SuiMoveNormalizedType}).Reference) {
-        return getTypeName((type as {Reference: SuiMoveNormalizedType}).Reference);
-    } else if ((type as {MutableReference: SuiMoveNormalizedType}).MutableReference) {
-        return getTypeName((type as {MutableReference: SuiMoveNormalizedType}).MutableReference);
-    } else if ((type as {Vector: SuiMoveNormalizedType}).Vector) {
-        return `vector<${getTypeName((type as {Vector: SuiMoveNormalizedType}).Vector)}>`;
+    if ((type as { Struct: Type }).Struct) {
+        return get((type as { Struct: Type }).Struct);
+    } else if ((type as { Reference: SuiMoveNormalizedType }).Reference) {
+        return getTypeName((type as { Reference: SuiMoveNormalizedType }).Reference);
+    } else if ((type as { MutableReference: SuiMoveNormalizedType }).MutableReference) {
+        return getTypeName((type as { MutableReference: SuiMoveNormalizedType }).MutableReference);
+    } else if ((type as { Vector: SuiMoveNormalizedType }).Vector) {
+        return `vector<${getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector)}>`;
     }
 
     return (type as string).toLowerCase();
@@ -79,7 +88,7 @@ function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = type as any;
 
-    while ((inside as {Vector: SuiMoveNormalizedType}).Vector) {
+    while ((inside as { Vector: SuiMoveNormalizedType }).Vector) {
         inside = inside.Vector;
     }
 
@@ -96,10 +105,10 @@ function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg:
         return getObject(tx, arg);
     }
 
-    if (!(type as {Vector: SuiMoveNormalizedType}).Vector) return null;
+    if (!(type as { Vector: SuiMoveNormalizedType }).Vector) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nested = (arg as any).map((arg: any) => getNestedStruct(tx, (type as any).Vector, arg));
-    const typeName = getTypeName((type as {Vector: SuiMoveNormalizedType}).Vector);
+    const typeName = getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector);
     return tx.makeMoveVec({
         type: typeName,
         objects: nested,
@@ -139,12 +148,12 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (bcs as any)[(type as string).toLowerCase()]();
-        } else if ((type as {Vector: SuiMoveNormalizedType}).Vector) {
-            if ((type as {Vector: SuiMoveNormalizedType}).Vector === 'U8') {
+        } else if ((type as { Vector: SuiMoveNormalizedType }).Vector) {
+            if ((type as { Vector: SuiMoveNormalizedType }).Vector === 'U8') {
                 return vectorU8() as BcsType<unknown, unknown>;
             }
 
-            return bcs.vector(serializer((type as {Vector: SuiMoveNormalizedType}).Vector)) as BcsType<unknown, unknown>;
+            return bcs.vector(serializer((type as { Vector: SuiMoveNormalizedType }).Vector)) as BcsType<unknown, unknown>;
         }
 
         throw new Error(`Type ${JSON.stringify(type)} cannot be serialized`);
