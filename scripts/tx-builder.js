@@ -19,15 +19,9 @@ function getObject(tx, object) {
 function getTypeName(type) {
     function get(type) {
         let name = `${type.address}::${type.module}::${type.name}`;
-
+        
         if (type.typeArguments.length > 0) {
-            name += `<${type.typeArguments[0]}`;
-
-            for (let i = 1; i < type.typeArguments.length; i++) {
-                name += `,${type.typeArguments[i]}`;
-            }
-
-            name += '>';
+            name += type.typeArguments.join(',');
         }
 
         return name;
