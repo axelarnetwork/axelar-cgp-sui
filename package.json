@@ -10,8 +10,8 @@
     "build": "./scripts/run.sh build",
     "test": "./scripts/run.sh test",
     "coverage": "./scripts/coverage.sh",
-    "lint": "eslint --fix './scripts/*.js'",
-    "prettier": "prettier --write './scripts/*.js'",
+    "lint": "eslint --fix './src/*.ts'",
+    "prettier": "prettier --write './src/*.ts'",
     "compile": "npx tsc",
     "postinstall": "npm run compile"
   },
@@ -36,6 +36,9 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
+    "@types/tmp": "^0.2.6",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",

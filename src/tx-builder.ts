@@ -1,20 +1,25 @@
-import { TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
-import { SuiObjectChange, SuiMoveNormalizedType, SuiClient, SuiTransactionBlockResponseOptions } from '@mysten/sui.js/client';
-import { bcs, BcsType } from '@mysten/bcs';
-import { utils as ethersUtils} from 'ethers';
-const { arrayify, hexlify } = ethersUtils;
-const tmp = require('tmp');
-import path from 'path';
-import { updateMoveToml } from './utils';
 import { execSync } from 'child_process';
+import path from 'path';
+import { bcs, BcsType } from '@mysten/bcs';
+import { SuiClient, SuiMoveNormalizedType, SuiObjectChange, SuiTransactionBlockResponseOptions } from '@mysten/sui.js/client';
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
+import { TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
+import { utils as ethersUtils } from 'ethers';
+import { updateMoveToml } from './utils';
+import tmp from 'tmp';
 
-const objectCache: {[id in string]: SuiObjectChange} = {};
+const { arrayify, hexlify } = ethersUtils;
+
+const objectCache = {} as { [id in string]: SuiObjectChange };
 
 function updateCache(objectChanges: SuiObjectChange[]) {
     for (const change of objectChanges) {
-        if (!(change as any).objectId) continue;
-        objectCache[(change as any).objectId] = change;
+        if (!(change as {
+            objectId: string;
+        }).objectId) continue;
+        objectCache[(change as {
+            objectId: string;
+        }).objectId] = change;
     }
 }
 
@@ -39,7 +44,9 @@ function getObject(tx: TransactionBlock, object: TransactionObjectInput) {
 }
 
 function getTypeName(type: SuiMoveNormalizedType): string {
-    function get(type: {address: string, module: string, name: string, typeArguments: string[]}) {
+    type Type = { address: string; module: string; name: string; typeArguments: string[] };
+
+    function get(type: Type) {
         let name = `${type.address}::${type.module}::${type.name}`;
 
         if (type.typeArguments.length > 0) {
@@ -55,23 +62,24 @@ function getTypeName(type: SuiMoveNormalizedType): string {
         return name;
     }
 
-    if ((type as any).Struct) {
-        return get((type as any).Struct);
-    } else if ((type as any).Reference) {
-        return getTypeName((type as any).Reference);
-    } else if ((type as any).MutableReference) {
-        return getTypeName((type as any).MutableReference);
-    } else if ((type as any).Vector) {
-        return `vector<${getTypeName((type as any).Vector)}>`;
+    if ((type as {Struct: Type}).Struct) {
+        return get((type as {Struct: Type}).Struct);
+    } else if ((type as {Reference: SuiMoveNormalizedType}).Reference) {
+        return getTypeName((type as {Reference: SuiMoveNormalizedType}).Reference);
+    } else if ((type as {MutableReference: SuiMoveNormalizedType}).MutableReference) {
+        return getTypeName((type as {MutableReference: SuiMoveNormalizedType}).MutableReference);
+    } else if ((type as {Vector: SuiMoveNormalizedType}).Vector) {
+        return `vector<${getTypeName((type as {Vector: SuiMoveNormalizedType}).Vector)}>`;
     }
 
     return (type as string).toLowerCase();
 }
 
 function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = type as any;
 
-    while (inside.Vector) {
+    while ((inside as {Vector: SuiMoveNormalizedType}).Vector) {
         inside = inside.Vector;
     }
 
@@ -83,20 +91,22 @@ function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg:
         return null;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((type as any).Struct || (type as any).Reference || (type as any).MutableReference) {
         return getObject(tx, arg);
     }
 
-    if (!(type as any).Vector) return null;
+    if (!(type as {Vector: SuiMoveNormalizedType}).Vector) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nested = (arg as any).map((arg: any) => getNestedStruct(tx, (type as any).Vector, arg));
-    const typeName = getTypeName((type as any).Vector);
+    const typeName = getTypeName((type as {Vector: SuiMoveNormalizedType}).Vector);
     return tx.makeMoveVec({
         type: typeName,
         objects: nested,
     });
 }
 
-function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput ) {
+function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput) {
     const struct = getNestedStruct(tx, type, arg);
 
     if (struct) {
@@ -105,34 +115,36 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
 
     const vectorU8 = () =>
         bcs.vector(bcs.u8()).transform({
-            input: (val: unknown) => {
+            input(val: unknown) {
                 if (typeof val === 'string') val = arrayify(val);
-                return val as Iterable<number> & { length: number; };
+                return val as Iterable<number> & { length: number };
             },
-            output: (value: number[]) => {
+            output(value: number[]) {
                 return hexlify(value);
-            }
+            },
         });
 
     const serializer = (type: SuiMoveNormalizedType): BcsType<unknown, unknown> => {
         if (isString(type)) {
-            return bcs.string() as any;
+            return bcs.string() as BcsType<unknown, unknown>;
         }
 
         if (typeof type === 'string') {
-            if(type === 'Address') {
+            if (type === 'Address') {
                 return bcs.fixedArray(32, bcs.u8()).transform({
-                    input: (id) => arrayify(id as any),
+                    input: (id) => arrayify(id as number),
                     output: (id) => hexlify(id),
                 });
             }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (bcs as any)[(type as string).toLowerCase()]();
-        } else if ((type as any).Vector) {
-            if ((type as any).Vector === 'U8') {
-                return vectorU8() as any;
+        } else if ((type as {Vector: SuiMoveNormalizedType}).Vector) {
+            if ((type as {Vector: SuiMoveNormalizedType}).Vector === 'U8') {
+                return vectorU8() as BcsType<unknown, unknown>;
             }
 
-            return bcs.vector(serializer((type as any).Vector) as BcsType<unknown, unknown>) as any;
+            return bcs.vector(serializer((type as {Vector: SuiMoveNormalizedType}).Vector)) as BcsType<unknown, unknown>;
         }
 
         throw new Error(`Type ${JSON.stringify(type)} cannot be serialized`);
@@ -142,8 +154,10 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
 }
 
 function isTxContext(parameter: SuiMoveNormalizedType) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = parameter as any;
-    if(inside.MutableReference) {
+
+    if (inside.MutableReference) {
         inside = inside.MutableReference.Struct;
         if (!inside) return false;
     } else if (inside.Reference) {
@@ -152,10 +166,12 @@ function isTxContext(parameter: SuiMoveNormalizedType) {
     } else {
         return false;
     }
+
     return inside.address === '0x2' && inside.module === 'tx_context' && inside.name === 'TxContext';
 }
 
 function isString(parameter: SuiMoveNormalizedType) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let asAny = parameter as any;
     if (asAny.MutableReference) parameter = asAny.MutableReference;
     if (asAny.Reference) asAny = asAny.Reference;
@@ -177,9 +193,10 @@ class TxBuilder {
     async moveCall(moveCallInfo: {
         arguments?: TransactionObjectInput[];
         typeArguments?: string[];
-        target: `${string}::${string}::${string}` | {package: string, module: string, function: string};
+        target: `${string}::${string}::${string}` | { package: string; module: string; function: string };
     }) {
         let target = moveCallInfo.target;
+
         // If target is string, convert to object that `getNormalizedMoveFunction` accepts.
         if (typeof target === 'string') {
             const first = target.indexOf(':');
@@ -198,7 +215,7 @@ class TxBuilder {
 
         let length = moveFn.parameters.length;
         if (isTxContext(moveFn.parameters[length - 1])) length = length - 1;
-        if(!moveCallInfo.arguments) moveCallInfo.arguments = [];
+        if (!moveCallInfo.arguments) moveCallInfo.arguments = [];
         if (length !== moveCallInfo.arguments.length)
             throw new Error(
                 `Function ${target.package}::${target.module}::${target.function} takes ${moveFn.parameters.length} arguments but given ${moveCallInfo.arguments.length}`,
@@ -208,6 +225,7 @@ class TxBuilder {
 
         return this.tx.moveCall({
             target: `${target.package}::${target.module}::${target.function}`,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             arguments: convertedArgs as any,
             typeArguments: moveCallInfo.typeArguments,
         });
@@ -249,8 +267,9 @@ class TxBuilder {
                 ...options,
             },
         });
-        if(!result.confirmedLocalExecution) {
-            while(true) {
+
+        if (!result.confirmedLocalExecution) {
+            while (true) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
@@ -258,15 +277,16 @@ class TxBuilder {
                             showEffects: true,
                             showObjectChanges: true,
                             ...options,
-                        }
+                        },
                     });
                     break;
-                } catch(e) {
+                } catch (e) {
                     console.log(e);
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             }
         }
+
         updateCache(result.objectChanges as SuiObjectChange[]);
         return result;
     }

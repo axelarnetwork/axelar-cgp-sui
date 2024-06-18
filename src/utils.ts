@@ -82,7 +82,7 @@ export function parseEnv(arg: string) {
         case 'devnet':
         case 'testnet':
         case 'mainnet':
-            return { alias: arg, url: getFullnodeUrl(arg as "localnet" | "devnet" | "testnet" | "mainnet") };
+            return { alias: arg, url: getFullnodeUrl(arg as 'localnet' | 'devnet' | 'testnet' | 'mainnet') };
         default:
             return JSON.parse(arg);
     }
