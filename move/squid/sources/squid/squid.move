@@ -33,6 +33,9 @@ module squid::squid {
             ctx,
         );
         let mut swap_info = swap_info::new(data, ctx);
+        swap_info.coin_bag().store_estimate<T>(
+            coin.value(),
+        );
         swap_info.coin_bag().store_balance(
             coin.into_balance(),
         );
