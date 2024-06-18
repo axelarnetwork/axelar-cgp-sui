@@ -49,7 +49,7 @@ async function publishPackage(packageName, client, keypair) {
     });
     if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 
-    const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
+    const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
 
     console.info(`Published package ${packageId} from address ${address}}`);
 
@@ -71,6 +71,7 @@ if (require.main === module) {
         const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
         const keypair = Ed25519Keypair.fromSecretKey(privKey);
         const address = keypair.getPublicKey().toSuiAddress();
+        console.log(address);
         // create a new SuiClient object pointing to the network you want to use
         const client = new SuiClient({ url: env.url });
 

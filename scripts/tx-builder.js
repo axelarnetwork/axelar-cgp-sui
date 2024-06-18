@@ -4,12 +4,27 @@ const {
     utils: { arrayify, hexlify },
 } = require('ethers');
 
+const objectCache = {};
+
+function updateCache(objectChanges) {
+    for (const change of objectChanges) {
+        if (!change.objectId) continue;
+        objectCache[change.objectId] = change;
+    }
+}
+
 function getObject(tx, object) {
     if (Array.isArray(object)) {
         object = hexlify(object);
     }
 
     if (typeof object === 'string') {
+        const cached = objectCache[object];
+
+        if (cached) {
+            return tx.object(cached);
+        }
+
         return tx.object(object);
     }
 
@@ -178,6 +193,7 @@ class TxBuilder {
                 ...options,
             },
         });
+        updateCache(result.objectChanges);
         return result;
     }
 
