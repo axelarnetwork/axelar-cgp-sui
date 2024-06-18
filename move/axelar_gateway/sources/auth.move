@@ -200,7 +200,8 @@ module axelar_gateway::auth {
             previous_signer = current_signer;
         };
 
-        assert!(total_weight >= signers.threshold(), EInvalidThreshold);
+        let threshold = signers.threshold();
+        assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
     }
 
     fun update_rotation_timestamp(self: &mut AxelarSigners, clock: &Clock, enforce_rotation_delay: bool) {
