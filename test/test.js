@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
@@ -8,7 +7,7 @@ describe('test', () => {
     let client, keypair;
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl('localnet') });
-        const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
+        const privKey = Buffer.from('9027dcb35b21318572bda38641b394eb33896aa81878a4f0e7066b119a9ea000', 'hex');
 
         keypair = Ed25519Keypair.fromSecretKey(privKey);
         await requestSuiFromFaucetV0({
