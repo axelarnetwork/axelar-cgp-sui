@@ -9,7 +9,8 @@
   "scripts": {
     "build": "./scripts/run.sh build",
     "test-move": "./scripts/run.sh test",
-    "test-js": "",
+    "test-js": "npx mocha",
+    "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
     "lint": "eslint --fix './src/*.ts'",
     "prettier": "prettier --write './src/*.ts'",
