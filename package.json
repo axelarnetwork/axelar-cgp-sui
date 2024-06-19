@@ -12,8 +12,8 @@
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
-    "lint": "eslint --fix './src/*.ts'",
-    "prettier": "prettier --write './src/*.ts'",
+    "lint": "eslint --fix './src/*.ts' './test/*.js'",
+    "prettier": "prettier --write './src/*.ts' './test/*.js'",
     "compile": "npx tsc",
     "postinstall": "npm run compile"
   },
@@ -45,7 +45,8 @@
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",
     "prettier": "^2.8.7",
-    "prettier-plugin-sort-imports": "^1.8.5"
+    "prettier-plugin-sort-imports": "^1.8.5",
+    "mocha": "^10.4.0"
   },
   "description": "Axelar Sui Move contracts"
 }

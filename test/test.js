@@ -1,5 +1,4 @@
 require('dotenv').config();
-const { TxBuilder } =  require('../dist/tx-builder');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
@@ -7,7 +6,7 @@ const { publishPackage } = require('./utils');
 
 describe('test', () => {
     let client, keypair;
-    before(async() => {
+    before(async () => {
         client = new SuiClient({ url: getFullnodeUrl('localnet') });
         const privKey = Buffer.from(process.env.SUI_PRIVATE_KEY, 'hex');
 
@@ -39,12 +38,10 @@ describe('test', () => {
         result = await publishPackage(client, keypair, 'squid');
         const squidPackageId = result.packageId;
         const squidCap = result.publishTxn.objectChanges.find((change) => change.objectType === `0x2::package::UpgradeCap`).objectId;
-        
+
         result = await publishPackage(client, keypair, 'test');
         const testPackageId = result.packageId;
         const testCap = result.publishTxn.objectChanges.find((change) => change.objectType === `0x2::package::UpgradeCap`).objectId;
     });
-    it('test', async () => {
-
-    });
+    it('test', async () => {});
 });
