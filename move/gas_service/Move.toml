@@ -1,11 +1,11 @@
 [package]
 name = "GasService"
 version = "0.1.0"
-published-at = "0xe356c310916a4f0c76a2c50b1101f66a328eee2626f709b1138e5ca2a537d438"
+published-at = "0x9249adc3fac09edb21a0848af2ccf4901ffb3689124bc91d67bc613903ca643c"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.25.3" }
 
 [addresses]
-gas_service = "0xe356c310916a4f0c76a2c50b1101f66a328eee2626f709b1138e5ca2a537d438"
+gas_service = "0x9249adc3fac09edb21a0848af2ccf4901ffb3689124bc91d67bc613903ca643c"

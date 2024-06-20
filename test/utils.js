@@ -1,3 +1,4 @@
+const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml } = require('../dist/utils');
 
@@ -12,6 +13,11 @@ async function publishPackage(client, keypair, packageName) {
     return { packageId, publishTxn };
 }
 
+function getRandomBytes32() {
+    return keccak256(defaultAbiCoder.encode(['string'], [Math.random().toString()]));
+}
+
 module.exports = {
     publishPackage,
+    getRandomBytes32,
 };

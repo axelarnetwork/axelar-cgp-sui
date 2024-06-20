@@ -1,12 +1,12 @@
 [package]
 name = "AxelarGateway"
 version = "0.1.0"
-published-at = "0x1611b7e3e958f74e4ef9f4727333a98d095a9f71baf4c814d310d986db1f5662"
+published-at = "0x7bc9ff900d613dba5c53b5f84869a229ebb791be61b6f30cfec6d4f6130492c7"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.25.3" }
 
 [addresses]
-axelar_gateway = "0x1611b7e3e958f74e4ef9f4727333a98d095a9f71baf4c814d310d986db1f5662"
+axelar_gateway = "0x7bc9ff900d613dba5c53b5f84869a229ebb791be61b6f30cfec6d4f6130492c7"
 clock = "0x6"
