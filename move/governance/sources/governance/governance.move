@@ -107,4 +107,218 @@ module governance::governance {
     fun is_cap_new(cap: &UpgradeCap) {
         assert!(package::version(cap) == 1, ENotNewPackage);
     }
+
+    // -----
+    // Tests
+    // -----
+
+    #[test_only]
+    use std::ascii;
+    #[test_only]
+    use sui::test_scenario;
+    #[test_only]
+    use sui::test_utils;
+
+    #[test]
+    fun test_new() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+        let package_id = object::id_from_bytes(
+            hex::decode(
+                type_name::get<Governance>().get_address().into_bytes()
+            )
+        );
+        let upgrade_cap = package::test_publish(package_id, &mut ctx);
+        let initial_owner = @0x1;
+        let mut scenario = test_scenario::begin(initial_owner);
+        {   
+            test_scenario::sender(&scenario);
+            new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+        };
+
+        test_scenario::next_tx(&mut scenario, initial_owner);
+        {   
+            let governance = test_scenario::take_shared<Governance>(&scenario);
+            test_scenario::return_shared(governance);
+        };
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotSelfUpgradeCap)]
+    fun test_new_incorrect_upgrade_cap() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+        let uid = object::new(&mut ctx);
+        let upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+        new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+
+        test_utils::destroy(uid);
+    }    
+
+    #[test]
+    #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
+    fun test_new_immutable_upgrade() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+        let package_id = object::id_from_bytes(
+            hex::decode(
+                type_name::get<Governance>().get_address().into_bytes()
+            )
+        );
+        let upgrade_cap = package::test_publish(package_id, &mut ctx);
+        let initial_owner = @0x1;
+        let mut scenario = test_scenario::begin(initial_owner);
+        {   
+            test_scenario::sender(&scenario);
+            new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+        };
+
+        test_scenario::next_tx(&mut scenario, initial_owner);
+        {   
+            let upgrade_cap = test_scenario::take_shared<UpgradeCap>(&scenario);
+            test_scenario::return_shared(upgrade_cap);
+        };
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun test_is_governance() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+    
+        let governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            channel: channel::new(&mut ctx),
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+
+        assert!(governance.is_governance(trusted_source_chain, trusted_source_address), 1);
+
+        test_utils::destroy(governance);
+    }
+
+    #[test]
+    fun test_is_governance_false_argument() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+    
+        let governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            channel: channel::new(&mut ctx),
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+
+        assert!(!governance.is_governance(ascii::string(b"sui"), trusted_source_address), 1);
+
+        test_utils::destroy(governance);
+    }
+
+    #[test]
+    fun test_is_cap_new() {
+        let mut ctx = tx_context::dummy();
+        let uid = object::new(&mut ctx);
+        let upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+        is_cap_new(&upgrade_cap);
+
+        test_utils::destroy(uid);
+        test_utils::destroy(upgrade_cap);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotNewPackage)]
+    fun test_is_cap_new_upgrade_version() {
+        let mut ctx = tx_context::dummy();
+        let uid = object::new(&mut ctx);
+        let mut upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+        let upgrade_ticket = package::authorize_upgrade(&mut upgrade_cap, 2, b"");
+        let upgrade_reciept = package::test_upgrade(upgrade_ticket);
+        package::commit_upgrade(&mut upgrade_cap, upgrade_reciept);
+        is_cap_new(&upgrade_cap);
+
+        test_utils::destroy(uid);
+        test_utils::destroy(upgrade_cap);
+    }    
+
+    #[test]
+    fun test_take_upgrade_cap() {
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut ctx = tx_context::dummy();
+        let package_id = object::id_from_bytes(
+            hex::decode(
+                type_name::get<Governance>().get_address().into_bytes()
+            )
+        );
+        let upgrade_cap = package::test_publish(package_id, &mut ctx);
+        let initial_owner = @0x1;
+        let mut scenario = test_scenario::begin(initial_owner);
+        {   
+            test_scenario::sender(&scenario);
+            new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+        };
+
+        test_scenario::next_tx(&mut scenario, initial_owner);
+        {   
+            let mut governance = test_scenario::take_shared<Governance>(&scenario);
+            let upgrade_cap = package::test_publish(package_id, &mut ctx);
+            let upgrade_id = object::id(&upgrade_cap);
+            take_upgrade_cap(&mut governance, upgrade_cap);
+            let recieved_upgrade_cap = table::borrow_mut(&mut governance.caps, upgrade_id);
+            assert!(object::id(recieved_upgrade_cap) == upgrade_id, 1);
+            test_scenario::return_shared(governance);
+        };
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun test_commit_upgrade() {
+        let mut ctx = tx_context::dummy();
+        let uid = object::new(&mut ctx);
+        let mut upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+        let upgrade_ticket = package::authorize_upgrade(&mut upgrade_cap, 2, b"");
+        let upgrade_reciept = package::test_upgrade(upgrade_ticket);
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let message_type = 2;
+        let mut governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            channel: channel::new(&mut ctx),
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+        let upgrade_id = object::id(&upgrade_cap);
+        take_upgrade_cap(&mut governance, upgrade_cap);
+        commit_upgrade(&mut governance, upgrade_reciept);
+        let upgrade_cap_return = table::borrow(
+                &governance.caps,
+                upgrade_id,
+            );
+        assert!(upgrade_id == object::id(upgrade_cap_return), 1);
+        assert!(package::version(upgrade_cap_return) == 2, 2);
+        test_utils::destroy(uid);
+        test_utils::destroy(governance);
+    }  
 }
