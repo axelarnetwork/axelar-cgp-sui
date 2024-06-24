@@ -1,0 +1,24 @@
+name: 'Publish to NPM'
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  SUI_VERSION: mainnet-v1.25.3
+
+jobs:
+  publish-to-npm:
+    name: 'Publish to NPM'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Sui CLI binary
+        uses: ./.github/actions/install
+        with:
+          SUI_VERSION: ${{ env.SUI_VERSION }}
+      - name: Compile
+        run: npm run build
+      # - run: npm publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
