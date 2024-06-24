@@ -1,21 +1,16 @@
-name: Tests
+name: 'Publish to NPM'
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - releases/**
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
+  release:
+    types: [published]
 
 env:
   SUI_VERSION: mainnet-v1.25.3
 
 jobs:
-  test:
+  publish-to-npm:
+    name: 'Publish to NPM'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -29,5 +24,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm run test
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
