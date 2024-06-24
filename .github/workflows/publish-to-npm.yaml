@@ -25,6 +25,9 @@ jobs:
           SUI_VERSION: ${{ env.SUI_VERSION }}
       - name: Compile
         run: npm run build
+      - name: Debug Package Contents
+        run: |
+          npm pack --dry-run
       # - run: npm publish
       #   env:
       #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

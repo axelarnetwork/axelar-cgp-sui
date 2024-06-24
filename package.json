@@ -6,8 +6,10 @@
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
   "files": [
-    "./move",
-    "./scripts"
+    "scripts",
+    "move",
+    "!move/**/dependencies/**/*.{mv,move,mvsm}",
+    "!move/**/source_maps/**/*.{mv,move,mvsm}"
   ],
   "main": "index.js",
   "scripts": {
