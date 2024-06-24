@@ -2,57 +2,60 @@ name: Install Dependencies
 description: 'Setup Sui CLI and install dependencies'
 
 inputs:
-    SUI_VERSION:
-        description: 'The version of Sui CLI to install'
-        required: true
+  SUI_VERSION:
+    description: 'The version of Sui CLI to install'
+    required: true
 
 runs:
-    using: 'composite'
+  using: 'composite'
 
-    steps:
-        - name: Install Dependencies
-          run: |
-              sudo apt-get update
-              sudo apt-get install -y libpq-dev
+  steps:
+    - name: Debug Action Input
+      run: echo "SUI_VERSION=${{ inputs.SUI_VERSION }}"
 
-        - name: Cache Sui binaries
-          id: cache-sui
-          uses: actions/cache@v4
-          with:
-              path: sui-binaries/
-              key: sui-${{ input.SUI_VERSION }}
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev
 
-        - name: Download and Install Sui
-          if: steps.cache-sui.outputs.cache-hit != 'true'
-          run: |
-              curl -L -o sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ inputs.SUI_VERSION }}/sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
-              tar -xvf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
-              mkdir -p sui-binaries
-              mv ./sui ./sui-binaries/
-              mv ./sui-debug ./sui-binaries/
-              rm -rf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
+    - name: Cache Sui binaries
+      id: cache-sui
+      uses: actions/cache@v4
+      with:
+        path: sui-binaries/
+        key: sui-${{ inputs.SUI_VERSION }}
 
-        - name: Save Sui binaries
-          if: steps.cache-sui.outputs.cache-hit != 'true'
-          id: cache-sui-save
-          uses: actions/cache@v4
-          with:
-              path: sui-binaries/
-              key: ${{ steps.cache-sui.outputs.cache-primary-key }}
+    - name: Download and Install Sui
+      if: steps.cache-sui.outputs.cache-hit != 'true'
+      run: |
+        curl -L -o sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ inputs.SUI_VERSION }}/sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
+        tar -xvf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
+        mkdir -p sui-binaries
+        mv ./sui ./sui-binaries/
+        mv ./sui-debug ./sui-binaries/
+        rm -rf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
 
-        - name: Add Sui binaries to PATH
-          run: |
-              sudo cp ./sui-binaries/sui /usr/local/bin/sui
-              sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
+    - name: Save Sui binaries
+      if: steps.cache-sui.outputs.cache-hit != 'true'
+      id: cache-sui-save
+      uses: actions/cache@v4
+      with:
+        path: sui-binaries/
+        key: sui-${{ inputs.SUI_VERSION }}
 
-        - name: Checkout code
-          uses: actions/checkout@v4
+    - name: Add Sui binaries to PATH
+      run: |
+        sudo cp ./sui-binaries/sui /usr/local/bin/sui
+        sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
 
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-              node-version: 18
-              cache: 'npm'
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-        - name: Install dependencies
-          run: npm ci
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci

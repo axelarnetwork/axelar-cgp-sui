@@ -13,6 +13,12 @@ jobs:
     name: 'Publish to NPM'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Debug Action
+        run: |
+          echo "SUI_VERSION=${{ env.SUI_VERSION }}"
+          ls -al
       - name: Download Sui CLI binary
         uses: ./.github/actions/install
         with:
