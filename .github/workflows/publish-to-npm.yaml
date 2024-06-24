@@ -15,16 +15,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Debug Action
-        run: |
-          echo "SUI_VERSION=${{ env.SUI_VERSION }}"
-          ls -al
+
       - name: Download Sui CLI binary
         uses: ./.github/actions/install
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
-      - name: Compile
+
+      - name: Build
         run: npm run build
-      - run: npm publish
+
+      - name: Publish
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
