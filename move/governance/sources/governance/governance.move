@@ -320,5 +320,108 @@ module governance::governance {
         assert!(package::version(upgrade_cap_return) == 2, 2);
         test_utils::destroy(uid);
         test_utils::destroy(governance);
-    }  
+    }
+
+    #[test]
+    fun test_authorize_upgrade() {
+        let mut ctx = tx_context::dummy();
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let channale_object = channel::new(&mut ctx);
+        let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000000000";
+        let mut abi = abi::new_reader(payload);
+        let message_type = abi.read_u256();
+        let uid = object::new(&mut ctx);
+        let upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+        let cap_id = object::id_from_address(address::from_u256(abi.read_u256()));
+        let approved_message = channel::new_approved_message(trusted_source_chain, ascii::string(b"1"), trusted_source_address, object::id_address(&channale_object) , payload);
+        let mut governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type: message_type,
+            channel: channale_object,
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+    
+        governance.caps.add(
+            cap_id,
+            upgrade_cap,
+        );
+        let upgrade_ticket = authorize_upgrade(&mut governance, approved_message);
+        assert!(package::ticket_package(&upgrade_ticket) == object::uid_to_inner(&uid), 1);
+        let policy = abi.read_u8();
+        assert!(package::ticket_policy(&upgrade_ticket) == policy, 2);
+        let digest = abi.read_bytes();
+        assert!(package::ticket_digest(&upgrade_ticket) == digest, 3);
+        test_utils::destroy(upgrade_ticket);
+        test_utils::destroy(uid);
+        test_utils::destroy(governance);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidMessageType)]
+    fun test_authorize_upgrade_invalid_message_type() {
+        let mut ctx = tx_context::dummy();
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let channale_object = channel::new(&mut ctx);
+        let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
+        let approved_message = channel::new_approved_message(trusted_source_chain, ascii::string(b"1"), trusted_source_address, object::id_address(&channale_object) , payload);
+        let mut governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type: 2,
+            channel: channale_object,
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+        let upgrade_ticket = authorize_upgrade(&mut governance, approved_message);
+        test_utils::destroy(upgrade_ticket);
+        test_utils::destroy(governance);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUntrustedAddress)]
+    fun test_authorize_upgrade_trusted_address() {
+        let mut ctx = tx_context::dummy();
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let channale_object = channel::new(&mut ctx);
+        let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
+        let approved_message = channel::new_approved_message(ascii::string(b"sui"), ascii::string(b"1"), ascii::string(b"0x1"), object::id_address(&channale_object) , payload);
+        let mut governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type: 2,
+            channel: channale_object,
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+        let upgrade_ticket = authorize_upgrade(&mut governance, approved_message);
+        test_utils::destroy(upgrade_ticket);
+        test_utils::destroy(governance);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = channel::EInvalidDestination)]
+    fun test_authorize_invalid_destination_address() {
+        let mut ctx = tx_context::dummy();
+        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_address = ascii::string(b"0x0");
+        let channale_object = channel::new(&mut ctx);
+        let payload = x"01";
+        let approved_message = channel::new_approved_message(ascii::string(b"sui"), ascii::string(b"1"), ascii::string(b"0x1"), address::from_u256(2) , payload);
+        let mut governance = Governance{
+            id: object::new(&mut ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type: 2,
+            channel: channale_object,
+            caps: table::new<ID, UpgradeCap>(&mut ctx),
+        };
+        let upgrade_ticket = authorize_upgrade(&mut governance, approved_message);
+        test_utils::destroy(upgrade_ticket);
+        test_utils::destroy(governance);
+    }
 }
