@@ -136,6 +136,23 @@ module axelar_gateway::channel {
     // Tests
     // -----
 
+    #[test_only]
+    public fun new_approved_message(
+        source_chain: String,
+        message_id: String,
+        source_address: String,
+        destination_id: address,
+        payload: vector<u8>,
+    ): ApprovedMessage {
+        ApprovedMessage {
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            payload
+        }
+    }
+
     #[test]
     fun test_new_and_destroy() {
         let ctx = &mut sui::tx_context::dummy();
