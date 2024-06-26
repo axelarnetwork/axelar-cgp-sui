@@ -1,6 +1,7 @@
 [package]
 name = "AxelarGateway"
 version = "0.1.0"
+published-at = "0x8fd4826963d7fac11825df329a1460a49eb782d9719ad362c97e5e3c225fc748"
 edition = "2024.beta"
 
 [dependencies]

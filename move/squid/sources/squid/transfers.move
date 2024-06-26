@@ -1,6 +1,6 @@
 module squid::transfers {
     use std::type_name;
-    use std::ascii;
+    use std::ascii::{Self, String};
 
     use sui::bcs::{Self, BCS};
     use sui::coin;
@@ -10,7 +10,7 @@ module squid::transfers {
 
     use its::service;
     use its::its::ITS;
-    use its::token_id;
+    use its::token_id::{Self, TokenId};
 
     use squid::swap_info::{SwapInfo};
 
@@ -20,15 +20,51 @@ module squid::transfers {
     const EWrongSwapType: u64 = 0;
     const EWrongCoinType: u64 = 1;
 
+    public struct SuiTransferSwapData has drop {
+        swap_type: u8,
+        coin_type: String,
+        recipient: address,
+    }
+
+    public struct ItsTransferSwapData has drop {
+        swap_type: u8,
+        coin_type: String,
+        token_id: TokenId,
+        destination_chain: String,
+        destination_address: vector<u8>,
+        metadata: vector<u8>,
+    }
+
+    fun new_sui_transfer_swap_data(data: vector<u8>): SuiTransferSwapData {
+        let mut bcs = bcs::new(data);
+        SuiTransferSwapData {
+            swap_type: bcs.peel_u8(),
+            coin_type: ascii::string(bcs.peel_vec_u8()),
+            recipient: bcs.peel_address(),
+        }
+    }
+
+    fun new_its_transfer_swap_data(data: vector<u8>): ItsTransferSwapData {
+        let mut bcs = bcs::new(data);
+        ItsTransferSwapData {
+            swap_type: bcs.peel_u8(),
+            coin_type: ascii::string(bcs.peel_vec_u8()),
+            token_id: token_id::from_address(bcs.peel_address()),
+            destination_chain: ascii::string(bcs.peel_vec_u8()),
+            destination_address: bcs.peel_vec_u8(),
+            metadata: bcs.peel_vec_u8(),
+        }
+    }
+
     public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
         let data = swap_info.get_data_estimating();
         if (data.length() == 0) return;
-        let mut bcs = bcs::new(data);
+        let swap_data = new_sui_transfer_swap_data(data);
 
-        assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T>().into_string().into_bytes(),
+            &swap_data.coin_type == &type_name::get<T>().into_string(),
             EWrongCoinType,
         );
 
@@ -38,12 +74,12 @@ module squid::transfers {
     public fun its_estimate<T>(swap_info: &mut SwapInfo) {
         let data = swap_info.get_data_estimating();
         if (data.length() == 0) return;
-        let mut bcs = bcs::new(data);
+        let swap_data = new_its_transfer_swap_data(data);
 
-        assert!(bcs.peel_u8() == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T>().into_string().into_bytes(),
+            &swap_data.coin_type == &type_name::get<T>().into_string(),
             EWrongCoinType,
         );
 
@@ -53,12 +89,12 @@ module squid::transfers {
     public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return;
-        let mut bcs = bcs::new(data);
+        let swap_data = new_sui_transfer_swap_data(data);
 
-        assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T>().into_string().into_bytes(),
+            &swap_data.coin_type == &type_name::get<T>().into_string(),
             EWrongCoinType,
         );
 
@@ -67,19 +103,19 @@ module squid::transfers {
             option.destroy_none();
             return
         };
-        let address = bcs.peel_address();
-        transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), address);
+        
+        transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), swap_data.recipient);
     }
 
     public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, clock: &Clock, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return;
-        let mut bcs = bcs::new(data);
+        let swap_data = new_its_transfer_swap_data(data);
 
-        assert!(bcs.peel_u8() == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T>().into_string().into_bytes(),
+            &swap_data.coin_type == &type_name::get<T>().into_string(),
             EWrongCoinType,
         );
 
@@ -88,18 +124,14 @@ module squid::transfers {
             option.destroy_none();
             return
         };
-        let token_id = token_id::from_address(bcs.peel_address());
-        let destination_chain = ascii::string(bcs.peel_vec_u8());
-        let destination_address = bcs.peel_vec_u8();
-        let metadata = bcs.peel_vec_u8();
+        
         service::interchain_transfer(
             its,
-            token_id,
+            swap_data.token_id,
             coin::from_balance(option.destroy_some(), ctx),
-            destination_chain,
-            destination_address,
-            metadata,
-            clock,
+            swap_data.destination_chain,
+            swap_data.destination_address,
+            swap_data.metadata,
             ctx,
         );
     }
