@@ -90,8 +90,8 @@ module its::service {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        let coin_info = self.get_coin_info<T>(token_id);
-        let amount = (coin::value<T>(&coin) as u256) * coin_info.scaling();
+        let amount = self.coin_management_mut(token_id)
+            .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
 
@@ -103,9 +103,6 @@ module its::service {
             .write_u256(amount)
             .write_bytes(data);
 
-        self.coin_management_mut(token_id)
-            .take_coin(coin, clock);
-
         send_payload(self, destination_chain, writer.into_bytes());
     }
 
@@ -115,10 +112,9 @@ module its::service {
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let coin_info = self.get_coin_info<T>(token_id);
         reader.skip_slot(); // skip source_address
         let destination_address = address::from_bytes(reader.read_bytes());
-        let amount = (reader.read_u256() / coin_info.scaling() as u64);
+        let amount = reader.read_u256();
         let data = reader.read_bytes();
 
         assert!(data.is_empty(), EInterchainTransferHasData);
@@ -142,11 +138,10 @@ module its::service {
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let coin_info = self.get_coin_info<T>(token_id);
 
         let source_address = reader.read_bytes();
         let destination_address = reader.read_bytes();
-        let amount = (reader.read_u256() / coin_info.scaling()  as u64);
+        let amount = reader.read_u256();
         let data = reader.read_bytes();
 
         assert!(address::from_bytes(destination_address) == channel.to_address(), EWrongDestination);
@@ -217,7 +212,6 @@ module its::service {
         token_id: TokenId,
         to: address,
         amount: u64,
-        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let coin_management = self.coin_management_mut<T>(token_id);
@@ -225,7 +219,7 @@ module its::service {
 
         assert!(coin_management.is_distributor(distributor), ENotDistributor);
 
-        let coin = coin_management.give_coin(amount, clock, ctx);
+        let coin = coin_management.mint(amount, ctx);
         transfer::public_transfer(coin, to)
     }
 
@@ -233,7 +227,6 @@ module its::service {
         self: &mut ITS,
         channel: &Channel,
         token_id: TokenId,
-        clock: &Clock,
         coin: Coin<T>
     ) {
         let coin_management = self.coin_management_mut<T>(token_id);
@@ -241,7 +234,7 @@ module its::service {
 
         assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 
-        coin_management.take_coin(coin, clock);
+        coin_management.burn(coin);
     }
 
     // === Special Call Receiving
