@@ -93,7 +93,8 @@ module its::discovery {
 
             let arguments = vector[
                 arg,
-                vector[2]
+                vector[2],
+                vector[0, 6],
             ];
 
 
@@ -127,6 +128,7 @@ module its::discovery {
                     vector[
                         discovery_arg,
                         channel_id_arg,
+                        vector[0, 6],
                     ],
                     vector[],
                 )],

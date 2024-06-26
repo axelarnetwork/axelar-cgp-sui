@@ -11,7 +11,7 @@ async function publishAll(client, keypair, env) {
     const upgradeCaps = {};
     const packageIds = {};
 
-    for (const packagePath of ['abi', 'axelar', 'governance', 'gas_service', 'its', 'squid']) {
+    for (const packagePath of ['abi', 'axelar_gateway', 'governance', 'gas_service', 'its', 'squid']) {
         console.log(packagePath);
 
         while (true)

@@ -13,19 +13,19 @@ module its::utils {
     const ALPHABET_LENGTH: u8 = 26;
     const NUMBERS_LENGTH: u8 = 10;
 
-    public fun is_lowercase(c: u8): bool {
+    entry fun is_lowercase(c: u8): bool {
         c >= LOWERCASE_START && c < LOWERCASE_START + ALPHABET_LENGTH
     }
 
-    public fun is_uppercase(c: u8): bool {
+    entry fun is_uppercase(c: u8): bool {
         c >= UPPERCASE_START && c < UPPERCASE_START + ALPHABET_LENGTH
     }
 
-    public fun is_number(c: u8): bool {
+    entry fun is_number(c: u8): bool {
         c >= NUMBERS_START && c < NUMBERS_START + NUMBERS_LENGTH
     }
 
-    public fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
+    public(package) fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
         let symbolBytes = ascii::as_bytes(symbol);
         let mut moduleName = vector[];
 
@@ -48,13 +48,13 @@ module its::utils {
         ascii::string(moduleName)
     }
 
-    public fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
+    public(package) fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
         let mut v = vector[*decimals];
         v.append(*symbol.as_bytes());
         address::from_bytes(keccak256(&v))
     }
 
-    public fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
+    public(package) fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
         if (metadata.length() < 4) {
             (0, vector[])
         } else {
@@ -69,6 +69,20 @@ module its::utils {
         }
     }
 
+    public(package) fun pow(mut base: u256, mut exponent: u8): u256 {
+        let mut res: u256 = 1;
+        while (exponent > 0) {
+            if (exponent % 2 == 0) {
+                base = base * base;
+                exponent = exponent / 2;
+            } else {
+                res = res * base;
+                exponent = exponent - 1;
+            }
+        };
+        res
+    }
+    
     #[test]
     fun test_get_module_from_symbol() {
         let symbol = ascii::string(b"1(TheCool1234Coin) _ []!rdt");

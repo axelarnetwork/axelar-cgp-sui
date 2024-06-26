@@ -4,6 +4,9 @@ module its::coin_management {
 
     use sui::coin::{Self, TreasuryCap, Coin};
     use sui::balance::{Self, Balance};
+    use sui::clock::Clock;
+
+    use its::flow_limit::{Self, FlowLimit};
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
@@ -14,6 +17,7 @@ module its::coin_management {
         treasury_cap: Option<TreasuryCap<T>>,
         balance: Option<Balance<T>>,
         distributor: Option<address>,
+        flow_limit: FlowLimit,
     }
 
     /// Create a new `CoinManagement` with a `TreasuryCap`.
@@ -23,6 +27,7 @@ module its::coin_management {
             treasury_cap: option::some(treasury_cap),
             balance: option::none(),
             distributor: option::none(),
+            flow_limit: flow_limit::new(),
         }
     }
 
@@ -33,6 +38,7 @@ module its::coin_management {
             treasury_cap: option::none(),
             balance: option::some(balance::zero()),
             distributor: option::none(),
+            flow_limit: flow_limit::new(),
         }
     }
 
@@ -43,10 +49,17 @@ module its::coin_management {
         self.distributor.fill(distributor);
     }
 
+    /// Adds a rate limit to the `CoinManagement`.
+    /// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
+    public fun set_flow_limit<T>(self: &mut CoinManagement<T>, flow_limit: u64) {
+        self.flow_limit.set_flow_limit(flow_limit);
+    }
+
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user.
-    public(package) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>) {
+    public(package) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>, clock: &Clock) {
+        self.flow_limit.add_flow_out(to_take.value(), clock);
         if (has_capability(self)) {
             self.treasury_cap
                 .borrow_mut()
@@ -60,8 +73,9 @@ module its::coin_management {
 
     /// Withdraws or mints the given amount of coins.
     public(package) fun give_coin<T>(
-        self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext
+        self: &mut CoinManagement<T>, amount: u64, clock: &Clock, ctx: &mut TxContext
     ): Coin<T> {
+        self.flow_limit.add_flow_out(amount, clock);
         if (has_capability(self)) {
             self.treasury_cap
                 .borrow_mut()
