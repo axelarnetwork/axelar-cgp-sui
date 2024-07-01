@@ -255,7 +255,8 @@ module its::discovery {
 
         let arguments = vector[
             arg,
-            vector[2]
+            vector[2],
+            vector[0, 6],
         ];
         assert!(call_info.arguments() == arguments, 6);
         assert!(call_info.type_arguments() == vector[type_arg.into_string()], 7);

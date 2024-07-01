@@ -132,6 +132,7 @@ module squid::transfers {
             swap_data.destination_chain,
             swap_data.destination_address,
             swap_data.metadata,
+            clock,
             ctx,
         );
     }

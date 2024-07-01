@@ -70,7 +70,7 @@ module its::coin_info {
 
     #[test_only]
     public fun drop<T>(coin_info: CoinInfo<T>) {
-        let CoinInfo {name: _, symbol: _, decimals: _, metadata } = coin_info;
+        let CoinInfo {name: _, symbol: _, decimals: _, remote_decimals: _, metadata } = coin_info;
         if (metadata.is_some()) {
             abort 0
         } else {
