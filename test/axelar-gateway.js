@@ -43,33 +43,32 @@ function calculateNextSigners() {
 }
 
 async function deployGateway(client, keypair, deployer = keypair, operator = keypair) {
-        let result = await publishPackage(client, deployer, 'axelar_gateway');
-        packageId = result.packageId;
-        const creatorCap = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
-        ).objectId;
+    let result = await publishPackage(client, deployer, 'axelar_gateway');
+    packageId = result.packageId;
+    const creatorCap = result.publishTxn.objectChanges.find((change) => change.objectType === `${packageId}::gateway::CreatorCap`).objectId;
 
-        calculateNextSigners();
+    calculateNextSigners();
 
-        const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
-        const builder = new TxBuilder(client);
+    const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
+    const builder = new TxBuilder(client);
 
-        const separator = await builder.moveCall({
-            target: `${packageId}::bytes32::new`,
-            arguments: [domainSeparator],
-        });
+    const separator = await builder.moveCall({
+        target: `${packageId}::bytes32::new`,
+        arguments: [domainSeparator],
+    });
 
-        await builder.moveCall({
-            target: `${packageId}::gateway::setup`,
-            arguments: [creatorCap, operator.toSuiAddress(), separator, minimumRotationDelay, encodedSigners, '0x6'],
-        });
+    await builder.moveCall({
+        target: `${packageId}::gateway::setup`,
+        arguments: [creatorCap, operator.toSuiAddress(), separator, minimumRotationDelay, encodedSigners, '0x6'],
+    });
 
-        result = await builder.signAndExecute(deployer);
+    result = await builder.signAndExecute(deployer);
 
-        gateway = result.objectChanges.find((change) => change.objectType === `${packageId}::gateway::Gateway`).objectId;
-        return {
-            gateway, packageId,
-        }
+    gateway = result.objectChanges.find((change) => change.objectType === `${packageId}::gateway::Gateway`).objectId;
+    return {
+        gateway,
+        packageId,
+    };
 }
 
 describe('test', () => {
@@ -79,7 +78,6 @@ describe('test', () => {
     const keypair = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     let packageId;
     let gateway;
-
 
     function hashMessage(data) {
         const toHash = new Uint8Array(data.length + 1);
@@ -103,7 +101,6 @@ describe('test', () => {
     async function sleep(ms = 1000) {
         await new Promise((resolve) => setTimeout(resolve, ms));
     }
-
 
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl('localnet') });
@@ -164,5 +161,5 @@ describe('test', () => {
 });
 
 module.exports = {
-    deployGateway
-}
+    deployGateway,
+};

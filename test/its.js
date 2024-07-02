@@ -12,7 +12,7 @@ const secp256k1 = require('secp256k1');
 const { deployGateway } = require('./axelar-gateway');
 
 async function deployIts(client, keypair) {
-    const {packageId, gateway} = await deployGateway(client, keypair);
+    const { packageId, gateway } = await deployGateway(client, keypair);
     await publishPackage(client, keypair, 'abi');
     await publishPackage(client, keypair, 'governance');
     const result = await publishPackage(client, keypair, 'its');
@@ -29,7 +29,6 @@ describe.only('test', () => {
     let packageId;
     let its;
 
-
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl('localnet') });
 
@@ -42,13 +41,11 @@ describe.only('test', () => {
             ),
         );
 
-        let result = await deployIts(client, deployer);
-        
+        const result = await deployIts(client, deployer);
+
         packageId = result.packageId;
         its = result.publishTxn.objectChanges.find((change) => change.objectType === `${packageId}::its::ITS`).objectId;
     });
 
-    it('Should not rotate to empty signers', async () => {
-       
-    });
+    it('Should not rotate to empty signers', async () => {});
 });
