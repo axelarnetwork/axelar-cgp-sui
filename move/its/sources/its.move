@@ -96,6 +96,15 @@ module its::its {
         &self.registered_coins[token_id]
     }
 
+    public(package) fun get_coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
+        assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
+        &mut self.registered_coins[token_id]
+    }
+
+    public(package) fun get_coin_scaling<T>(self: &CoinData<T>): u256 {
+        self.coin_info.scaling()
+    }
+
     public fun get_coin_info<T>(self: &ITS, token_id: TokenId): &CoinInfo<T> {
         &get_coin_data<T>(self, token_id).coin_info
     }
@@ -110,6 +119,10 @@ module its::its {
 
     public fun token_decimals<T>(self: &ITS, token_id: TokenId): u8 {
         get_coin_info<T>(self, token_id).decimals()
+    }
+
+    public fun token_remote_decimals<T>(self: &ITS, token_id: TokenId): u8 {
+        get_coin_info<T>(self, token_id).remote_decimals()
     }
 
     public fun get_trusted_address(self: &ITS, chain_name: String): String {
@@ -169,9 +182,10 @@ module its::its {
     public(package) fun add_registered_coin<T>(
         self: &mut ITS,
         token_id: TokenId,
-        coin_management: CoinManagement<T>,
+        mut coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
     ) {
+        coin_management.set_scaling(coin_info.scaling());
         self.registered_coins.add(token_id, CoinData<T> {
             coin_management,
             coin_info,

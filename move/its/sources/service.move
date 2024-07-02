@@ -7,6 +7,7 @@ module its::service {
     use sui::address;
     use sui::event;
     use sui::bcs;
+    use sui::clock::Clock;
 
     use abi::abi;
 
@@ -29,6 +30,8 @@ module its::service {
 
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
+
+    const DECIMALS_CAP: u8 = 9;
 
     const EUntrustedAddress: u64 = 0;
     const EInvalidMessageType: u64 = 1;
@@ -84,9 +87,11 @@ module its::service {
         destination_chain: String,
         destination_address: vector<u8>,
         metadata: vector<u8>,
+        clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        let amount = (coin::value<T>(&coin) as u256);
+        let amount = self.coin_management_mut(token_id)
+            .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
 
@@ -98,13 +103,10 @@ module its::service {
             .write_u256(amount)
             .write_bytes(data);
 
-        self.coin_management_mut(token_id)
-            .take_coin(coin);
-
         send_payload(self, destination_chain, writer.into_bytes());
     }
 
-    public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, ctx: &mut TxContext) {
+    public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext) {
         let (_, payload) = decode_approved_message(self, approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
@@ -112,14 +114,14 @@ module its::service {
         let token_id = token_id::from_u256(reader.read_u256());
         reader.skip_slot(); // skip source_address
         let destination_address = address::from_bytes(reader.read_bytes());
-        let amount = (reader.read_u256() as u64);
+        let amount = reader.read_u256();
         let data = reader.read_bytes();
 
         assert!(data.is_empty(), EInterchainTransferHasData);
 
         let coin = self
             .coin_management_mut(token_id)
-            .give_coin<T>(amount, ctx);
+            .give_coin<T>(amount, clock, ctx);
 
         transfer::public_transfer(coin, destination_address)
     }
@@ -128,16 +130,18 @@ module its::service {
         self: &mut ITS,
         approved_message: ApprovedMessage,
         channel: &Channel,
-        ctx: &mut TxContext
+        clock: &Clock,
+        ctx: &mut TxContext,
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
         let (source_chain, payload) = decode_approved_message(self, approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
+
         let source_address = reader.read_bytes();
         let destination_address = reader.read_bytes();
-        let amount = (reader.read_u256() as u64);
+        let amount = reader.read_u256();
         let data = reader.read_bytes();
 
         assert!(address::from_bytes(destination_address) == channel.to_address(), EWrongDestination);
@@ -145,7 +149,7 @@ module its::service {
 
         let coin = self
             .coin_management_mut(token_id)
-            .give_coin(amount, ctx);
+            .give_coin(amount, clock, ctx);
 
         (
             source_chain,
@@ -163,8 +167,9 @@ module its::service {
         let token_id = token_id::from_u256(reader.read_u256());
         let name = string::utf8(reader.read_bytes());
         let symbol = ascii::string(reader.read_bytes());
-        let decimals = (reader.read_u256() as u8);
+        let remote_decimals = (reader.read_u256() as u8);
         let distributor = address::from_bytes(reader.read_bytes());
+        let decimals = if (remote_decimals > DECIMALS_CAP) DECIMALS_CAP else remote_decimals;
 
         let (treasury_cap, mut coin_metadata) = self.remove_unregistered_coin<T>(
             token_id::unregistered_token_id(&symbol, decimals)
@@ -174,7 +179,7 @@ module its::service {
         //coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
 
         let mut coin_management = coin_management::new_with_cap<T>(treasury_cap);
-        let coin_info = coin_info::from_metadata<T>(coin_metadata);
+        let coin_info = coin_info::from_metadata<T>(coin_metadata, remote_decimals);
 
         coin_management.add_distributor(distributor);
 
@@ -214,7 +219,7 @@ module its::service {
 
         assert!(coin_management.is_distributor(distributor), ENotDistributor);
 
-        let coin = coin_management.give_coin(amount, ctx);
+        let coin = coin_management.mint(amount, ctx);
         transfer::public_transfer(coin, to)
     }
 
@@ -229,7 +234,7 @@ module its::service {
 
         assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 
-        coin_management.take_coin(coin);
+        coin_management.burn(coin);
     }
 
     // === Special Call Receiving

@@ -86,8 +86,9 @@ module its::token_id {
 
         let name = string::utf8(b"Name");
         let symbol = ascii::string(b"Symbol");
-        let decimals: u8 = 56;
-        let coin_info = coin_info::from_info<String>(name, symbol, decimals);
+        let decimals: u8 = 9;
+        let remote_decimals: u8 = 18;
+        let coin_info = coin_info::from_info<String>(name, symbol, decimals, remote_decimals);
         let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
 
         vec.append<u8>(bcs::to_bytes<CoinInfo<String>>(&coin_info));

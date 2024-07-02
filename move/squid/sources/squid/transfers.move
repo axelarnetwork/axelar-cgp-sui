@@ -4,6 +4,7 @@ module squid::transfers {
 
     use sui::bcs::{Self, BCS};
     use sui::coin;
+    use sui::clock::Clock;
 
     use axelar_gateway::discovery::{Self, MoveCall};
 
@@ -106,7 +107,7 @@ module squid::transfers {
         transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), swap_data.recipient);
     }
 
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, ctx: &mut TxContext) {
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, clock: &Clock, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return;
         let swap_data = new_its_transfer_swap_data(data);
@@ -131,6 +132,7 @@ module squid::transfers {
             swap_data.destination_chain,
             swap_data.destination_address,
             swap_data.metadata,
+            clock,
             ctx,
         );
     }
@@ -190,7 +192,8 @@ module squid::transfers {
             ),
             vector[
                 swap_info_arg,
-                its_arg
+                its_arg,
+                vector[0, 6],
             ],
             vector[type_arg],
         )

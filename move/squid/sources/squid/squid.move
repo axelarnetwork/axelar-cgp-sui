@@ -1,4 +1,6 @@
 module squid::squid {
+    use sui::clock::Clock;
+    
     use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
     use its::service;
@@ -25,11 +27,12 @@ module squid::squid {
         &self.channel
     }
 
-    public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, ctx: &mut TxContext): SwapInfo {
+    public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext): SwapInfo {
         let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
             its,
             approved_message,
             &self.channel,
+            clock,
             ctx,
         );
         let mut swap_info = swap_info::new(data, ctx);
