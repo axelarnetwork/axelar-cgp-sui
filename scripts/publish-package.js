@@ -3,23 +3,23 @@ const { setConfig, getFullObject, requestSuiFromFaucet } = require('./utils');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { TransactionBlock } = require('@mysten/sui.js/transactions');
 const { SuiClient } = require('@mysten/sui.js/client');
+const { toB64 } = require('@mysten/sui.js/utils');
 const { execSync } = require('child_process');
 const { parseEnv } = require('./utils');
 const tmp = require('tmp');
 const fs = require('fs');
 const path = require('path');
 
-async function publishPackage(packageName, client, keypair) {
+async function getContractBuild(packageName) {
     const toml = fs.readFileSync(`${__dirname}/../move/${packageName}/Move.toml`, 'utf8');
     fs.writeFileSync(`${__dirname}/../move/${packageName}/Move.toml`, fillAddresses(toml, '0x0', packageName));
 
     // remove all controlled temporary objects on process exit
-    const address = keypair.getPublicKey().toSuiAddress();
     tmp.setGracefulCleanup();
 
     const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
-    const { modules, dependencies } = JSON.parse(
+    return JSON.parse(
         execSync(
             `sui move build --dump-bytecode-as-base64 --path ${path.join(__dirname, '/../move/', packageName)} --install-dir ${
                 tmpobj.name
@@ -30,6 +30,10 @@ async function publishPackage(packageName, client, keypair) {
             },
         ),
     );
+}
+
+async function publishPackage(packageName, client, keypair, options = {}) {
+    const { modules, dependencies } = await getContractBuild(packageName);
 
     const tx = new TransactionBlock();
     const cap = tx.publish({
@@ -38,25 +42,39 @@ async function publishPackage(packageName, client, keypair) {
     });
 
     // Transfer the upgrade capability to the sender so they can upgrade the package later if they want.
+    let address;
+
+    if (!options.sender) {
+        address = keypair.getPublicKey().toSuiAddress();
+    } else {
+        address = options.sender;
+    }
+
     tx.transferObjects([cap], tx.pure(address));
 
-    const publishTxn = await client.signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        signer: keypair,
-        options: {
-            showEffects: true,
-            showObjectChanges: true,
-            showContent: true,
-        },
-        requestType: 'WaitForLocalExecution',
-    });
-    if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
+    if (!options.offline) {
+        const publishTxn = await client.signAndExecuteTransactionBlock({
+            transactionBlock: tx,
+            signer: keypair,
+            options: {
+                showEffects: true,
+                showObjectChanges: true,
+                showContent: true,
+            },
+            requestType: 'WaitForLocalExecution',
+        });
+        if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
 
-    const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
+        const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
 
-    console.info(`Published package ${packageId} from address ${address}}`);
+        console.info(`Published package ${packageId} from address ${address}}`);
 
-    return { packageId, publishTxn };
+        return { packageId, publishTxn };
+    }
+
+    tx.setSenderIfNotSet(address);
+    const txBytes = await tx.build({ client });
+    return toB64(txBytes);
 }
 
 function updateMoveToml(packageName, packageId) {
