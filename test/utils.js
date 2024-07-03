@@ -1,6 +1,8 @@
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml } = require('../dist/utils');
+const chai = require('chai');
+const { expect } = chai;
 
 async function publishPackage(client, keypair, packageName) {
     const builder = new TxBuilder(client);
@@ -22,17 +24,17 @@ async function expectRevert(builder, keypair, error = {}) {
         await builder.signAndExecute(keypair);
         throw new Error(`Expected revert with ${error} but exeuted successfully instead`);
     } catch (e) {
-        errorMessage = e.cause.effects.status.error;
+        const errorMessage = e.cause.effects.status.error;
         let regexp = /address: (.*?),/;
         const packageId = `0x${regexp.exec(errorMessage)[1]}`;
 
-        regexp = /Identifier\(\"(.*?)\"\)/;
+        regexp = /Identifier\("(.*?)"\)/;
         const module = regexp.exec(errorMessage)[1];
 
-        regexp = /Some\(\"(.*?)\"\)/;
+        regexp = /Some\("(.*?)"\)/;
         const functionName = regexp.exec(errorMessage)[1];
 
-        regexp = /Some\(\".*?\"\) \}, (.*?)\)/;
+        regexp = /Some\(".*?"\) \}, (.*?)\)/;
         const errorCode = parseInt(regexp.exec(errorMessage)[1]);
 
         if (error.packageId && error.packageId !== packageId) {
@@ -53,8 +55,30 @@ async function expectRevert(builder, keypair, error = {}) {
     }
 }
 
+async function expectEvent(builder, keypair, eventData = {}) {
+    const response = await builder.signAndExecute(keypair, {showEvents: true});
+
+    const event = response.events.find((event) => event.type == eventData.type);
+
+    function compare(a, b) {
+        if(Array.isArray(a)) {
+            expect(a.length).to.equal(b.length);
+            for(let i=0; i<a.length; i++) {
+                compare(a[i], b[i]);
+            }
+            return;
+        }
+
+        expect(a).to.equal(b);
+    }
+    for(const key of Object.keys(eventData.arguments)) {
+        compare(event.parsedJson[key], eventData.arguments[key]);
+    }
+}
+
 module.exports = {
     publishPackage,
     getRandomBytes32,
     expectRevert,
+    expectEvent,
 };
