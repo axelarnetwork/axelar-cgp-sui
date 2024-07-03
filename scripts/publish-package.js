@@ -134,6 +134,7 @@ module.exports = {
     publishPackage,
     updateMoveToml,
     publishPackageFull,
+    getContractBuild,
 };
 
 if (require.main === module) {
