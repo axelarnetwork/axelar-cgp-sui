@@ -186,7 +186,9 @@ module gas_service::gas_service {
     fun test_pay_gas() {
         let ctx = &mut sui::tx_context::dummy();
         let (mut service, cap) = new(ctx);
-        let value = 10;
+        // 2 bytes of the digest for a pseudo-random 1..65,536
+        let digest = ctx.digest();
+        let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1;
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
         service.pay_gas(
@@ -209,7 +211,8 @@ module gas_service::gas_service {
     fun test_add_gas() {
         let ctx = &mut sui::tx_context::dummy();
         let (mut service, cap) = new(ctx);
-        let value = 10;
+        let digest = ctx.digest();
+        let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1; // 1..65,536
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
         service.add_gas(
@@ -229,7 +232,8 @@ module gas_service::gas_service {
     fun test_collect_gas() {
         let ctx = &mut sui::tx_context::dummy();
         let (mut service, cap) = new(ctx);
-        let value = 10;
+        let digest = ctx.digest();
+        let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1; // 1..65,536
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
         service.add_gas(
@@ -256,7 +260,8 @@ module gas_service::gas_service {
     fun test_refund() {
         let ctx = &mut sui::tx_context::dummy();
         let (mut service, cap) = new(ctx);
-        let value = 10;
+        let digest = ctx.digest();
+        let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1; // 1..65,536
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
         service.add_gas(
@@ -275,6 +280,60 @@ module gas_service::gas_service {
         );
 
         assert!(service.balance.value() == 0, 0);
+
+        cap.destroy_cap();
+        service.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = sui::balance::ENotEnough)]
+    fun test_collect_gas_insufficient_balance() {
+        let ctx = &mut sui::tx_context::dummy();
+        let (mut service, cap) = new(ctx);
+        let digest = ctx.digest();
+        let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1; // 1..65,536
+        let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
+
+        service.add_gas(
+            c,
+            std::ascii::string(b"message id"),
+            @0x0,
+            vector[],
+        );
+
+        service.collect_gas(
+            &cap,
+            ctx.sender(),
+            value + 1,
+            ctx,
+        );
+
+        cap.destroy_cap();
+        service.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = sui::balance::ENotEnough)]
+    fun test_refund_insufficient_balance() {
+        let ctx = &mut sui::tx_context::dummy();
+        let (mut service, cap) = new(ctx);
+        let value = 10;
+        let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
+
+        service.add_gas(
+            c,
+            std::ascii::string(b"message id"),
+            @0x0,
+            vector[],
+        );
+
+        service.refund(
+            &cap,
+            std::ascii::string(b"message id"),
+            ctx.sender(),
+            value + 1,
+            ctx,
+        );
 
         cap.destroy_cap();
         service.destroy();
