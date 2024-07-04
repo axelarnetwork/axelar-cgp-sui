@@ -1,4 +1,4 @@
-name: Tests
+name: Move Tests
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ env:
   SUI_VERSION: mainnet-v1.25.3
 
 jobs:
-  test:
+  test-move:
     runs-on: ubuntu-latest
 
     steps:

@@ -1,4 +1,4 @@
-name: Tests
+name: Javascript Tests
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ env:
   SUI_VERSION: mainnet-v1.25.3
 
 jobs:
-  test:
+  test-js:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,7 +53,6 @@ jobs:
         run: |
           sudo cp ./sui-binaries/sui /usr/local/bin/sui
           sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
-          ls sui-binaries
           sudo cp ./sui-binaries/sui-test-validator-ubuntu-x86_64 /usr/local/bin/sui-test-validator
 
       - name: Checkout code
