@@ -37,10 +37,9 @@ jobs:
           curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
-          ls
           mv ./sui ./sui-binaries/
           mv ./sui-debug ./sui-binaries/
-          mv ./sui-test-validator-ubuntu-x86_64 ./sui-binaries/
+          mv ./sui-test-validator ./sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Save Sui binaries
@@ -55,8 +54,7 @@ jobs:
         run: |
           sudo cp ./sui-binaries/sui /usr/local/bin/sui
           sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
-          ls sui-binaries
-          sudo cp ./sui-binaries/sui-test-validator-ubuntu-x86_64 /usr/local/bin/sui-test-validator
+          sudo cp ./sui-binaries/sui-test-validator /usr/local/bin/sui-test-validator
 
       - name: Checkout code
         uses: actions/checkout@v4
