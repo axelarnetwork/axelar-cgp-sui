@@ -121,7 +121,7 @@ module governance::governance {
 
     #[test]
     fun test_new() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -150,7 +150,7 @@ module governance::governance {
     #[test]
     #[expected_failure(abort_code = ENotSelfUpgradeCap)]
     fun test_new_incorrect_upgrade_cap() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -164,7 +164,7 @@ module governance::governance {
     #[test]
     #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
     fun test_new_immutable_upgrade() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -192,7 +192,7 @@ module governance::governance {
 
     #[test]
     fun test_is_governance() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -213,7 +213,7 @@ module governance::governance {
 
     #[test]
     fun test_is_governance_false_argument() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -260,7 +260,7 @@ module governance::governance {
 
     #[test]
     fun test_take_upgrade_cap() {
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut ctx = tx_context::dummy();
@@ -298,7 +298,7 @@ module governance::governance {
         let mut upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
         let upgrade_ticket = package::authorize_upgrade(&mut upgrade_cap, 2, b"");
         let upgrade_reciept = package::test_upgrade(upgrade_ticket);
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let message_type = 2;
         let mut governance = Governance{
@@ -325,7 +325,7 @@ module governance::governance {
     #[test]
     fun test_authorize_upgrade() {
         let mut ctx = tx_context::dummy();
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let channale_object = channel::new(&mut ctx);
         let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000000000";
@@ -363,7 +363,7 @@ module governance::governance {
     #[expected_failure(abort_code = EInvalidMessageType)]
     fun test_authorize_upgrade_invalid_message_type() {
         let mut ctx = tx_context::dummy();
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let channale_object = channel::new(&mut ctx);
         let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
@@ -385,7 +385,7 @@ module governance::governance {
     #[expected_failure(abort_code = EUntrustedAddress)]
     fun test_authorize_upgrade_trusted_address() {
         let mut ctx = tx_context::dummy();
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let channale_object = channel::new(&mut ctx);
         let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
@@ -407,7 +407,7 @@ module governance::governance {
     #[expected_failure(abort_code = channel::EInvalidDestination)]
     fun test_authorize_invalid_destination_address() {
         let mut ctx = tx_context::dummy();
-        let trusted_source_chain = ascii::string(b"ethereum");
+        let trusted_source_chain = ascii::string(b"Axelar");
         let trusted_source_address = ascii::string(b"0x0");
         let channale_object = channel::new(&mut ctx);
         let payload = x"01";
