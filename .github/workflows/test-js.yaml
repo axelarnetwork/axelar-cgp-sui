@@ -37,8 +37,10 @@ jobs:
           curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
           mkdir -p sui-binaries
+          ls
           mv ./sui ./sui-binaries/
           mv ./sui-debug ./sui-binaries/
+          mv ./sui-test-validator-ubuntu-x86_64 ./sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Save Sui binaries
