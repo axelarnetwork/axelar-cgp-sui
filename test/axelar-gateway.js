@@ -17,6 +17,7 @@ const domainSeparator = getRandomBytes32();
 let operatorKeys;
 let signers;
 let nonce = 0;
+let packageId, pubkeys, gateway;
 
 function calculateNextSigners() {
     operatorKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
@@ -161,7 +162,7 @@ describe('test', () => {
 
     describe('Contract Call', () => {
         let channel;
-        before(async() => {
+        before(async () => {
             const builder = new TxBuilder(client);
 
             channel = await builder.moveCall({
@@ -175,7 +176,7 @@ describe('test', () => {
             const response = await builder.signAndExecute(keypair);
 
             channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
-        })
+        });
 
         it('Make Contract Call', async () => {
             const destinationChain = 'Destination Chain';
@@ -185,12 +186,7 @@ describe('test', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::call_contract`,
-                arguments: [
-                    channel,
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                ],
+                arguments: [channel, destinationChain, destinationAddress, payload],
                 typeArguments: [],
             });
 
@@ -202,11 +198,10 @@ describe('test', () => {
                     payload: arrayify(payload),
                     payload_hash: keccak256(payload),
                     source_id: channel,
-                }
-            })
+                },
+            });
         });
-    })
-    
+    });
 });
 
 module.exports = {

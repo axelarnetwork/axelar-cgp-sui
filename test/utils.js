@@ -56,22 +56,25 @@ async function expectRevert(builder, keypair, error = {}) {
 }
 
 async function expectEvent(builder, keypair, eventData = {}) {
-    const response = await builder.signAndExecute(keypair, {showEvents: true});
+    const response = await builder.signAndExecute(keypair, { showEvents: true });
 
-    const event = response.events.find((event) => event.type == eventData.type);
+    const event = response.events.find((event) => event.type === eventData.type);
 
     function compare(a, b) {
-        if(Array.isArray(a)) {
+        if (Array.isArray(a)) {
             expect(a.length).to.equal(b.length);
-            for(let i=0; i<a.length; i++) {
+
+            for (let i = 0; i < a.length; i++) {
                 compare(a[i], b[i]);
             }
+
             return;
         }
 
         expect(a).to.equal(b);
     }
-    for(const key of Object.keys(eventData.arguments)) {
+
+    for (const key of Object.keys(eventData.arguments)) {
         compare(event.parsedJson[key], eventData.arguments[key]);
     }
 }
