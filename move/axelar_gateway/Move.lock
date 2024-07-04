@@ -2,17 +2,8 @@
 
 [move]
 version = 2
-manifest_digest = "E39FD071E9EFD0729A4D15C389E9E5EF831FB1E0DB9B2A6E35AFD0DC302863A1"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
-dependencies = [
-  { name = "AxelarGateway" },
-  { name = "Sui" },
-]
-
-[[move.package]]
-name = "AxelarGateway"
-source = { local = "../axelar_gateway" }
-
+manifest_digest = "B3F1114AF6420DAFC5501B8A333236271B0467A5D00AF701F02D79AEC565E6E5"
+deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { name = "Sui" },
 ]
