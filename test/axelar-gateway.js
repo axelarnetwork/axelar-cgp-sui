@@ -112,71 +112,70 @@ describe('Axelar Gateway', () => {
     });
 
     describe('Signer Rotation', () => {
-
         it('Should rotate signers', async () => {
             await sleep(2000);
             const proofSigners = signers;
             const proofKeys = operatorKeys;
             calculateNextSigners();
-    
+
             const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
-    
+
             const hashed = hashMessage(encodedSigners);
-    
+
             const message = axelarStructs.MessageToSign.serialize({
                 domain_separator: domainSeparator,
                 signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
                 data_hash: hashed,
             }).toBytes();
-    
+
             const signatures = sign(proofKeys, message);
             const encodedProof = axelarStructs.Proof.serialize({
                 signers: proofSigners,
                 signatures,
             }).toBytes();
-    
+
             const builder = new TxBuilder(client);
-    
+
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
                 arguments: [gateway, '0x6', encodedSigners, encodedProof],
             });
-    
+
             await builder.signAndExecute(keypair);
         });
-    
+
         it('Should not rotate to empty signers', async () => {
             await sleep(2000);
             const proofSigners = signers;
             const proofKeys = operatorKeys;
-    
+
             const encodedSigners = axelarStructs.WeightedSigners.serialize({
                 signers: [],
                 threshold: 2,
                 nonce: hexlify([nonce + 1]),
             }).toBytes();
-    
+
             const hashed = hashMessage(encodedSigners);
-    
+
             const message = axelarStructs.MessageToSign.serialize({
                 domain_separator: domainSeparator,
                 signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
                 data_hash: hashed,
             }).toBytes();
-    
+
             const signatures = sign(proofKeys, message);
             const encodedProof = axelarStructs.Proof.serialize({
                 signers: proofSigners,
                 signatures,
             }).toBytes();
-    
+
             const builder = new TxBuilder(client);
-    
+
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
                 arguments: [gateway, '0x6', encodedSigners, encodedProof],
             });
-    
+
             await expectRevert(builder, keypair, {
                 packageId,
                 module: 'weighted_signers',
@@ -188,7 +187,7 @@ describe('Axelar Gateway', () => {
 
     describe('Contract Call', () => {
         let channel;
-        before(async() => {
+        before(async () => {
             const builder = new TxBuilder(client);
 
             channel = await builder.moveCall({
@@ -202,7 +201,7 @@ describe('Axelar Gateway', () => {
             const response = await builder.signAndExecute(keypair);
 
             channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
-        })
+        });
 
         it('Make Contract Call', async () => {
             const destinationChain = 'Destination Chain';
@@ -212,12 +211,7 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::call_contract`,
-                arguments: [
-                    channel,
-                    destinationChain,
-                    destinationAddress,
-                    payload,
-                ],
+                arguments: [channel, destinationChain, destinationAddress, payload],
                 typeArguments: [],
             });
 
@@ -229,9 +223,8 @@ describe('Axelar Gateway', () => {
                     payload: arrayify(payload),
                     payload_hash: keccak256(payload),
                     source_id: channel,
-                }
-            })
+                },
+            });
         });
-    })
-    
+    });
 });
