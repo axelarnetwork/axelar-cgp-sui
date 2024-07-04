@@ -22,8 +22,6 @@ module its::coin_management {
         distributor: Option<address>,
         operator: Option<address>,
         flow_limit: FlowLimit,
-        scaling: u256,
-        dust: u256,
     }
 
     /// Create a new `CoinManagement` with a `TreasuryCap`.
@@ -35,8 +33,6 @@ module its::coin_management {
             distributor: option::none(),
             operator: option::none(),
             flow_limit: flow_limit::new(),
-            scaling: 0, // placeholder, this gets edited when a coin is registered.
-            dust: 0,
         }
     }
 
@@ -49,8 +45,6 @@ module its::coin_management {
             distributor: option::none(),
             operator: option::none(),
             flow_limit: flow_limit::new(),
-            scaling: 0, // placeholder, this gets edited when a coin is registered.
-            dust: 0,
         }
     }
 
@@ -76,19 +70,12 @@ module its::coin_management {
         self.flow_limit.set_flow_limit(flow_limit);
     }
 
-    /// Adds a rate limit to the `CoinManagement`.
-    /// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
-    /// To be used by the ITS operator.
-    public(package) fun set_flow_limit<T>(self: &mut CoinManagement<T>, flow_limit: u64) {
-        self.flow_limit.set_flow_limit(flow_limit);
-    }
-
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user. Returns the amount that the ITS is supposed to give on other chains.
     public(package) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>, clock: &Clock): u256 {
         self.flow_limit.add_flow_out(to_take.value(), clock);
-        let amount = (to_take.value() as u256) * self.scaling;
+        let amount = (to_take.value() as u256);
         if (has_capability(self)) {
             self.burn(to_take);
         } else {
@@ -101,11 +88,9 @@ module its::coin_management {
 
     /// Withdraws or mints the given amount of coins. Any leftover amount from previous transfers is added to the coin here.
     public(package) fun give_coin<T>(
-        self: &mut CoinManagement<T>, mut amount: u256, clock: &Clock, ctx: &mut TxContext
+        self: &mut CoinManagement<T>, amount: u256, clock: &Clock, ctx: &mut TxContext
     ): Coin<T> {
-        amount  = amount + self.dust;
-        self.dust = amount % self.scaling;
-        let sui_amount = ( amount / self.scaling as u64);
+        let sui_amount = ( amount as u64);
         self.flow_limit.add_flow_out(sui_amount, clock);
         if (has_capability(self)) {
             self.mint(sui_amount, ctx)
@@ -127,11 +112,6 @@ module its::coin_management {
             .borrow_mut()
             .burn(coin);
     }
-
-    public(package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
-        self.scaling = scaling;
-    }
-
     // === Views ===
 
     /// Checks if the given address is a `distributor`.
@@ -193,7 +173,6 @@ module its::coin_management {
 
         let mut coin = cap.mint(amount1, ctx);
         let mut management1 = new_locked<COIN_MANAGEMENT>();
-        management1.scaling = 1;
         let clock = sui::clock::create_for_testing(ctx);
         management1.take_coin(coin, &clock);
         coin = management1.give_coin((amount1 as u256), &clock, ctx);
@@ -204,7 +183,6 @@ module its::coin_management {
         sui::test_utils::destroy(coin);
 
         let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
-        management2.scaling = 1;
         coin = management2.give_coin((amount2 as u256), &clock, ctx);
 
         assert!(coin.value() == amount2, 1);
