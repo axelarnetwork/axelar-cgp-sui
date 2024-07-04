@@ -70,8 +70,13 @@ jobs:
 
       - name: Build
         run: npm run build
+      
+      - name: Run Localnet
+        run: nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
+
+      - name: Sleep for 30 seconds
+        run: sleep 30s
+        shell: bash
 
       - name: Test
-        run: |
-          nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
-          npm run test-js
+        run: npm run test-js
