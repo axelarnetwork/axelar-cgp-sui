@@ -113,4 +113,5 @@ module.exports = {
     parseEnv,
     requestSuiFromFaucet,
     updateMoveToml,
+    copyMoveModule,
 };
