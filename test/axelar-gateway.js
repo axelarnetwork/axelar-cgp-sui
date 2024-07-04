@@ -2,7 +2,7 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
 const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui.js/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
-const { publishPackage, getRandomBytes32, expectRevert } = require('./utils');
+const { publishPackage, getRandomBytes32, expectRevert, expectEvent } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: { axelarStructs },
@@ -12,6 +12,7 @@ const secp256k1 = require('secp256k1');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 
+<<<<<<< HEAD
 const minimumRotationDelay = 1000;
 const domainSeparator = getRandomBytes32();
 let operatorKeys;
@@ -72,12 +73,42 @@ async function deployGateway(client, keypair, deployer = keypair, operator = key
 }
 
 describe('test', () => {
+=======
+describe('Axelar Gateway', () => {
+>>>>>>> feat/testing
     let client;
     const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const deployer = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const keypair = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     let packageId;
     let gateway;
+<<<<<<< HEAD
+=======
+
+    function calculateNextSigners() {
+        operatorKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
+        const pubkeys = operatorKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
+        const keys = operatorKeys.map((key, index) => {
+            return { privkey: key, pubkey: pubkeys[index] };
+        });
+        keys.sort((key1, key2) => {
+            for (let i = 0; i < 33; i++) {
+                if (key1.pubkey[i] < key2.pubkey[i]) return -1;
+                if (key1.pubkey[i] > key2.pubkey[i]) return 1;
+            }
+
+            return 0;
+        });
+        operatorKeys = keys.map((key) => key.privkey);
+        signers = {
+            signers: keys.map((key) => {
+                return { pubkey: key.pubkey, weight: 1 };
+            }),
+            threshold: 2,
+            nonce: hexlify([++nonce]),
+        };
+    }
+>>>>>>> feat/testing
 
     function hashMessage(data) {
         const toHash = new Uint8Array(data.length + 1);
@@ -119,6 +150,7 @@ describe('test', () => {
         gateway = deployment.gateway;
     });
 
+<<<<<<< HEAD
     it('Should not rotate to empty signers', async () => {
         await sleep(2000);
         const proofSigners = signers;
@@ -156,8 +188,131 @@ describe('test', () => {
             module: 'weighted_signers',
             function: 'peel',
             code: 0,
+=======
+    describe('Signer Rotation', () => {
+
+        it('Should rotate signers', async () => {
+            await sleep(2000);
+            const proofSigners = signers;
+            const proofKeys = operatorKeys;
+            calculateNextSigners();
+    
+            const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
+    
+            const hashed = hashMessage(encodedSigners);
+    
+            const message = axelarStructs.MessageToSign.serialize({
+                domain_separator: domainSeparator,
+                signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
+                data_hash: hashed,
+            }).toBytes();
+    
+            const signatures = sign(proofKeys, message);
+            const encodedProof = axelarStructs.Proof.serialize({
+                signers: proofSigners,
+                signatures,
+            }).toBytes();
+    
+            const builder = new TxBuilder(client);
+    
+            await builder.moveCall({
+                target: `${packageId}::gateway::rotate_signers`,
+                arguments: [gateway, '0x6', encodedSigners, encodedProof],
+            });
+    
+            await builder.signAndExecute(keypair);
+        });
+    
+        it('Should not rotate to empty signers', async () => {
+            await sleep(2000);
+            const proofSigners = signers;
+            const proofKeys = operatorKeys;
+    
+            const encodedSigners = axelarStructs.WeightedSigners.serialize({
+                signers: [],
+                threshold: 2,
+                nonce: hexlify([nonce + 1]),
+            }).toBytes();
+    
+            const hashed = hashMessage(encodedSigners);
+    
+            const message = axelarStructs.MessageToSign.serialize({
+                domain_separator: domainSeparator,
+                signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
+                data_hash: hashed,
+            }).toBytes();
+    
+            const signatures = sign(proofKeys, message);
+            const encodedProof = axelarStructs.Proof.serialize({
+                signers: proofSigners,
+                signatures,
+            }).toBytes();
+    
+            const builder = new TxBuilder(client);
+    
+            await builder.moveCall({
+                target: `${packageId}::gateway::rotate_signers`,
+                arguments: [gateway, '0x6', encodedSigners, encodedProof],
+            });
+    
+            await expectRevert(builder, keypair, {
+                packageId,
+                module: 'weighted_signers',
+                function: 'peel',
+                code: 0,
+            });
+>>>>>>> feat/testing
         });
     });
+
+    describe('Contract Call', () => {
+        let channel;
+        before(async() => {
+            const builder = new TxBuilder(client);
+
+            channel = await builder.moveCall({
+                target: `${packageId}::channel::new`,
+                arguments: [],
+                typeArguments: [],
+            });
+
+            builder.tx.transferObjects([channel], keypair.toSuiAddress());
+
+            const response = await builder.signAndExecute(keypair);
+
+            channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
+        })
+
+        it('Make Contract Call', async () => {
+            const destinationChain = 'Destination Chain';
+            const destinationAddress = 'Destination Address';
+            const payload = '0x1234';
+            const builder = new TxBuilder(client);
+
+            await builder.moveCall({
+                target: `${packageId}::gateway::call_contract`,
+                arguments: [
+                    channel,
+                    destinationChain,
+                    destinationAddress,
+                    payload,
+                ],
+                typeArguments: [],
+            });
+
+            await expectEvent(builder, keypair, {
+                type: `${packageId}::gateway::ContractCall`,
+                arguments: {
+                    destination_address: destinationAddress,
+                    destination_chain: destinationChain,
+                    payload: arrayify(payload),
+                    payload_hash: keccak256(payload),
+                    source_id: channel,
+                }
+            })
+        });
+    })
+    
 });
 
 module.exports = {
