@@ -71,5 +71,5 @@ jobs:
 
       - name: Test
         run: |
-          nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
+          nohup sh -c "sui-test-validator"
           npm run test-js
