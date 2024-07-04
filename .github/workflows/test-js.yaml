@@ -28,7 +28,7 @@ jobs:
         id: cache-sui
         uses: actions/cache/restore@v4
         with:
-          path: sui-binaries/
+          path: sui-binaries-skip/
           key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui
