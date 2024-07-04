@@ -93,7 +93,7 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move_
 function copyMoveModule(packageName, moveDir = `${__dirname}../move`, moveCompileDir = `${__dirname}/move_compile`) {
     const src = `${moveDir}/${packageName}`;
     const dest = `${moveDir}/${packageName}`;
-    fs.cpSync(src, dest, {recursive: true});
+    fs.cpSync(src, dest, { recursive: true });
 }
 
 function parseEnv(arg) {
