@@ -1,5 +1,0 @@
-{
-    "singletons": [
-        "gas_service::GasService"
-    ]
-}

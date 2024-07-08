@@ -1,6 +1,0 @@
-{
-    "singletons": [
-        "gateway::Gateway",
-        "discovery::RelayerDiscovery"
-    ]
-}
