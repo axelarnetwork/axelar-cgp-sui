@@ -53,7 +53,7 @@ async function requestSuiFromFaucet(env, address) {
     }
 }
 
-function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`) {
+function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move_compile`) {
     const path = `${moveDir}/${packageName}/Move.toml`;
 
     let toml = fs.readFileSync(path, 'utf8');
@@ -90,6 +90,12 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move`
     fs.writeFileSync(path, toml);
 }
 
+function copyMoveModule(packageName, moveDir = `${__dirname}../move`, moveCompileDir = `${__dirname}/move_compile`) {
+    const src = `${moveDir}/${packageName}`;
+    const dest = `${moveDir}/${packageName}`;
+    fs.cpSync(src, dest, { recursive: true });
+}
+
 function parseEnv(arg) {
     switch (arg?.toLowerCase()) {
         case 'localnet':
@@ -107,4 +113,5 @@ module.exports = {
     parseEnv,
     requestSuiFromFaucet,
     updateMoveToml,
+    copyMoveModule,
 };

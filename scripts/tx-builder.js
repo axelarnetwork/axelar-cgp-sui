@@ -4,27 +4,12 @@ const {
     utils: { arrayify, hexlify },
 } = require('ethers');
 
-const objectCache = {};
-
-function updateCache(objectChanges) {
-    for (const change of objectChanges) {
-        if (!change.objectId) continue;
-        objectCache[change.objectId] = change;
-    }
-}
-
 function getObject(tx, object) {
     if (Array.isArray(object)) {
         object = hexlify(object);
     }
 
     if (typeof object === 'string') {
-        const cached = objectCache[object];
-
-        if (cached) {
-            return tx.object(cached);
-        }
-
         return tx.object(object);
     }
 
@@ -135,11 +120,16 @@ function isTxContext(parameter) {
 
 function isString(parameter) {
     if (parameter.MutableReference) parameter = parameter.MutableReference;
+
     if (parameter.Reference) parameter = parameter.Reference;
+
     parameter = parameter.Struct;
+
     if (!parameter) return false;
+
     const isAsciiString = parameter.address === '0x1' && parameter.module === 'ascii' && parameter.name === 'String';
     const isStringString = parameter.address === '0x1' && parameter.module === 'string' && parameter.name === 'String';
+
     return isAsciiString || isStringString;
 }
 
@@ -167,11 +157,16 @@ class TxBuilder {
         const moveFn = await this.client.getNormalizedMoveFunction(target);
 
         let length = moveFn.parameters.length;
-        if (isTxContext(moveFn.parameters[length - 1])) length = length - 1;
-        if (length !== args.length)
+
+        if (isTxContext(moveFn.parameters[length - 1])) {
+            length = length - 1;
+        }
+
+        if (length !== args.length) {
             throw new Error(
                 `Function ${target.package}::${target.module}::${target.function} takes ${moveFn.parameters.length} arguments but given ${args.length}`,
             );
+        }
 
         const convertedArgs = args.map((arg, index) => serialize(this.tx, moveFn.parameters[index], arg));
 
@@ -193,7 +188,7 @@ class TxBuilder {
                 ...options,
             },
         });
-        updateCache(result.objectChanges);
+        
         return result;
     }
 
