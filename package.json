@@ -5,13 +5,16 @@
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "./scripts/run.sh build",
-    "test": "./scripts/run.sh test",
+    "test-move": "./scripts/run.sh test",
+    "test-js": "",
     "coverage": "./scripts/coverage.sh",
-    "lint": "eslint --fix './scripts/*.js'",
-    "prettier": "prettier --write './scripts/*.js'"
+    "lint": "eslint --fix './src/*.ts'",
+    "prettier": "prettier --write './src/*.ts'",
+    "compile": "npx tsc",
+    "postinstall": "npm run compile"
   },
   "keywords": [
     "axelar",
@@ -29,10 +32,14 @@
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
     "secp256k1": "^5.0.0",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "typescript": "^5.3.3"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
+    "@types/tmp": "^0.2.6",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",

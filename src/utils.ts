@@ -1,17 +1,16 @@
-const fs = require('fs');
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
-const { getFullnodeUrl } = require('@mysten/sui.js/client');
+import fs from 'fs';
+import { getFullnodeUrl } from '@mysten/sui.js/client';
 
-function getModuleNameFromSymbol(symbol) {
-    function isNumber(char) {
+export function getModuleNameFromSymbol(symbol: string) {
+    function isNumber(char: string) {
         return char >= '0' && char <= '9';
     }
 
-    function isLowercase(char) {
+    function isLowercase(char: string) {
         return char >= 'a' && char <= 'z';
     }
 
-    function isUppercase(char) {
+    function isUppercase(char: string) {
         return char >= 'A' && char <= 'Z';
     }
 
@@ -40,27 +39,14 @@ function getModuleNameFromSymbol(symbol) {
     return moduleName;
 }
 
-async function requestSuiFromFaucet(env, address) {
-    try {
-        await requestSuiFromFaucetV0({
-            // use getFaucetHost to make sure you're using correct faucet address
-            // you can also just use the address (see Sui Typescript SDK Quick Start for values)
-            host: getFaucetHost(env.alias),
-            recipient: address,
-        });
-    } catch (e) {
-        console.log(e);
-    }
-}
-
-function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move_compile`) {
+export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
     const path = `${moveDir}/${packageName}/Move.toml`;
 
     let toml = fs.readFileSync(path, 'utf8');
 
     const lines = toml.split('\n');
 
-    const versionLineIndex = lines.findIndex((line) => line.slice(0, 7) === 'version');
+    const versionLineIndex = lines.findIndex((line: string) => line.slice(0, 7) === 'version');
 
     if (!(lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
         lines.splice(versionLineIndex + 1, 0, '');
@@ -68,7 +54,7 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move_
 
     lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
 
-    const addressesIndex = lines.findIndex((line) => line.slice(0, 11) === '[addresses]');
+    const addressesIndex = lines.findIndex((line: string) => line.slice(0, 11) === '[addresses]');
 
     for (let i = addressesIndex + 1; i < lines.length; i++) {
         const line = lines[i];
@@ -90,28 +76,14 @@ function updateMoveToml(packageName, packageId, moveDir = `${__dirname}/../move_
     fs.writeFileSync(path, toml);
 }
 
-function copyMoveModule(packageName, moveDir = `${__dirname}../move`, moveCompileDir = `${__dirname}/move_compile`) {
-    const src = `${moveDir}/${packageName}`;
-    const dest = `${moveDir}/${packageName}`;
-    fs.cpSync(src, dest, { recursive: true });
-}
-
-function parseEnv(arg) {
+export function parseEnv(arg: string) {
     switch (arg?.toLowerCase()) {
         case 'localnet':
         case 'devnet':
         case 'testnet':
         case 'mainnet':
-            return { alias: arg, url: getFullnodeUrl(arg) };
+            return { alias: arg, url: getFullnodeUrl(arg as 'localnet' | 'devnet' | 'testnet' | 'mainnet') };
         default:
             return JSON.parse(arg);
     }
 }
-
-module.exports = {
-    getModuleNameFromSymbol,
-    parseEnv,
-    requestSuiFromFaucet,
-    updateMoveToml,
-    copyMoveModule,
-};

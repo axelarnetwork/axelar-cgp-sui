@@ -1,5 +1,5 @@
 {
-  "extends": "richardpringle",
+  "extends": ["richardpringle", "plugin:@typescript-eslint/recommended"],
   "env": {
     "es2020": true,
     "mocha": true
