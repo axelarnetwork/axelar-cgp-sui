@@ -20,8 +20,9 @@ function updateCache(objectChanges: SuiObjectChange[]) {
                     objectId: string;
                 }
             ).objectId
-        )
+        ) {
             continue;
+        }
         objectCache[
             (
                 change as {

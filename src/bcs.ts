@@ -113,6 +113,6 @@ function getSquidStructs() {
 }
 
 export const bcsStructs = {
-    axelarStructs: getAxelarStructs(),
-    squidStructs: getSquidStructs(),
+    gateway: getAxelarStructs(),
+    squid: getSquidStructs(),
 };
