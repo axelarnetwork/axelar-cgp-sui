@@ -1,5 +1,0 @@
-{
-    "singletons": [
-        "discovery::RelayerDiscovery"
-    ]
-}
