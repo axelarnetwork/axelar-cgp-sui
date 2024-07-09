@@ -62,13 +62,13 @@ function getTypeName(type: SuiMoveNormalizedType): string {
         return name;
     }
 
-    if ("Struct" in (type as object)) {
+    if ('Struct' in (type as object)) {
         return get((type as { Struct: Type }).Struct);
-    } else if ("Reference" in (type as object)) {
+    } else if ('Reference' in (type as object)) {
         return getTypeName((type as { Reference: SuiMoveNormalizedType }).Reference);
-    } else if ("MutableReference" in (type as object)) {
+    } else if ('MutableReference' in (type as object)) {
         return getTypeName((type as { MutableReference: SuiMoveNormalizedType }).MutableReference);
-    } else if ("Vector" in (type as object)) {
+    } else if ('Vector' in (type as object)) {
         return `vector<${getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector)}>`;
     }
 
