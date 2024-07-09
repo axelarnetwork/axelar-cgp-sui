@@ -111,7 +111,7 @@ module squid::transfers {
         if (data.length() == 0) return;
         let swap_data = new_its_transfer_swap_data(data);
 
-        assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
 
         assert!(
             &swap_data.coin_type == &type_name::get<T>().into_string(),
