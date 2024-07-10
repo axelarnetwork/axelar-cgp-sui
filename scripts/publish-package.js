@@ -19,7 +19,7 @@ async function getContractBuild(packageName) {
 
     const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
-    return JSON.parse(
+    const base64ByteCode = JSON.parse(
         execSync(
             `sui move build --dump-bytecode-as-base64 --path ${path.join(__dirname, '/../move/', packageName)} --install-dir ${
                 tmpobj.name
@@ -30,6 +30,8 @@ async function getContractBuild(packageName) {
             },
         ),
     );
+
+    return base64ByteCode;
 }
 
 async function publishPackage(packageName, client, keypair, options = {}) {
@@ -46,29 +48,33 @@ async function publishPackage(packageName, client, keypair, options = {}) {
 
     tx.transferObjects([cap], tx.pure(address));
 
-    if (!options.offline) {
-        const publishTxn = await client.signAndExecuteTransactionBlock({
-            transactionBlock: tx,
-            signer: keypair,
-            options: {
-                showEffects: true,
-                showObjectChanges: true,
-                showContent: true,
-            },
-            requestType: 'WaitForLocalExecution',
-        });
-        if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
+    tx.setSenderIfNotSet(address);
 
-        const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
+    const txBytes = await tx.build({ client });
 
-        console.info(`Published package ${packageId} from address ${address}}`);
-
-        return { packageId, publishTxn };
+    if (options.offline) {
+        return { txBytes: toB64(txBytes) };
     }
 
-    tx.setSenderIfNotSet(address);
-    const txBytes = await tx.build({ client });
-    return toB64(txBytes);
+    const signature = (await keypair.signTransactionBlock(txBytes)).signature;
+    const publishTxn = await client.executeTransactionBlock({
+        transactionBlock: txBytes,
+        signature,
+        options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showEvents: true,
+        },
+        requestType: 'WaitForLocalExecution',
+    });
+
+    if (publishTxn.effects?.status.status !== 'success') throw new Error('Publish Tx failed');
+
+    const packageId = (publishTxn.objectChanges?.filter((a) => a.type === 'published') ?? [])[0].packageId;
+
+    console.info(`Published package ${packageId} from address ${address}}`);
+
+    return { packageId, publishTxn };
 }
 
 function updateMoveToml(packageName, packageId) {
