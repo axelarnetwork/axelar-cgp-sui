@@ -1,4 +1,4 @@
-name: Tests
+name: Javascript Tests
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ env:
   SUI_VERSION: mainnet-v1.25.3
 
 jobs:
-  test:
+  test-js:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,7 @@ jobs:
         id: cache-sui
         uses: actions/cache/restore@v4
         with:
-          path: sui-binaries/
+          path: sui-binaries-skip/
           key: sui-${{ env.SUI_VERSION }}
 
       - name: Download and Install Sui
@@ -39,6 +39,7 @@ jobs:
           mkdir -p sui-binaries
           mv ./sui ./sui-binaries/
           mv ./sui-debug ./sui-binaries/
+          mv ./sui-test-validator ./sui-binaries/
           rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
 
       - name: Save Sui binaries
@@ -53,6 +54,7 @@ jobs:
         run: |
           sudo cp ./sui-binaries/sui /usr/local/bin/sui
           sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
+          sudo cp ./sui-binaries/sui-test-validator /usr/local/bin/sui-test-validator
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,6 +70,13 @@ jobs:
 
       - name: Build
         run: npm run build
+      
+      - name: Run Localnet
+        run: nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
+
+      - name: Sleep for 30 seconds
+        run: sleep 30s
+        shell: bash
 
       - name: Test
-        run: npm run test-move
+        run: npm run test-js
