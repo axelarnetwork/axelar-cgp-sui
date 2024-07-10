@@ -42,13 +42,7 @@ async function publishPackage(packageName, client, keypair, options = {}) {
     });
 
     // Transfer the upgrade capability to the sender so they can upgrade the package later if they want.
-    let address;
-
-    if (!options.sender) {
-        address = keypair.getPublicKey().toSuiAddress();
-    } else {
-        address = options.sender;
-    }
+    const address = options.sender || keypair.getPublicKey().toSuiAddress();
 
     tx.transferObjects([cap], tx.pure(address));
 
