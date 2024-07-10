@@ -52,9 +52,6 @@ runs:
         sudo cp ./sui-binaries/sui /usr/local/bin/sui
         sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
 
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Setup Node
       uses: actions/setup-node@v4
       with:

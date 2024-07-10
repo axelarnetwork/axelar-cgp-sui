@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Sui CLI binary
+      - name: Setup Sui CLI and install dependencies
         uses: ./.github/actions/install
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
