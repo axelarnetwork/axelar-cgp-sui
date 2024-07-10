@@ -36,7 +36,7 @@ module squid::deepbook_v2 {
         should_sweep: bool,
     }
 
-    fun new(data: vector<u8>): DeepbookV2SwapData {
+    fun peel_swap_data(data: vector<u8>): DeepbookV2SwapData {
         let mut bcs = bcs::new(data);
         DeepbookV2SwapData {
             swap_type: bcs.peel_u8(),
@@ -282,7 +282,7 @@ module squid::deepbook_v2 {
     public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, squid: &mut Squid, clock: &Clock, ctx: &mut TxContext) {
         let data = self.get_data_swapping();
         if(data.length() == 0) return;
-        let swap_data = new(data);
+        let swap_data = peel_swap_data(data);
 
         assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
 

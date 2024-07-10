@@ -25,7 +25,7 @@ module squid::transfers {
         recipient: address,
     }
 
-    public struct ItsTransferSwapData has drop {
+    public struct ITSTransferSwapData has drop {
         swap_type: u8,
         coin_type: String,
         token_id: TokenId,
@@ -43,9 +43,9 @@ module squid::transfers {
         }
     }
 
-    fun new_its_transfer_swap_data(data: vector<u8>): ItsTransferSwapData {
+    fun new_its_transfer_swap_data(data: vector<u8>): ITSTransferSwapData {
         let mut bcs = bcs::new(data);
-        ItsTransferSwapData {
+        ITSTransferSwapData {
             swap_type: bcs.peel_u8(),
             coin_type: ascii::string(bcs.peel_vec_u8()),
             token_id: token_id::from_address(bcs.peel_address()),
@@ -111,7 +111,7 @@ module squid::transfers {
         if (data.length() == 0) return;
         let swap_data = new_its_transfer_swap_data(data);
 
-        assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
 
         assert!(
             &swap_data.coin_type == &type_name::get<T>().into_string(),
