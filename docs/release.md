@@ -28,10 +28,9 @@ git push
 ## 3. Merge the PR
 
 Once the PR is merged into the main branch, a release PR will be automatically created. This PR will:
-   - Update the CHANGELOG.md file with the changes made in the release.
-   - Bump the version number of the package.
+  - Update the `CHANGELOG.md` file with the changes made in the release.
+  - Bump the version number of the package.
 
 ## 4. Merge the Release PR
 
-When the release PR is ready, merge it. This action will trigger the [publish workflow](../.github/workflows/publish-to-npm.yaml) to publish the package to NP
-
+When the release PR is ready, merge it. This action will trigger the [publish workflow](../.github/workflows/publish-to-npm.yaml) to publish the package to NPM
