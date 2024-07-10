@@ -50,7 +50,8 @@ runs:
       shell: bash
       run: |
         sudo cp ./sui-binaries/sui /usr/local/bin/sui
-        sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
+        sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debus
+        sudo cp ./sui-binaries/sui-test-validator /usr/local/bin/sui-test-validator
 
     - name: Setup Node
       uses: actions/setup-node@v4
