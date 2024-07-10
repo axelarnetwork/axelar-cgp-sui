@@ -26,8 +26,8 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Build
-        run: npm run build
+      - name: Build Move Modules
+        run: npm run build-move
 
       - name: Test
         run: npm run test-move

@@ -27,11 +27,11 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Build
-        run: npm run build
+      - name: Build Move Modules
+        run: npm run build-move
 
       - name: Run Localnet
-        run: nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
+        run: nohup sh -c 'RUST_LOG="off" sui-test-validator' > nohup.out 2> nohup.err < /dev/null &
 
       - name: Sleep for 30 seconds
         run: sleep 30s

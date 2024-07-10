@@ -21,7 +21,7 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Build
+      - name: Build TS and Move Modules
         run: npm run build
 
       - name: Publish
