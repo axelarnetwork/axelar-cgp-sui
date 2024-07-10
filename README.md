@@ -52,6 +52,10 @@ Sui framework dependency is pinned to a specific mainnet [release](https://githu
 
 Official Sui deployment and operations scripts can be found [here](https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/sui#sui-deployment-scripts).
 
+## Release Process
+
+Please check the [release process](./docs/release.md) for more details.
+
 ## Gateway
 
 The gateway lives in a few modules but has all of its storage in a single shared object called `AxelarSigners`.
@@ -72,46 +76,46 @@ Finally, we do not want to require the payload of incoming calls to have a certa
 
 First of all, as we mentioned before, for applications to 'validate' themselves with other applications need to use a `capability` object. This object will be called `Channel`, and it will hold information about the executed contract calls as well. It has a field called `id` which specifies the 'address' of the application for the purposed of incoming and outgoing extenral calls. This `id` has to match the `id` of a shared object that is passed in the channel creation method (alongside a witness for security). This shared object can easily be querried by the relayer to get call fullfilment information. Specifically:
 
-- The shared object has to have a field called `get_call_info_object_ids` that is a `vector<address>`.
-- The module that defined the shared object type has to implement a function called `get_call_info`, which has no types, and takes the incoming call `payload` as the first argument, followed by a number of shared objects whose ids are specified by the `get_call_info_object_ids` mentioned above. This function has to return a `std::ascii::String` which is the JSON encoded call data to fullfill the contract call.
-- This calldata has the following 3 fields:
-  - `target`: the target method, in the form of `packag_iId::module_name::function_name`.
-  - `arguments`: an array of arguments that can be:
-    - `contractCall`: the `ApprovedMessage` object (see below).
-    - `pure:${info}`: a pure argument specified by `$info`.
-    - `obj:${objectId}`: a shared object with the specified `id`.
-  - `typeArguments`: a list of types to be passed to the function called
+-   The shared object has to have a field called `get_call_info_object_ids` that is a `vector<address>`.
+-   The module that defined the shared object type has to implement a function called `get_call_info`, which has no types, and takes the incoming call `payload` as the first argument, followed by a number of shared objects whose ids are specified by the `get_call_info_object_ids` mentioned above. This function has to return a `std::ascii::String` which is the JSON encoded call data to fullfill the contract call.
+-   This calldata has the following 3 fields:
+    -   `target`: the target method, in the form of `packag_iId::module_name::function_name`.
+    -   `arguments`: an array of arguments that can be:
+        -   `contractCall`: the `ApprovedMessage` object (see below).
+        -   `pure:${info}`: a pure argument specified by `$info`.
+        -   `obj:${objectId}`: a shared object with the specified `id`.
+    -   `typeArguments`: a list of types to be passed to the function called
 
 ## ITS spec
 
 The ITS on sui is supposed to be able to receive 3 messages:
 
-- Register Coin: The payload will be abi encoded data that looks like this:
-  `4`: `uint256`, fixed,
-  `tokenId`: `bytes32`, fixed,
-  `name`: `string`, variable,
-  `symbol`: `string`, variable,
-  `decimals`: `uint8`, fixed,
-  `distributor`: `bytes`, variable,
-  `mintTo`: `bytes`, variable,
-  `mintAmount`: `uint256`, variable,
-  `operator`: `bytes`, variable,
-Don't worry about the distributor and operator for now
+-   Register Coin: The payload will be abi encoded data that looks like this:
+    `4`: `uint256`, fixed,
+    `tokenId`: `bytes32`, fixed,
+    `name`: `string`, variable,
+    `symbol`: `string`, variable,
+    `decimals`: `uint8`, fixed,
+    `distributor`: `bytes`, variable,
+    `mintTo`: `bytes`, variable,
+    `mintAmount`: `uint256`, variable,
+    `operator`: `bytes`, variable,
+    Don't worry about the distributor and operator for now
 
-- Receive coin: The payload will be abi encoded data that looks like this:
-  `1`, `uint256`, fixed,
-  `tokenId`, `bytes32`, fixed,
-  `destinationAddress`, `bytes`, variable (has to be converted to address),
-  `amount`, `uint256`, fixed,
+-   Receive coin: The payload will be abi encoded data that looks like this:
+    `1`, `uint256`, fixed,
+    `tokenId`, `bytes32`, fixed,
+    `destinationAddress`, `bytes`, variable (has to be converted to address),
+    `amount`, `uint256`, fixed,
 
-- Receive coin with data: The payload will be abi encoded data that looks like this:
-  `2`, `uint256`, fixed,
-  `tokenId`, `bytes32`, fixed,
-  `destinationAddress`, bytes, variable (has to be converted to address),
-  `amount`, `uint256`, fixed,
-  `sourceChain`, `string`, variable,
-  `sourceAddress`, `bytes`, variable
-This needs to return the coin object only if called with the right capability (another channel) that proves the caller is the `destinationAddress`
+-   Receive coin with data: The payload will be abi encoded data that looks like this:
+    `2`, `uint256`, fixed,
+    `tokenId`, `bytes32`, fixed,
+    `destinationAddress`, bytes, variable (has to be converted to address),
+    `amount`, `uint256`, fixed,
+    `sourceChain`, `string`, variable,
+    `sourceAddress`, `bytes`, variable
+    This needs to return the coin object only if called with the right capability (another channel) that proves the caller is the `destinationAddress`
 
 ITS also needs to be able to send 2 calls, the call to receive coin and the call to receive coin with data, only id the right coin object is received. Since coins are only u64 some conversion might need to happen when receiving coins (decimals of 18 are too large for Sui to handle).
 
@@ -123,9 +127,9 @@ This module and the object it creates (`CoinManagement<T>`) will tell if a coin 
 
 To create a `CoinManagement` object one has to call
 
-- `mint_burn<T>`, passing in a `TreasuryCap<T>`.
-- `lock_unlock<T>`.
-- `lock_unlock_funded<T>` passing in some initial `Coin<T>` to lock.
+-   `mint_burn<T>`, passing in a `TreasuryCap<T>`.
+-   `lock_unlock<T>`.
+-   `lock_unlock_funded<T>` passing in some initial `Coin<T>` to lock.
 
 A distributor can also be added before registerring a coin (this is not completely flushed out)
 
@@ -145,4 +149,4 @@ This module is responsible for managing all of the storage needs of the ITS
 
 This is the module that anyone would directly interract with. It needs to be able to do the following
 
-- `register_coin<T>`: This function takes the `ITS` object and mutates it by adding a coin with the specified `CoinManagement<T>` and `CoinInfo<T>`.
+-   `register_coin<T>`: This function takes the `ITS` object and mutates it by adding a coin with the specified `CoinManagement<T>` and `CoinInfo<T>`.
