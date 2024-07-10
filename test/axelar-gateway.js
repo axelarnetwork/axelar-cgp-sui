@@ -5,7 +5,7 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet
 const { publishPackage, getRandomBytes32, expectRevert, expectEvent } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
-    bcsStructs: { axelarStructs },
+    bcsStructs: { gateway: axelarStructs },
 } = require('../dist/bcs');
 const { arrayify, hexlify, keccak256 } = require('ethers/lib/utils');
 const secp256k1 = require('secp256k1');
