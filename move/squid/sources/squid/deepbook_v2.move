@@ -1,6 +1,6 @@
 module squid::deepbook_v2 {
     use std::type_name;
-    use std::ascii;
+    use std::ascii::{Self, String};
 
     use sui::coin::{Self, Coin};
     use sui::clock::Clock;
@@ -25,7 +25,32 @@ module squid::deepbook_v2 {
     const EWrongCoinType: u64 = 2;
     const ENotEnoughOutput: u64 = 3;
 
-    public fun swap_base<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T1>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
+    public struct DeepbookV2SwapData has drop{
+        swap_type: u8,
+        pool_id: address,
+        has_base: bool,
+        min_output: u64,
+        base_type: String,
+        quote_type: String,
+        lot_size: u64,
+        should_sweep: bool,
+    }
+
+    fun peel_swap_data(data: vector<u8>): DeepbookV2SwapData {
+        let mut bcs = bcs::new(data);
+        DeepbookV2SwapData {
+            swap_type: bcs.peel_u8(),
+            pool_id: bcs.peel_address(),
+            has_base: bcs.peel_bool(),
+            min_output: bcs.peel_u64(),
+            base_type: ascii::string(bcs.peel_vec_u8()),
+            quote_type: ascii::string(bcs.peel_vec_u8()),
+            lot_size: bcs.peel_u64(),
+            should_sweep: bcs.peel_bool(),
+        }
+    }
+
+    fun swap_base<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T1>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
         let account = clob::create_account(ctx);
         let (base_coin, quote_coin, _) = pool.swap_exact_base_for_quote(
             0,
@@ -40,7 +65,7 @@ module squid::deepbook_v2 {
         (base_coin, quote_coin)
     }
 
-    public fun swap_quote<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T2>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
+    fun swap_quote<T1, T2>(pool: &mut Pool<T1, T2>, coin: Coin<T2>, clock: &Clock, ctx: &mut TxContext): (Coin<T1>, Coin<T2>) {
         let account = clob::create_account(ctx);
         let (base_coin, quote_coin, _) = pool.swap_exact_quote_for_base(
             0,
@@ -149,7 +174,7 @@ module squid::deepbook_v2 {
         (filled_quote_quantity, filled_base_quantity)
     }
 
-    public fun predict_base_for_quote<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
+    fun predict_base_for_quote<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
         let max_price = (1u128 << 64 - 1 as u64);
         let (prices, depths) = clob::get_level2_book_status_bid_side(pool, 0, max_price, clock);
         let mut amount_left = amount;
@@ -171,7 +196,7 @@ module squid::deepbook_v2 {
 
     }
 
-    public fun predict_quote_for_base<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
+    fun predict_quote_for_base<T1, T2>(pool: &Pool<T1, T2>, amount: u64, lot_size: u64, clock: &Clock): (u64, u64) {
         let max_price = (1u128 << 64 - 1 as u64);
         let (prices, depths) = clob::get_level2_book_status_ask_side(pool, 0, max_price, clock);
 
@@ -257,32 +282,27 @@ module squid::deepbook_v2 {
     public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, squid: &mut Squid, clock: &Clock, ctx: &mut TxContext) {
         let data = self.get_data_swapping();
         if(data.length() == 0) return;
-        let mut bcs = bcs::new(data);
+        let swap_data = peel_swap_data(data);
 
-        assert!(bcs.peel_u8() == SWAP_TYPE, EWrongSwapType);
+        assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
 
-        assert!(bcs.peel_address() == object::id_address(pool), EWrongPool);
-
-        let has_base = bcs.peel_bool();
-        let min_output = bcs.peel_u64();
+        assert!(swap_data.pool_id == object::id_address(pool), EWrongPool);
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T1>().into_string().into_bytes(),
+            &swap_data.base_type == &type_name::get<T1>().into_string(),
             EWrongCoinType,
         );
 
         assert!(
-            &bcs.peel_vec_u8() == &type_name::get<T2>().into_string().into_bytes(),
+            &swap_data.quote_type == &type_name::get<T2>().into_string(),
             EWrongCoinType,
         );
 
-        let lot_size = bcs.peel_u64();
-        let should_sweep = bcs.peel_bool();
-        if(has_base) {
+        if(swap_data.has_base) {
             let mut base_balance = self.coin_bag().get_balance<T1>().destroy_some();
-            let leftover = base_balance.value() % lot_size;
+            let leftover = base_balance.value() % swap_data.lot_size;
             if(leftover > 0) {
-                if(should_sweep) {
+                if(swap_data.should_sweep) {
                     squid.coin_bag().store_balance<T1>(
                         base_balance.split(leftover)
                     );
@@ -298,7 +318,7 @@ module squid::deepbook_v2 {
                 clock,
                 ctx,
             );
-            assert!(min_output <= quote_coin.value(), ENotEnoughOutput);
+            assert!(swap_data.min_output <= quote_coin.value(), ENotEnoughOutput);
             base_coin.destroy_zero();
             self.coin_bag().store_balance<T2>(quote_coin.into_balance());
         } else {
@@ -309,9 +329,9 @@ module squid::deepbook_v2 {
                 clock,
                 ctx,
             );
-            assert!(min_output <= base_coin.value(), ENotEnoughOutput);
+            assert!(swap_data.min_output <= base_coin.value(), ENotEnoughOutput);
             self.coin_bag().store_balance<T1>(base_coin.into_balance());
-            if(should_sweep) {
+            if(swap_data.should_sweep) {
                 squid.coin_bag().store_balance<T2>(quote_coin.into_balance());
             } else {
                 self.coin_bag().store_balance<T2>(quote_coin.into_balance());
