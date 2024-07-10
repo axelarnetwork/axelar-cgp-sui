@@ -8,8 +8,7 @@
   "files": [
     "scripts",
     "move",
-    "!move/**/dependencies/**/*.{mv,move,mvsm}",
-    "!move/**/source_maps/**/*.{mv,move,mvsm}"
+    "!move/**/build"
   ],
   "main": "index.js",
   "scripts": {
