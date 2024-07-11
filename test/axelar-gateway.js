@@ -76,12 +76,12 @@ describe('Axelar Gateway', () => {
     const minimumRotationDelay = 1000;
 
     before(async () => {
-        client = new SuiClient({ url: getFullnodeUrl('testnet') });
+        client = new SuiClient({ url: getFullnodeUrl('localnet') });
 
         await Promise.all(
             [operator, deployer, keypair].map((keypair) =>
                 requestSuiFromFaucetV0({
-                    host: getFaucetHost('testnet'),
+                    host: getFaucetHost('localnet'),
                     recipient: keypair.toSuiAddress(),
                 }),
             ),
