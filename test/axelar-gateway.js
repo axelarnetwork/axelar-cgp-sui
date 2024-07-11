@@ -5,7 +5,7 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet
 const { publishPackage, getRandomBytes32, expectRevert, expectEvent } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
-    bcsStructs: { axelarStructs },
+    bcsStructs: { gateway: { WeightedSigners, MessageToSign, Proof } },
 } = require('../dist/bcs');
 const { arrayify, hexlify, keccak256 } = require('ethers/lib/utils');
 const secp256k1 = require('secp256k1');
@@ -74,12 +74,12 @@ describe('Axelar Gateway', () => {
     const minimumRotationDelay = 1000;
 
     before(async () => {
-        client = new SuiClient({ url: getFullnodeUrl('localnet') });
+        client = new SuiClient({ url: getFullnodeUrl('testnet') });
 
         await Promise.all(
             [operator, deployer, keypair].map((keypair) =>
                 requestSuiFromFaucetV0({
-                    host: getFaucetHost('localnet'),
+                    host: getFaucetHost('testnet'),
                     recipient: keypair.toSuiAddress(),
                 }),
             ),
@@ -93,7 +93,7 @@ describe('Axelar Gateway', () => {
 
         calculateNextSigners();
 
-        const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
+        const encodedSigners = WeightedSigners.serialize(signers).toBytes();
         const builder = new TxBuilder(client);
 
         const separator = await builder.moveCall({
@@ -118,18 +118,18 @@ describe('Axelar Gateway', () => {
             const proofKeys = operatorKeys;
             calculateNextSigners();
 
-            const encodedSigners = axelarStructs.WeightedSigners.serialize(signers).toBytes();
+            const encodedSigners = WeightedSigners.serialize(signers).toBytes();
 
             const hashed = hashMessage(encodedSigners);
 
-            const message = axelarStructs.MessageToSign.serialize({
+            const message = MessageToSign.serialize({
                 domain_separator: domainSeparator,
-                signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
+                signers_hash: keccak256(WeightedSigners.serialize(proofSigners).toBytes()),
                 data_hash: hashed,
             }).toBytes();
 
             const signatures = sign(proofKeys, message);
-            const encodedProof = axelarStructs.Proof.serialize({
+            const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,
             }).toBytes();
@@ -149,7 +149,7 @@ describe('Axelar Gateway', () => {
             const proofSigners = signers;
             const proofKeys = operatorKeys;
 
-            const encodedSigners = axelarStructs.WeightedSigners.serialize({
+            const encodedSigners = WeightedSigners.serialize({
                 signers: [],
                 threshold: 2,
                 nonce: hexlify([nonce + 1]),
@@ -157,14 +157,14 @@ describe('Axelar Gateway', () => {
 
             const hashed = hashMessage(encodedSigners);
 
-            const message = axelarStructs.MessageToSign.serialize({
+            const message = MessageToSign.serialize({
                 domain_separator: domainSeparator,
-                signers_hash: keccak256(axelarStructs.WeightedSigners.serialize(proofSigners).toBytes()),
+                signers_hash: keccak256(WeightedSigners.serialize(proofSigners).toBytes()),
                 data_hash: hashed,
             }).toBytes();
 
             const signatures = sign(proofKeys, message);
-            const encodedProof = axelarStructs.Proof.serialize({
+            const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,
             }).toBytes();
