@@ -29,6 +29,7 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@mysten/sui.js": "^0.54.1",
+    "@types/tmp": "^0.2.6",
     "child_process": "^1.0.2",
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
@@ -38,16 +39,15 @@
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
-    "@types/tmp": "^0.2.6",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
+    "chai": "^4.3.7",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",
     "mocha": "^10.4.0",
     "prettier": "^2.8.7",
-    "prettier-plugin-sort-imports": "^1.8.5",
-    "chai": "^4.3.7"
+    "prettier-plugin-sort-imports": "^1.8.5"
   },
   "description": "Axelar Sui Move contracts"
 }
