@@ -6,19 +6,19 @@ module axelar_gateway::weighted_signer {
     // ---------
 
     /// Length of a public key
-    const PUBKEY_LENGTH: u64 = 33;
+    const PUB_KEY_LENGTH: u64 = 33;
 
     // -----
     // Types
     // -----
 
     public struct WeightedSigner has copy, drop, store {
-        pubkey: vector<u8>,
+        pub_key: vector<u8>,
         weight: u128,
     }
 
-    public fun pubkey(self: &WeightedSigner): vector<u8> {
-        self.pubkey
+    public fun pub_key(self: &WeightedSigner): vector<u8> {
+        self.pub_key
     }
 
     public fun weight(self: &WeightedSigner): u128 {
@@ -29,44 +29,44 @@ module axelar_gateway::weighted_signer {
     // Errors
     // ------
 
-    const EInvalidPubkeyLength: u64 = 0;
+    const EInvalidPubKeyLength: u64 = 0;
 
     // -----------------
     // Package Functions
     // -----------------
 
-    public(package) fun new(pubkey: vector<u8>, weight: u128): WeightedSigner {
-        assert!(pubkey.length() == PUBKEY_LENGTH, EInvalidPubkeyLength);
+    public(package) fun new(pub_key: vector<u8>, weight: u128): WeightedSigner {
+        assert!(pub_key.length() == PUB_KEY_LENGTH, EInvalidPubKeyLength);
 
-        WeightedSigner { pubkey, weight }
+        WeightedSigner { pub_key, weight }
     }
 
     /// Empty weighted signer
     public(package) fun default(): WeightedSigner {
-        let mut pubkey = @0x0.to_bytes();
-        pubkey.push_back(0);
+        let mut pub_key = @0x0.to_bytes();
+        pub_key.push_back(0);
 
         WeightedSigner {
-            pubkey,
+            pub_key,
             weight: 0,
         }
     }
 
     public(package) fun peel(bcs: &mut BCS): WeightedSigner {
-        let pubkey = bcs.peel_vec_u8();
+        let pub_key = bcs.peel_vec_u8();
         let weight = bcs.peel_u128();
 
-        new(pubkey, weight)
+        new(pub_key, weight)
     }
 
     /// Check if self.signer is less than other.signer as bytes
     public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
         let mut i = 0;
 
-        while (i < PUBKEY_LENGTH) {
-            if (self.pubkey[i] < other.pubkey[i]) {
+        while (i < PUB_KEY_LENGTH) {
+            if (self.pub_key[i] < other.pub_key[i]) {
                 return true
-            } else if (self.pubkey[i] > other.pubkey[i]) {
+            } else if (self.pub_key[i] > other.pub_key[i]) {
                 return false
             };
 
@@ -85,11 +85,11 @@ module axelar_gateway::weighted_signer {
         let signer = default();
 
         assert!(signer.weight == 0, 0);
-        assert!(signer.pubkey.length() == PUBKEY_LENGTH, 1);
+        assert!(signer.pub_key.length() == PUB_KEY_LENGTH, 1);
 
         let mut i = 0;
-        while (i < PUBKEY_LENGTH) {
-            assert!(signer.pubkey[i] == 0, 2);
+        while (i < PUB_KEY_LENGTH) {
+            assert!(signer.pub_key[i] == 0, 2);
             i = i + 1;
         }
     }
