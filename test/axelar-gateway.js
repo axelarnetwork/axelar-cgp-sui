@@ -26,22 +26,22 @@ describe('Axelar Gateway', () => {
 
     function calculateNextSigners() {
         operatorKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
-        const pubkeys = operatorKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
+        const pubKeys = operatorKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
         const keys = operatorKeys.map((key, index) => {
-            return { privkey: key, pubkey: pubkeys[index] };
+            return { privKey: key, pubKey: pubKeys[index] };
         });
         keys.sort((key1, key2) => {
             for (let i = 0; i < 33; i++) {
-                if (key1.pubkey[i] < key2.pubkey[i]) return -1;
-                if (key1.pubkey[i] > key2.pubkey[i]) return 1;
+                if (key1.pubKey[i] < key2.pubKey[i]) return -1;
+                if (key1.pubKey[i] > key2.pubKey[i]) return 1;
             }
 
             return 0;
         });
-        operatorKeys = keys.map((key) => key.privkey);
+        operatorKeys = keys.map((key) => key.privKey);
         signers = {
             signers: keys.map((key) => {
-                return { pubkey: key.pubkey, weight: 1 };
+                return { pub_key: key.pubKey, weight: 1 };
             }),
             threshold: 2,
             nonce: hexlify([++nonce]),
