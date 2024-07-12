@@ -243,19 +243,25 @@ class TxBuilder {
         });
     }
 
-    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
+    async getContractBuild(packageName: string, moveDir: string = `${__dirname}/../move`) {
         updateMoveToml(packageName, '0x0', moveDir);
 
         tmp.setGracefulCleanup();
 
         const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
-        const { modules, dependencies } = JSON.parse(
+        const { modules, dependencies, digest } = JSON.parse(
             execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpobj.name}`, {
                 encoding: 'utf-8',
                 stdio: 'pipe', // silent the output
             }),
         );
+
+        return { modules, dependencies, digest };
+    }
+
+    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
+        const { modules, dependencies } = await this.getContractBuild(packageName, moveDir);
 
         return this.tx.publish({
             modules,
