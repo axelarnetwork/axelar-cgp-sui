@@ -159,9 +159,9 @@ module axelar_gateway::auth {
         let mut i = 0;
 
         while (i < signatures_length) {
-            let pubkey = signatures[i].recover_pubkey(&message);
+            let pub_key = signatures[i].recover_pub_key(&message);
 
-            while (signer_index < signers_length && signers.signers()[signer_index].pubkey() != pubkey) {
+            while (signer_index < signers_length && signers.signers()[signer_index].pub_key() != pub_key) {
                 signer_index = signer_index + 1;
             };
 

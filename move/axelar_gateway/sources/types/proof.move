@@ -53,7 +53,7 @@ module axelar_gateway::proof {
     }
 
     /// Recover the public key from an EVM recoverable signature, using keccak256 as the hash function
-    public(package) fun recover_pubkey(self: &Signature, message: &vector<u8>): vector<u8> {
+    public(package) fun recover_pub_key(self: &Signature, message: &vector<u8>): vector<u8> {
         ecdsa::secp256k1_ecrecover(&self.bytes, message, 0)
     }
 
