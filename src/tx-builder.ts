@@ -194,7 +194,7 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     return isAsciiString || isStringString;
 }
 
-class TxBuilder {
+export class TxBuilder {
     client: SuiClient;
     tx: TransactionBlock;
     constructor(client: SuiClient) {
@@ -311,7 +311,3 @@ class TxBuilder {
         return result;
     }
 }
-
-module.exports = {
-    TxBuilder,
-};

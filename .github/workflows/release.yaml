@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Check for changeset files
+        id: checkfile
+        run: |
+          if ls .changeset/*.md | grep '\.changeset\/[a-z-]\+\.md$'; then
+            echo "has_file=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_file=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release Pull Request
+        if: steps.checkfile.outputs.has_file == 'true'
+        uses: changesets/action@v1
+        with:
+          title: 'chore: update versions'
+          commit: 'chore: update versions'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
