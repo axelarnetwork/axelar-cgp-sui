@@ -14,7 +14,7 @@ function getAxelarStructs() {
     });
 
     const WeightedSigner = bcs.struct('WeightedSigner', {
-        pubkey: bcs.vector(bcs.U8),
+        pub_key: bcs.vector(bcs.U8),
         weight: bcs.U128,
     });
 
