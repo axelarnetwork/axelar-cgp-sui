@@ -36,7 +36,6 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@mysten/sui.js": "^0.54.1",
-    "@types/tmp": "^0.2.6",
     "child_process": "^1.0.2",
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
@@ -48,6 +47,7 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
+    "@types/tmp": "^0.2.6",
     "chai": "^4.3.7",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
