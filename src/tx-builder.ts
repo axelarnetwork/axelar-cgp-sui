@@ -11,7 +11,7 @@ import {
 } from '@mysten/sui.js/client';
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
 import { TransactionBlock, TransactionObjectInput, TransactionResult } from '@mysten/sui.js/transactions';
-import { utils as ethersUtils } from 'ethers';
+import { Bytes, utils as ethersUtils } from 'ethers';
 import tmp from 'tmp';
 import { updateMoveToml } from './utils';
 
@@ -243,7 +243,10 @@ class TxBuilder {
         });
     }
 
-    async getContractBuild(packageName: string, moveDir: string = `${__dirname}/../move`) {
+    async getContractBuild(
+        packageName: string,
+        moveDir: string = `${__dirname}/../move`,
+    ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
         updateMoveToml(packageName, '0x0', moveDir);
 
         tmp.setGracefulCleanup();
