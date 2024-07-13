@@ -36,6 +36,7 @@ runs:
         mkdir -p sui-binaries
         mv ./sui ./sui-binaries/
         mv ./sui-debug ./sui-binaries/
+        mv ./sui-test-validator ./sui-binaries/
         rm -rf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
 
     - name: Save Sui binaries
