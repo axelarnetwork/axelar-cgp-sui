@@ -11,7 +11,7 @@ import {
 } from '@mysten/sui.js/client';
 import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
 import { TransactionBlock, TransactionObjectInput, TransactionResult } from '@mysten/sui.js/transactions';
-import { utils as ethersUtils } from 'ethers';
+import { Bytes, utils as ethersUtils } from 'ethers';
 import tmp from 'tmp';
 import { updateMoveToml } from './utils';
 
@@ -243,19 +243,28 @@ export class TxBuilder {
         });
     }
 
-    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
+    async getContractBuild(
+        packageName: string,
+        moveDir: string = `${__dirname}/../move`,
+    ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
         updateMoveToml(packageName, '0x0', moveDir);
 
         tmp.setGracefulCleanup();
 
         const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
-        const { modules, dependencies } = JSON.parse(
+        const { modules, dependencies, digest } = JSON.parse(
             execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpobj.name}`, {
                 encoding: 'utf-8',
                 stdio: 'pipe', // silent the output
             }),
         );
+
+        return { modules, dependencies, digest };
+    }
+
+    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
+        const { modules, dependencies } = await this.getContractBuild(packageName, moveDir);
 
         return this.tx.publish({
             modules,
