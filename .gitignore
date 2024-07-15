@@ -69,5 +69,4 @@ target/
 *.pdb
 
 # dist and move_compile
-dist
-move_comile
+move_compile
