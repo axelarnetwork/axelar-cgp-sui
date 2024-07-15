@@ -5,17 +5,24 @@
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
   },
+  "files": [
+    "dist",
+    "move",
+    "!move/**/build",
+    "!move/**/test"
+  ],
   "main": "dist/index.js",
   "scripts": {
-    "build": "./scripts/run.sh build",
+    "build-move": "./scripts/run.sh build",
+    "build-ts": "tsc",
+    "build": "npm run build-move && npm run build-ts",
     "test-move": "./scripts/run.sh test",
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
+    "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/*.ts' './test/*.js'",
-    "compile": "npx tsc",
-    "postinstall": "npm run compile"
+    "prettier": "prettier --write './src/*.ts' './test/*.js'"
   },
   "keywords": [
     "axelar",
@@ -29,25 +36,26 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@mysten/sui.js": "^0.54.1",
-    "@types/tmp": "^0.2.6",
     "child_process": "^1.0.2",
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
     "secp256k1": "^5.0.0",
-    "tmp": "^0.2.1",
-    "typescript": "^5.3.3"
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.6",
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
+    "@types/tmp": "^0.2.6",
     "chai": "^4.3.7",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",
     "mocha": "^10.4.0",
     "prettier": "^2.8.7",
-    "prettier-plugin-sort-imports": "^1.8.5"
+    "prettier-plugin-sort-imports": "^1.8.5",
+    "typescript": "^5.5.3"
   },
   "description": "Axelar Sui Move contracts"
 }

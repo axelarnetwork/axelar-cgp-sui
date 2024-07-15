@@ -52,6 +52,10 @@ Sui framework dependency is pinned to a specific mainnet [release](https://githu
 
 Official Sui deployment and operations scripts can be found [here](https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/sui#sui-deployment-scripts).
 
+## Release Process
+
+Please check the [release process](./docs/release.md) for more details.
+
 ## Gateway
 
 The gateway lives in a few modules but has all of its storage in a single shared object called `AxelarSigners`.
