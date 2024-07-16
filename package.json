@@ -42,14 +42,14 @@
     "ethers": "^5.0.0",
     "fs": "^0.0.1-security",
     "secp256k1": "^5.0.0",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "@types/tmp": "^0.2.6"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.6",
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
-    "@types/tmp": "^0.2.6",
     "chai": "^4.3.7",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
