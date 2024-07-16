@@ -9,6 +9,7 @@
     "dist",
     "move",
     "src",
+    "tsconfig.json",
     "!move/**/build",
     "!move/**/test"
   ],
