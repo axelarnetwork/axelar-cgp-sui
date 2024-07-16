@@ -76,6 +76,14 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
     fs.writeFileSync(path, toml);
 }
 
+export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
+    if (fromDir == null) {
+        fromDir = `${__dirname}/../move`;
+    }
+
+    fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
+}
+
 export function parseEnv(arg: string) {
     switch (arg?.toLowerCase()) {
         case 'localnet':
