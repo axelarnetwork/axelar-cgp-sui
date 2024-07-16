@@ -24,8 +24,7 @@
     "coverage": "./scripts/coverage.sh",
     "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/*.ts' './test/*.js'",
-    "postinstall": "npm run build-ts"
+    "prettier": "prettier --write './src/*.ts' './test/*.js'"
   },
   "keywords": [
     "axelar",
