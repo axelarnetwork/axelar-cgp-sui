@@ -77,11 +77,11 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
-    if(fromDir == null) {
-        fromDir = `${__dirname}/../move`
+    if (fromDir == null) {
+        fromDir = `${__dirname}/../move`;
     }
 
-    fs.cpSync(`${fromDir}/${packageName}`,`${toDir}/${packageName}`, {recursive: true});
+    fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
 export function parseEnv(arg: string) {
