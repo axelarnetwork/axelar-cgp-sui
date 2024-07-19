@@ -128,6 +128,7 @@ module axelar_gateway::gateway {
         operator: address,
         domain_separator: Bytes32,
         minimum_rotation_delay: u64,
+        previous_signers_retention: u64,
         initial_signers: vector<u8>,
         clock: &Clock,
         ctx: &mut TxContext
@@ -139,7 +140,7 @@ module axelar_gateway::gateway {
             id: object::new(ctx),
             operator,
             messages: table::new(ctx),
-            signers: auth::setup(domain_separator, minimum_rotation_delay, peel_weighted_signers(initial_signers), clock, ctx),
+            signers: auth::setup(domain_separator, minimum_rotation_delay, previous_signers_retention, peel_weighted_signers(initial_signers), clock, ctx),
         };
 
         // Share the gateway object for anyone to use.

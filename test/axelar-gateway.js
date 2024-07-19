@@ -20,6 +20,7 @@ describe('Axelar Gateway', () => {
     const deployer = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const keypair = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const domainSeparator = getRandomBytes32();
+    const network = process.env.NETWORK || 'localnet';
     let operatorKeys;
     let signers;
     let nonce = 0;
@@ -74,14 +75,15 @@ describe('Axelar Gateway', () => {
     }
 
     const minimumRotationDelay = 1000;
+    const previousSignersRetention = 15;
 
     before(async () => {
-        client = new SuiClient({ url: getFullnodeUrl('localnet') });
+        client = new SuiClient({ url: getFullnodeUrl(network) });
 
         await Promise.all(
             [operator, deployer, keypair].map((keypair) =>
                 requestSuiFromFaucetV0({
-                    host: getFaucetHost('localnet'),
+                    host: getFaucetHost(network),
                     recipient: keypair.toSuiAddress(),
                 }),
             ),
@@ -105,7 +107,7 @@ describe('Axelar Gateway', () => {
 
         await builder.moveCall({
             target: `${packageId}::gateway::setup`,
-            arguments: [creatorCap, operator.toSuiAddress(), separator, minimumRotationDelay, encodedSigners, '0x6'],
+            arguments: [creatorCap, operator.toSuiAddress(), separator, minimumRotationDelay, previousSignersRetention, encodedSigners, '0x6'],
         });
 
         result = await builder.signAndExecute(deployer);
