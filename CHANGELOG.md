@@ -5,10 +5,8 @@
 ### Minor Changes
 
 -   b1f9ca6: added previous signer retention in gateway setup
-
-    added move source copy util to avoid modifying sources in place
-
-    added move package build util
+-   7441218: move source copy util to avoid modifying sources in place
+-   2dc62d0: move package build util
 
 ### Patch Changes
 
