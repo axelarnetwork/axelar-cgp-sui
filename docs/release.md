@@ -31,6 +31,8 @@ Once the PR is merged into the main branch, a release PR will be automatically c
   - Update the `CHANGELOG.md` file with the changes made in the release.
   - Bump the version number of the package.
 
-## 4. Merge the Release PR
+If everything looks good, merge the release PR into the main branch.
 
-When the release PR is ready, merge it. This action will trigger the [publish workflow](../.github/workflows/publish-to-npm.yaml) to publish the package to NPM
+## 4. Publish to NPM
+
+Create a new release on GitHub. Then, the [publish-to-npm workflow](../.github/workflows/publish-to-npm.yaml) will automatically publish the new version to NPM.
