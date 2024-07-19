@@ -250,7 +250,7 @@ export class TxBuilder {
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
     ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        const emptyPackageId = '0x0'
+        const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
         tmp.setGracefulCleanup();
