@@ -13,6 +13,7 @@ const { arrayify, hexlify, keccak256 } = require('ethers/lib/utils');
 const secp256k1 = require('secp256k1');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
+const clock = '0x6';
 
 describe('Axelar Gateway', () => {
     let client;
@@ -114,7 +115,7 @@ describe('Axelar Gateway', () => {
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
-                '0x6',
+                clock,
             ],
         });
 
@@ -150,7 +151,7 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
-                arguments: [gateway, '0x6', encodedSigners, encodedProof],
+                arguments: [gateway, clock, encodedSigners, encodedProof],
             });
 
             await builder.signAndExecute(keypair);
@@ -185,7 +186,7 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
-                arguments: [gateway, '0x6', encodedSigners, encodedProof],
+                arguments: [gateway, clock, encodedSigners, encodedProof],
             });
 
             await expectRevert(builder, keypair, {

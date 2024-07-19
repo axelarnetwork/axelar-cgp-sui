@@ -4,6 +4,9 @@ const {
     utils: { arrayify, hexlify },
 } = require('ethers');
 
+const stdPackage = '0x1';
+const suiPackage = '0x2';
+
 function getObject(tx, object) {
     if (Array.isArray(object)) {
         object = hexlify(object);
@@ -115,7 +118,7 @@ function isTxContext(parameter) {
     if (!parameter) return false;
     parameter = parameter.Struct;
     if (!parameter) return false;
-    return parameter.address === '0x2' && parameter.module === 'tx_context' && parameter.name === 'TxContext';
+    return parameter.address === suiPackage && parameter.module === 'tx_context' && parameter.name === 'TxContext';
 }
 
 function isString(parameter) {
@@ -127,8 +130,8 @@ function isString(parameter) {
 
     if (!parameter) return false;
 
-    const isAsciiString = parameter.address === '0x1' && parameter.module === 'ascii' && parameter.name === 'String';
-    const isStringString = parameter.address === '0x1' && parameter.module === 'string' && parameter.name === 'String';
+    const isAsciiString = parameter.address === stdPackage && parameter.module === 'ascii' && parameter.name === 'String';
+    const isStringString = parameter.address === stdPackage && parameter.module === 'string' && parameter.name === 'String';
 
     return isAsciiString || isStringString;
 }
