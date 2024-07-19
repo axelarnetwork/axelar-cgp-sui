@@ -59,6 +59,7 @@ runs:
       with:
         node-version: 18
         cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
       shell: bash

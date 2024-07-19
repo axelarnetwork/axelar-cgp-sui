@@ -68,6 +68,5 @@ target/
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-# dist and move_compile
-dist
-move_comile
+# move_compile
+move_compile/

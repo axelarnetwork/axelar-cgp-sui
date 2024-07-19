@@ -22,12 +22,6 @@ module axelar_gateway::auth {
     const EMalformedSigners: u64 = 5;
     const EInvalidEpoch: u64 = 6;
 
-    // ---------
-    // Constants
-    // ---------
-    /// Used for a check in `validate_proof_old` function.
-    const PREVIOUS_KEY_RETENTION: u64 = 16;
-
     // -----
     // Types
     // -----
@@ -40,8 +34,10 @@ module axelar_gateway::auth {
         domain_separator: Bytes32,
         /// Minimum rotation delay.
         minimum_rotation_delay: u64,
-        /// Timestamp of the last rotation
+        /// Timestamp of the last rotation.
         last_rotation_timestamp: u64,
+        /// Number of previous signers retained (latest signer isn't included in the count).
+        previous_signers_retention: u64,
     }
 
     public struct MessageToSign has copy, drop, store {
@@ -70,12 +66,14 @@ module axelar_gateway::auth {
             domain_separator: bytes32::default(),
             minimum_rotation_delay: 0,
             last_rotation_timestamp: 0,
+            previous_signers_retention: 0,
         }
     }
 
     public(package) fun setup(
         domain_separator: Bytes32,
         minimum_rotation_delay: u64,
+        previous_signers_retention: u64,
         initial_signers: WeightedSigners,
         clock: &Clock,
         ctx: &mut TxContext,
@@ -86,6 +84,7 @@ module axelar_gateway::auth {
             domain_separator,
             minimum_rotation_delay,
             last_rotation_timestamp: 0,
+            previous_signers_retention,
         };
 
         signers.rotate_signers(clock, initial_signers, false);
@@ -104,7 +103,7 @@ module axelar_gateway::auth {
         let current_epoch = self.epoch;
         let is_latest_signers = current_epoch == signers_epoch;
 
-        assert!(signers_epoch != 0 && (current_epoch - signers_epoch) <= PREVIOUS_KEY_RETENTION, EInvalidEpoch);
+        assert!(signers_epoch != 0 && (current_epoch - signers_epoch) <= self.previous_signers_retention, EInvalidEpoch);
 
         let message = MessageToSign {
             domain_separator: self.domain_separator,
