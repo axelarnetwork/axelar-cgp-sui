@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
--   5e28d52: Update to the new Sui SDK
+-   5e28d52: Update to the Sui Typescript SDK v1
 
 ### Patch Changes
 
