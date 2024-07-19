@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
+import { getFullnodeUrl } from '@mysten/sui/client';
 
 export function getModuleNameFromSymbol(symbol: string) {
     function isNumber(char: string) {

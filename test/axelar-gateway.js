@@ -1,7 +1,7 @@
-const { SuiClient, getFullnodeUrl } = require('@mysten/sui.js/client');
-const { Ed25519Keypair } = require('@mysten/sui.js/keypairs/ed25519');
-const { Secp256k1Keypair } = require('@mysten/sui.js/keypairs/secp256k1');
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui.js/faucet');
+const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
+const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
+const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
+const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const { publishPackage, getRandomBytes32, expectRevert, expectEvent } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {

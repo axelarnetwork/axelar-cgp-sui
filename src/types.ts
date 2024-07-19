@@ -1,4 +1,4 @@
-const { bcs } = require('@mysten/sui.js/bcs');
+const { bcs } = require('@mysten/sui/bcs');
 const { fromHEX, toHEX } = require('@mysten/bcs');
 
 export const UID = bcs.fixedArray(32, bcs.u8()).transform({
