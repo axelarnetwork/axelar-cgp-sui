@@ -107,7 +107,15 @@ describe('Axelar Gateway', () => {
 
         await builder.moveCall({
             target: `${packageId}::gateway::setup`,
-            arguments: [creatorCap, operator.toSuiAddress(), separator, minimumRotationDelay, previousSignersRetention, encodedSigners, '0x6'],
+            arguments: [
+                creatorCap,
+                operator.toSuiAddress(),
+                separator,
+                minimumRotationDelay,
+                previousSignersRetention,
+                encodedSigners,
+                '0x6',
+            ],
         });
 
         result = await builder.signAndExecute(deployer);
