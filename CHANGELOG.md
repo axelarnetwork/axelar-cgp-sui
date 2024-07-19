@@ -1,5 +1,15 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.3.0
+
+### Minor Changes
+
+-   5e28d52: Update to the new Sui SDK
+
+### Patch Changes
+
+-   5c829ce: Remove all hardcoded addresses
+
 ## 0.2.0
 
 ### Minor Changes
