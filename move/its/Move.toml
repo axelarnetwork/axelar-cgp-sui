@@ -1,7 +1,6 @@
 [package]
 name = "ITS"
 version = "0.1.0"
-published-at = "0x89967fea5cc3bdf2d44cabe901aca920aa2a0485ca9a479f9932814c55d5f9b3"
 edition = "2024.beta"
 
 [dependencies]
@@ -10,4 +9,4 @@ AxelarGateway = { local = "../axelar_gateway" }
 Governance = { local = "../governance" }
 
 [addresses]
-its = "0x89967fea5cc3bdf2d44cabe901aca920aa2a0485ca9a479f9932814c55d5f9b3"
+its = "0x0"

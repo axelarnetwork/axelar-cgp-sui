@@ -1,7 +1,6 @@
 [package]
 name = "Squid"
 version = "0.1.0"
-published-at = "0x742acc52f94b86d3a2a4fdc39b1e0d75812f05253f88443754326c1e31cae873"
 edition = "2024.beta"
 
 [dependencies]
@@ -11,4 +10,4 @@ AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 
 [addresses]
-squid = "0x742acc52f94b86d3a2a4fdc39b1e0d75812f05253f88443754326c1e31cae873"
+squid = "0x0"

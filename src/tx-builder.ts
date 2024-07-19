@@ -15,6 +15,9 @@ import { Bytes, utils as ethersUtils } from 'ethers';
 import tmp from 'tmp';
 import { updateMoveToml } from './utils';
 
+const stdPackage = '0x1';
+const suiPackage = '0x2';
+
 const { arrayify, hexlify } = ethersUtils;
 
 const objectCache = {} as { [id in string]: SuiObjectChange };
@@ -179,7 +182,7 @@ function isTxContext(parameter: SuiMoveNormalizedType): boolean {
         return false;
     }
 
-    return inside.address === '0x2' && inside.module === 'tx_context' && inside.name === 'TxContext';
+    return inside.address === suiPackage && inside.module === 'tx_context' && inside.name === 'TxContext';
 }
 
 function isString(parameter: SuiMoveNormalizedType): boolean {
@@ -189,8 +192,8 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     if (asAny.Reference) asAny = asAny.Reference;
     asAny = asAny.Struct;
     if (!asAny) return false;
-    const isAsciiString = asAny.address === '0x1' && asAny.module === 'ascii' && asAny.name === 'String';
-    const isStringString = asAny.address === '0x1' && asAny.module === 'string' && asAny.name === 'String';
+    const isAsciiString = asAny.address === stdPackage && asAny.module === 'ascii' && asAny.name === 'String';
+    const isStringString = asAny.address === stdPackage && asAny.module === 'string' && asAny.name === 'String';
     return isAsciiString || isStringString;
 }
 
@@ -247,7 +250,8 @@ export class TxBuilder {
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
     ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        updateMoveToml(packageName, '0x0', moveDir);
+        const emptyPackageId = '0x0'
+        updateMoveToml(packageName, emptyPackageId, moveDir);
 
         tmp.setGracefulCleanup();
 
