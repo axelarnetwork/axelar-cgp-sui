@@ -1,4 +1,4 @@
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@mysten/sui/bcs';
 
 function getAxelarStructs() {
     const Bytes32 = bcs.Address;

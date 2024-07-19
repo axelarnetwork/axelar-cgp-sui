@@ -8,9 +8,9 @@ import {
     SuiObjectChange,
     SuiTransactionBlockResponse,
     SuiTransactionBlockResponseOptions,
-} from '@mysten/sui.js/client';
-import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
-import { TransactionBlock, TransactionObjectInput, TransactionResult } from '@mysten/sui.js/transactions';
+} from '@mysten/sui/client';
+import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
+import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
 import tmp from 'tmp';
 import { updateMoveToml } from './utils';
@@ -32,7 +32,7 @@ function updateCache(objectChanges: SuiObjectChange[]) {
     }
 }
 
-function getObject(tx: TransactionBlock, object: TransactionObjectInput): TransactionObjectInput {
+function getObject(tx: Transaction, object: TransactionObjectInput): TransactionObjectInput {
     if (Array.isArray(object)) {
         object = hexlify(object);
     }
@@ -78,7 +78,7 @@ function getTypeName(type: SuiMoveNormalizedType): string {
     return (type as string).toLowerCase();
 }
 
-function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput): null | TransactionObjectInput {
+function getNestedStruct(tx: Transaction, type: SuiMoveNormalizedType, arg: TransactionObjectInput): null | TransactionObjectInput {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = type as any;
 
@@ -105,12 +105,12 @@ function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg:
     const typeName = getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector);
     return tx.makeMoveVec({
         type: typeName,
-        objects: nested,
+        elements: nested,
     });
 }
 
 function serialize(
-    tx: TransactionBlock,
+    tx: Transaction,
     type: SuiMoveNormalizedType,
     arg: TransactionObjectInput,
 ):
@@ -199,10 +199,10 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
 
 export class TxBuilder {
     client: SuiClient;
-    tx: TransactionBlock;
+    tx: Transaction;
     constructor(client: SuiClient) {
         this.client = client;
-        this.tx = new TransactionBlock();
+        this.tx = new Transaction();
     }
 
     async moveCall(moveCallInfo: {
@@ -283,8 +283,8 @@ export class TxBuilder {
     }
 
     async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions): Promise<SuiTransactionBlockResponse> {
-        let result = await this.client.signAndExecuteTransactionBlock({
-            transactionBlock: this.tx,
+        let result = await this.client.signAndExecuteTransaction({
+            transaction: this.tx,
             signer: keypair,
             options: {
                 showEffects: true,
