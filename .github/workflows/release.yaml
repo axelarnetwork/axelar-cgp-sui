@@ -1,12 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  SUI_VERSION: mainnet-v1.25.3
 
 jobs:
   release:
@@ -15,16 +15,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        shell: bash
-        run: npm ci
 
       - name: Check for changeset files
         id: checkfile
@@ -35,11 +25,19 @@ jobs:
             echo "has_file=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Setup Sui CLI and install dependencies
+        uses: ./.github/actions/install
+        with:
+          SUI_VERSION: ${{ env.SUI_VERSION }}
+
       - name: Create Release Pull Request
         if: steps.checkfile.outputs.has_file == 'true'
         uses: changesets/action@v1
         with:
-          title: 'chore: update versions'
-          commit: 'chore: update versions'
+          title: 'release: bump version and publish to npm'
+          commit: 'chore: bump version and update changelog'
+          publish: npm run release
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
