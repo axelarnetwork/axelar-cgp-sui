@@ -30,7 +30,8 @@ git push
 
 Once the PR is merged into the main branch, a release PR will be automatically created. This PR will:
 
--   Update the `CHANGELOG.md` file with the changes made in the release.
--   Bump the version number of the package.
--   Publish the package to NPM.
--   Create a new GitHub release.
+
+- Update the `CHANGELOG.md` file with the changes made in the release.
+- Bump the version number of the package.
+- Publish the package to NPM.
+- Create a new GitHub release.
