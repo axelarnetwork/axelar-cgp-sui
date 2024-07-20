@@ -11,9 +11,10 @@ npm run cs
 ```
 
 You will be prompted to specify the type of changes you are making. Choose from the following options:
-- `patch`: bug fixes, documentation updates, etc.
-- `minor`: new features, non-breaking changes, etc.
-- `major`: breaking changes, etc.
+
+-   `patch`: bug fixes, documentation updates, etc.
+-   `minor`: new features, non-breaking changes, etc.
+-   `major`: breaking changes, etc.
 
 Next, you will be prompted to enter a summary of the changes you made. This will be used to generate the release notes in the `CHANGELOG.md` file.
 
@@ -28,11 +29,8 @@ git push
 ## 3. Merge the PR
 
 Once the PR is merged into the main branch, a release PR will be automatically created. This PR will:
-  - Update the `CHANGELOG.md` file with the changes made in the release.
-  - Bump the version number of the package.
 
-If everything looks good, merge the release PR into the main branch.
-
-## 4. Publish to NPM
-
-Create a new release on GitHub. Then, the [publish-to-npm workflow](../.github/workflows/publish-to-npm.yaml) will automatically publish the new version to NPM.
+-   Update the `CHANGELOG.md` file with the changes made in the release.
+-   Bump the version number of the package.
+-   Publish the package to NPM.
+-   Create a new GitHub release.
