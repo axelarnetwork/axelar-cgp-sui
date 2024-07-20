@@ -32,16 +32,13 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Build TS and Move Modules
-        run: npm run build
-
       - name: Create Release Pull Request
         if: steps.checkfile.outputs.has_file == 'true'
         uses: changesets/action@v1
         with:
           title: 'release: bump version and publish to npm'
           commit: 'chore: bump version and update changelog'
-          publish: npm publish
+          publish: npm run release
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
