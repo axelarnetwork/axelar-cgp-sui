@@ -16,15 +16,6 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Check for changeset files
-        id: checkfile
-        run: |
-          if ls .changeset/*.md | grep '\.changeset\/[a-z-]\+\.md$'; then
-            echo "has_file=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_file=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Setup Sui CLI and install dependencies
         uses: ./.github/actions/install
         with:
