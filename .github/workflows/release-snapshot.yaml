@@ -30,11 +30,14 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Set snapshot version
+      - name: Build TS and SUI modules
+        run: npm run build
+
+      - name: Set Snapshot Version
         run: |
           npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false
 
-      - name: Publish snapshots to NPM
+      - name: Publish Snapshot to NPM
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
           npm publish --no-git-checks --tag snapshot --access public
