@@ -1,0 +1,35 @@
+name: Release Snapshot
+
+on:
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  SUI_VERSION: mainnet-v1.25.3
+
+jobs:
+  release-snapshot:
+    name: Release Snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Sui CLI and install dependencies
+        uses: ./.github/actions/install
+        with:
+          SUI_VERSION: ${{ env.SUI_VERSION }}
+
+      - name: Build TS and SUI modules
+        run: npm run build
+
+      - name: Set Snapshot Version
+        run: |
+          npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false
+
+      - name: Publish Snapshot to NPM
+        run: |
+          npm publish --no-git-checks --tag snapshot --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
