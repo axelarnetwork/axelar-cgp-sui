@@ -60,4 +60,17 @@ module axelar_gateway::weighted_signers {
     public(package) fun hash(self: &WeightedSigners): Bytes32 {
         bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
     }
+
+    #[test_only]
+    public fun new_for_testing(
+        signers: vector<WeightedSigner>,
+        threshold: u128,
+        nonce: Bytes32,
+    ): WeightedSigners {
+        WeightedSigners {
+            signers,
+            threshold,
+            nonce,
+        }
+    }
 }

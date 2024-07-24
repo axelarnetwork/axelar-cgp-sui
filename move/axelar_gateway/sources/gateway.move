@@ -353,4 +353,82 @@ module axelar_gateway::gateway {
             message: *message,
         });
     }
+
+    #[test]
+    fun test_setup() {
+        let ctx = &mut sui::tx_context::dummy();
+        let operator = @123456;
+        let domain_separator = bytes32::new(@789012);
+        let minimum_rotation_delay = 765;
+        let previous_signers_retention = 650;
+        let pub_key = vector[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+        let signer = axelar_gateway::weighted_signer::new(pub_key, 123);
+        let nonce = bytes32::new(@3456);
+        let initial_signers = axelar_gateway::weighted_signers::new_for_testing(vector[signer], 100, nonce);
+        let mut clock = sui::clock::create_for_testing(ctx);
+        let timestamp = 1234;
+        clock.increment_for_testing(timestamp);
+
+        let creator_cap = CreatorCap {
+            id: object::new(ctx),
+        };
+
+        let mut scenario = sui::test_scenario::begin(@0x1);
+
+        setup(
+            creator_cap,
+            operator,
+            domain_separator,
+            minimum_rotation_delay,
+            previous_signers_retention,
+            bcs::to_bytes(&initial_signers),
+            &clock,
+            scenario.ctx(),
+        );
+
+        let tx_effects = scenario.next_tx(@0x1);
+
+        let shared = tx_effects.shared();
+
+
+        assert!(shared.length() == 1, 0);
+
+        let gateway_id = shared[0];
+
+        let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
+
+        let Gateway {
+            id,
+            operator: operator_result,
+            messages,
+            signers,
+        } =  { gateway };
+
+        id.delete();
+        assert!(operator == operator_result, 1);
+
+        messages.destroy_empty();
+
+        let (
+            epoch,
+            mut epoch_by_signers_hash,
+            domain_separator_result,
+            minimum_rotation_delay_result,
+            last_rotation_timestamp,
+            previous_signers_retention_result,
+        ) = signers.destroy_for_testing();
+
+        assert!(epoch == 1, 2);
+        let signer_epoch = epoch_by_signers_hash.remove(initial_signers.hash());
+        assert!(signer_epoch == 1, 3);
+        epoch_by_signers_hash.destroy_empty();
+        assert!(domain_separator == domain_separator_result, 4);
+        assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
+        assert!(last_rotation_timestamp == timestamp, 6);
+        assert!(previous_signers_retention == previous_signers_retention_result, 7);
+        
+
+        clock.destroy_for_testing();
+        scenario.end();
+    }
 }

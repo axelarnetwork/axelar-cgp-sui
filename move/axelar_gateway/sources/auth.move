@@ -211,4 +211,31 @@ module axelar_gateway::auth {
 
         self.last_rotation_timestamp = current_timestamp;
     }
+
+    #[test_only]
+    public fun destroy_for_testing(signers: AxelarSigners): (
+        u64,
+        Table<Bytes32, u64>,
+        Bytes32,
+        u64,
+        u64,
+        u64,
+    ) {
+        let AxelarSigners {        
+            epoch,
+            epoch_by_signers_hash,
+            domain_separator,
+            minimum_rotation_delay,
+            last_rotation_timestamp,
+            previous_signers_retention,
+        } = signers;
+        (
+            epoch,
+            epoch_by_signers_hash,
+            domain_separator,
+            minimum_rotation_delay,
+            last_rotation_timestamp,
+            previous_signers_retention,
+        )
+    }
 }
