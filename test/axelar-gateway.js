@@ -2,7 +2,16 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const { publishPackage, getRandomBytes32, expectRevert, expectEvent, approveContractCall, hashMessage, signMessage, approveAndExecuteContractCall } = require('./utils');
+const {
+    publishPackage,
+    getRandomBytes32,
+    expectRevert,
+    expectEvent,
+    approveContractCall,
+    hashMessage,
+    signMessage,
+    approveAndExecuteContractCall,
+} = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: {
@@ -76,7 +85,7 @@ describe('Axelar Gateway', () => {
         packageId = result.packageId;
         const creatorCap = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
-        ).objectId;        
+        ).objectId;
         discovery = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${packageId}::discovery::RelayerDiscovery`,
         ).objectId;
@@ -231,14 +240,13 @@ describe('Axelar Gateway', () => {
         });
 
         it('Approve Contract Call', async () => {
-
             const message = {
                 source_chain: 'Ethereum',
                 message_id: 'Message Id',
                 source_address: 'Source Address',
                 destination_id: keccak256(defaultAbiCoder.encode(['string'], ['destination'])),
                 payload_hash: keccak256(defaultAbiCoder.encode(['string'], ['payload hash'])),
-            }
+            };
 
             await approveContractCall(client, keypair, gatewayInfo, message);
 
@@ -246,30 +254,17 @@ describe('Axelar Gateway', () => {
 
             const payloadHash = await builder.moveCall({
                 target: `${packageId}::bytes32::new`,
-                arguments: [
-                    message.payload_hash,
-                ],
+                arguments: [message.payload_hash],
             });
-    
+
             await builder.moveCall({
                 target: `${packageId}::gateway::is_message_approved`,
-                arguments: [
-                    gateway,
-                    message.source_chain,
-                    message.message_id,
-                    message.source_address,
-                    message.destination_id,
-                    payloadHash,
-                ],
+                arguments: [gateway, message.source_chain, message.message_id, message.source_address, message.destination_id, payloadHash],
             });
 
             await builder.moveCall({
                 target: `${packageId}::gateway::is_message_executed`,
-                arguments: [
-                    gateway,
-                    message.source_chain,
-                    message.message_id,
-                ],
+                arguments: [gateway, message.source_chain, message.message_id],
             });
 
             const resp = await builder.devInspect(keypair.toSuiAddress());
@@ -287,7 +282,7 @@ describe('Axelar Gateway', () => {
                 id: singleton,
                 options: {
                     showContent: true,
-                }
+                },
             });
 
             const channelId = sinlgetonData.data.content.fields.channel.fields.id.id;
@@ -315,42 +310,29 @@ describe('Axelar Gateway', () => {
 
             const event = resp.events.find((event) => event.type === `${testId}::test::Executed`);
 
-            expect(event.parsedJson.payload == message.payload);
+            expect(event.parsedJson.payload === message.payload);
 
             builder = new TxBuilder(client);
 
             const payloadHash = await builder.moveCall({
                 target: `${packageId}::bytes32::new`,
-                arguments: [
-                    message.payload_hash,
-                ],
+                arguments: [message.payload_hash],
             });
-    
+
             await builder.moveCall({
                 target: `${packageId}::gateway::is_message_approved`,
-                arguments: [
-                    gateway,
-                    message.source_chain,
-                    message.message_id,
-                    message.source_address,
-                    message.destination_id,
-                    payloadHash,
-                ],
+                arguments: [gateway, message.source_chain, message.message_id, message.source_address, message.destination_id, payloadHash],
             });
 
             await builder.moveCall({
                 target: `${packageId}::gateway::is_message_executed`,
-                arguments: [
-                    gateway,
-                    message.source_chain,
-                    message.message_id,
-                ],
+                arguments: [gateway, message.source_chain, message.message_id],
             });
 
             resp = await builder.devInspect(keypair.toSuiAddress());
 
             expect(bcs.Bool.parse(new Uint8Array(resp.results[1].returnValues[0][0]))).to.equal(false);
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(true);
-        })
+        });
     });
 });

@@ -110,8 +110,8 @@ function signMessage(privKeys, messageToSign) {
 }
 
 async function approveContractCall(client, keypair, gatewayInfo, contractCallInfo) {
-    const {packageId, gateway, signers, signerKeys, domainSeparator} = gatewayInfo;
-    const  messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
+    const { packageId, gateway, signers, signerKeys, domainSeparator } = gatewayInfo;
+    const messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
 
     const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
 
@@ -123,7 +123,7 @@ async function approveContractCall(client, keypair, gatewayInfo, contractCallInf
 
     const signatures = signMessage(signerKeys, message);
     const encodedProof = Proof.serialize({
-        signers: signers,
+        signers,
         signatures,
     }).toBytes();
 
@@ -140,9 +140,7 @@ async function approveContractCall(client, keypair, gatewayInfo, contractCallInf
 
     const payloadHash = await builder.moveCall({
         target: `${packageId}::bytes32::new`,
-        arguments: [
-            contractCallInfo.payload_hash,
-        ],
+        arguments: [contractCallInfo.payload_hash],
     });
 
     await builder.moveCall({
@@ -158,13 +156,12 @@ async function approveContractCall(client, keypair, gatewayInfo, contractCallInf
     });
 }
 
-
 async function approveAndExecuteContractCall(client, keypair, gatewayInfo, messageInfo, executeOptions) {
     const axelarPackageId = gatewayInfo.packageId;
     const gateway = gatewayInfo.gateway;
     const discovery = gatewayInfo.discovery;
 
-    await approveContractCall(client, keypair, gatewayInfo, messageInfo)
+    await approveContractCall(client, keypair, gatewayInfo, messageInfo);
 
     const discoveryArg = [0];
     discoveryArg.push(...arrayify(discovery));
@@ -230,7 +227,7 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
             } else if (arg[0] === 2) {
                 return callContractObj;
             } else if (arg[0] === 3) {
-                return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
+                return tx.pure(bcs.vector(bcs.U8).serialize(arrayify(payload)));
             } else if (arg[0] === 4) {
                 return previousReturns[arg[1]][arg[2]];
             }
