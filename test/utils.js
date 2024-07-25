@@ -1,8 +1,17 @@
-const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, arrayify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const chai = require('chai');
 const { expect } = chai;
+const {
+    bcsStructs: {
+        gateway: { WeightedSigners, MessageToSign, Proof, Message },
+    },
+} = require('../dist/bcs');
+const { bcs } = require('@mysten/sui/bcs');
+const secp256k1 = require('secp256k1');
+
+const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
 async function publishPackage(client, keypair, packageName) {
     const compileDir = `${__dirname}/../move_compile`;
@@ -81,9 +90,108 @@ async function expectEvent(builder, keypair, eventData = {}) {
     }
 }
 
+function hashMessage(data, commandType) {
+    const toHash = new Uint8Array(data.length + 1);
+    toHash[0] = commandType;
+    toHash.set(data, 1);
+
+    return keccak256(toHash);
+}
+
+function signMessage(privKeys, messageToSign) {
+    const signatures = [];
+
+    for (const privKey of privKeys) {
+        const { signature, recid } = secp256k1.ecdsaSign(arrayify(keccak256(messageToSign)), arrayify(privKey));
+        signatures.push(new Uint8Array([...signature, recid]));
+    }
+
+    return signatures;
+}
+
+async function approveContractCall(client, keypair, gatewayInfo, contractCallInfo) {
+    const {packageId, gateway, signers, signerKeys, domainSeparator} = gatewayInfo;
+    const  messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
+
+    const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
+
+    const message = MessageToSign.serialize({
+        domain_separator: domainSeparator,
+        signers_hash: keccak256(WeightedSigners.serialize(signers).toBytes()),
+        data_hash: hashed,
+    }).toBytes();
+
+    const signatures = signMessage(signerKeys, message);
+    const encodedProof = Proof.serialize({
+        signers: signers,
+        signatures,
+    }).toBytes();
+
+    let builder = new TxBuilder(client);
+
+    await builder.moveCall({
+        target: `${packageId}::gateway::approve_messages`,
+        arguments: [gateway, messageData, encodedProof],
+    });
+
+    await builder.signAndExecute(keypair);
+
+    builder = new TxBuilder(client);
+
+    const payloadHash = await builder.moveCall({
+        target: `${packageId}::bytes32::new`,
+        arguments: [
+            contractCallInfo.payload_hash,
+        ],
+    });
+
+    await builder.moveCall({
+        target: `${packageId}::gateway::is_message_approved`,
+        arguments: [
+            gateway,
+            contractCallInfo.source_chain,
+            contractCallInfo.message_id,
+            contractCallInfo.source_address,
+            contractCallInfo.destination_id,
+            payloadHash,
+        ],
+    });
+}
+
+async function getCalls(client, calls) {
+    const builder = new TxBuilder(client);
+
+    if(!Array.isArray(calls)) {
+        calls = [ calls ];
+    }
+    
+    for( const call of calls) {
+        await builder.moveCall({
+            target: `${packageId}::discovery::get_transaction`,
+            arguments: [discovery, contractCallInfo.destination_id],
+        });
+    }
+
+    const resp = await builder.devInspect(keypair.toSuiAddress());
+
+    console.log(resp.results.returnValues[0]);
+}
+
+async function approveAndExecuteContractCall(client, keypair, gatewayInfo, contractCallInfo) {
+    const {packageId, gateway, signers, signerKeys, domainSeparator, discovery} = gatewayInfo;
+
+    await approveContractCall(client, keypair, gatewayInfo, contractCallInfo);
+
+    
+}
+
 module.exports = {
     publishPackage,
     getRandomBytes32,
     expectRevert,
     expectEvent,
+    hashMessage,
+    signMessage,
+    approveContractCall,
+    approveAndExecuteContractCall,
 };

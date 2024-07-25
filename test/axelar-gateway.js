@@ -2,19 +2,17 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const { publishPackage, getRandomBytes32, expectRevert, expectEvent, moveView } = require('./utils');
+const { publishPackage, getRandomBytes32, expectRevert, expectEvent, approveContractCall, hashMessage, signMessage, approveAndExecuteContractCall } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: {
-        gateway: { WeightedSigners, MessageToSign, Proof, Message },
+        gateway: { WeightedSigners, MessageToSign, Proof },
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
-const secp256k1 = require('secp256k1');
 const { expect } = require('chai');
 
-const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 const clock = '0x6';
 
@@ -25,16 +23,16 @@ describe('Axelar Gateway', () => {
     const keypair = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const domainSeparator = getRandomBytes32();
     const network = process.env.NETWORK || 'localnet';
-    let operatorKeys;
-    let signers;
     let nonce = 0;
     let packageId;
     let gateway;
+    let discovery;
+    const gatewayInfo = {};
 
     function calculateNextSigners() {
-        operatorKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
-        const pubKeys = operatorKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
-        const keys = operatorKeys.map((key, index) => {
+        const signerKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
+        const pubKeys = signerKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
+        const keys = signerKeys.map((key, index) => {
             return { privKey: key, pubKey: pubKeys[index] };
         });
         keys.sort((key1, key2) => {
@@ -45,33 +43,14 @@ describe('Axelar Gateway', () => {
 
             return 0;
         });
-        operatorKeys = keys.map((key) => key.privKey);
-        signers = {
+        gatewayInfo.signerKeys = keys.map((key) => key.privKey);
+        gatewayInfo.signers = {
             signers: keys.map((key) => {
                 return { pub_key: key.pubKey, weight: 1 };
             }),
             threshold: 2,
             nonce: hexlify([++nonce]),
         };
-    }
-
-    function hashMessage(data, commandType) {
-        const toHash = new Uint8Array(data.length + 1);
-        toHash[0] = commandType;
-        toHash.set(data, 1);
-
-        return keccak256(toHash);
-    }
-
-    function sign(privKeys, messageToSign) {
-        const signatures = [];
-
-        for (const privKey of privKeys) {
-            const { signature, recid } = secp256k1.ecdsaSign(arrayify(keccak256(messageToSign)), arrayify(privKey));
-            signatures.push(new Uint8Array([...signature, recid]));
-        }
-
-        return signatures;
     }
 
     async function sleep(ms = 1000) {
@@ -97,11 +76,14 @@ describe('Axelar Gateway', () => {
         packageId = result.packageId;
         const creatorCap = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
+        ).objectId;        
+        discovery = result.publishTxn.objectChanges.find(
+            (change) => change.objectType === `${packageId}::discovery::RelayerDiscovery`,
         ).objectId;
 
         calculateNextSigners();
 
-        const encodedSigners = WeightedSigners.serialize(signers).toBytes();
+        const encodedSigners = WeightedSigners.serialize(gatewayInfo.signers).toBytes();
         const builder = new TxBuilder(client);
 
         const separator = await builder.moveCall({
@@ -125,16 +107,21 @@ describe('Axelar Gateway', () => {
         result = await builder.signAndExecute(deployer);
 
         gateway = result.objectChanges.find((change) => change.objectType === `${packageId}::gateway::Gateway`).objectId;
+
+        gatewayInfo.gateway = gateway;
+        gatewayInfo.domainSeparator = domainSeparator;
+        gatewayInfo.packageId = packageId;
+        gatewayInfo.discovery = discovery;
     });
 
     describe('Signer Rotation', () => {
         it('Should rotate signers', async () => {
             await sleep(2000);
-            const proofSigners = signers;
-            const proofKeys = operatorKeys;
+            const proofSigners = gatewayInfo.signers;
+            const proofKeys = gatewayInfo.signerKeys;
             calculateNextSigners();
 
-            const encodedSigners = WeightedSigners.serialize(signers).toBytes();
+            const encodedSigners = WeightedSigners.serialize(gatewayInfo.signers).toBytes();
 
             const hashed = hashMessage(encodedSigners, COMMAND_TYPE_ROTATE_SIGNERS);
 
@@ -144,7 +131,7 @@ describe('Axelar Gateway', () => {
                 data_hash: hashed,
             }).toBytes();
 
-            const signatures = sign(proofKeys, message);
+            const signatures = signMessage(proofKeys, message);
             const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,
@@ -162,8 +149,8 @@ describe('Axelar Gateway', () => {
 
         it('Should not rotate to empty signers', async () => {
             await sleep(2000);
-            const proofSigners = signers;
-            const proofKeys = operatorKeys;
+            const proofSigners = gatewayInfo.signers;
+            const proofKeys = gatewayInfo.signerKeys;
 
             const encodedSigners = WeightedSigners.serialize({
                 signers: [],
@@ -179,7 +166,7 @@ describe('Axelar Gateway', () => {
                 data_hash: hashed,
             }).toBytes();
 
-            const signatures = sign(proofKeys, message);
+            const signatures = signMessage(proofKeys, message);
             const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,
@@ -243,11 +230,9 @@ describe('Axelar Gateway', () => {
             });
         });
 
-        it.only('Approve Contract Call', async () => {
-            const proofSigners = signers;
-            const proofKeys = operatorKeys;
+        it('Approve Contract Call', async () => {
 
-            const approved_message = {
+            const approvedMessage = {
                 source_chain: 'Ethereum',
                 message_id: 'Message Id',
                 source_address: 'Source Address',
@@ -255,37 +240,14 @@ describe('Axelar Gateway', () => {
                 payload_hash: keccak256(defaultAbiCoder.encode(['string'], ['payload hash'])),
             }
 
-            const  messageData = bcs.vector(Message).serialize([approved_message]).toBytes();
+            await approveContractCall(client, keypair, gatewayInfo, approvedMessage);
 
-            const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
-
-            const message = MessageToSign.serialize({
-                domain_separator: domainSeparator,
-                signers_hash: keccak256(WeightedSigners.serialize(proofSigners).toBytes()),
-                data_hash: hashed,
-            }).toBytes();
-
-            const signatures = sign(proofKeys, message);
-            const encodedProof = Proof.serialize({
-                signers: proofSigners,
-                signatures,
-            }).toBytes();
-
-            let builder = new TxBuilder(client);
-
-            await builder.moveCall({
-                target: `${packageId}::gateway::approve_messages`,
-                arguments: [gateway, messageData, encodedProof],
-            });
-
-            await builder.signAndExecute(keypair);
-
-            builder = new TxBuilder(client);
+            const builder = new TxBuilder(client);
 
             const payloadHash = await builder.moveCall({
                 target: `${packageId}::bytes32::new`,
                 arguments: [
-                    approved_message.payload_hash,
+                    approvedMessage.payload_hash,
                 ],
             });
     
@@ -293,10 +255,10 @@ describe('Axelar Gateway', () => {
                 target: `${packageId}::gateway::is_message_approved`,
                 arguments: [
                     gateway,
-                    approved_message.source_chain,
-                    approved_message.message_id,
-                    approved_message.source_address,
-                    approved_message.destination_id,
+                    approvedMessage.source_chain,
+                    approvedMessage.message_id,
+                    approvedMessage.source_address,
+                    approvedMessage.destination_id,
                     payloadHash,
                 ],
             });
@@ -304,6 +266,40 @@ describe('Axelar Gateway', () => {
             const resp = await builder.devInspect(keypair.toSuiAddress());
 
             expect(bcs.Bool.parse(new Uint8Array(resp.results[1].returnValues[0][0]))).to.equal(true);
+        });
+
+        it.only('Execute Contract Call', async () => {
+            const result = await publishPackage(client, keypair, 'test');
+
+            const testId = result.packageId;
+            const singleton = result.publishTxn.objectChanges.find((change) => change.objectType === `${testId}::test::Singleton`).objectId;
+            const sinlgetonData = await client.getObject({
+                id: singleton,
+                options: {
+                    showContent: true,
+                }
+            });
+
+            const channelId = sinlgetonData.data.content.fields.channel.fields.id.id;
+
+            const builder = new TxBuilder(client);
+
+            await builder.moveCall({
+                target: `${testId}::test::register_transaction`,
+                arguments: [discovery, singleton],
+            });
+
+            await builder.signAndExecute(keypair);
+
+            const message = {
+                source_chain: 'Ethereum',
+                message_id: 'Message Id',
+                source_address: 'Source Address',
+                destination_id: channelId,
+                payload_hash: keccak256(defaultAbiCoder.encode(['string'], ['payload hash'])),
+            };
+
+            await approveAndExecuteContractCall(client, keypair, gatewayInfo, message);
         })
     });
 });
