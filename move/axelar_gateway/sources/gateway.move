@@ -494,6 +494,8 @@ module axelar_gateway::gateway {
         let mut gateway = dummy_for_testing(ctx);
         
         approve_message(&mut gateway, &message);
+        // The second approve message should do nothing.
+        approve_message(&mut gateway, &message);
 
         assert!(is_message_approved(
             &gateway,
@@ -629,5 +631,45 @@ module axelar_gateway::gateway {
         bytes.push_back(0);
 
         peel_proof(bytes);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EMessageNotApproved)]
+    fun test_take_approved_message_message_not_approved() {
+        let mut gateway = dummy_for_testing(&mut sui::tx_context::dummy());
+
+        let message = message::new(
+            std::ascii::string(b"Source Chain"),
+            std::ascii::string(b"Message Id"),
+            std::ascii::string(b"Source Address"),
+            @0x1,
+            axelar_gateway::bytes32::new(@0x2),
+        );
+
+        gateway.messages.add(message.command_id(), MessageStatus { status: axelar_gateway::bytes32::new(@0x3)} );
+
+        let approved_message = take_approved_message(
+            &mut gateway,
+            std::ascii::string(b"Source Chain"),
+            std::ascii::string(b"Message Id"),
+            std::ascii::string(b"Source Address"),
+            @0x12,
+            vector[0, 1, 2],
+        );
+
+        gateway.messages.remove(message.command_id());
+
+        approved_message.destroy_for_testing();
+        gateway.destroy_for_testing();
+    }
+
+    #[test]
+    fun test_data_hash() {
+        let command_type = 5;
+        let data = vector[0, 1, 2, 3];
+        let mut typed_data = vector::singleton(command_type);
+        typed_data.append(data);
+
+        assert!(data_hash(command_type, data) == bytes32::from_bytes(hash::keccak256(&typed_data)), 0);
     }
 }
