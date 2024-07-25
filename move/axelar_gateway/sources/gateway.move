@@ -75,7 +75,7 @@ module axelar_gateway::gateway {
     /// - Non-existent: Set to bytes32(0)
     /// - Approved: Set to the hash of the message
     /// - Executed: Set to bytes32(1)
-    public struct MessageStatus has store {
+    public struct MessageStatus has store, drop {
         status: Bytes32,
     }
 
@@ -354,6 +354,49 @@ module axelar_gateway::gateway {
         });
     }
 
+    #[test_only]
+    public fun new_for_testing(
+        operator: address,
+        domain_separator: Bytes32,
+        minimum_rotation_delay: u64,
+        previous_signers_retention: u64,
+        initial_signers: WeightedSigners,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ): Gateway {
+        Gateway {
+            id: object::new(ctx),
+            operator,
+            messages: table::new(ctx),
+            signers: auth::setup(domain_separator, minimum_rotation_delay, previous_signers_retention, initial_signers, clock, ctx),
+        }
+    }
+
+    #[test_only]
+    public fun dummy_for_testing(ctx: &mut TxContext): Gateway {
+        Gateway {
+            id: object::new(ctx),
+            operator: @0x0,
+            messages: table::new(ctx),
+            signers: auth::dummy_for_testing(ctx),
+        }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(gateway: Gateway) {
+        let Gateway {
+            id,
+            operator: _,
+            messages,
+            signers,
+        } = gateway;
+
+        id.delete();
+        let (_, table, _, _, _, _) = signers.destroy_for_testing();
+        table.destroy_empty();
+        messages.destroy_empty();
+    }
+
     #[test]
     fun test_setup() {
         let ctx = &mut sui::tx_context::dummy();
@@ -361,10 +404,7 @@ module axelar_gateway::gateway {
         let domain_separator = bytes32::new(@789012);
         let minimum_rotation_delay = 765;
         let previous_signers_retention = 650;
-        let pub_key = vector[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
-        let signer = axelar_gateway::weighted_signer::new(pub_key, 123);
-        let nonce = bytes32::new(@3456);
-        let initial_signers = axelar_gateway::weighted_signers::new_for_testing(vector[signer], 100, nonce);
+        let initial_signers = axelar_gateway::weighted_signers::dummy_for_testing();
         let mut clock = sui::clock::create_for_testing(ctx);
         let timestamp = 1234;
         clock.increment_for_testing(timestamp);
@@ -430,5 +470,164 @@ module axelar_gateway::gateway {
 
         clock.destroy_for_testing();
         scenario.end();
+    }
+
+    #[test]
+    fun test_approve_message() {
+        let ctx = &mut sui::tx_context::dummy();
+
+        let message_id = std::ascii::string(b"Message Id");
+        let channel = axelar_gateway::channel::new(ctx);
+        let source_chain = std::ascii::string(b"Source Chain");
+        let source_address = std::ascii::string(b"Destination Address");
+        let payload = vector[0, 1, 2, 3];
+        let payload_hash = axelar_gateway::bytes32::new(address::from_bytes(hash::keccak256(&payload)));
+
+        let message = message::new(
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload_hash,
+        );
+
+        let mut gateway = dummy_for_testing(ctx);
+        
+        approve_message(&mut gateway, &message);
+
+        assert!(is_message_approved(
+            &gateway,
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload_hash,
+        ) == true, 0);
+
+        let approved_message = take_approved_message(
+            &mut gateway, 
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload
+        );
+
+        channel.consume_approved_message(approved_message);
+
+        assert!(is_message_approved(
+            &gateway,
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload_hash,
+        ) == false, 1);
+
+        assert!(is_message_executed(
+            &gateway,
+            source_chain,
+            message_id,
+        ) == true, 2);
+
+        gateway.messages.remove(message.command_id());
+
+        gateway.destroy_for_testing();
+        channel.destroy();
+    }
+
+    #[test]
+    fun test_peel_messages() {
+        let message1 = message::new(
+            std::ascii::string(b"Source Chain 1"),
+            std::ascii::string(b"Message Id 1"),
+            std::ascii::string(b"Source Address 1"),
+            @0x1,
+            axelar_gateway::bytes32::new(@0x2),
+        );
+
+        let message2 = message::new(
+            std::ascii::string(b"Source Chain 2"),
+            std::ascii::string(b"Message Id 2"),
+            std::ascii::string(b"Source Address 2"),
+            @0x3,
+            axelar_gateway::bytes32::new(@0x4),
+        );
+
+        let bytes = bcs::to_bytes(&vector[message1, message2]);
+
+        let messages = peel_messages(bytes);
+
+        assert!(messages.length() == 2, 0);
+        assert!(messages[0] == message1, 1);
+        assert!(messages[1] == message2, 2);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ERemainingData)]
+    fun test_peel_messages_no_remaining_data() {
+        let message1 = message::new(
+            std::ascii::string(b"Source Chain 1"),
+            std::ascii::string(b"Message Id 1"),
+            std::ascii::string(b"Source Address 1"),
+            @0x1,
+            axelar_gateway::bytes32::new(@0x2),
+        );
+
+        let mut bytes = bcs::to_bytes(&vector[message1]);
+        bytes.push_back(0);
+
+        peel_messages(bytes);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidLength)]
+    fun test_peel_messages_no_zero_messages() {
+        peel_messages(bcs::to_bytes(&vector<Message>[]));
+    }
+
+    #[test]
+    fun test_peel_weighted_signers() {
+        let signers = axelar_gateway::weighted_signers::dummy_for_testing();
+
+        let bytes = bcs::to_bytes(&signers);
+
+        let result = peel_weighted_signers(bytes);
+
+        assert!(result == signers, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ERemainingData)]
+    fun test_peel_weighted_signers_no_remaining_data() {
+        let signers = axelar_gateway::weighted_signers::dummy_for_testing();
+
+        let mut bytes = bcs::to_bytes(&signers);
+        bytes.push_back(0);
+
+        peel_weighted_signers(bytes);
+    }
+
+
+    #[test]
+    fun test_peel_proof() {
+        let proof = axelar_gateway::proof::dummy_for_testing();
+
+        let bytes = bcs::to_bytes(&proof);
+
+        let result = peel_proof(bytes);
+
+        assert!(result == proof, 0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ERemainingData)]
+    fun test_peel_proof_no_remaining_data() {
+        let proof = axelar_gateway::proof::dummy_for_testing();
+
+        let mut bytes = bcs::to_bytes(&proof);
+        bytes.push_back(0);
+
+        peel_proof(bytes);
     }
 }

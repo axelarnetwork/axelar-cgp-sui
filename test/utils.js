@@ -1,11 +1,11 @@
-const { keccak256, defaultAbiCoder, arrayify } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const chai = require('chai');
 const { expect } = chai;
 const {
     bcsStructs: {
-        gateway: { WeightedSigners, MessageToSign, Proof, Message },
+        gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
@@ -158,31 +158,91 @@ async function approveContractCall(client, keypair, gatewayInfo, contractCallInf
     });
 }
 
-async function getCalls(client, calls) {
+
+async function approveAndExecuteContractCall(client, keypair, gatewayInfo, messageInfo, executeOptions) {
+    const axelarPackageId = gatewayInfo.packageId;
+    const gateway = gatewayInfo.gateway;
+    const discovery = gatewayInfo.discovery;
+
+    await approveContractCall(client, keypair, gatewayInfo, messageInfo)
+
+    const discoveryArg = [0];
+    discoveryArg.push(...arrayify(discovery));
+    const targetIdArg = [1];
+    targetIdArg.push(...arrayify(messageInfo.destination_id));
+    let moveCalls = [
+        {
+            function: {
+                package_id: axelarPackageId,
+                module_name: 'discovery',
+                name: 'get_transaction',
+            },
+            arguments: [discoveryArg, targetIdArg],
+            type_arguments: [],
+        },
+    ];
+    let isFinal = false;
+
+    while (!isFinal) {
+        const builder = new TxBuilder(client);
+        makeCalls(builder.tx, moveCalls, messageInfo.payload);
+        const resp = await builder.devInspect(keypair.toSuiAddress());
+
+        const txData = resp.results[0].returnValues[0][0];
+        const nextTx = Transaction.parse(new Uint8Array(txData));
+        isFinal = nextTx.is_final;
+        moveCalls = nextTx.move_calls;
+    }
+
     const builder = new TxBuilder(client);
-
-    if(!Array.isArray(calls)) {
-        calls = [ calls ];
-    }
-    
-    for( const call of calls) {
-        await builder.moveCall({
-            target: `${packageId}::discovery::get_transaction`,
-            arguments: [discovery, contractCallInfo.destination_id],
-        });
-    }
-
-    const resp = await builder.devInspect(keypair.toSuiAddress());
-
-    console.log(resp.results.returnValues[0]);
+    const ApprovedMessage = await builder.moveCall({
+        target: `${axelarPackageId}::gateway::take_approved_message`,
+        arguments: [
+            gateway,
+            messageInfo.source_chain,
+            messageInfo.message_id,
+            messageInfo.source_address,
+            messageInfo.destination_id,
+            messageInfo.payload,
+        ],
+    });
+    makeCalls(builder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
+    return await builder.signAndExecute(keypair, executeOptions);
 }
 
-async function approveAndExecuteContractCall(client, keypair, gatewayInfo, contractCallInfo) {
-    const {packageId, gateway, signers, signerKeys, domainSeparator, discovery} = gatewayInfo;
+function makeCalls(tx, moveCalls, payload, ApprovedMessage) {
+    const returns = [];
 
-    await approveContractCall(client, keypair, gatewayInfo, contractCallInfo);
+    for (const call of moveCalls) {
+        let result = tx.moveCall(buildMoveCall(tx, call, payload, ApprovedMessage, returns));
+        if (!Array.isArray(result)) result = [result];
+        returns.push(result);
+    }
+}
 
-    
+function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousReturns) {
+    const decodeArgs = (args, tx) =>
+        args.map((arg) => {
+            if (arg[0] === 0) {
+                return tx.object(hexlify(arg.slice(1)));
+            } else if (arg[0] === 1) {
+                return tx.pure(new Uint8Array(arg.slice(1)));
+            } else if (arg[0] === 2) {
+                return callContractObj;
+            } else if (arg[0] === 3) {
+                return tx.pure(bcsEncoder.vector(bcsEncoder.u8()).serialize(arrayify(payload)));
+            } else if (arg[0] === 4) {
+                return previousReturns[arg[1]][arg[2]];
+            }
+
+            throw new Error(`Invalid argument prefix: ${arg[0]}`);
+        });
+    const decodeDescription = (description) => `${description.package_id}::${description.module_name}::${description.name}`;
+    return {
+        target: decodeDescription(moveCallInfo.function),
+        arguments: decodeArgs(moveCallInfo.arguments, tx),
+        typeArguments: moveCallInfo.type_arguments,
+    };
 }
 
 module.exports = {

@@ -81,4 +81,23 @@ module axelar_gateway::proof {
             signatures,
         }
     }
+
+    #[test_only]
+    public fun new_for_testing(signers: WeightedSigners, signatures: vector<Signature>): Proof {
+        Proof {
+            signers,
+            signatures,
+        }
+    }
+
+    #[test_only]
+    public fun dummy_for_testing(): Proof {
+        let mut signature =  sui::address::to_bytes(@0x01);
+        signature.append(sui::address::to_bytes(@0x23));
+        signature.push_back(2);
+        Proof {
+            signers: axelar_gateway::weighted_signers::dummy_for_testing(),
+            signatures: vector[ Signature { bytes: signature } ],
+        }
+    }
 }

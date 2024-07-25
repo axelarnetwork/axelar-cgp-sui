@@ -213,6 +213,18 @@ module axelar_gateway::auth {
     }
 
     #[test_only]
+    public fun dummy_for_testing(ctx: &mut TxContext): AxelarSigners {
+        AxelarSigners {        
+            epoch: 0,
+            epoch_by_signers_hash: table::new(ctx),
+            domain_separator: bytes32::new(@0x1),
+            minimum_rotation_delay: 1,
+            last_rotation_timestamp: 0,
+            previous_signers_retention: 3,
+        }
+    }
+
+    #[test_only]
     public fun destroy_for_testing(signers: AxelarSigners): (
         u64,
         Table<Bytes32, u64>,
