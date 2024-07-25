@@ -299,7 +299,7 @@ describe('Axelar Gateway', () => {
             const payload = '0x0123';
             const message = {
                 source_chain: 'Ethereum',
-                message_id: 'Message Id',
+                message_id: 'Message Id 2',
                 source_address: 'Source Address',
                 destination_id: channelId,
                 payload,
