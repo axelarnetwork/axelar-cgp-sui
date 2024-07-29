@@ -355,7 +355,7 @@ module axelar_gateway::gateway {
     }
 
     #[test_only]
-    public fun new_for_testing(
+    public fun create_for_testing(
         operator: address,
         domain_separator: Bytes32,
         minimum_rotation_delay: u64,
@@ -373,12 +373,12 @@ module axelar_gateway::gateway {
     }
 
     #[test_only]
-    public fun dummy_for_testing(ctx: &mut TxContext): Gateway {
+    public fun dummy(ctx: &mut TxContext): Gateway {
         Gateway {
             id: object::new(ctx),
             operator: @0x0,
             messages: table::new(ctx),
-            signers: auth::dummy_for_testing(ctx),
+            signers: auth::dummy(ctx),
         }
     }
 
@@ -404,7 +404,7 @@ module axelar_gateway::gateway {
         let domain_separator = bytes32::new(@789012);
         let minimum_rotation_delay = 765;
         let previous_signers_retention = 650;
-        let initial_signers = axelar_gateway::weighted_signers::dummy_for_testing();
+        let initial_signers = axelar_gateway::weighted_signers::dummy();
         let mut clock = sui::clock::create_for_testing(ctx);
         let timestamp = 1234;
         clock.increment_for_testing(timestamp);
@@ -427,14 +427,11 @@ module axelar_gateway::gateway {
         );
 
         let tx_effects = scenario.next_tx(@0x1);
-
         let shared = tx_effects.shared();
-
 
         assert!(shared.length() == 1, 0);
 
         let gateway_id = shared[0];
-
         let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
 
         let Gateway {
@@ -446,7 +443,6 @@ module axelar_gateway::gateway {
 
         id.delete();
         assert!(operator == operator_result, 1);
-
         messages.destroy_empty();
 
         let (
@@ -491,7 +487,7 @@ module axelar_gateway::gateway {
             payload_hash,
         );
 
-        let mut gateway = dummy_for_testing(ctx);
+        let mut gateway = dummy(ctx);
         
         approve_message(&mut gateway, &message);
         // The second approve message should do nothing.
@@ -590,7 +586,7 @@ module axelar_gateway::gateway {
 
     #[test]
     fun test_peel_weighted_signers() {
-        let signers = axelar_gateway::weighted_signers::dummy_for_testing();
+        let signers = axelar_gateway::weighted_signers::dummy();
 
         let bytes = bcs::to_bytes(&signers);
 
@@ -602,7 +598,7 @@ module axelar_gateway::gateway {
     #[test]
     #[expected_failure(abort_code = ERemainingData)]
     fun test_peel_weighted_signers_no_remaining_data() {
-        let signers = axelar_gateway::weighted_signers::dummy_for_testing();
+        let signers = axelar_gateway::weighted_signers::dummy();
 
         let mut bytes = bcs::to_bytes(&signers);
         bytes.push_back(0);
@@ -613,7 +609,7 @@ module axelar_gateway::gateway {
 
     #[test]
     fun test_peel_proof() {
-        let proof = axelar_gateway::proof::dummy_for_testing();
+        let proof = axelar_gateway::proof::dummy();
 
         let bytes = bcs::to_bytes(&proof);
 
@@ -625,7 +621,7 @@ module axelar_gateway::gateway {
     #[test]
     #[expected_failure(abort_code = ERemainingData)]
     fun test_peel_proof_no_remaining_data() {
-        let proof = axelar_gateway::proof::dummy_for_testing();
+        let proof = axelar_gateway::proof::dummy();
 
         let mut bytes = bcs::to_bytes(&proof);
         bytes.push_back(0);
@@ -636,7 +632,7 @@ module axelar_gateway::gateway {
     #[test]
     #[expected_failure(abort_code = EMessageNotApproved)]
     fun test_take_approved_message_message_not_approved() {
-        let mut gateway = dummy_for_testing(&mut sui::tx_context::dummy());
+        let mut gateway = dummy(&mut sui::tx_context::dummy());
 
         let message = message::new(
             std::ascii::string(b"Source Chain"),

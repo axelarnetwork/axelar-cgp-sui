@@ -213,7 +213,7 @@ module axelar_gateway::auth {
     }
 
     #[test_only]
-    public fun dummy_for_testing(ctx: &mut TxContext): AxelarSigners {
+    public fun dummy(ctx: &mut TxContext): AxelarSigners {
         AxelarSigners {        
             epoch: 0,
             epoch_by_signers_hash: table::new(ctx),
