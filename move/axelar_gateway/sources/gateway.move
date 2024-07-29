@@ -454,10 +454,11 @@ module axelar_gateway::gateway {
             previous_signers_retention_result,
         ) = signers.destroy_for_testing();
 
-        assert!(epoch == 1, 2);
         let signer_epoch = epoch_by_signers_hash.remove(initial_signers.hash());
-        assert!(signer_epoch == 1, 3);
         epoch_by_signers_hash.destroy_empty();
+
+        assert!(epoch == 1, 2);
+        assert!(signer_epoch == 1, 3);
         assert!(domain_separator == domain_separator_result, 4);
         assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
         assert!(last_rotation_timestamp == timestamp, 6);
