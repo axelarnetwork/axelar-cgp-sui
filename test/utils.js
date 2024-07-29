@@ -109,7 +109,7 @@ function signMessage(privKeys, messageToSign) {
     return signatures;
 }
 
-async function approveContractCall(client, keypair, gatewayInfo, contractCallInfo) {
+async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
     const { packageId, gateway, signers, signerKeys, domainSeparator } = gatewayInfo;
     const messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
 
@@ -156,12 +156,12 @@ async function approveContractCall(client, keypair, gatewayInfo, contractCallInf
     });
 }
 
-async function approveAndExecuteContractCall(client, keypair, gatewayInfo, messageInfo, executeOptions) {
+async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInfo, executeOptions) {
     const axelarPackageId = gatewayInfo.packageId;
     const gateway = gatewayInfo.gateway;
     const discovery = gatewayInfo.discovery;
 
-    await approveContractCall(client, keypair, gatewayInfo, messageInfo);
+    await approveMessage(client, keypair, gatewayInfo, messageInfo);
 
     const discoveryArg = [0];
     discoveryArg.push(...arrayify(discovery));
@@ -249,6 +249,6 @@ module.exports = {
     expectEvent,
     hashMessage,
     signMessage,
-    approveContractCall,
-    approveAndExecuteContractCall,
+    approveMessage,
+    approveAndExecuteMessage,
 };

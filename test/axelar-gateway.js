@@ -7,10 +7,10 @@ const {
     getRandomBytes32,
     expectRevert,
     expectEvent,
-    approveContractCall,
+    approveMessage,
     hashMessage,
     signMessage,
-    approveAndExecuteContractCall,
+    approveAndExecuteMessage,
 } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
@@ -215,7 +215,7 @@ describe('Axelar Gateway', () => {
             channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
         });
 
-        it('Make Contract Call', async () => {
+        it('Should Make a Contract Call', async () => {
             const destinationChain = 'Destination Chain';
             const destinationAddress = 'Destination Address';
             const payload = '0x1234';
@@ -239,7 +239,7 @@ describe('Axelar Gateway', () => {
             });
         });
 
-        it('Approve Contract Call', async () => {
+        it('Should approve a Message', async () => {
             const message = {
                 source_chain: 'Ethereum',
                 message_id: 'Message Id',
@@ -248,7 +248,7 @@ describe('Axelar Gateway', () => {
                 payload_hash: keccak256(defaultAbiCoder.encode(['string'], ['payload hash'])),
             };
 
-            await approveContractCall(client, keypair, gatewayInfo, message);
+            await approveMessage(client, keypair, gatewayInfo, message);
 
             const builder = new TxBuilder(client);
 
@@ -273,7 +273,7 @@ describe('Axelar Gateway', () => {
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(false);
         });
 
-        it('Execute Contract Call', async () => {
+        it('Should Execute Contract Call', async () => {
             const result = await publishPackage(client, keypair, 'test');
 
             const testId = result.packageId;
@@ -306,7 +306,7 @@ describe('Axelar Gateway', () => {
                 payload_hash: keccak256(payload),
             };
 
-            let resp = await approveAndExecuteContractCall(client, keypair, gatewayInfo, message, { showEvents: true });
+            let resp = await approveAndExecuteMessage(client, keypair, gatewayInfo, message, { showEvents: true });
 
             const event = resp.events.find((event) => event.type === `${testId}::test::Executed`);
 

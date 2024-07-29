@@ -588,9 +588,7 @@ module axelar_gateway::gateway {
     #[test]
     fun test_peel_weighted_signers() {
         let signers = axelar_gateway::weighted_signers::dummy();
-
         let bytes = bcs::to_bytes(&signers);
-
         let result = peel_weighted_signers(bytes);
 
         assert!(result == signers, 0);
@@ -600,7 +598,6 @@ module axelar_gateway::gateway {
     #[expected_failure(abort_code = ERemainingData)]
     fun test_peel_weighted_signers_no_remaining_data() {
         let signers = axelar_gateway::weighted_signers::dummy();
-
         let mut bytes = bcs::to_bytes(&signers);
         bytes.push_back(0);
 
@@ -611,9 +608,7 @@ module axelar_gateway::gateway {
     #[test]
     fun test_peel_proof() {
         let proof = axelar_gateway::proof::dummy();
-
         let bytes = bcs::to_bytes(&proof);
-
         let result = peel_proof(bytes);
 
         assert!(result == proof, 0);
@@ -623,7 +618,6 @@ module axelar_gateway::gateway {
     #[expected_failure(abort_code = ERemainingData)]
     fun test_peel_proof_no_remaining_data() {
         let proof = axelar_gateway::proof::dummy();
-
         let mut bytes = bcs::to_bytes(&proof);
         bytes.push_back(0);
 
