@@ -1,7 +1,6 @@
 [package]
 name = "ITS"
 version = "0.1.0"
-published-at = "0xdee89af6230d63b16d42c23851a2b7b464a6ee96292fe9720b5aefc527164dbc"
 edition = "2024.beta"
 
 [dependencies]
