@@ -52,6 +52,10 @@ Sui framework dependency is pinned to a specific mainnet [release](https://githu
 
 Official Sui deployment and operations scripts can be found [here](https://github.com/axelarnetwork/axelar-contract-deployments/tree/main/sui#sui-deployment-scripts).
 
+## Release Process
+
+Please check the [release process](./docs/release.md) for more details.
+
 ## Gateway
 
 The gateway lives in a few modules but has all of its storage in a single shared object called `AxelarSigners`.
@@ -146,3 +150,4 @@ This module is responsible for managing all of the storage needs of the ITS
 This is the module that anyone would directly interract with. It needs to be able to do the following
 
 - `register_coin<T>`: This function takes the `ITS` object and mutates it by adding a coin with the specified `CoinManagement<T>` and `CoinInfo<T>`.
+- 

@@ -1,0 +1,33 @@
+name: Move Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - releases/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SUI_VERSION: mainnet-v1.25.3
+
+jobs:
+  test-move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Sui CLI and install dependencies
+        uses: ./.github/actions/install
+        with:
+          SUI_VERSION: ${{ env.SUI_VERSION }}
+
+      - name: Build Move Modules
+        run: npm run build-move
+
+      - name: Test
+        run: npm run test-move

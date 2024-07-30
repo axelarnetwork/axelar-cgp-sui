@@ -1,12 +1,22 @@
 import { execSync } from 'child_process';
 import path from 'path';
 import { bcs, BcsType } from '@mysten/bcs';
-import { SuiClient, SuiMoveNormalizedType, SuiObjectChange, SuiTransactionBlockResponseOptions } from '@mysten/sui.js/client';
-import { Keypair } from '@mysten/sui.js/dist/cjs/cryptography';
-import { TransactionBlock, TransactionObjectInput } from '@mysten/sui.js/transactions';
-import { utils as ethersUtils } from 'ethers';
+import {
+    DevInspectResults,
+    SuiClient,
+    SuiMoveNormalizedType,
+    SuiObjectChange,
+    SuiTransactionBlockResponse,
+    SuiTransactionBlockResponseOptions,
+} from '@mysten/sui/client';
+import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
+import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
+import { Bytes, utils as ethersUtils } from 'ethers';
 import tmp from 'tmp';
 import { updateMoveToml } from './utils';
+
+const stdPackage = '0x1';
+const suiPackage = '0x2';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -14,25 +24,15 @@ const objectCache = {} as { [id in string]: SuiObjectChange };
 
 function updateCache(objectChanges: SuiObjectChange[]) {
     for (const change of objectChanges) {
-        if (
-            !(
-                change as {
-                    objectId: string;
-                }
-            ).objectId
-        )
+        if (change.type === 'published') {
             continue;
-        objectCache[
-            (
-                change as {
-                    objectId: string;
-                }
-            ).objectId
-        ] = change;
+        }
+
+        objectCache[change.objectId] = change;
     }
 }
 
-function getObject(tx: TransactionBlock, object: TransactionObjectInput) {
+function getObject(tx: Transaction, object: TransactionObjectInput): TransactionObjectInput {
     if (Array.isArray(object)) {
         object = hexlify(object);
     }
@@ -59,32 +59,26 @@ function getTypeName(type: SuiMoveNormalizedType): string {
         let name = `${type.address}::${type.module}::${type.name}`;
 
         if (type.typeArguments.length > 0) {
-            name += `<${type.typeArguments[0]}`;
-
-            for (let i = 1; i < type.typeArguments.length; i++) {
-                name += `,${type.typeArguments[i]}`;
-            }
-
-            name += '>';
+            name += `<${type.typeArguments.join(',')}>`;
         }
 
         return name;
     }
 
-    if ((type as { Struct: Type }).Struct) {
+    if ('Struct' in (type as object)) {
         return get((type as { Struct: Type }).Struct);
-    } else if ((type as { Reference: SuiMoveNormalizedType }).Reference) {
+    } else if ('Reference' in (type as object)) {
         return getTypeName((type as { Reference: SuiMoveNormalizedType }).Reference);
-    } else if ((type as { MutableReference: SuiMoveNormalizedType }).MutableReference) {
+    } else if ('MutableReference' in (type as object)) {
         return getTypeName((type as { MutableReference: SuiMoveNormalizedType }).MutableReference);
-    } else if ((type as { Vector: SuiMoveNormalizedType }).Vector) {
+    } else if ('Vector' in (type as object)) {
         return `vector<${getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector)}>`;
     }
 
     return (type as string).toLowerCase();
 }
 
-function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput) {
+function getNestedStruct(tx: Transaction, type: SuiMoveNormalizedType, arg: TransactionObjectInput): null | TransactionObjectInput {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = type as any;
 
@@ -111,11 +105,23 @@ function getNestedStruct(tx: TransactionBlock, type: SuiMoveNormalizedType, arg:
     const typeName = getTypeName((type as { Vector: SuiMoveNormalizedType }).Vector);
     return tx.makeMoveVec({
         type: typeName,
-        objects: nested,
+        elements: nested,
     });
 }
 
-function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: TransactionObjectInput) {
+function serialize(
+    tx: Transaction,
+    type: SuiMoveNormalizedType,
+    arg: TransactionObjectInput,
+):
+    | TransactionObjectInput
+    | {
+          index: number;
+          kind: 'Input';
+          type: 'pure';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value?: any;
+      } {
     const struct = getNestedStruct(tx, type, arg);
 
     if (struct) {
@@ -162,7 +168,7 @@ function serialize(tx: TransactionBlock, type: SuiMoveNormalizedType, arg: Trans
     return tx.pure(serializer(type).serialize(arg).toBytes());
 }
 
-function isTxContext(parameter: SuiMoveNormalizedType) {
+function isTxContext(parameter: SuiMoveNormalizedType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inside = parameter as any;
 
@@ -176,34 +182,34 @@ function isTxContext(parameter: SuiMoveNormalizedType) {
         return false;
     }
 
-    return inside.address === '0x2' && inside.module === 'tx_context' && inside.name === 'TxContext';
+    return inside.address === suiPackage && inside.module === 'tx_context' && inside.name === 'TxContext';
 }
 
-function isString(parameter: SuiMoveNormalizedType) {
+function isString(parameter: SuiMoveNormalizedType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let asAny = parameter as any;
     if (asAny.MutableReference) parameter = asAny.MutableReference;
     if (asAny.Reference) asAny = asAny.Reference;
     asAny = asAny.Struct;
     if (!asAny) return false;
-    const isAsciiString = asAny.address === '0x1' && asAny.module === 'ascii' && asAny.name === 'String';
-    const isStringString = asAny.address === '0x1' && asAny.module === 'string' && asAny.name === 'String';
+    const isAsciiString = asAny.address === stdPackage && asAny.module === 'ascii' && asAny.name === 'String';
+    const isStringString = asAny.address === stdPackage && asAny.module === 'string' && asAny.name === 'String';
     return isAsciiString || isStringString;
 }
 
-class TxBuilder {
+export class TxBuilder {
     client: SuiClient;
-    tx: TransactionBlock;
+    tx: Transaction;
     constructor(client: SuiClient) {
         this.client = client;
-        this.tx = new TransactionBlock();
+        this.tx = new Transaction();
     }
 
     async moveCall(moveCallInfo: {
         arguments?: TransactionObjectInput[];
         typeArguments?: string[];
         target: `${string}::${string}::${string}` | { package: string; module: string; function: string };
-    }) {
+    }): Promise<TransactionResult> {
         let target = moveCallInfo.target;
 
         // If target is string, convert to object that `getNormalizedMoveFunction` accepts.
@@ -240,19 +246,29 @@ class TxBuilder {
         });
     }
 
-    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`) {
-        updateMoveToml(packageName, '0x0', moveDir);
+    async getContractBuild(
+        packageName: string,
+        moveDir: string = `${__dirname}/../move`,
+    ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
+        const emptyPackageId = '0x0';
+        updateMoveToml(packageName, emptyPackageId, moveDir);
 
         tmp.setGracefulCleanup();
 
         const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
-        const { modules, dependencies } = JSON.parse(
+        const { modules, dependencies, digest } = JSON.parse(
             execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpobj.name}`, {
                 encoding: 'utf-8',
                 stdio: 'pipe', // silent the output
             }),
         );
+
+        return { modules, dependencies, digest };
+    }
+
+    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
+        const { modules, dependencies } = await this.getContractBuild(packageName, moveDir);
 
         return this.tx.publish({
             modules,
@@ -266,9 +282,9 @@ class TxBuilder {
         this.tx.transferObjects([cap], to);
     }
 
-    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions) {
-        let result = await this.client.signAndExecuteTransactionBlock({
-            transactionBlock: this.tx,
+    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions): Promise<SuiTransactionBlockResponse> {
+        let result = await this.client.signAndExecuteTransaction({
+            transaction: this.tx,
             signer: keypair,
             options: {
                 showEffects: true,
@@ -300,7 +316,7 @@ class TxBuilder {
         return result;
     }
 
-    async devInspect(sender: string) {
+    async devInspect(sender: string): Promise<DevInspectResults> {
         const result = await this.client.devInspectTransactionBlock({
             transactionBlock: this.tx,
             sender,
@@ -308,7 +324,3 @@ class TxBuilder {
         return result;
     }
 }
-
-module.exports = {
-    TxBuilder,
-};

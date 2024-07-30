@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
+import { getFullnodeUrl } from '@mysten/sui/client';
 
 export function getModuleNameFromSymbol(symbol: string) {
     function isNumber(char: string) {
@@ -74,6 +74,14 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
     toml = lines.join('\n');
 
     fs.writeFileSync(path, toml);
+}
+
+export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
+    if (fromDir == null) {
+        fromDir = `${__dirname}/../move`;
+    }
+
+    fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
 export function parseEnv(arg: string) {

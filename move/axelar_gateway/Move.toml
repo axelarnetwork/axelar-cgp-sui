@@ -8,5 +8,5 @@ edition = "2024.beta"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.25.3" }
 
 [addresses]
-axelar_gateway = "0xe55593abd7b439764115a766b55b789048f473a52a2c0e7952447ab8ec05f1bc"
+axelar_gateway = "0xa1"
 clock = "0x6"
