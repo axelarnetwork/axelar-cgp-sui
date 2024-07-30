@@ -10,4 +10,4 @@ AxelarGateway = { local = "../axelar_gateway" }
 Abi = { local = "../abi" }
 
 [addresses]
-governance = "0xb9e48a2b95661318fed02f48b88f0d497fc768bebaed9467fdaf7317af9b5ef2"
+governance = "0xa3"

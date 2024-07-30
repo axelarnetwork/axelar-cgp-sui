@@ -46,6 +46,9 @@ web_modules/
 # Optional eslint cache
 .eslintcache
 
+# Generated Build Output
+dist
+
 # dotenv environment variable files
 .env
 .env.development.local
@@ -67,3 +70,5 @@ target/
 
 # dist
 dist
+# move_compile
+move_compile/

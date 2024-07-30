@@ -6,14 +6,11 @@ module its::coin_management {
     use sui::balance::{Self, Balance};
     use sui::clock::Clock;
 
-    use axelar_gateway::channel::Channel;
-
     use its::flow_limit::{Self, FlowLimit};
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
     const EDistributorNeedsTreasuryCap: u64 = 0;
-    const ENotOperator: u64 = 1;
 
     /// Struct that stores information about the ITS Coin.
     public struct CoinManagement<phantom T> has store {

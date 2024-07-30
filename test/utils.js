@@ -1,17 +1,19 @@
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
-const { updateMoveToml } = require('../dist/utils');
+const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const chai = require('chai');
 const { expect } = chai;
 
 async function publishPackage(client, keypair, packageName) {
+    const compileDir = `${__dirname}/../move_compile`;
+    copyMovePackage(packageName, null, compileDir);
     const builder = new TxBuilder(client);
-    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress());
+    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair);
 
     const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
 
-    updateMoveToml(packageName, packageId);
+    updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
 }
 

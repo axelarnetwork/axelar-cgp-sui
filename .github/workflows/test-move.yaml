@@ -17,57 +17,17 @@ env:
 jobs:
   test-move:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libpq-dev
-
-      - name: Cache Sui binaries
-        id: cache-sui
-        uses: actions/cache/restore@v4
-        with:
-          path: sui-binaries/
-          key: sui-${{ env.SUI_VERSION }}
-
-      - name: Download and Install Sui
-        if: steps.cache-sui.outputs.cache-hit != 'true'
-        run: |
-          curl -L -o sui-${SUI_VERSION}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-          tar -xvf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-          mkdir -p sui-binaries
-          mv ./sui ./sui-binaries/
-          mv ./sui-debug ./sui-binaries/
-          rm -rf sui-${SUI_VERSION}-ubuntu-x86_64.tgz
-
-      - name: Save Sui binaries
-        if: steps.cache-sui.outputs.cache-hit != 'true'
-        id: cache-sui-save
-        uses: actions/cache/save@v4
-        with:
-          path: sui-binaries/
-          key: ${{ steps.cache-sui.outputs.cache-primary-key }}
-
-      - name: Add Sui binaries to PATH
-        run: |
-          sudo cp ./sui-binaries/sui /usr/local/bin/sui
-          sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
-
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Sui CLI and install dependencies
+        uses: ./.github/actions/install
         with:
-          node-version: 18
-          cache: 'npm'
+          SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+      - name: Build Move Modules
+        run: npm run build-move
 
       - name: Test
         run: npm run test-move

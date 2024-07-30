@@ -9,4 +9,4 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-test = "0x64cb77be32074cff87043543664dafb4eb766f980d08694cffca8c8136321872"
+test = "0xa9"
