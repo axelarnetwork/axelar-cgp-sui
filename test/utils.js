@@ -22,17 +22,17 @@ async function expectRevert(builder, keypair, error = {}) {
         await builder.signAndExecute(keypair);
         throw new Error(`Expected revert with ${error} but exeuted successfully instead`);
     } catch (e) {
-        errorMessage = e.cause.effects.status.error;
+        const errorMessage = e.cause.effects.status.error;
         let regexp = /address: (.*?),/;
         const packageId = `0x${regexp.exec(errorMessage)[1]}`;
 
-        regexp = /Identifier\(\"(.*?)\"\)/;
+        regexp = /Identifier\("(.*?)"\)/;
         const module = regexp.exec(errorMessage)[1];
 
-        regexp = /Some\(\"(.*?)\"\)/;
+        regexp = /Some\("(.*?)"\)/;
         const functionName = regexp.exec(errorMessage)[1];
 
-        regexp = /Some\(\".*?\"\) \}, (.*?)\)/;
+        regexp = /Some\(".*?"\) \}, (.*?)\)/;
         const errorCode = parseInt(regexp.exec(errorMessage)[1]);
 
         if (error.packageId && error.packageId !== packageId) {
