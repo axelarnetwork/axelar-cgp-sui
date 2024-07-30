@@ -1,15 +1,19 @@
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
-const { updateMoveToml } = require('../dist/utils');
+const { updateMoveToml, copyMovePackage } = require('../dist/utils');
+const chai = require('chai');
+const { expect } = chai;
 
 async function publishPackage(client, keypair, packageName) {
+    const compileDir = `${__dirname}/../move_compile`;
+    copyMovePackage(packageName, null, compileDir);
     const builder = new TxBuilder(client);
-    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress());
+    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair);
 
     const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
 
-    updateMoveToml(packageName, packageId);
+    updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
 }
 
@@ -53,8 +57,33 @@ async function expectRevert(builder, keypair, error = {}) {
     }
 }
 
+async function expectEvent(builder, keypair, eventData = {}) {
+    const response = await builder.signAndExecute(keypair, { showEvents: true });
+
+    const event = response.events.find((event) => event.type === eventData.type);
+
+    function compare(a, b) {
+        if (Array.isArray(a)) {
+            expect(a.length).to.equal(b.length);
+
+            for (let i = 0; i < a.length; i++) {
+                compare(a[i], b[i]);
+            }
+
+            return;
+        }
+
+        expect(a).to.equal(b);
+    }
+
+    for (const key of Object.keys(eventData.arguments)) {
+        compare(event.parsedJson[key], eventData.arguments[key]);
+    }
+}
+
 module.exports = {
     publishPackage,
     getRandomBytes32,
     expectRevert,
+    expectEvent,
 };
