@@ -6,14 +6,11 @@ module its::coin_management {
     use sui::balance::{Self, Balance};
     use sui::clock::Clock;
 
-    use axelar_gateway::channel::Channel;
-
     use its::flow_limit::{Self, FlowLimit};
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
     const EDistributorNeedsTreasuryCap: u64 = 0;
-    const ENotOperator: u64 = 1;
 
     /// Struct that stores information about the ITS Coin.
     public struct CoinManagement<phantom T> has store {
@@ -65,22 +62,6 @@ module its::coin_management {
     /// Only works for a `CoinManagement` with a `TreasuryCap`.
     public fun add_operator<T>(self: &mut CoinManagement<T>, operator: address) {
         self.operator.fill(operator);
-    }
-
-
-    /// Adds a rate limit to the `CoinManagement`.
-    /// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
-    /// To be used by the designated operator of the contract.
-    public fun set_flow_limit<T>(self: &mut CoinManagement<T>, channel: &Channel, flow_limit: u64) {
-        assert!(self.operator.contains(&channel.to_address()), ENotOperator);
-        self.flow_limit.set_flow_limit(flow_limit);
-    }
-
-    /// Adds a rate limit to the `CoinManagement`.
-    /// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
-    /// To be used by the ITS operator.
-    public(package) fun set_flow_limit<T>(self: &mut CoinManagement<T>, flow_limit: u64) {
-        self.flow_limit.set_flow_limit(flow_limit);
     }
 
     // === Protected Methods ===
