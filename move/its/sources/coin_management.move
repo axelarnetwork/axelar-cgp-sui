@@ -6,11 +6,14 @@ module its::coin_management {
     use sui::balance::{Self, Balance};
     use sui::clock::Clock;
 
+    use axelar_gateway::channel::Channel;
+
     use its::flow_limit::{Self, FlowLimit};
 
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
     const EDistributorNeedsTreasuryCap: u64 = 0;
+    const ENotOperator: u64 = 1;
 
     /// Struct that stores information about the ITS Coin.
     public struct CoinManagement<phantom T> has store {
@@ -64,6 +67,15 @@ module its::coin_management {
         self.operator.fill(operator);
     }
 
+
+    /// Adds a rate limit to the `CoinManagement`.
+    /// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
+    /// To be used by the designated operator of the contract.
+    public fun set_flow_limit<T>(self: &mut CoinManagement<T>, channel: &Channel, flow_limit: u64) {
+        assert!(self.operator.contains(&channel.to_address()), ENotOperator);
+        self.flow_limit.set_flow_limit(flow_limit);
+    }
+
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user. Returns the amount that the ITS is supposed to give on other chains.
@@ -83,7 +95,7 @@ module its::coin_management {
     /// Withdraws or mints the given amount of coins. Any leftover amount from previous transfers is added to the coin here.
     public(package) fun give_coin<T>(
         self: &mut CoinManagement<T>, mut amount: u256, clock: &Clock, ctx: &mut TxContext
-    ): Coin<T> {
+    ): Coin<T> {        
         amount  = amount + self.dust;
         self.dust = amount % self.scaling;
         let sui_amount = ( amount / self.scaling as u64);
@@ -93,6 +105,10 @@ module its::coin_management {
         } else {
             coin::take(self.balance.borrow_mut(), sui_amount, ctx)
         }
+    }
+
+    public(package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
+        self.scaling = scaling;
     }
 
     // helper function to mint as a distributor.
@@ -108,11 +124,6 @@ module its::coin_management {
             .borrow_mut()
             .burn(coin);
     }
-
-    public(package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
-        self.scaling = scaling;
-    }
-
     // === Views ===
 
     /// Checks if the given address is a `distributor`.
