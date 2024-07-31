@@ -1,7 +1,6 @@
 [package]
 name = "Abi"
 version = "0.1.0"
-published-at = "0x4ee08bf35bdb2afbcc4f968a38dc2303106f3dfeedfe8c7919d47da7c90b8c4e"
 edition = "2024.beta"
 
 [dependencies]

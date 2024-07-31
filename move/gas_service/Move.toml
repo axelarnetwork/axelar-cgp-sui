@@ -1,7 +1,6 @@
 [package]
 name = "GasService"
 version = "0.1.0"
-published-at = "0x9249adc3fac09edb21a0848af2ccf4901ffb3689124bc91d67bc613903ca643c"
 edition = "2024.beta"
 
 [dependencies]

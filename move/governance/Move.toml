@@ -1,7 +1,6 @@
 [package]
 name = "Governance"
 version = "0.1.0"
-published-at = "0xb9e48a2b95661318fed02f48b88f0d497fc768bebaed9467fdaf7317af9b5ef2"
 edition = "2024.beta"
 
 [dependencies]
