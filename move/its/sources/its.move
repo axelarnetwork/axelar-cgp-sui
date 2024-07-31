@@ -182,9 +182,10 @@ module its::its {
     public(package) fun add_registered_coin<T>(
         self: &mut ITS,
         token_id: TokenId,
-        coin_management: CoinManagement<T>,
+        mut coin_management: CoinManagement<T>,
         coin_info: CoinInfo<T>,
     ) {
+        coin_management.set_scaling(coin_info.scaling());
         self.registered_coins.add(token_id, CoinData<T> {
             coin_management,
             coin_info,
