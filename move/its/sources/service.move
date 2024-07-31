@@ -27,6 +27,19 @@ module its::service {
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+    const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
+    const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
+
+    /**
+     * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
+     */
+    const AXELAR_CHAIN_NAME: vector<u8> = b"Axelarnet";
+
+    /**
+     * @dev Special trusted address value that indicates that the ITS call
+     * for that destination chain should be routed via the ITS hub.
+     */
+    const ITS_HUB_TRUSTED_ADDRESS: vector<u8> = b"hub";
 
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
@@ -273,20 +286,37 @@ module its::service {
     /// Decode an approved call and check that the source chain is trusted.
     fun decode_approved_message(self: &mut ITS, approved_message: ApprovedMessage): (String, vector<u8>) {
         let (
-            source_chain,
+            mut source_chain,
             _,
             source_address,
-            payload
+            mut payload
         ) = self.channel_mut().consume_approved_message(approved_message);
 
         assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
+
+        if(source_chain.into_bytes() == AXELAR_CHAIN_NAME) {
+            let mut reader = abi::new_reader(payload);
+            if(reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+                source_chain = ascii::string(reader.read_bytes());
+                payload = reader.read_bytes();
+            };
+        };
 
         (source_chain, payload)
     }
 
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
-    fun send_payload(self: &mut ITS, destination_chain: String, payload: vector<u8>) {
-        let destination_address = self.get_trusted_address(destination_chain);
+    fun send_payload(self: &mut ITS, mut destination_chain: String, mut payload: vector<u8>) {
+        let mut destination_address = self.get_trusted_address(destination_chain);
+        if(destination_address.into_bytes() == ITS_HUB_TRUSTED_ADDRESS) {
+            let mut writter = abi::new_writer(3);
+            writter.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
+            writter.write_bytes(destination_chain.into_bytes());
+            writter.write_bytes(payload);
+            payload = writter.into_bytes();
+            destination_chain = ascii::string(AXELAR_CHAIN_NAME);
+            destination_address = self.get_trusted_address(destination_chain);
+        };
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
 }
