@@ -19,6 +19,8 @@ module its::discovery {
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+    //const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
+    const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
     public fun get_interchain_transfer_info(payload: vector<u8>): (TokenId, address, u64, vector<u8>) {
         let mut reader = abi::new_reader(payload);
@@ -66,9 +68,16 @@ module its::discovery {
         ));
     }
 
-    public fun get_call_info(self: &ITS, payload: vector<u8>): Transaction {
+    public fun get_call_info(self: &ITS, mut payload: vector<u8>): Transaction {
         let mut reader = abi::new_reader(payload);
-        let message_type = reader.read_u256();
+        let mut message_type = reader.read_u256();
+
+        if (message_type == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            reader.skip_slot();
+            payload = reader.read_bytes();
+            reader = abi::new_reader(payload);
+            message_type = reader.read_u256();
+        };
 
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             get_interchain_transfer_tx(self, &mut reader)
