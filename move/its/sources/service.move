@@ -34,6 +34,7 @@ module its::service {
      * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
      */
     const AXELAR_CHAIN_NAME: vector<u8> = b"Axelarnet";
+    const AXELAR_HUB: vector<u8> = b"hub";
 
     /**
      * @dev Special trusted address value that indicates that the ITS call
@@ -297,7 +298,7 @@ module its::service {
 
         let mut reader = abi::new_reader(payload);
         if (reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            assert!(source_chain.into_bytes() == AXELAR_CHAIN_NAME, ESenderNotHub)
+            assert!(source_chain.into_bytes() == AXELAR_CHAIN_NAME, ESenderNotHub);
             source_chain = ascii::string(reader.read_bytes());
             payload = reader.read_bytes();
         };
@@ -315,7 +316,7 @@ module its::service {
             writter.write_bytes(payload);
             payload = writter.into_bytes();
             destination_chain = ascii::string(AXELAR_CHAIN_NAME);
-            destination_address = self.get_trusted_address(destination_chain);
+            destination_address = self.get_trusted_address(ascii::string(AXELAR_HUB));
         };
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
