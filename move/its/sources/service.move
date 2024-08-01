@@ -56,6 +56,7 @@ module its::service {
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
     const EMalformedTrustedAddresses: u64 = 9;
+    const ESenderNotHub: u64 = 10;
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
@@ -294,12 +295,11 @@ module its::service {
 
         assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
 
-        if(source_chain.into_bytes() == AXELAR_CHAIN_NAME) {
-            let mut reader = abi::new_reader(payload);
-            if(reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-                source_chain = ascii::string(reader.read_bytes());
-                payload = reader.read_bytes();
-            };
+        let mut reader = abi::new_reader(payload);
+        if (reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            assert!(source_chain.into_bytes() == AXELAR_CHAIN_NAME, ESenderNotHub)
+            source_chain = ascii::string(reader.read_bytes());
+            payload = reader.read_bytes();
         };
 
         (source_chain, payload)
