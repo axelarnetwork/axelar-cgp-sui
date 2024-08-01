@@ -153,6 +153,19 @@ module axelar_gateway::channel {
         }
     }
 
+    #[test_only]
+    public fun destroy_for_testing(
+        approved_message: ApprovedMessage
+    ) {
+        ApprovedMessage {
+            source_chain: _,
+            message_id: _,
+            source_address: _,
+            destination_id: _,
+            payload: _,
+        } = approved_message;
+    }
+
     #[test]
     fun test_new_and_destroy() {
         let ctx = &mut sui::tx_context::dummy();
@@ -257,4 +270,6 @@ module axelar_gateway::channel {
 
         channel.destroy();
     }
+
+
 }
