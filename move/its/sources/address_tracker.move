@@ -87,6 +87,22 @@ module its::address_tracker {
         assert!(self.is_trusted_address(chain2, address1) == true, 10);
         assert!(self.is_trusted_address(chain2, address2) == false, 11);
 
+        assert!(self.trusted_addresses.contains(chain1), 12);
+        assert!(self.trusted_addresses.contains(chain2), 13);
+
+        self.set_trusted_address(chain1, std::ascii::string(b""));
+        self.set_trusted_address(chain2, std::ascii::string(b""));
+
+        assert!(!self.trusted_addresses.contains(chain1), 14);
+        assert!(!self.trusted_addresses.contains(chain2), 15);
+
+
+        self.set_trusted_address(chain1, std::ascii::string(b""));
+        self.set_trusted_address(chain2, std::ascii::string(b""));
+
+        assert!(!self.trusted_addresses.contains(chain1), 16);
+        assert!(!self.trusted_addresses.contains(chain2), 17);
+
         sui::test_utils::destroy(self);
     }
 

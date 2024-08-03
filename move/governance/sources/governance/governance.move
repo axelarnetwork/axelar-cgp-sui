@@ -119,6 +119,23 @@ module governance::governance {
     #[test_only]
     use sui::test_utils;
 
+    #[test_only]
+    public fun new_for_testing(
+        trusted_source_chain: String,
+        trusted_source_address: String,
+        message_type: u256,
+        ctx: &mut TxContext,
+    ): Governance {
+        Governance {
+            id: object::new(ctx),
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            channel: channel::new(ctx),
+            caps: table::new<ID, UpgradeCap>(ctx),
+        }
+    }
+
     #[test]
     fun test_new() {
         let trusted_source_chain = ascii::string(b"Axelar");
