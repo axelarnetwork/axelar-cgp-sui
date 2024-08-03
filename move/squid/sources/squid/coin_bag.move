@@ -104,4 +104,49 @@ module squid::coin_bag {
         data.append(type_name::get<T>().into_string().into_bytes());
         address::from_bytes(keccak256(&data))
     }
+
+    #[test_only]
+    use its::coin::COIN;
+
+    #[test]
+    fun test_balance() {
+        let ctx = &mut tx_context::dummy();
+        let mut coin_bag = new(ctx);
+
+        assert!(coin_bag.get_balance_amount<COIN>() == 0, 0);
+
+        coin_bag.store_balance(sui::balance::create_for_testing<COIN>(1));
+        assert!(coin_bag.get_balance_amount<COIN>() == 1, 1);
+
+        coin_bag.store_balance(sui::balance::create_for_testing<COIN>(2));
+        let mut balance = coin_bag.get_balance<COIN>();
+        assert!(balance.borrow().value() == 3, 2);
+        sui::test_utils::destroy(balance);
+
+        balance = coin_bag.get_balance<COIN>();
+        assert!(balance.is_none(), 3);
+        balance.destroy_none();
+
+        coin_bag.destroy();
+    }
+
+    #[test]
+    fun test_estimate() {
+        let ctx = &mut tx_context::dummy();
+        let mut coin_bag = new(ctx);
+
+        assert!(coin_bag.get_estimate_amount<COIN>() == 0, 0);
+
+        coin_bag.store_estimate<COIN>(1);
+        assert!(coin_bag.get_estimate_amount<COIN>() == 1, 1);
+
+        coin_bag.store_estimate<COIN>(2);
+        let mut estimate = coin_bag.get_estimate<COIN>();
+        assert!(estimate == 3, 2);
+
+        estimate = coin_bag.get_estimate<COIN>();
+        assert!(estimate == 0, 3);
+
+        coin_bag.destroy();
+    }
 }

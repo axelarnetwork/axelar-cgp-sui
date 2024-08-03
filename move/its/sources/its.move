@@ -151,6 +151,10 @@ module its::its {
         self.channel.id()
     }
 
+    public fun channel_address(self: &ITS): address {
+        self.channel.to_address()
+    }
+
     // === Friend-only ===
     public(package) fun channel(self: &ITS): &Channel {
         &self.channel
