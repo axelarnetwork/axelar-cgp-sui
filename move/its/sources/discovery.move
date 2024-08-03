@@ -209,7 +209,7 @@ module its::discovery {
     #[test]
     fun test_discovery_initial() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -224,7 +224,7 @@ module its::discovery {
     #[test]
     fun test_discovery_interchain_transfer() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -245,7 +245,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
-        its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
+        its.add_registered_coin_type_for_testing(its::token_id::from_address(token_id), type_arg);
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);
@@ -277,7 +277,7 @@ module its::discovery {
     #[test]
     fun test_discovery_interchain_transfer_with_data() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -305,7 +305,7 @@ module its::discovery {
             .write_bytes(data);
         let payload = writer.into_bytes();
 
-        its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
+        its.add_registered_coin_type_for_testing(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
 
         let mut reader = abi::new_reader(payload);
         reader.skip_slot(); // skip message_type
@@ -319,7 +319,7 @@ module its::discovery {
     #[test]
     fun test_discovery_deploy_token() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -340,7 +340,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
-        its.test_add_unregistered_coin_type(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
+        its.add_unregistered_coin_type_for_testing(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);

@@ -77,4 +77,27 @@ module its::coin_info {
             metadata.destroy_none()
         }
     }
+
+    #[test]
+    fun test_from_metadata() {
+        let ctx = &mut tx_context::dummy();
+        let metadata = its::coin::create_metadata(b"Symbol", 8, ctx);
+        let metadata_bytes = sui::bcs::to_bytes(&metadata);
+
+        let name = metadata.get_name();
+        let symbol = metadata.get_symbol();
+        let decimals = metadata.get_decimals();
+        let remote_decimals = 31;
+
+        let coin_info = from_metadata(metadata, remote_decimals);
+
+        assert!(coin_info.name() == name, 0);
+        assert!(coin_info.symbol() == symbol, 1);
+        assert!(coin_info.decimals() == decimals, 2);
+        assert!(coin_info.remote_decimals() == remote_decimals, 3);
+        assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes, 4);
+        assert!(coin_info.scaling() == utils::pow(10, remote_decimals - decimals), 5);
+
+        sui::test_utils::destroy(coin_info);
+    }
 }
