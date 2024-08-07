@@ -6,11 +6,14 @@ module test::test {
     use sui::event;
     use sui::address;
     use sui::hex;
+    use sui::coin::{Coin};
+    use sui::sui::SUI;
 
     use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
     use axelar_gateway::discovery::{Self, RelayerDiscovery};
 
     use axelar_gateway::gateway;
+    use gas_service::gas_service::{Self, GasService};
 
     public struct Singleton has key {
         id: UID,
@@ -54,7 +57,17 @@ module test::test {
         discovery::register_transaction(discovery, &singleton.channel, transaction);
     }
 
-    public fun send_call(singleton: &Singleton, destination_chain: String, destination_address: String, payload: vector<u8>) {
+    public fun send_call(singleton: &Singleton, gas_service: &mut GasService, destination_chain: String, destination_address: String, payload: vector<u8>, refund_address: address, coin: Coin<SUI>, params: vector<u8>) {
+        gas_service::pay_gas(
+            gas_service,
+            coin,
+            sui::object::id_address(&singleton.channel),
+            destination_chain,
+            destination_address,
+            payload,
+            refund_address,
+            params
+        );
         gateway::call_contract(&singleton.channel, destination_chain, destination_address, payload);
     }
 
