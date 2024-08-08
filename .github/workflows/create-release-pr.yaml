@@ -25,11 +25,6 @@ jobs:
             echo "has_file=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup Sui CLI and install dependencies
-        uses: ./.github/actions/install
-        with:
-          SUI_VERSION: ${{ env.SUI_VERSION }}
-
       - name: Create Release Pull Request
         if: steps.checkfile.outputs.has_file == 'true'
         uses: changesets/action@v1
