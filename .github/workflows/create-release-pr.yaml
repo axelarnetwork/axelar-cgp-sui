@@ -16,6 +16,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+
       - name: Check for changeset files
         id: check-changeset-files
         run: |
