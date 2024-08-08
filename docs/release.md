@@ -28,14 +28,17 @@ git commit -m "chore: update changeset"
 git push
 ```
 
-### 3. Trigger the Release Workflow
+### 3. Trigger the Create Release Pull Request Workflow
 
-Trigger the release workflow [here](https://github.com/axelarnetwork/axelar-cgp-sui/actions/workflows/release.yaml) when you want to publish the package. The release PR will be created. This PR will:
+Trigger the [Create Release Pull Request](https://github.com/axelarnetwork/axelar-cgp-sui/actions/workflows/create-release-pr.yaml) workflow when you want to publish the package. The release PR will be created. This PR will:
 
 -   Update the `CHANGELOG.md` file with the changes made in the release.
 -   Bump the version number of the package.
--   Publish the package to NPM.
--   Create a new GitHub release.
+
+After this PR is merged, the [Publish to NPM](https://github.com/axelarnetwork/axelar-cgp-sui/actions/workflows/publish-to-npm.yaml) workflow will be triggered and the following things will happen:
+
+-   The package will be published to npm.
+-   Create a new GitHub release with the changes made in the release.
 
 ## Release Snapshot Versions
 
