@@ -178,246 +178,228 @@ module operators::operators {
     // Tests
     // -----
 
-    // #[test_only]
-    // fun new_operators(ctx: &mut TxContext): Operators {
-    //     Operators {
-    //         id: object::new(ctx),
-    //         operators: vec_set::empty(),
-    //         caps: bag::new(ctx),
-    //     }
-    // }
+    #[test_only]
+    fun new_operators(ctx: &mut TxContext): Operators {
+        Operators {
+            id: object::new(ctx),
+            operators: vec_set::empty(),
+            caps: bag::new(ctx),
+        }
+    }
 
-    // #[test_only]
-    // fun destroy_operators(operators: Operators) {
-    //     let Operators { id, operators, caps } = operators;
+    #[test_only]
+    fun destroy_operators(operators: Operators) {
+        let Operators { id, operators, caps } = operators;
 
-    //     id.delete();
-    //     caps.destroy_empty();
+        id.delete();
+        caps.destroy_empty();
 
-    //     let mut keys = operators.into_keys();
+        let mut keys = operators.into_keys();
 
-    //     while (!keys.is_empty()) {
-    //         keys.pop_back();
-    //     };
+        while (!keys.is_empty()) {
+            keys.pop_back();
+        };
 
-    //     keys.destroy_empty();
-    // }
+        keys.destroy_empty();
+    }
 
-    // #[test_only]
-    // fun new_owner_cap(ctx: &mut TxContext): OwnerCap {
-    //     OwnerCap {
-    //         id: object::new(ctx),
-    //     }
-    // }
+    #[test_only]
+    fun new_owner_cap(ctx: &mut TxContext): OwnerCap {
+        OwnerCap {
+            id: object::new(ctx),
+        }
+    }
 
-    // #[test_only]
-    // fun destroy_owner_cap(owner_cap: OwnerCap) {
-    //     let OwnerCap { id } = owner_cap;
-    //     object::delete(id);
-    // }
+    #[test_only]
+    fun destroy_owner_cap(owner_cap: OwnerCap) {
+        let OwnerCap { id } = owner_cap;
+        object::delete(id);
+    }
 
-    // #[test_only]
-    // fun new_operator_cap(self: &mut Operators, ctx: &mut TxContext): OperatorCap {
-    //     let operator_cap = OperatorCap {
-    //         id: object::new(ctx),
-    //     };
+    #[test_only]
+    fun new_operator_cap(self: &mut Operators, ctx: &mut TxContext): OperatorCap {
+        let operator_cap = OperatorCap {
+            id: object::new(ctx),
+        };
 
-    //     self.operators.insert(ctx.sender());
-    //     operator_cap
-    // }
+        self.operators.insert(ctx.sender());
+        operator_cap
+    }
 
-    // #[test_only]
-    // fun destroy_operator_cap(operator_cap: OperatorCap) {
-    //     let OperatorCap { id } = operator_cap;
-    //     object::delete(id);
-    // }
+    #[test_only]
+    fun destroy_operator_cap(operator_cap: OperatorCap) {
+        let OperatorCap { id } = operator_cap;
+        object::delete(id);
+    }
 
-    // #[test]
-    // fun test_init() {
-    //     let ctx = &mut tx_context::dummy();
-    //     init(ctx);
+    #[test]
+    fun test_init() {
+        let ctx = &mut tx_context::dummy();
+        init(ctx);
 
-    //     let owner_cap = new_owner_cap(ctx);
-    //     destroy_owner_cap(owner_cap);
-    // }
+        let owner_cap = new_owner_cap(ctx);
+        destroy_owner_cap(owner_cap);
+    }
 
-    // #[test]
-    // fun test_add_and_remove_operator() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
+    #[test]
+    fun test_add_and_remove_operator() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
 
-    //     let new_operator = @0x1;
-    //     add_operator(&mut operators, &owner_cap, new_operator, ctx);
-    //     assert!(operators.operators.size() == 1, 0);
+        let new_operator = @0x1;
+        add_operator(&mut operators, &owner_cap, new_operator, ctx);
+        assert!(operators.operators.size() == 1, 0);
 
-    //     let operator_id = operators.operators.keys()[0];
-    //     remove_operator(&mut operators, &owner_cap, operator_id);
-    //     assert!(operators.operators.is_empty(), 1);
+        let operator_id = operators.operators.keys()[0];
+        remove_operator(&mut operators, &owner_cap, operator_id);
+        assert!(operators.operators.is_empty(), 1);
 
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    // #[test]
-    // fun test_store_and_remove_cap() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-    //     let external_cap = new_owner_cap(ctx);
+    #[test]
+    fun test_store_and_remove_cap() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+        let external_cap = new_owner_cap(ctx);
 
-    //     let external_id = object::id(&external_cap);
+        let external_id = object::id(&external_cap);
 
-    //     store_cap(&mut operators, &owner_cap, external_cap);
-    //     assert!(operators.caps.contains(external_id), 0);
+        store_cap(&mut operators, &owner_cap, external_cap);
+        assert!(operators.caps.contains(external_id), 0);
 
-    //     let borrowed_cap = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
-    //     assert!(object::id(borrowed_cap) == external_id, 1);
+        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        // The cap should be removed from operators when borrowed
+        assert!(!operators.caps.contains(external_id), 1);
+        // Restore the borrowed cap
+        restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
+        // The cap should be restored to operators
+        assert!(operators.caps.contains(external_id), 1);
 
-    //     let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-    //     assert!(object::id(borrowed_mut_cap) == external_id, 1);
+        let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        assert!(object::id(borrowed_mut_cap) == external_id, 1);
 
-    //     let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
-    //     assert!(!operators.caps.contains(external_id), 2);
+        let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
+        assert!(!operators.caps.contains(external_id), 2);
 
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_owner_cap(removed_cap);
-    //     destroy_operators(operators);
-    // }
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_owner_cap(removed_cap);
+        destroy_operators(operators);
+    }
 
-    // #[test]
-    // fun test_borrow_cap_and_restore_cap() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-    //     let external_cap = new_owner_cap(ctx);
+    #[test]
+    #[expected_failure(abort_code = vec_set::EKeyDoesNotExist)]
+    fun test_remove_operator_fail() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
 
-    //     let external_id = object::id(&external_cap);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-    //     store_cap(&mut operators, &owner_cap, external_cap);
-    //     assert!(operators.caps.contains(external_id), 0);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    //     let borrowed_cap = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
-    //     assert!(object::id(borrowed_cap) == external_id, 1);
+    #[test]
+    #[expected_failure(abort_code = EOperatorNotFound)]
+    fun test_borrow_cap_not_operator() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+        let external_cap = new_owner_cap(ctx);
 
-    //     restore_cap(&mut operators, &operator_cap, borrowed_cap);
+        let external_id = object::id(&external_cap);
 
-    //     assert!(!operators.caps.contains(external_id), 2);
+        store_cap(&mut operators, &owner_cap, external_cap);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
 
-    // #[test]
-    // #[expected_failure(abort_code = vec_set::EKeyDoesNotExist)]
-    // fun test_remove_operator_fail() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    //     remove_operator(&mut operators, &owner_cap, ctx.sender());
+    #[test]
+    #[expected_failure(abort_code = ECapNotFound)]
+    fun test_borrow_cap_no_such_cap() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
 
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        let operator_id = object::id(&operator_cap);
 
-    // #[test]
-    // #[expected_failure(abort_code = EOperatorNotFound)]
-    // fun test_borrow_cap_not_operator() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-    //     let external_cap = new_owner_cap(ctx);
+        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
+        restore_cap(&mut operators, &operator_cap, operator_id, borrowed_cap);
 
-    //     let external_id = object::id(&external_cap);
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    //     store_cap(&mut operators, &owner_cap, external_cap);
-    //     remove_operator(&mut operators, &owner_cap, ctx.sender());
+    #[test]
+    #[expected_failure(abort_code = EOperatorNotFound)]
+    fun test_borrow_cap_mut_not_operator() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+        let external_cap = new_owner_cap(ctx);
 
-    //     borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
+        let external_id = object::id(&external_cap);
 
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        store_cap(&mut operators, &owner_cap, external_cap);
+        remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-    // #[test]
-    // #[expected_failure(abort_code = ECapNotFound)]
-    // fun test_borrow_cap_no_such_cap() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
+        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
 
-    //     let operator_id = object::id(&operator_cap);
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    //     borrow_cap<OwnerCap>(&operators, &operator_cap, operator_id, ctx);
+    #[test]
+    #[expected_failure(abort_code = ECapNotFound)]
+    fun test_borrow_cap_mut_no_such_cap() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
 
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        let operator_id = object::id(&operator_cap);
 
-    // #[test]
-    // #[expected_failure(abort_code = EOperatorNotFound)]
-    // fun test_borrow_cap_mut_not_operator() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-    //     let external_cap = new_owner_cap(ctx);
+        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
 
-    //     let external_id = object::id(&external_cap);
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_operators(operators);
+    }
 
-    //     store_cap(&mut operators, &owner_cap, external_cap);
-    //     remove_operator(&mut operators, &owner_cap, ctx.sender());
+    #[test]
+    #[expected_failure(abort_code = sui::dynamic_field::EFieldDoesNotExist)]
+    fun test_remove_cap_fail() {
+        let ctx = &mut tx_context::dummy();
+        let mut operators = new_operators(ctx);
+        let owner_cap = new_owner_cap(ctx);
+        let operator_cap = new_operator_cap(&mut operators, ctx);
+        let external_cap = new_owner_cap(ctx);
 
-    //     borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        let external_id = object::id(&external_cap);
 
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
+        let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
 
-    // #[test]
-    // #[expected_failure(abort_code = ECapNotFound)]
-    // fun test_borrow_cap_mut_no_such_cap() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-
-    //     let operator_id = object::id(&operator_cap);
-
-    //     borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
-
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_operators(operators);
-    // }
-
-    // #[test]
-    // #[expected_failure(abort_code = sui::dynamic_field::EFieldDoesNotExist)]
-    // fun test_remove_cap_fail() {
-    //     let ctx = &mut tx_context::dummy();
-    //     let mut operators = new_operators(ctx);
-    //     let owner_cap = new_owner_cap(ctx);
-    //     let operator_cap = new_operator_cap(&mut operators, ctx);
-    //     let external_cap = new_owner_cap(ctx);
-
-    //     let external_id = object::id(&external_cap);
-
-    //     let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
-
-    //     destroy_operator_cap(operator_cap);
-    //     destroy_owner_cap(owner_cap);
-    //     destroy_owner_cap(external_cap);
-    //     destroy_owner_cap(removed_cap);
-    //     destroy_operators(operators);
-    // }
+        destroy_operator_cap(operator_cap);
+        destroy_owner_cap(owner_cap);
+        destroy_owner_cap(external_cap);
+        destroy_owner_cap(removed_cap);
+        destroy_operators(operators);
+    }
 }
