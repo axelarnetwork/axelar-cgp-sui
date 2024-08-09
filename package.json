@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.3.1",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
@@ -20,7 +20,7 @@
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
-    "release": "npm run build && changeset publish",
+    "release": "npm run build && npm publish --no-git-checks --access public",
     "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
     "prettier": "prettier --write './src/*.ts' './test/*.js'"
