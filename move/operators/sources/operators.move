@@ -136,7 +136,7 @@ module operators::operators {
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
         LoanedCap<T> {
-            cap: bag::remove(&mut self.caps, cap_id)
+            cap: self.caps.remove<ID, T>(cap_id)
         }
     }
 
@@ -149,7 +149,7 @@ module operators::operators {
     ) {
         let LoanedCap { cap } = loan_cap;
 
-        bag::add(&mut self.caps, cap_id, cap);
+        self.caps.add(cap_id, cap);
     }
 
     /// Removes a capability from the `Operators` struct.
