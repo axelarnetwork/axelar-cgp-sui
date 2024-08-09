@@ -28,7 +28,7 @@ module operators::operators {
         caps: Bag,
     }
 
-    public struct BorrowedCap<T: key + store> {
+    public struct LoanedCap<T: key + store> {
         cap: T
     }
 
@@ -125,49 +125,31 @@ module operators::operators {
         });
     }
 
-    /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap<T: key + store>(
+    /// Allows an approved operator to loan out a capability by its ID. The loaned capability needs to be restored by the end of the transaction.
+    public fun loan_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
         cap_id: ID,
         ctx: &mut TxContext
-    ): BorrowedCap<T> {
+    ): LoanedCap<T> {
         assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
-        BorrowedCap<T> {
+        LoanedCap<T> {
             cap: bag::remove(&mut self.caps, cap_id)
         }
     }
 
-    /// Restore a borrowed capability back to the `Operators` struct.
+    /// Restore a loaned capability back to the `Operators` struct.
     public fun restore_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
         cap_id: ID,
-        borrow_cap: BorrowedCap<T>
+        loan_cap: LoanedCap<T>
     ) {
-        let BorrowedCap { cap } = borrow_cap;
+        let LoanedCap { cap } = loan_cap;
 
         bag::add(&mut self.caps, cap_id, cap);
-    }
-
-    /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap_mut<T: key + store>(
-        self: &mut Operators,
-        _operator_cap: &OperatorCap,
-        cap_id: ID,
-        ctx: &mut TxContext
-    ): BorrowedCap<T> {
-        assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
-        assert!(self.caps.contains(cap_id), ECapNotFound);
-
-        // &mut self.caps[cap_id]
-        let caps = bag::remove(&mut self.caps, cap_id);
-
-        BorrowedCap<T> {
-          cap: caps
-        }
     }
 
     /// Removes a capability from the `Operators` struct.
@@ -278,16 +260,13 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         assert!(operators.caps.contains(external_id), 0);
 
-        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
         // The cap should be removed from operators when borrowed
         assert!(!operators.caps.contains(external_id), 1);
         // Restore the borrowed cap
         restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
         // The cap should be restored to operators
         assert!(operators.caps.contains(external_id), 1);
-
-        let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        assert!(object::id(borrowed_mut_cap) == external_id, 1);
 
         let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
         assert!(!operators.caps.contains(external_id), 2);
@@ -325,7 +304,7 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
         restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
 
         destroy_operator_cap(operator_cap);
@@ -343,46 +322,8 @@ module operators::operators {
 
         let operator_id = object::id(&operator_cap);
 
-        let borrowed_cap = borrow_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
+        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
         restore_cap(&mut operators, &operator_cap, operator_id, borrowed_cap);
-
-        destroy_operator_cap(operator_cap);
-        destroy_owner_cap(owner_cap);
-        destroy_operators(operators);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EOperatorNotFound)]
-    fun test_borrow_cap_mut_not_operator() {
-        let ctx = &mut tx_context::dummy();
-        let mut operators = new_operators(ctx);
-        let owner_cap = new_owner_cap(ctx);
-        let operator_cap = new_operator_cap(&mut operators, ctx);
-        let external_cap = new_owner_cap(ctx);
-
-        let external_id = object::id(&external_cap);
-
-        store_cap(&mut operators, &owner_cap, external_cap);
-        remove_operator(&mut operators, &owner_cap, ctx.sender());
-
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-
-        destroy_operator_cap(operator_cap);
-        destroy_owner_cap(owner_cap);
-        destroy_operators(operators);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ECapNotFound)]
-    fun test_borrow_cap_mut_no_such_cap() {
-        let ctx = &mut tx_context::dummy();
-        let mut operators = new_operators(ctx);
-        let owner_cap = new_owner_cap(ctx);
-        let operator_cap = new_operator_cap(&mut operators, ctx);
-
-        let operator_id = object::id(&operator_cap);
-
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
