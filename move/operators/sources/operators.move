@@ -28,7 +28,7 @@ module operators::operators {
         caps: Bag,
     }
 
-    public struct BorrowedCap<T> {
+    public struct BorrowedCap<T: key + store> {
         cap: T
     }
 
@@ -158,11 +158,16 @@ module operators::operators {
         _operator_cap: &OperatorCap,
         cap_id: ID,
         ctx: &mut TxContext
-    ): &mut T {
+    ): BorrowedCap<T> {
         assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
-        &mut self.caps[cap_id]
+        // &mut self.caps[cap_id]
+        let caps = bag::remove(&mut self.caps, cap_id);
+
+        BorrowedCap<T> {
+          cap: caps
+        }
     }
 
     /// Removes a capability from the `Operators` struct.
