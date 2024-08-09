@@ -148,6 +148,7 @@ module operators::operators {
         borrow_cap: BorrowedCap<T>
     ) {
         let BorrowedCap { cap } = borrow_cap;
+
         bag::add(&mut self.caps, cap_id, cap);
     }
 
