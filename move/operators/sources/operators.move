@@ -142,7 +142,7 @@ module operators::operators {
         // Create a new `Referent` to store the loaned capability
         let mut referent = borrow::new(cap, ctx);
 
-        // Borrow the T capability and a Borrow hot potato object from the `Referent`
+        // Create a `Borrow` hot potato object from the `Referent` that needs to be returned within the same tx
         let (loaned_cap, borrow_obj) = borrow::borrow(&mut referent);
 
         // Store the `Referent` in the `Operators` struct
