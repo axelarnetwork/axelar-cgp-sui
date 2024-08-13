@@ -122,7 +122,8 @@ module operators::operators {
         });
     }
 
-    /// Allows an approved operator to loan out a capability by its ID. The loaned capability needs to be restored by the end of the transaction.
+    /// Allows an approved operator to temporarily loan out a capability by its ID.
+    /// The loaned capability must be restored by the end of the transaction.
     public fun loan_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
@@ -148,7 +149,8 @@ module operators::operators {
         (loaned_cap, borrow_obj)
     }
 
-    /// Restore a loaned capability back to the `Operators` struct.
+    /// Restores a previously loaned capability back to the `Operators` struct.
+    /// This function must be called before the end of the transaction to return the loaned capability.
     public fun restore_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
@@ -158,6 +160,7 @@ module operators::operators {
     ) {
       assert!(self.caps.contains(cap_id), ECapNotFound);
 
+      // Remove the `Referent` from the `Operators` struct
       let mut referent = self.caps.remove(cap_id);
 
       // Put back the borrowed capability and `T` capability into the `Referent`
