@@ -1,7 +1,6 @@
 name: Publish to NPM
 
 on:
-  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -16,9 +15,9 @@ env:
 jobs:
   publish:
     name: Publish to NPM
-    # if: >
-    #   github.event.pull_request.merged == true &&
-    #   github.event.pull_request.user.login == 'github-actions[bot]'
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.login == 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -44,10 +43,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Create GitHub Release
-        if: steps.check-changeset-files.outputs.has_changeset_files == 'false'
-        uses: changesets/action@v1
-        with:
-          createGithubReleases: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # TODO: GH release is disabled for now because it's not working
+      # - name: Create GitHub Release
+      #   if: steps.check-changeset-files.outputs.has_changeset_files == 'false'
+      #   uses: changesets/action@v1
+      #   with:
+      #     createGithubReleases: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
