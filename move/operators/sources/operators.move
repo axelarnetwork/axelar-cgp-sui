@@ -2,6 +2,7 @@ module operators::operators {
     use sui::bag::{Self, Bag};
     use sui::vec_set::{Self, VecSet};
     use sui::event;
+    use sui::borrow::{Self, Borrow};
     use std::ascii::String;
     use std::type_name;
 
@@ -26,6 +27,8 @@ module operators::operators {
         operators: VecSet<address>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
+        // map-like collection of Referents storing loaned capabilities. Referents only get stored for the duration of the tx.
+        loaned_caps: Bag,
     }
 
     // ------
@@ -74,6 +77,7 @@ module operators::operators {
             id: object::new(ctx),
             operators: vec_set::empty(),
             caps: bag::new(ctx),
+            loaned_caps: bag::new(ctx),
         });
 
         let cap = OwnerCap {
@@ -121,30 +125,55 @@ module operators::operators {
         });
     }
 
-    /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap<T: key + store>(
-        self: &Operators,
-        _operator_cap: &OperatorCap,
-        cap_id: ID,
-        ctx: &mut TxContext
-    ): &T {
-        assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
-        assert!(self.caps.contains(cap_id), ECapNotFound);
-
-        &self.caps[cap_id]
-    }
-
-    /// Allows an approved operator to borrow a capability by its ID.
-    public fun borrow_cap_mut<T: key + store>(
+    /// Allows an approved operator to temporarily loan out a capability by its ID.
+    /// The loaned capability must be restored by the end of the transaction.
+    public fun loan_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
         cap_id: ID,
         ctx: &mut TxContext
-    ): &mut T {
+    ): (T, Borrow) {
         assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
-        &mut self.caps[cap_id]
+        // Remove the capability from the `Operators` struct to loan it out
+        let cap = self.caps.remove(cap_id);
+
+        // Create a new `Referent` to store the loaned capability
+        let mut referent = borrow::new(cap, ctx);
+
+        // Create a `Borrow` hot potato object from the `Referent` that needs to be returned within the same tx
+        let (loaned_cap, borrow_obj) = borrow::borrow(&mut referent);
+
+        // Store the `Referent` in the `Operators` struct
+        self.loaned_caps.add(cap_id, referent);
+
+        // Return a tuple of the borrowed capability and the Borrow hot potato object
+        (loaned_cap, borrow_obj)
+    }
+
+    /// Restores a previously loaned capability back to the `Operators` struct.
+    /// This function must be called before the end of the transaction to return the loaned capability.
+    public fun restore_cap<T: key + store>(
+        self: &mut Operators,
+        _operator_cap: &OperatorCap,
+        cap_id: ID,
+        loaned_cap: T,
+        borrow_obj: Borrow
+    ) {
+      assert!(self.loaned_caps.contains(cap_id), ECapNotFound);
+
+      // Remove the `Referent` from the `Operators` struct
+      let mut referent = self.loaned_caps.remove(cap_id);
+
+      // Put back the borrowed capability and `T` capability into the `Referent`
+      borrow::put_back(&mut referent, loaned_cap, borrow_obj);
+
+      // Unpack the `Referent` struct and get the `T` capability
+      let cap: T = borrow::destroy(referent);
+
+      // Add the capability back to the `Operators` struct
+      self.caps.add(cap_id, cap);
     }
 
     /// Removes a capability from the `Operators` struct.
@@ -167,15 +196,17 @@ module operators::operators {
             id: object::new(ctx),
             operators: vec_set::empty(),
             caps: bag::new(ctx),
+            loaned_caps: bag::new(ctx),
         }
     }
 
     #[test_only]
     fun destroy_operators(operators: Operators) {
-        let Operators { id, operators, caps } = operators;
+        let Operators { id, operators, caps, loaned_caps } = operators;
 
         id.delete();
         caps.destroy_empty();
+        loaned_caps.destroy_empty();
 
         let mut keys = operators.into_keys();
 
@@ -255,14 +286,15 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         assert!(operators.caps.contains(external_id), 0);
 
-        let borrowed_cap = borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
-        assert!(object::id(borrowed_cap) == external_id, 1);
-
-        let borrowed_mut_cap = borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        assert!(object::id(borrowed_mut_cap) == external_id, 1);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        assert!(operators.loaned_caps.contains(external_id), 1);
+        assert!(!operators.caps.contains(external_id), 2);
+        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
+        assert!(!operators.loaned_caps.contains(external_id), 3);
+        assert!(operators.caps.contains(external_id), 2);
 
         let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
-        assert!(!operators.caps.contains(external_id), 2);
+        assert!(!operators.caps.contains(external_id), 3);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -297,7 +329,8 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-        borrow_cap<OwnerCap>(&operators, &operator_cap, external_id, ctx);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -314,45 +347,8 @@ module operators::operators {
 
         let operator_id = object::id(&operator_cap);
 
-        borrow_cap<OwnerCap>(&operators, &operator_cap, operator_id, ctx);
-
-        destroy_operator_cap(operator_cap);
-        destroy_owner_cap(owner_cap);
-        destroy_operators(operators);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EOperatorNotFound)]
-    fun test_borrow_cap_mut_not_operator() {
-        let ctx = &mut tx_context::dummy();
-        let mut operators = new_operators(ctx);
-        let owner_cap = new_owner_cap(ctx);
-        let operator_cap = new_operator_cap(&mut operators, ctx);
-        let external_cap = new_owner_cap(ctx);
-
-        let external_id = object::id(&external_cap);
-
-        store_cap(&mut operators, &owner_cap, external_cap);
-        remove_operator(&mut operators, &owner_cap, ctx.sender());
-
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-
-        destroy_operator_cap(operator_cap);
-        destroy_owner_cap(owner_cap);
-        destroy_operators(operators);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ECapNotFound)]
-    fun test_borrow_cap_mut_no_such_cap() {
-        let ctx = &mut tx_context::dummy();
-        let mut operators = new_operators(ctx);
-        let owner_cap = new_owner_cap(ctx);
-        let operator_cap = new_operator_cap(&mut operators, ctx);
-
-        let operator_id = object::id(&operator_cap);
-
-        borrow_cap_mut<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
+        restore_cap(&mut operators, &operator_cap, operator_id, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
