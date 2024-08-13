@@ -40,7 +40,7 @@ jobs:
 
       - name: Publish to NPM
         run: |
-          npm publish --no-git-checks --tag snapshot --access public
+          npm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
