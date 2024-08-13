@@ -137,13 +137,13 @@ module operators::operators {
         assert!(self.caps.contains(cap_id), ECapNotFound);
 
         // Remove the capability from the `Operators` struct to loan it out
-        let cap = self.caps.remove<ID, T>(cap_id);
+        let cap = self.caps.remove(cap_id);
 
         // Create a new `Referent` to store the loaned capability
-        let mut referent = borrow::new<T>(cap, ctx);
+        let mut referent = borrow::new(cap, ctx);
 
         // Borrow the T capability and a Borrow hot potato object from the `Referent`
-        let (loaned_cap, borrow_obj) = borrow::borrow<T>(&mut referent);
+        let (loaned_cap, borrow_obj) = borrow::borrow(&mut referent);
 
         // Store the `Referent` in the `Operators` struct
         self.loaned_caps.add(cap_id, referent);
