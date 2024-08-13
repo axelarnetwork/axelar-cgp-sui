@@ -27,6 +27,8 @@ module operators::operators {
         operators: VecSet<address>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
+        // map-like collection of Referents storing loaned capabilities
+        loaned_caps: Bag,
     }
 
     // ------
@@ -75,6 +77,7 @@ module operators::operators {
             id: object::new(ctx),
             operators: vec_set::empty(),
             caps: bag::new(ctx),
+            loaned_caps: bag::new(ctx),
         });
 
         let cap = OwnerCap {
@@ -142,8 +145,8 @@ module operators::operators {
         // Borrow the T capability and a Borrow hot potato object from the `Referent`
         let (loaned_cap, borrow_obj) = borrow::borrow<T>(&mut referent);
 
-        // Store the `Referent` back in the `Operators` struct
-        self.caps.add(cap_id, referent);
+        // Store the `Referent` in the `Operators` struct
+        self.loaned_caps.add(cap_id, referent);
 
         // Return a tuple of the borrowed capability and the Borrow hot potato object
         (loaned_cap, borrow_obj)
@@ -161,7 +164,7 @@ module operators::operators {
       assert!(self.caps.contains(cap_id), ECapNotFound);
 
       // Remove the `Referent` from the `Operators` struct
-      let mut referent = self.caps.remove(cap_id);
+      let mut referent = self.loaned_caps.remove(cap_id);
 
       // Put back the borrowed capability and `T` capability into the `Referent`
       borrow::put_back(&mut referent, loaned_cap, borrow_obj);
