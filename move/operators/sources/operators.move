@@ -281,16 +281,12 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         assert!(operators.caps.contains(external_id), 0);
 
-        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        // The cap should be removed from operators when borrowed
-        assert!(!operators.caps.contains(external_id), 1);
-        // Restore the borrowed cap
-        restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
-        // The cap should be restored to operators
-        assert!(operators.caps.contains(external_id), 1);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
+        assert!(operators.caps.contains(external_id), 2);
 
         let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
-        assert!(!operators.caps.contains(external_id), 2);
+        assert!(!operators.caps.contains(external_id), 3);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -325,8 +321,8 @@ module operators::operators {
         store_cap(&mut operators, &owner_cap, external_cap);
         remove_operator(&mut operators, &owner_cap, ctx.sender());
 
-        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        restore_cap(&mut operators, &operator_cap, external_id, borrowed_cap);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
+        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -343,8 +339,8 @@ module operators::operators {
 
         let operator_id = object::id(&operator_cap);
 
-        let borrowed_cap = loan_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
-        restore_cap(&mut operators, &operator_cap, operator_id, borrowed_cap);
+        let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
+        restore_cap(&mut operators, &operator_cap, operator_id, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
