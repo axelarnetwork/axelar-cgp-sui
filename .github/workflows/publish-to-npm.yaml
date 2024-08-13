@@ -1,6 +1,7 @@
 name: Publish to NPM
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -38,11 +39,15 @@ jobs:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
       - name: Publish to NPM
+        run: |
+          npm publish --no-git-checks --tag snapshot --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
         if: steps.check-changeset-files.outputs.has_changeset_files == 'false'
         uses: changesets/action@v1
         with:
-          publish: npm run release
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
