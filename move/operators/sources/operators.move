@@ -27,7 +27,7 @@ module operators::operators {
         operators: VecSet<address>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
-        // map-like collection of Referents storing loaned capabilities
+        // map-like collection of Referents storing loaned capabilities. Referents only get stored for the duration of the tx.
         loaned_caps: Bag,
     }
 
