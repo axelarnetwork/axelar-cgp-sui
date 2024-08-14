@@ -20,7 +20,7 @@
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
-    "release": "npm run build && npm publish --no-git-checks --access public",
+    "release": "npm run build && changeset publish",
     "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
     "prettier": "prettier --write './src/*.ts' './test/*.js'"
