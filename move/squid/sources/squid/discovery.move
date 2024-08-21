@@ -119,6 +119,7 @@ module squid::discovery {
                 squid_arg,
                 its_arg,
                 vector[2],
+                vector[0, 6],
             ],
             vector[type_in],
         )

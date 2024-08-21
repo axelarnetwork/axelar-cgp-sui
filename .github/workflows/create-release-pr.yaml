@@ -1,0 +1,39 @@
+name: Create Release Pull Request
+
+on:
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+  SUI_VERSION: mainnet-v1.25.3
+
+jobs:
+  release-pr:
+    name: Create Release Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Check for changeset files
+        id: check-changeset-files
+        run: |
+          if ls .changeset/*.md | grep '\.changeset\/[a-z-]\+\.md$'; then
+            echo "has_changeset_files=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changeset_files=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release Pull Request
+        if: steps.check-changeset-files.outputs.has_changeset_files == 'true'
+        uses: changesets/action@v1
+        with:
+          title: 'chore: bump version and update changelog'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

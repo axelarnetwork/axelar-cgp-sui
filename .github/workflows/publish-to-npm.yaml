@@ -1,7 +1,11 @@
-name: Release
+name: Publish to NPM
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -9,20 +13,23 @@ env:
   SUI_VERSION: mainnet-v1.25.3
 
 jobs:
-  release:
-    name: Release
+  publish:
+    name: Publish to NPM
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.login == 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
       - name: Check for changeset files
-        id: checkfile
+        id: check-changeset-files
         run: |
           if ls .changeset/*.md | grep '\.changeset\/[a-z-]\+\.md$'; then
-            echo "has_file=true" >> "$GITHUB_OUTPUT"
+            echo "has_changeset_files=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_file=false" >> "$GITHUB_OUTPUT"
+            echo "has_changeset_files=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Setup Sui CLI and install dependencies
@@ -30,14 +37,13 @@ jobs:
         with:
           SUI_VERSION: ${{ env.SUI_VERSION }}
 
-      - name: Create Release Pull Request
-        if: steps.checkfile.outputs.has_file == 'true'
+      - name: Create GitHub Release
+        if: steps.check-changeset-files.outputs.has_changeset_files == 'false'
         uses: changesets/action@v1
         with:
-          title: 'release: bump version and publish to npm'
-          commit: 'chore: bump version and update changelog'
           publish: npm run release
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
