@@ -1,5 +1,12 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.4.1
+
+### Patch Changes
+
+-   fd297c7: Added Bag and Operator bcs structs
+-   d86325e: rename test package
+
 ## 0.4.0
 
 ### Minor Changes
