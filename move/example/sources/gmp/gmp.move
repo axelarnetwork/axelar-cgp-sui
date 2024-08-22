@@ -1,4 +1,4 @@
-module test::test {
+module example::gmp {
     use std::ascii;
     use std::ascii::{String};
     use std::type_name;
