@@ -249,20 +249,24 @@ export class TxBuilder {
     async getContractBuild(
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
-        tmpdir?: string,
     ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
         const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
         tmp.setGracefulCleanup();
 
-        const tmpobj = tmp.dirSync({ unsafeCleanup: true, tmpdir });
+        const tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
         const { modules, dependencies, digest } = JSON.parse(
-            execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpobj.name}`, {
-                encoding: 'utf-8',
-                stdio: 'pipe', // silent the output
-            }),
+            execSync(
+                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
+                    process.env.SUI_TMPDIR || tmpobj.name
+                }`,
+                {
+                    encoding: 'utf-8',
+                    stdio: 'pipe', // silent the output
+                },
+            ),
         );
 
         return { modules, dependencies, digest };
