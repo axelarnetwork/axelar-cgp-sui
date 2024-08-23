@@ -1,33 +1,34 @@
-module squid::discovery {
-    use std::ascii::{Self, String};
+module squid::discovery;
 
-    use sui::bcs;
+use axelar_gateway::discovery::{Self, RelayerDiscovery, MoveCall, Transaction};
+use its::its::ITS;
+use squid::deepbook_v2;
+use squid::squid::Squid;
+use squid::transfers;
+use std::ascii::{Self, String};
+use sui::bcs;
 
-    use axelar_gateway::discovery::{Self, RelayerDiscovery, MoveCall, Transaction};
+const EInvalidSwapType: u64 = 0;
 
-    use its::its::ITS;
+const SWAP_TYPE_DEEPBOOK_V2: u8 = 1;
+const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
+const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
 
-    use squid::squid::Squid;
-    use squid::transfers;
-    use squid::deepbook_v2;
+public fun register_transaction(
+    squid: &Squid,
+    its: &ITS,
+    relayer_discovery: &mut RelayerDiscovery,
+) {
+    let mut squid_arg = vector[0];
+    squid_arg.append(object::id(squid).id_to_bytes());
 
-    const EInvalidSwapType: u64 = 0;
+    let mut its_arg = vector[0];
+    its_arg.append(object::id(its).id_to_bytes());
 
-    const SWAP_TYPE_DEEPBOOK_V2: u8 = 1;
-    const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
-    const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
-
-
-    public fun register_transaction(squid: &Squid, its: &ITS, relayer_discovery: &mut RelayerDiscovery) {
-        let mut squid_arg = vector[0];
-        squid_arg.append(object::id(squid).id_to_bytes());
-
-        let mut its_arg = vector[0];
-        its_arg.append(object::id(its).id_to_bytes());
-
-        let transaction = discovery::new_transaction(
-            false,
-            vector[discovery::new_move_call(
+    let transaction = discovery::new_transaction(
+        false,
+        vector[
+            discovery::new_move_call(
                 discovery::new_function(
                     discovery::package_id<Squid>(),
                     ascii::string(b"discovery"),
@@ -39,103 +40,151 @@ module squid::discovery {
                     vector[3],
                 ],
                 vector[],
-            )],
-        );
+            ),
+        ],
+    );
 
-        relayer_discovery.register_transaction(
-            squid.borrow_channel(),
-            transaction,
-        )
-    }
+    relayer_discovery.register_transaction(
+        squid.borrow_channel(),
+        transaction,
+    )
+}
 
-    public fun get_transaction(squid: &Squid, its: &ITS, payload: vector<u8>): Transaction {
-        let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(payload);
-        let type_in = (*its.get_registered_coin_type(token_id)).into_string();
-        let package_id = discovery::package_id<Squid>();
-        let swap_data = bcs::new(data).peel_vec_vec_u8();
+public fun get_transaction(
+    squid: &Squid,
+    its: &ITS,
+    payload: vector<u8>,
+): Transaction {
+    let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(
+        payload,
+    );
+    let type_in = (*its.get_registered_coin_type(token_id)).into_string();
+    let package_id = discovery::package_id<Squid>();
+    let swap_data = bcs::new(data).peel_vec_vec_u8();
 
+    let mut squid_arg = vector[0];
+    squid_arg.append(object::id(squid).id_to_bytes());
 
-        let mut squid_arg = vector[0];
-        squid_arg.append(object::id(squid).id_to_bytes());
+    let mut its_arg = vector[0];
+    its_arg.append(object::id(its).id_to_bytes());
+    let swap_info_arg = vector[4, 0, 0];
 
-        let mut its_arg = vector[0];
-        its_arg.append(object::id(its).id_to_bytes());
-        let swap_info_arg = vector[4, 0, 0];
+    let mut move_calls = vector[
+        start_swap(package_id, squid_arg, its_arg, type_in),
+    ];
 
-        let mut move_calls = vector [
-            start_swap(package_id, squid_arg, its_arg, type_in),
-        ];
+    let mut i = 0;
+    while (i < swap_data.length()) {
+        let mut bcs = bcs::new(swap_data[i]);
+        let swap_type = bcs.peel_u8();
 
-        let mut i = 0;
-        while(i < swap_data.length()) {
-            let mut bcs = bcs::new(swap_data[i]);
-            let swap_type = bcs.peel_u8();
-
-           if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
-                move_calls.push_back(deepbook_v2::get_estimate_move_call(package_id, bcs, swap_info_arg));
-            } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
-                move_calls.push_back(transfers::get_sui_estimate_move_call(package_id, bcs, swap_info_arg));
-            } else {
-                assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
-                move_calls.push_back(transfers::get_its_estimate_move_call(package_id, bcs, swap_info_arg));
-            };
-
-            i = i + 1;
+        if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
+            move_calls.push_back(
+                deepbook_v2::get_estimate_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                ),
+            );
+        } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
+            move_calls.push_back(
+                transfers::get_sui_estimate_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                ),
+            );
+        } else {
+            assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
+            move_calls.push_back(
+                transfers::get_its_estimate_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                ),
+            );
         };
 
-        i = 0;
-        while(i < swap_data.length()) {
-            let mut bcs = bcs::new(swap_data[i]);
-            let swap_type = bcs.peel_u8();
+        i = i + 1;
+    };
 
-            if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
-                move_calls.push_back(deepbook_v2::get_swap_move_call(package_id, bcs, swap_info_arg, squid_arg));
-            } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
-                move_calls.push_back(transfers::get_sui_transfer_move_call(package_id, bcs, swap_info_arg));
-            } else {
-                assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
-                move_calls.push_back(transfers::get_its_transfer_move_call(package_id, bcs, swap_info_arg, its_arg));
-            };
+    i = 0;
+    while (i < swap_data.length()) {
+        let mut bcs = bcs::new(swap_data[i]);
+        let swap_type = bcs.peel_u8();
 
-            i = i + 1;
+        if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
+            move_calls.push_back(
+                deepbook_v2::get_swap_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                    squid_arg,
+                ),
+            );
+        } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
+            move_calls.push_back(
+                transfers::get_sui_transfer_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                ),
+            );
+        } else {
+            assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
+            move_calls.push_back(
+                transfers::get_its_transfer_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                    its_arg,
+                ),
+            );
         };
 
-        move_calls.push_back(finalize(package_id, swap_info_arg));
+        i = i + 1;
+    };
 
-        discovery::new_transaction(
-            true,
-            move_calls,
-        )
-    }
+    move_calls.push_back(finalize(package_id, swap_info_arg));
 
-    fun start_swap(package_id: address, squid_arg: vector<u8>, its_arg: vector<u8>, type_in: String): MoveCall {
-        discovery::new_move_call(
-            discovery::new_function(
-                package_id,
-                ascii::string(b"squid"),
-                ascii::string(b"start_swap"),
-            ),
-            vector[
-                squid_arg,
-                its_arg,
-                vector[2],
-                vector[0, 6],
-            ],
-            vector[type_in],
-        )
-    }
+    discovery::new_transaction(
+        true,
+        move_calls,
+    )
+}
 
-    fun finalize(package_id: address, swap_info_arg: vector<u8>): MoveCall {
-        discovery::new_move_call(
-            discovery::new_function(
-                package_id,
-                ascii::string(b"swap_info"),
-                ascii::string(b"finalize"),
-            ),
-            vector[
-                swap_info_arg,
-            ],
-            vector[],
-        )
-    }
+fun start_swap(
+    package_id: address,
+    squid_arg: vector<u8>,
+    its_arg: vector<u8>,
+    type_in: String,
+): MoveCall {
+    discovery::new_move_call(
+        discovery::new_function(
+            package_id,
+            ascii::string(b"squid"),
+            ascii::string(b"start_swap"),
+        ),
+        vector[
+            squid_arg,
+            its_arg,
+            vector[2],
+            vector[0, 6],
+        ],
+        vector[type_in],
+    )
+}
+
+fun finalize(package_id: address, swap_info_arg: vector<u8>): MoveCall {
+    discovery::new_move_call(
+        discovery::new_function(
+            package_id,
+            ascii::string(b"swap_info"),
+            ascii::string(b"finalize"),
+        ),
+        vector[
+            swap_info_arg,
+        ],
+        vector[],
+    )
 }
