@@ -278,7 +278,7 @@ export class TxBuilder {
             }),
         );
 
-        rm();
+        rmTmpDir();
 
         return { modules, dependencies, digest };
     }
