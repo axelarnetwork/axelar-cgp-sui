@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 import { bcs, BcsType } from '@mysten/bcs';
 import {
@@ -12,7 +13,6 @@ import {
 import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
-import tmp from 'tmp';
 import { updateMoveToml } from './utils';
 
 const stdPackage = '0x1';
@@ -246,6 +246,22 @@ export class TxBuilder {
         });
     }
 
+    /**
+     * Prepare a move build by creating a temporary directory to store the compiled move code
+     * @returns {dir: string, rm: () => void}
+     * - dir is the path to the temporary directory
+     * - rm is a function to remove the temporary directory
+     */
+    private prepareMoveBuild() {
+        const tmpdir = fs.mkdtempSync(`${__dirname}/.move-build-`);
+        const rm = () => fs.rmdirSync(dir, { recursive: true });
+
+        return {
+            tmpdir,
+            rm,
+        };
+    }
+
     async getContractBuild(
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
@@ -253,21 +269,16 @@ export class TxBuilder {
         const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
-        tmp.setGracefulCleanup();
-
-        const tmpobj = tmp.dirSync({ unsafeCleanup: true });
+        const { tmpdir, rm } = this.prepareMoveBuild();
 
         const { modules, dependencies, digest } = JSON.parse(
-            execSync(
-                `sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${
-                    process.env.SUI_TMPDIR || tmpobj.name
-                }`,
-                {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                },
-            ),
+            execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
+                encoding: 'utf-8',
+                stdio: 'pipe', // silent the output
+            }),
         );
+
+        rm();
 
         return { modules, dependencies, digest };
     }
