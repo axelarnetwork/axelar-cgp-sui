@@ -269,7 +269,7 @@ export class TxBuilder {
         const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
-        const { tmpdir, rm } = this.prepareMoveBuild();
+        const { tmpdir, rmTmpDir } = this.prepareMoveBuild();
 
         const { modules, dependencies, digest } = JSON.parse(
             execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
