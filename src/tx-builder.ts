@@ -254,7 +254,7 @@ export class TxBuilder {
      */
     private prepareMoveBuild() {
         const tmpdir = fs.mkdtempSync(`${__dirname}/.move-build-`);
-        const rm = () => fs.rmdirSync(dir, { recursive: true });
+        const rm = () => fs.rmdirSync(tmpdir, { recursive: true });
 
         return {
             tmpdir,
