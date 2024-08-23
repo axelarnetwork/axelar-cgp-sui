@@ -2,4 +2,4 @@
 '@axelar-network/axelar-cgp-sui': patch
 ---
 
-allow passing custom tmpdir to avoid error on some dev environment
+remove tmp dependency and create directly manually at the same folder level to avoid error in docker container environment
