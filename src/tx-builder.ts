@@ -258,7 +258,7 @@ export class TxBuilder {
 
         return {
             tmpdir,
-            rm,
+            rmTmpDir,
         };
     }
 
