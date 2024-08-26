@@ -29,8 +29,8 @@ jobs:
       - name: Build TS and Move Modules
         run: npm run build
 
-      - name: Check Sui Version
-        run: sui --version
+      - name: Initialize Sui Config
+        run: echo -e "y\n\n1" | sui client envs 
 
       - name: Run Localnet
         run: nohup sh -c "RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis" > nohup.out 2> nohup.err < /dev/null &
