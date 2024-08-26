@@ -36,7 +36,6 @@ runs:
         mkdir -p sui-binaries
         mv ./sui ./sui-binaries/
         mv ./sui-debug ./sui-binaries/
-        mv ./sui-test-validator ./sui-binaries/
         rm -rf sui-${{ inputs.SUI_VERSION }}-ubuntu-x86_64.tgz
 
     - name: Save Sui binaries
@@ -52,7 +51,6 @@ runs:
       run: |
         sudo cp ./sui-binaries/sui /usr/local/bin/sui
         sudo cp ./sui-binaries/sui-debug /usr/local/bin/sui-debug
-        sudo cp ./sui-binaries/sui-test-validator /usr/local/bin/sui-test-validator
 
     - name: Setup Node
       uses: actions/setup-node@v4
