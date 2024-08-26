@@ -273,11 +273,12 @@ describe('Axelar Gateway', () => {
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(false);
         });
 
-        it('Should Execute Contract Call', async () => {
-            const result = await publishPackage(client, keypair, 'test');
+        it.only('Should Execute Contract Call', async () => {
+            await publishPackage(client, keypair, 'gas_service');
+            const result = await publishPackage(client, keypair, 'example');
 
             const testId = result.packageId;
-            const singleton = result.publishTxn.objectChanges.find((change) => change.objectType === `${testId}::test::Singleton`).objectId;
+            const singleton = result.publishTxn.objectChanges.find((change) => change.objectType === `${testId}::gmp::Singleton`).objectId;
             const sinlgetonData = await client.getObject({
                 id: singleton,
                 options: {
@@ -290,7 +291,7 @@ describe('Axelar Gateway', () => {
             let builder = new TxBuilder(client);
 
             await builder.moveCall({
-                target: `${testId}::test::register_transaction`,
+                target: `${testId}::gmp::register_transaction`,
                 arguments: [discovery, singleton],
             });
 
@@ -308,7 +309,7 @@ describe('Axelar Gateway', () => {
 
             let resp = await approveAndExecuteMessage(client, keypair, gatewayInfo, message, { showEvents: true });
 
-            const event = resp.events.find((event) => event.type === `${testId}::test::Executed`);
+            const event = resp.events.find((event) => event.type === `${testId}::gmp::Executed`);
 
             expect(event.parsedJson.payload === message.payload);
 
