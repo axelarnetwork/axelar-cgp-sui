@@ -273,7 +273,7 @@ describe('Axelar Gateway', () => {
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(false);
         });
 
-        it.only('Should Execute Contract Call', async () => {
+        it('Should Execute Contract Call', async () => {
             await publishPackage(client, keypair, 'gas_service');
             const result = await publishPackage(client, keypair, 'example');
 
