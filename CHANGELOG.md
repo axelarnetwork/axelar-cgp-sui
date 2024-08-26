@@ -5,7 +5,7 @@
 ### Patch Changes
 
 -   fd297c7: Added Bag and Operator bcs structs
--   d86325e: rename test package
+-   d86325e: Renamed Test package to Example
 
 ## 0.4.0
 
