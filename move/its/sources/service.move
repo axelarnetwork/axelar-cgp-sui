@@ -33,14 +33,12 @@ module its::service {
     /**
      * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
      */
-    const AXELAR_CHAIN_NAME: vector<u8> = b"Axelarnet";
-    const AXELAR_HUB: vector<u8> = b"hub";
+    const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
 
     /**
-     * @dev Special trusted address value that indicates that the ITS call
-     * for that destination chain should be routed via the ITS hub.
+     * @dev Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
      */
-    const ITS_HUB_TRUSTED_ADDRESS: vector<u8> = b"hub";
+    const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
@@ -58,6 +56,7 @@ module its::service {
     const EUnregisteredCoinHasUrl: u64 = 8;
     const EMalformedTrustedAddresses: u64 = 9;
     const ESenderNotHub: u64 = 10;
+    const EUntrustedChain: u64 = 11;
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
@@ -298,7 +297,7 @@ module its::service {
 
         let mut reader = abi::new_reader(payload);
         if (reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            assert!(source_chain.into_bytes() == AXELAR_CHAIN_NAME, ESenderNotHub);
+            assert!(source_chain.into_bytes() == ITS_HUB_CHAIN_NAME, ESenderNotHub);
             source_chain = ascii::string(reader.read_bytes());
             payload = reader.read_bytes();
         };
@@ -309,15 +308,24 @@ module its::service {
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
     fun send_payload(self: &mut ITS, mut destination_chain: String, mut payload: vector<u8>) {
         let mut destination_address = self.get_trusted_address(destination_chain);
-        if(destination_address.into_bytes() == ITS_HUB_TRUSTED_ADDRESS) {
+
+        // Prevent sending directly to the ITS Hub chain. This is not supported yet, so fail early to prevent the user from having their funds stuck.
+        assert!(destination_chain.into_bytes() != ITS_HUB_CHAIN_NAME, EUntrustedChain);
+
+        // Check whether the ITS call should be routed via ITS hub for this destination chain
+        if(destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
             let mut writter = abi::new_writer(3);
             writter.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
             writter.write_bytes(destination_chain.into_bytes());
             writter.write_bytes(payload);
             payload = writter.into_bytes();
-            destination_chain = ascii::string(AXELAR_CHAIN_NAME);
-            destination_address = self.get_trusted_address(ascii::string(AXELAR_HUB));
+            destination_chain = ascii::string(ITS_HUB_CHAIN_NAME);
+            destination_address = self.get_trusted_address(destination_chain);
         };
+
+        // Check whether no trusted address was set for the destination chain
+        assert!(destination_address.length() > 0, EUntrustedChain);
+
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
 }
