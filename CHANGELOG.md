@@ -4,8 +4,9 @@
 
 ### Patch Changes
 
+-   cf4ead4: Fixed publish error in docker container environment by removing the tmp package.
 -   fd297c7: Added Bag and Operator bcs structs
--   d86325e: Renamed Test package to Example
+-   d86325e: Renamed test package to example
 
 ## 0.4.0
 
