@@ -1,5 +1,13 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.4.1
+
+### Patch Changes
+
+-   cf4ead4: remove tmp dependency and create directly manually at the same folder level to avoid error in docker container environment
+-   fd297c7: Added Bag and Operator bcs structs
+-   d86325e: rename test package
+
 ## 0.4.0
 
 ### Minor Changes
