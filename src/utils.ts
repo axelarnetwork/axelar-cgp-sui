@@ -1,5 +1,5 @@
-import fs from 'fs';
 import { execSync } from 'child_process';
+import fs from 'fs';
 import { getFullnodeUrl } from '@mysten/sui/client';
 
 export function getModuleNameFromSymbol(symbol: string) {
