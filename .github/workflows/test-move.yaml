@@ -20,8 +20,6 @@ jobs:
 
       - name: Setup Sui CLI and install dependencies
         uses: ./.github/actions/install
-        with:
-          SUI_VERSION: ${{ env.SUI_VERSION }}
 
       - name: Build Move Modules
         run: npm run build-move
