@@ -68,6 +68,8 @@ public fun new(ctx: &mut TxContext): Channel {
     Channel {
         id,
     }
+
+
 }
 
 /// Destroy a `Channel`. Allows apps to destroy the `Channel` object when it's no longer needed.

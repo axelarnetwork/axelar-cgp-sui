@@ -83,4 +83,23 @@ public(package) fun peel(bcs: &mut BCS): Proof {
         signers,
         signatures,
     }
+
+    #[test_only]
+    public fun create_for_testing(signers: WeightedSigners, signatures: vector<Signature>): Proof {
+        Proof {
+            signers,
+            signatures,
+        }
+    }
+
+    #[test_only]
+    public fun dummy(): Proof {
+        let mut signature =  sui::address::to_bytes(@0x01);
+        signature.append(sui::address::to_bytes(@0x23));
+        signature.push_back(2);
+        Proof {
+            signers: axelar_gateway::weighted_signers::dummy(),
+            signatures: vector[ Signature { bytes: signature } ],
+        }
+    }
 }

@@ -68,6 +68,45 @@ public(package) fun new(ctx: &mut TxContext): AxelarSigners {
         last_rotation_timestamp: 0,
         previous_signers_retention: 0,
     }
+
+    #[test_only]
+    public fun dummy(ctx: &mut TxContext): AxelarSigners {
+        AxelarSigners {        
+            epoch: 0,
+            epoch_by_signers_hash: table::new(ctx),
+            domain_separator: bytes32::new(@0x1),
+            minimum_rotation_delay: 1,
+            last_rotation_timestamp: 0,
+            previous_signers_retention: 3,
+        }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(signers: AxelarSigners): (
+        u64,
+        Table<Bytes32, u64>,
+        Bytes32,
+        u64,
+        u64,
+        u64,
+    ) {
+        let AxelarSigners {        
+            epoch,
+            epoch_by_signers_hash,
+            domain_separator,
+            minimum_rotation_delay,
+            last_rotation_timestamp,
+            previous_signers_retention,
+        } = signers;
+        (
+            epoch,
+            epoch_by_signers_hash,
+            domain_separator,
+            minimum_rotation_delay,
+            last_rotation_timestamp,
+            previous_signers_retention,
+        )
+    }
 }
 
 public(package) fun setup(

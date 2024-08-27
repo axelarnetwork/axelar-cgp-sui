@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
@@ -33,6 +33,9 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
