@@ -2,7 +2,6 @@ module operators::operators {
     use sui::bag::{Self, Bag};
     use sui::vec_set::{Self, VecSet};
     use sui::event;
-    use sui::borrow::{Self, Borrow};
     use std::ascii::String;
     use std::type_name;
 
@@ -27,8 +26,10 @@ module operators::operators {
         operators: VecSet<address>,
         // map-like collection of capabilities stored as Sui objects
         caps: Bag,
-        // map-like collection of Referents storing loaned capabilities. Referents only get stored for the duration of the tx.
-        loaned_caps: Bag,
+    }
+
+    public struct Borrow {
+        id: ID,
     }
 
     // ------
@@ -77,7 +78,6 @@ module operators::operators {
             id: object::new(ctx),
             operators: vec_set::empty(),
             caps: bag::new(ctx),
-            loaned_caps: bag::new(ctx),
         });
 
         let cap = OwnerCap {
@@ -139,17 +139,13 @@ module operators::operators {
         // Remove the capability from the `Operators` struct to loan it out
         let cap = self.caps.remove(cap_id);
 
-        // Create a new `Referent` to store the loaned capability
-        let mut referent = borrow::new(cap, ctx);
-
-        // Create a `Borrow` hot potato object from the `Referent` that needs to be returned within the same tx
-        let (loaned_cap, borrow_obj) = borrow::borrow(&mut referent);
-
-        // Store the `Referent` in the `Operators` struct
-        self.loaned_caps.add(cap_id, referent);
+        // Create the Borrow object which tracks the id of the cap loaned.
+        let borrow_obj = Borrow {
+            id: object::id(&cap),
+        };
 
         // Return a tuple of the borrowed capability and the Borrow hot potato object
-        (loaned_cap, borrow_obj)
+        (cap, borrow_obj)
     }
 
     /// Restores a previously loaned capability back to the `Operators` struct.
@@ -157,23 +153,19 @@ module operators::operators {
     public fun restore_cap<T: key + store>(
         self: &mut Operators,
         _operator_cap: &OperatorCap,
-        cap_id: ID,
-        loaned_cap: T,
+        cap: T,
         borrow_obj: Borrow
     ) {
-      assert!(self.loaned_caps.contains(cap_id), ECapNotFound);
+        let cap_id = object::id(&cap);
 
-      // Remove the `Referent` from the `Operators` struct
-      let mut referent = self.loaned_caps.remove(cap_id);
+        // Destroy the Borrow object and capture the id it tracks.
+        let Borrow { id } = borrow_obj;
 
-      // Put back the borrowed capability and `T` capability into the `Referent`
-      borrow::put_back(&mut referent, loaned_cap, borrow_obj);
+        // Make sure the Borrow object corresponds to cap returned.
+        assert!(id == cap_id);
 
-      // Unpack the `Referent` struct and get the `T` capability
-      let cap: T = borrow::destroy(referent);
-
-      // Add the capability back to the `Operators` struct
-      self.caps.add(cap_id, cap);
+        // Add the capability back to the `Operators` struct
+        self.caps.add(cap_id, cap);
     }
 
     /// Removes a capability from the `Operators` struct.
