@@ -8,10 +8,14 @@ module its::service {
     use sui::event;
     use sui::bcs;
     use sui::clock::Clock;
+    use sui::sui::SUI;
 
     use abi::abi;
 
-    use axelar_gateway::channel::{Self, ApprovedMessage};
+    use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
+    use axelar_gateway::gateway;
+
+    use gas_service::gas_service::{Self, GasService};
 
     use governance::governance::{Self, Governance};
 
@@ -21,8 +25,6 @@ module its::service {
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
 
-    use axelar_gateway::gateway;
-    use axelar_gateway::channel::Channel;
 
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -61,7 +63,7 @@ module its::service {
     }
 
     public fun deploy_remote_interchain_token<T>(
-        self: &mut ITS, token_id: TokenId, destination_chain: String
+        self: &mut ITS, token_id: TokenId, destination_chain: String, gas_service: &mut GasService, gas: Coin<SUI>, ctx: &TxContext,
     ) {
         let coin_info = self.get_coin_info<T>(token_id);
         let name = coin_info.name();
@@ -77,7 +79,7 @@ module its::service {
             .write_u256((decimals as u256))
             .write_bytes(vector::empty());
 
-        send_payload(self, destination_chain, writer.into_bytes());
+        send_payload(self, destination_chain, writer.into_bytes(), gas_service, gas, ctx);
     }
 
     public fun interchain_transfer<T>(
@@ -87,6 +89,8 @@ module its::service {
         destination_chain: String,
         destination_address: vector<u8>,
         metadata: vector<u8>,
+        gas_service: &mut GasService, 
+        gas: Coin<SUI>,
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
@@ -103,7 +107,7 @@ module its::service {
             .write_u256(amount)
             .write_bytes(data);
 
-        send_payload(self, destination_chain, writer.into_bytes());
+        send_payload(self, destination_chain, writer.into_bytes(), gas_service, gas, ctx);
     }
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext) {
@@ -285,8 +289,22 @@ module its::service {
     }
 
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
-    fun send_payload(self: &mut ITS, destination_chain: String, payload: vector<u8>) {
+    fun send_payload(self: &mut ITS, destination_chain: String, payload: vector<u8>, gas_service: &mut GasService, gas: Coin<SUI>, ctx: &TxContext) {
         let destination_address = self.get_trusted_address(destination_chain);
+        if(gas.value() > 0) {    
+            gas_service::pay_gas(
+                gas_service,
+                gas,
+                self.channel().to_address(),
+                destination_chain,
+                destination_address,
+                payload,
+                ctx.sender(),
+                b"",
+            );
+        } else {
+            gas.destroy_zero();
+        };
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
 }
