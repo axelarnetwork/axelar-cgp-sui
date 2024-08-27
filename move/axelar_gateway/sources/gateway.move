@@ -433,8 +433,8 @@ public fun destroy_for_testing(gateway: Gateway) {
 #[test]
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
-    let operator: ERROR = 123456;
-    let domain_separator = bytes32::new(ERROR, 789012);
+    let operator = @123456;
+    let domain_separator = bytes32::new(@789012);
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
