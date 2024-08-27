@@ -5,8 +5,11 @@ module squid::transfers {
     use sui::bcs::{Self, BCS};
     use sui::coin;
     use sui::clock::Clock;
+    use sui::sui::SUI;
 
     use axelar_gateway::discovery::{Self, MoveCall};
+
+    use gas_service::gas_service::GasService;
 
     use its::service;
     use its::its::ITS;
@@ -107,7 +110,7 @@ module squid::transfers {
         transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), swap_data.recipient);
     }
 
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, clock: &Clock, ctx: &mut TxContext) {
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, its: &mut ITS, gas_service: &mut GasService, clock: &Clock, ctx: &mut TxContext) {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return;
         let swap_data = new_its_transfer_swap_data(data);
@@ -132,6 +135,8 @@ module squid::transfers {
             swap_data.destination_chain,
             swap_data.destination_address,
             swap_data.metadata,
+            gas_service,
+            coin::zero<SUI>(ctx),
             clock,
             ctx,
         );
