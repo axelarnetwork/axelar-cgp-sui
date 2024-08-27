@@ -1,88 +1,80 @@
+
+
 /// Defines the `CoinInfo` type which allows to store information about a coin:
 /// either derived from `CoinMetadata` or manually provided.
-module its::coin_info;
+module its::coin_info {
+    use std::ascii;
+    use std::string::String;
 
-use its::utils;
-use std::ascii;
-use std::string::String;
-use sui::coin::CoinMetadata;
+    use sui::coin::CoinMetadata;
 
-public struct CoinInfo<phantom T> has store {
-    name: String,
-    symbol: ascii::String,
-    decimals: u8,
-    remote_decimals: u8,
-    metadata: Option<CoinMetadata<T>>,
-}
+    use its::utils;
 
-/// Create a new coin info from the given name, symbol and decimals.
-public fun from_info<T>(
-    name: String,
-    symbol: ascii::String,
-    decimals: u8,
-    remote_decimals: u8,
-): CoinInfo<T> {
-    CoinInfo {
-        name,
-        symbol,
-        decimals,
-        remote_decimals,
-        metadata: option::none(),
+    public struct CoinInfo<phantom T> has store {
+        name: String,
+        symbol: ascii::String,
+        decimals: u8,
+        remote_decimals: u8,
+        metadata: Option<CoinMetadata<T>>,
     }
-}
 
-/// Create a new coin info from the given `CoinMetadata` object.
-public fun from_metadata<T>(
-    metadata: CoinMetadata<T>,
-    remote_decimals: u8,
-): CoinInfo<T> {
-    CoinInfo {
-        name: metadata.get_name(),
-        symbol: metadata.get_symbol(),
-        decimals: metadata.get_decimals(),
-        remote_decimals,
-        metadata: option::some(metadata),
+    /// Create a new coin info from the given name, symbol and decimals.
+    public fun from_info<T>(
+        name: String, symbol: ascii::String, decimals: u8, remote_decimals: u8,
+    ): CoinInfo<T> {
+        CoinInfo {
+            name,
+            symbol,
+            decimals,
+            remote_decimals,
+            metadata: option::none(),
+        }
     }
-}
 
-// === Views ===
+    /// Create a new coin info from the given `CoinMetadata` object.
+    public fun from_metadata<T>(metadata: CoinMetadata<T>, remote_decimals: u8): CoinInfo<T> {
+        CoinInfo {
+            name: metadata.get_name(),
+            symbol: metadata.get_symbol(),
+            decimals: metadata.get_decimals(),
+            remote_decimals,
+            metadata: option::some(metadata),
+        }
+    }
 
-public fun name<T>(self: &CoinInfo<T>): String {
-    self.name
-}
+    // === Views ===
 
-public fun symbol<T>(self: &CoinInfo<T>): ascii::String {
-    self.symbol
-}
+    public fun name<T>(self: &CoinInfo<T>): String {
+        self.name
+    }
 
-public fun decimals<T>(self: &CoinInfo<T>): u8 {
-    self.decimals
-}
+    public fun symbol<T>(self: &CoinInfo<T>): ascii::String {
+        self.symbol
+    }
 
-public fun remote_decimals<T>(self: &CoinInfo<T>): u8 {
-    self.remote_decimals
-}
+    public fun decimals<T>(self: &CoinInfo<T>): u8 {
+        self.decimals
+    }
 
-public fun scaling<T>(self: &CoinInfo<T>): u256 {
-    utils::pow(10, self.remote_decimals - self.decimals)
-}
+    public fun remote_decimals<T>(self: &CoinInfo<T>): u8 {
+        self.remote_decimals
+    }
 
-public fun metadata<T>(self: &CoinInfo<T>): &Option<CoinMetadata<T>> {
-    &self.metadata
-}
+    public fun scaling<T>(self: &CoinInfo<T>): u256 {
+        utils::pow(10, self.remote_decimals - self.decimals)
+    }
 
-#[test_only]
-public fun drop<T>(coin_info: CoinInfo<T>) {
-    let CoinInfo {
-        name: _,
-        symbol: _,
-        decimals: _,
-        remote_decimals: _,
-        metadata,
-    } = coin_info;
-    if (metadata.is_some()) {
-        abort 0
-    } else {
-        metadata.destroy_none()
+    public fun metadata<T>(self: &CoinInfo<T>): &Option<CoinMetadata<T>> {
+        &self.metadata
+    }
+
+    #[test_only]
+    public fun drop<T>(coin_info: CoinInfo<T>) {
+        let CoinInfo {name: _, symbol: _, decimals: _, remote_decimals: _, metadata } = coin_info;
+        if (metadata.is_some()) {
+            abort 0
+        } else {
+            metadata.destroy_none()
+        }
     }
 }
