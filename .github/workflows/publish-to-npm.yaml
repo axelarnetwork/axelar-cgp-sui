@@ -9,9 +9,6 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-env:
-  SUI_VERSION: mainnet-v1.31.1
-
 jobs:
   publish:
     name: Publish to NPM
@@ -34,8 +31,6 @@ jobs:
 
       - name: Setup Sui CLI and install dependencies
         uses: ./.github/actions/install
-        with:
-          SUI_VERSION: ${{ env.SUI_VERSION }}
 
       - name: Create GitHub Release
         if: steps.check-changeset-files.outputs.has_changeset_files == 'false'

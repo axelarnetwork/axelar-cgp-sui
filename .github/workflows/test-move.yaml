@@ -11,9 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  SUI_VERSION: mainnet-v1.31.1
-
 jobs:
   test-move:
     runs-on: ubuntu-latest

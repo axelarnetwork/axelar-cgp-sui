@@ -1,10 +1,8 @@
 name: Install Dependencies
 description: 'Setup Sui CLI and install dependencies'
 
-inputs:
-  SUI_VERSION:
-    description: 'The version of Sui CLI to install'
-    required: true
+env:
+  SUI_VERSION: mainnet-v1.31.1
 
 runs:
   using: 'composite'
