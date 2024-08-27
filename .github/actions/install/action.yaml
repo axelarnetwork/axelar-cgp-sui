@@ -1,16 +1,13 @@
 name: Install Dependencies
 description: 'Setup Sui CLI and install dependencies'
 
-env:
-  SUI_VERSION: mainnet-v1.31.1
-
 runs:
   using: 'composite'
 
   steps:
     - name: Assign Sui Version
       shell: bash
-      run: echo "SUI_VERSION=${{ env.SUI_VERSION }}"
+      run: echo "SUI_VERSION=mainnet-v1.31.1" >> $GITHUB_ENV
 
     - name: Install Dependencies
       shell: bash
