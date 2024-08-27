@@ -75,7 +75,7 @@ module axelar_gateway::gateway {
     /// - Non-existent: Set to bytes32(0)
     /// - Approved: Set to the hash of the message
     /// - Executed: Set to bytes32(1)
-    public struct MessageStatus has store, drop {
+    public struct MessageStatus has store {
         status: Bytes32,
     }
 
@@ -463,7 +463,7 @@ module axelar_gateway::gateway {
         assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
         assert!(last_rotation_timestamp == timestamp, 6);
         assert!(previous_signers_retention == previous_signers_retention_result, 7);
-        
+
 
         clock.destroy_for_testing();
         scenario.end();
@@ -489,7 +489,7 @@ module axelar_gateway::gateway {
         );
 
         let mut gateway = dummy(ctx);
-        
+
         approve_message(&mut gateway, &message);
         // The second approve message should do nothing.
         approve_message(&mut gateway, &message);
@@ -504,7 +504,7 @@ module axelar_gateway::gateway {
         ) == true, 0);
 
         let approved_message = take_approved_message(
-            &mut gateway, 
+            &mut gateway,
             source_chain,
             message_id,
             source_address,
@@ -529,7 +529,7 @@ module axelar_gateway::gateway {
             message_id,
         ) == true, 2);
 
-        gateway.messages.remove(message.command_id());
+        let MessageStatus { .. } = gateway.messages.remove(message.command_id());
 
         gateway.destroy_for_testing();
         channel.destroy();
@@ -648,7 +648,7 @@ module axelar_gateway::gateway {
             vector[0, 1, 2],
         );
 
-        gateway.messages.remove(message.command_id());
+        let MessageStatus { .. } = gateway.messages.remove(message.command_id());
 
         approved_message.destroy_for_testing();
         gateway.destroy_for_testing();
