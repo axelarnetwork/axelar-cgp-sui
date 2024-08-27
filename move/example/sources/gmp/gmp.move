@@ -46,7 +46,7 @@ module example::gmp {
                 discovery::new_move_call(
                     discovery::new_function(
                         address::from_bytes(hex::decode(*ascii::as_bytes(&type_name::get_address(&type_name::get<Singleton>())))),
-                        ascii::string(b"test"),
+                        ascii::string(b"gmp"),
                         ascii::string(b"execute")
                     ),
                     arguments,
