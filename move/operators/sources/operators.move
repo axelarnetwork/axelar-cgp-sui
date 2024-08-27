@@ -188,17 +188,15 @@ module operators::operators {
             id: object::new(ctx),
             operators: vec_set::empty(),
             caps: bag::new(ctx),
-            loaned_caps: bag::new(ctx),
         }
     }
 
     #[test_only]
     fun destroy_operators(operators: Operators) {
-        let Operators { id, operators, caps, loaned_caps } = operators;
+        let Operators { id, operators, caps } = operators;
 
         id.delete();
         caps.destroy_empty();
-        loaned_caps.destroy_empty();
 
         let mut keys = operators.into_keys();
 
@@ -279,10 +277,8 @@ module operators::operators {
         assert!(operators.caps.contains(external_id), 0);
 
         let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        assert!(operators.loaned_caps.contains(external_id), 1);
         assert!(!operators.caps.contains(external_id), 2);
-        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
-        assert!(!operators.loaned_caps.contains(external_id), 3);
+        restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
         assert!(operators.caps.contains(external_id), 2);
 
         let removed_cap = remove_cap<OwnerCap>(&mut operators, &owner_cap, external_id);
@@ -322,7 +318,7 @@ module operators::operators {
         remove_operator(&mut operators, &owner_cap, ctx.sender());
 
         let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, external_id, ctx);
-        restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
+        restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
@@ -340,7 +336,7 @@ module operators::operators {
         let operator_id = object::id(&operator_cap);
 
         let (cap, loaned_cap) = loan_cap<OwnerCap>(&mut operators, &operator_cap, operator_id, ctx);
-        restore_cap(&mut operators, &operator_cap, operator_id, cap, loaned_cap);
+        restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
 
         destroy_operator_cap(operator_cap);
         destroy_owner_cap(owner_cap);
