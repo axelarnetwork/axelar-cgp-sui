@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { getFullnodeUrl } from '@mysten/sui/client';
 
 export function getModuleNameFromSymbol(symbol: string) {
@@ -83,6 +84,22 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
 
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
+
+export const getInstalledSuiVersion = () => {
+    const suiVersion = execSync('sui --version').toString().trim();
+    return parseVersion(suiVersion);
+};
+
+export const getDefinedSuiVersion = () => {
+    const version = fs.readFileSync(`${__dirname}/../version.json`, 'utf8');
+    const suiVersion = JSON.parse(version).SUI_VERSION;
+    return parseVersion(suiVersion);
+};
+
+const parseVersion = (version: string) => {
+    const versionMatch = version.match(/\d+\.\d+\.\d+/);
+    return versionMatch?.[0];
+};
 
 export function parseEnv(arg: string) {
     switch (arg?.toLowerCase()) {
