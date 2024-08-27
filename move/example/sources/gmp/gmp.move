@@ -54,7 +54,7 @@ public fun register_transaction(
                             ),
                         ),
                     ),
-                    ascii::string(b"test"),
+                    ascii::string(b"gmp"),
                     ascii::string(b"execute"),
                 ),
                 arguments,

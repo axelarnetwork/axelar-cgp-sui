@@ -379,3 +379,341 @@ fun approve_message(self: &mut Gateway, message: &message::Message) {
         message: *message,
     });
 }
+
+#[test_only]
+public fun create_for_testing(
+    operator: address,
+    domain_separator: Bytes32,
+    minimum_rotation_delay: u64,
+    previous_signers_retention: u64,
+    initial_signers: WeightedSigners,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): Gateway {
+    Gateway {
+        id: object::new(ctx),
+        operator,
+        messages: table::new(ctx),
+        signers: auth::setup(
+            domain_separator,
+            minimum_rotation_delay,
+            previous_signers_retention,
+            initial_signers,
+            clock,
+            ctx,
+        ),
+    }
+}
+
+#[test_only]
+public fun dummy(ctx: &mut TxContext): Gateway {
+    Gateway {
+        id: object::new(ctx),
+        operator: @0x0,
+        messages: table::new(ctx),
+        signers: auth::dummy(ctx),
+    }
+}
+
+#[test_only]
+public fun destroy_for_testing(gateway: Gateway) {
+    let Gateway {
+        id,
+        operator: _,
+        messages,
+        signers,
+    } = gateway;
+
+    id.delete();
+    let (_, table, _, _, _, _) = signers.destroy_for_testing();
+    table.destroy_empty();
+    messages.destroy_empty();
+}
+
+#[test]
+fun test_setup() {
+    let ctx = &mut sui::tx_context::dummy();
+    let operator: ERROR = 123456;
+    let domain_separator = bytes32::new(ERROR, 789012);
+    let minimum_rotation_delay = 765;
+    let previous_signers_retention = 650;
+    let initial_signers = axelar_gateway::weighted_signers::dummy();
+    let mut clock = sui::clock::create_for_testing(ctx);
+    let timestamp = 1234;
+    clock.increment_for_testing(timestamp);
+
+    let creator_cap = CreatorCap {
+        id: object::new(ctx),
+    };
+
+    let mut scenario = sui::test_scenario::begin(@0x1);
+
+    setup(
+        creator_cap,
+        operator,
+        domain_separator,
+        minimum_rotation_delay,
+        previous_signers_retention,
+        bcs::to_bytes(&initial_signers),
+        &clock,
+        scenario.ctx(),
+    );
+
+    let tx_effects = scenario.next_tx(@0x1);
+    let shared = tx_effects.shared();
+
+    assert!(shared.length() == 1, 0);
+
+    let gateway_id = shared[0];
+    let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
+
+    let Gateway {
+        id,
+        operator: operator_result,
+        messages,
+        signers,
+    } = { gateway };
+
+    id.delete();
+    assert!(operator == operator_result, 1);
+    messages.destroy_empty();
+
+    let (
+        epoch,
+        mut epoch_by_signers_hash,
+        domain_separator_result,
+        minimum_rotation_delay_result,
+        last_rotation_timestamp,
+        previous_signers_retention_result,
+    ) = signers.destroy_for_testing();
+
+    let signer_epoch = epoch_by_signers_hash.remove(initial_signers.hash());
+    epoch_by_signers_hash.destroy_empty();
+
+    assert!(epoch == 1, 2);
+    assert!(signer_epoch == 1, 3);
+    assert!(domain_separator == domain_separator_result, 4);
+    assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
+    assert!(last_rotation_timestamp == timestamp, 6);
+    assert!(previous_signers_retention == previous_signers_retention_result, 7);
+
+    clock.destroy_for_testing();
+    scenario.end();
+}
+
+#[test]
+fun test_approve_message() {
+    let ctx = &mut sui::tx_context::dummy();
+
+    let message_id = std::ascii::string(b"Message Id");
+    let channel = axelar_gateway::channel::new(ctx);
+    let source_chain = std::ascii::string(b"Source Chain");
+    let source_address = std::ascii::string(b"Destination Address");
+    let payload = vector[0, 1, 2, 3];
+    let payload_hash = axelar_gateway::bytes32::new(
+        address::from_bytes(hash::keccak256(&payload)),
+    );
+
+    let message = message::new(
+        source_chain,
+        message_id,
+        source_address,
+        channel.to_address(),
+        payload_hash,
+    );
+
+    let mut gateway = dummy(ctx);
+
+    approve_message(&mut gateway, &message);
+    // The second approve message should do nothing.
+    approve_message(&mut gateway, &message);
+
+    assert!(
+        is_message_approved(
+            &gateway,
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload_hash,
+        ) ==
+        true,
+        0,
+    );
+
+    let approved_message = take_approved_message(
+        &mut gateway,
+        source_chain,
+        message_id,
+        source_address,
+        channel.to_address(),
+        payload,
+    );
+
+    channel.consume_approved_message(approved_message);
+
+    assert!(
+        is_message_approved(
+            &gateway,
+            source_chain,
+            message_id,
+            source_address,
+            channel.to_address(),
+            payload_hash,
+        ) ==
+        false,
+        1,
+    );
+
+    assert!(
+        is_message_executed(
+            &gateway,
+            source_chain,
+            message_id,
+        ) ==
+        true,
+        2,
+    );
+
+    let MessageStatus { .. } = gateway.messages.remove(message.command_id());
+
+    gateway.destroy_for_testing();
+    channel.destroy();
+}
+
+#[test]
+fun test_peel_messages() {
+    let message1 = message::new(
+        std::ascii::string(b"Source Chain 1"),
+        std::ascii::string(b"Message Id 1"),
+        std::ascii::string(b"Source Address 1"),
+        @0x1,
+        axelar_gateway::bytes32::new(@0x2),
+    );
+
+    let message2 = message::new(
+        std::ascii::string(b"Source Chain 2"),
+        std::ascii::string(b"Message Id 2"),
+        std::ascii::string(b"Source Address 2"),
+        @0x3,
+        axelar_gateway::bytes32::new(@0x4),
+    );
+
+    let bytes = bcs::to_bytes(&vector[message1, message2]);
+
+    let messages = peel_messages(bytes);
+
+    assert!(messages.length() == 2, 0);
+    assert!(messages[0] == message1, 1);
+    assert!(messages[1] == message2, 2);
+}
+
+#[test]
+#[expected_failure(abort_code = ERemainingData)]
+fun test_peel_messages_no_remaining_data() {
+    let message1 = message::new(
+        std::ascii::string(b"Source Chain 1"),
+        std::ascii::string(b"Message Id 1"),
+        std::ascii::string(b"Source Address 1"),
+        @0x1,
+        axelar_gateway::bytes32::new(@0x2),
+    );
+
+    let mut bytes = bcs::to_bytes(&vector[message1]);
+    bytes.push_back(0);
+
+    peel_messages(bytes);
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidLength)]
+fun test_peel_messages_no_zero_messages() {
+    peel_messages(bcs::to_bytes(&vector<Message>[]));
+}
+
+#[test]
+fun test_peel_weighted_signers() {
+    let signers = axelar_gateway::weighted_signers::dummy();
+    let bytes = bcs::to_bytes(&signers);
+    let result = peel_weighted_signers(bytes);
+
+    assert!(result == signers, 0);
+}
+
+#[test]
+#[expected_failure(abort_code = ERemainingData)]
+fun test_peel_weighted_signers_no_remaining_data() {
+    let signers = axelar_gateway::weighted_signers::dummy();
+    let mut bytes = bcs::to_bytes(&signers);
+    bytes.push_back(0);
+
+    peel_weighted_signers(bytes);
+}
+
+#[test]
+fun test_peel_proof() {
+    let proof = axelar_gateway::proof::dummy();
+    let bytes = bcs::to_bytes(&proof);
+    let result = peel_proof(bytes);
+
+    assert!(result == proof, 0);
+}
+
+#[test]
+#[expected_failure(abort_code = ERemainingData)]
+fun test_peel_proof_no_remaining_data() {
+    let proof = axelar_gateway::proof::dummy();
+    let mut bytes = bcs::to_bytes(&proof);
+    bytes.push_back(0);
+
+    peel_proof(bytes);
+}
+
+#[test]
+#[expected_failure(abort_code = EMessageNotApproved)]
+fun test_take_approved_message_message_not_approved() {
+    let mut gateway = dummy(&mut sui::tx_context::dummy());
+
+    let message = message::new(
+        std::ascii::string(b"Source Chain"),
+        std::ascii::string(b"Message Id"),
+        std::ascii::string(b"Source Address"),
+        @0x1,
+        axelar_gateway::bytes32::new(@0x2),
+    );
+
+    gateway
+        .messages
+        .add(
+            message.command_id(),
+            MessageStatus { status: axelar_gateway::bytes32::new(@0x3) },
+        );
+
+    let approved_message = take_approved_message(
+        &mut gateway,
+        std::ascii::string(b"Source Chain"),
+        std::ascii::string(b"Message Id"),
+        std::ascii::string(b"Source Address"),
+        @0x12,
+        vector[0, 1, 2],
+    );
+
+    let MessageStatus { .. } = gateway.messages.remove(message.command_id());
+
+    approved_message.destroy_for_testing();
+    gateway.destroy_for_testing();
+}
+
+#[test]
+fun test_data_hash() {
+    let command_type = 5;
+    let data = vector[0, 1, 2, 3];
+    let mut typed_data = vector::singleton(command_type);
+    typed_data.append(data);
+
+    assert!(
+        data_hash(command_type, data) ==
+        bytes32::from_bytes(hash::keccak256(&typed_data)),
+        0,
+    );
+}
