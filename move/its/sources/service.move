@@ -91,6 +91,7 @@ module its::service {
         metadata: vector<u8>,
         gas_service: &mut GasService, 
         gas: Coin<SUI>,
+        source_channel: &Channel,
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
@@ -103,7 +104,7 @@ module its::service {
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
             .write_bytes(ctx.sender().to_bytes())
-            .write_bytes(destination_address)
+            .write_bytes(source_channel.to_address().to_bytes())
             .write_u256(amount)
             .write_bytes(data);
 
