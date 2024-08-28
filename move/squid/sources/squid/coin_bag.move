@@ -6,6 +6,8 @@ module squid::coin_bag {
     use sui::hash::keccak256;
     use sui::address;
 
+    const ENotEnoughBalance: u64 = 0;
+
     public struct CoinBag has store {
         bag: Bag,
     }
@@ -36,6 +38,19 @@ module squid::coin_bag {
         
         if(self.bag.contains(key)) {
             option::some(self.bag.remove<address, Balance<T>>(key))
+        } else {
+            option::none<Balance<T>>()
+        }
+    }
+
+    public(package) fun get_exact_balance<T>(self: &mut CoinBag, amount: u64): Option<Balance<T>> {
+        let key = get_balance_key<T>();
+        
+        if(self.bag.contains(key)) {
+            let balance = self.bag.borrow_mut<address, Balance<T>>(key);
+            assert!(balance.value() >= amount, ENotEnoughBalance);
+
+            option::some(balance.split(amount))
         } else {
             option::none<Balance<T>>()
         }
