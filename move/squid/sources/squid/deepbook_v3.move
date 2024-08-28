@@ -26,7 +26,7 @@ module squid::deepbook_v3 {
         min_output: u64,
         base_type: String,
         quote_type: String,
-        deep_required: u64,
+        lot_size: u64,
         should_sweep: bool,
     }
 
@@ -208,7 +208,7 @@ module squid::deepbook_v3 {
             min_output: bcs.peel_u64(),
             base_type: ascii::string(bcs.peel_vec_u8()),
             quote_type: ascii::string(bcs.peel_vec_u8()),
-            deep_required: bcs.peel_u64(),
+            lot_size: bcs.peel_u64(),
             should_sweep: bcs.peel_bool(),
         }
     }
