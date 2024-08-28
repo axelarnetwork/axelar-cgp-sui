@@ -49,27 +49,27 @@ module squid::deepbook_v3 {
         );
 
         if (swap_data.has_base) {
-            let (amount_left, output, _deep_required) = pool.get_quote_quantity_out(
+            let (base_out, quote_out, _deep_required) = pool.get_quote_quantity_out(
                 self.coin_bag().get_estimate<B>(),
                 clock
             );
-            if (swap_data.min_output > output) {
+            if (swap_data.min_output > quote_out) {
                 self.skip_swap();
                 return
             };
-            if (!swap_data.should_sweep) self.coin_bag().store_estimate<B>(amount_left);
-            self.coin_bag().store_estimate<Q>(output);
+            if (!swap_data.should_sweep) self.coin_bag().store_estimate<B>(base_out);
+            self.coin_bag().store_estimate<Q>(quote_out);
         } else {
-            let (amount_left, output, _deep_required) = pool.get_base_quantity_out(
+            let (base_out, quote_out, _deep_required) = pool.get_base_quantity_out(
                 self.coin_bag().get_estimate<Q>(),
                 clock
             );
-            if (swap_data.min_output > output) {
+            if (swap_data.min_output > base_out) {
                 self.skip_swap();
                 return
             };
-            if (!swap_data.should_sweep) self.coin_bag().store_estimate<Q>(amount_left);
-            self.coin_bag().store_estimate<B>(output);
+            if (!swap_data.should_sweep) self.coin_bag().store_estimate<Q>(quote_out);
+            self.coin_bag().store_estimate<B>(base_out);
         }
     }
 
