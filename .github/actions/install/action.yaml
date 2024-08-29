@@ -5,7 +5,7 @@ runs:
   using: 'composite'
 
   steps:
-    - name: Assign Sui Version
+    - name: Get Sui Version
       shell: bash
       run: |
         SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)   
