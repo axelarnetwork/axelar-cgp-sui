@@ -9,6 +9,7 @@ module its::service {
     use sui::bcs;
     use sui::clock::Clock;
     use sui::sui::SUI;
+    use sui::hash::keccak256;
 
     use abi::abi;
 
@@ -48,6 +49,15 @@ module its::service {
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
+    }
+
+    public struct InterchainTransfer<phantom T> has copy, drop {
+        token_id: TokenId,
+        source_address: vector<u8>,
+        destination_chain: String,
+        destination_address: vector<u8>,
+        amount: u256,
+        data_hash: address,
     }
 
     public fun register_coin<T>(
@@ -101,16 +111,31 @@ module its::service {
             .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
+        let source_address = ctx.sender().to_bytes();
 
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(ctx.sender().to_bytes())
+            .write_bytes(source_address)
             .write_bytes(source_channel.to_address().to_bytes())
             .write_u256(amount)
             .write_bytes(data);
 
         send_payload(self, destination_chain, writer.into_bytes(), gas_service, gas, ctx);
+
+        let data_hash = if (data.length() == 0) {
+            @0x0
+        } else {
+            address::from_bytes(keccak256(&data))
+        };
+        event::emit(InterchainTransfer<T> {
+            token_id,
+            source_address,
+            destination_chain,
+            destination_address,
+            amount,
+            data_hash,
+        })
     }
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext) {

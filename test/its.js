@@ -5,12 +5,8 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const {
     publishPackage,
     getRandomBytes32,
-    expectRevert,
     expectEvent,
     approveMessage,
-    hashMessage,
-    signMessage,
-    approveAndExecuteMessage,
 } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
@@ -19,13 +15,13 @@ const {
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
-const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
-const { expect } = require('chai');
+const { utils: { arrayify, hexlify, keccak256, defaultAbiCoder }, constants: { HashZero } } = require('ethers');
 
-const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 const clock = '0x6';
 const sui = '0x2';
-const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES = BigInt(0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68);
+const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES = "0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68";
+// This is because of a discrepancy between decimals and remote decimals;
+const multiplier = 10000;
 
 describe.only('ITS', () => {
     let client;
@@ -180,7 +176,7 @@ describe.only('ITS', () => {
 
         const channelId = itsData.data.content.fields.channel.fields.id.id;
 
-        const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [
+        const payload = defaultAbiCoder.encode(['bytes32', 'bytes'], [
             MESSAGE_TYPE_SET_TRUSTED_ADDRESSES,
             bcs.struct('Trusted Addresses', {
                 chain_names: bcs.vector(bcs.String),
@@ -191,7 +187,7 @@ describe.only('ITS', () => {
             }).toBytes(),
         ]);
         const message = {
-            source_chain: trustedSourceAddress,
+            source_chain: trustedSourceChain,
             message_id: 'Message Id 0',
             source_address: trustedSourceAddress,
             destination_id: channelId,
@@ -200,6 +196,7 @@ describe.only('ITS', () => {
         };
 
         await approveMessage(client, keypair, gatewayInfo, message);
+
         builder = new TxBuilder(client);
 
         const approvedMessage = await builder.moveCall({
@@ -226,27 +223,6 @@ describe.only('ITS', () => {
         await builder.signAndExecute(keypair);
     });
 
-    describe('Token Registration', () => {
-        it('Should register a coin', async () => {
-            await newExample();
-
-            let builder = new TxBuilder(client);
-
-            await builder.moveCall({
-                target: `${exampleId}::its_example::register_coin`,
-                arguments: [
-                    singleton,
-                    its,
-                ],
-                typeArguments: [],
-            });
-            
-            await expectEvent(builder, keypair, {
-                type: `${packageId}::service::CoinRegistered`
-            });
-        });
-    });
-
     describe('Its Example', () => {
         it('Should register a coin', async () => {
             await newExample();
@@ -263,12 +239,13 @@ describe.only('ITS', () => {
             });
             
             await expectEvent(builder, keypair, {
-                type: `${packageId}::service::CoinRegistered`
+                type: `${packageId}::service::CoinRegistered<${exampleId}::its_example::ITS_EXAMPLE>`
             });
         });
 
         it('Should send some tokens', async () => {
             const amount = 1234;
+            const destinationAddress = '0x1234';
             await newExample();
 
             let builder = new TxBuilder(client);
@@ -301,19 +278,26 @@ describe.only('ITS', () => {
                 arguments: [
                     singleton, 
                     its,
-                    'Destination Chain', 
+                    remoteChain, 
                     '0x1234', 
                     coin,
                     '0x',
                     gasService, 
                     gas, 
-                    '0x6',
+                    clock,
                 ],
                 typeArguments: [],
             });
             
             await expectEvent(builder, keypair, {
-                type: `${packageId}::service::CoinRegistered`
+                type: `${packageId}::service::InterchainTransfer<${exampleId}::its_example::ITS_EXAMPLE>`,
+                arguments: {
+                    source_address: arrayify(keypair.toSuiAddress()),
+                    destination_chain: remoteChain,
+                    destination_address: arrayify(destinationAddress),
+                    amount: `${amount * multiplier}`,
+                    data_hash: HashZero,
+                },
             });
         });
     });

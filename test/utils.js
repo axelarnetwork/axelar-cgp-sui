@@ -70,7 +70,9 @@ async function expectEvent(builder, keypair, eventData = {}) {
     const response = await builder.signAndExecute(keypair, { showEvents: true });
 
     const event = response.events.find((event) => event.type === eventData.type);
-
+    if (!event) {
+        throw new Error(`Event ${eventData.type} was not emitted.`);
+    }
     function compare(a, b) {
         if (Array.isArray(a)) {
             expect(a.length).to.equal(b.length);
