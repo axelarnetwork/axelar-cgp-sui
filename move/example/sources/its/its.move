@@ -1,4 +1,4 @@
-module example::its {
+module example::its_example {
     use std::ascii;
     use std::ascii::{String};
     use std::type_name;
@@ -6,9 +6,10 @@ module example::its {
     use sui::event;
     use sui::address;
     use sui::hex;
-    use sui::coin::{Coin};
+    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::sui::SUI;
     use sui::clock::Clock;
+    use sui::url::Url;
 
     use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
     use axelar_gateway::discovery::{Self, RelayerDiscovery, Transaction};
@@ -18,10 +19,17 @@ module example::its {
     use its::service;
     use its::its::ITS;
     use its::token_id::TokenId;
+    use its::coin_management;
+    use its::coin_info;
+
+    public struct ITS_EXAMPLE has drop {}
 
     public struct Singleton has key {
         id: UID,
         channel: Channel,
+        treasury_cap: Option<TreasuryCap<ITS_EXAMPLE>>,
+        coin_metadata: Option<CoinMetadata<ITS_EXAMPLE>>,
+        token_id: Option<TokenId>,
     }
 
     public struct Executed has copy, drop {
@@ -31,13 +39,39 @@ module example::its {
         amount: u64,
     }
 
-    fun init(ctx: &mut TxContext) {
+    fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
+        let decimals: u8 = 8;
+        let symbol: vector<u8> = b"ITS";
+        let name: vector<u8> = b"Test Coin";
+        let description = b"";
+        let icon_url = option::none<Url>();
+        let (treasury_cap, coin_metadata) = coin::create_currency<ITS_EXAMPLE>(
+            witness,
+            decimals,
+            symbol,
+            name,
+            description,
+            icon_url,
+            ctx,
+        );
+
         let singletonId = object::new(ctx);
         let channel = channel::new(ctx);
         transfer::share_object(Singleton {
             id: singletonId,
             channel,
+            treasury_cap: option::some(treasury_cap),
+            coin_metadata: option::some(coin_metadata),
+            token_id: option::none<TokenId>(),
         });
+    }
+
+    public fun token_id(self: &Singleton): &TokenId {
+        self.token_id.borrow()
+    }
+
+    public fun mint(self: &mut Singleton, amount: u64, ctx: &mut TxContext): Coin<ITS_EXAMPLE> {
+        self.treasury_cap.borrow_mut().mint(amount, ctx)
     }
 
     public fun register_transaction(discovery: &mut RelayerDiscovery, singleton: &Singleton, its: &ITS) {
@@ -117,20 +151,29 @@ module example::its {
         )
     }
 
-    public fun send_interchain_transfer<T>(
-        singleton: &Singleton, 
+    public fun register_coin(self: &mut Singleton, its: &mut ITS) {
+        let coin_info = coin_info::from_metadata(self.coin_metadata.extract(), 12);
+        let coin_management = coin_management::new_with_cap(self.treasury_cap.extract());
+        
+        let token_id = service::register_coin(its, coin_info, coin_management);
+
+        self.token_id.fill(token_id);
+    }
+
+    public fun send_interchain_transfer(
+        self: &Singleton, 
         its: &mut ITS,
         destination_chain: String, 
         destination_address: vector<u8>, 
-        token_id: TokenId, 
-        coin: Coin<T>,
+        coin: Coin<ITS_EXAMPLE>,
         metadata: vector<u8>,
         gas_service: &mut GasService, 
         gas: Coin<SUI>, 
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
-        service::interchain_transfer<T>(
+        let token_id = *self.token_id.borrow();
+        service::interchain_transfer<ITS_EXAMPLE>(
             its,
             token_id,
             coin,
@@ -139,25 +182,25 @@ module example::its {
             metadata,
             gas_service, 
             gas,
-            &singleton.channel,
+            &self.channel,
             clock,
             ctx,
         );
     }
 
-    public fun execute_interchain_transfer<T>(
+    public fun execute_interchain_transfer(
         approved_message: ApprovedMessage, 
         singleton: &mut Singleton, 
         its: &mut ITS, 
         clock: &Clock, 
         ctx: &mut TxContext
-    ): Coin<T> {
+    ): Coin<ITS_EXAMPLE> {
         let (
             source_chain,
             source_address,
             data,
             coin,
-        ) = service::receive_interchain_transfer_with_data<T>(
+        ) = service::receive_interchain_transfer_with_data<ITS_EXAMPLE>(
             its,
             approved_message,
             &singleton.channel,

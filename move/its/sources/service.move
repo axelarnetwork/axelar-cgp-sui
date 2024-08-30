@@ -52,14 +52,16 @@ module its::service {
 
     public fun register_coin<T>(
         self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>
-    ) {
+    ): TokenId {
         let token_id = token_id::from_coin_data(&coin_info, &coin_management);
 
         self.add_registered_coin(token_id, coin_management, coin_info);
 
         event::emit(CoinRegistered<T> {
             token_id
-        })
+        });
+
+        token_id
     }
 
     public fun deploy_remote_interchain_token<T>(

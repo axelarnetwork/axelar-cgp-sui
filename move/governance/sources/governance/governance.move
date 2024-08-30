@@ -62,12 +62,10 @@ public fun is_governance(
 entry fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
     is_cap_new(&upgrade_cap);
 
-    self
-        .caps
-        .add(
-            object::id(&upgrade_cap),
-            upgrade_cap,
-        )
+    self.caps.add(
+        object::id(&upgrade_cap),
+        upgrade_cap,
+    )
 }
 
 public fun authorize_upgrade(

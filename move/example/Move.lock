@@ -2,11 +2,20 @@
 
 [move]
 version = 2
-manifest_digest = "35EEA97D60D29F06D44ECBC878C919B5E79C2A94B14C542D6A429B33F9572E97"
-deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
+manifest_digest = "196CD7C03594C5D0B7CCE594F4099D87F127C8F0EAB84C1570C4D2C874A28047"
+deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
 dependencies = [
   { name = "AxelarGateway" },
   { name = "GasService" },
+  { name = "ITS" },
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "Abi"
+source = { local = "../abi" }
+
+dependencies = [
   { name = "Sui" },
 ]
 
@@ -27,6 +36,27 @@ dependencies = [
 ]
 
 [[move.package]]
+name = "Governance"
+source = { local = "../governance" }
+
+dependencies = [
+  { name = "Abi" },
+  { name = "AxelarGateway" },
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "ITS"
+source = { local = "../its" }
+
+dependencies = [
+  { name = "AxelarGateway" },
+  { name = "GasService" },
+  { name = "Governance" },
+  { name = "Sui" },
+]
+
+[[move.package]]
 name = "MoveStdlib"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.25.3", subdir = "crates/sui-framework/packages/move-stdlib" }
 
@@ -39,6 +69,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.32.0"
+compiler-version = "1.30.3"
 edition = "2024.beta"
 flavor = "sui"

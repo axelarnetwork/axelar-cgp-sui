@@ -84,7 +84,7 @@ async function expectEvent(builder, keypair, eventData = {}) {
 
         expect(a).to.equal(b);
     }
-
+    if(!eventData.arguments) return;
     for (const key of Object.keys(eventData.arguments)) {
         compare(event.parsedJson[key], eventData.arguments[key]);
     }
