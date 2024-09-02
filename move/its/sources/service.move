@@ -55,9 +55,8 @@ module its::service {
     const ENotDistributor: u64 = 6;
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
-    const EMalformedTrustedAddresses: u64 = 9;
-    const ESenderNotHub: u64 = 10;
-    const EUntrustedChain: u64 = 11;
+    const ESenderNotHub: u64 = 9;
+    const ERemainingData: u64 = 10;
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
@@ -297,13 +296,7 @@ module its::service {
             mut payload
         ) = self.channel_mut().consume_approved_message(approved_message);
 
-        let chain_name = if (source_chain.into_bytes() == AXELAR_CHAIN_NAME) {
-            ascii::string(ITS_HUB_CHAIN_NAME)
-        } else {
-            source_chain
-        };
-
-        assert!(self.is_trusted_address(chain_name, source_address), EUntrustedAddress);
+        assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
 
         let mut reader = abi::new_reader(payload);
         if (reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
@@ -318,13 +311,13 @@ module its::service {
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
     fun send_payload(self: &ITS, mut destination_chain: String, mut payload: vector<u8>) {
         let mut destination_address = self.get_trusted_address(destination_chain);
-        if(destination_address.into_bytes() == ITS_HUB_TRUSTED_ADDRESS) {
+        if(destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
             let mut writer = abi::new_writer(3);
             writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
             writer.write_bytes(destination_chain.into_bytes());
             writer.write_bytes(payload);
             payload = writer.into_bytes();
-            destination_chain = ascii::string(AXELAR_CHAIN_NAME);
+            destination_chain = ascii::string(ITS_HUB_CHAIN_NAME);
             destination_address = self.get_trusted_address(ascii::string(ITS_HUB_CHAIN_NAME));
         };
         gateway::call_contract(self.channel(), destination_chain, destination_address, payload);
@@ -1118,12 +1111,10 @@ module its::service {
             b"Ethereum",
             b"Avalance",
             b"Axelar",
-            ITS_HUB_CHAIN_NAME
         ];
         let trusted_addresses = vector[
             b"ethereum address",
-            ITS_HUB_TRUSTED_ADDRESS,
-            ITS_HUB_TRUSTED_ADDRESS,
+            ITS_HUB_ROUTING_IDENTIFIER,
             b"hub address",
         ];
         let trusted_addresses_data = bcs::to_bytes(&its::trusted_addresses::new_for_testing(trusted_chains, trusted_addresses));
@@ -1170,12 +1161,10 @@ module its::service {
             b"Ethereum",
             b"Avalance",
             b"Axelar",
-            ITS_HUB_CHAIN_NAME
         ];
         let trusted_addresses = vector[
             b"ethereum address",
-            ITS_HUB_TRUSTED_ADDRESS,
-            ITS_HUB_TRUSTED_ADDRESS,
+            ITS_HUB_ROUTING_IDENTIFIER,
             b"hub address",
         ];
         let trusted_addresses_data = bcs::to_bytes(&its::trusted_addresses::new_for_testing(trusted_chains, trusted_addresses));
@@ -1221,12 +1210,10 @@ module its::service {
             b"Ethereum",
             b"Avalance",
             b"Axelar",
-            ITS_HUB_CHAIN_NAME
         ];
         let trusted_addresses = vector[
             b"ethereum address",
-            ITS_HUB_TRUSTED_ADDRESS,
-            ITS_HUB_TRUSTED_ADDRESS,
+            ITS_HUB_ROUTING_IDENTIFIER,
             b"hub address",
         ];
         let trusted_addresses_data = bcs::to_bytes(&its::trusted_addresses::new_for_testing(trusted_chains, trusted_addresses));
@@ -1272,12 +1259,10 @@ module its::service {
             b"Ethereum",
             b"Avalance",
             b"Axelar",
-            ITS_HUB_CHAIN_NAME
         ];
         let trusted_addresses = vector[
             b"ethereum address",
-            ITS_HUB_TRUSTED_ADDRESS,
-            ITS_HUB_TRUSTED_ADDRESS,
+            ITS_HUB_ROUTING_IDENTIFIER,
             b"hub address",
         ];
         let mut trusted_addresses_data = bcs::to_bytes(&its::trusted_addresses::new_for_testing(trusted_chains, trusted_addresses));
@@ -1329,7 +1314,7 @@ module its::service {
     #[test]
     fun test_decode_approved_message_axelar_hub_sender() {
         let mut its = its::its::new_for_testing();
-        let source_chain = ascii::string(AXELAR_CHAIN_NAME);
+        let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
         let source_address = ascii::string(b"Address");
         let message_id = ascii::string(b"message_id");
 
@@ -1390,7 +1375,7 @@ module its::service {
         let payload = b"payload";
 
         its.set_trusted_address(ascii::string(ITS_HUB_CHAIN_NAME), hub_address);
-        its.set_trusted_address(destination_chain, ascii::string(ITS_HUB_TRUSTED_ADDRESS));
+        its.set_trusted_address(destination_chain, ascii::string(ITS_HUB_ROUTING_IDENTIFIER));
 
         send_payload(&its, destination_chain, payload);
 
