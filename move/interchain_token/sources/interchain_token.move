@@ -1,20 +1,20 @@
-module interchain_token::q {
-    use sui::coin::{Self};
-    use sui::url::{Url};
+module interchain_token::q;
 
-    public struct Q has drop {}
+use sui::coin;
+use sui::url::Url;
 
-    fun init(witness: Q, ctx: &mut TxContext) {
-        let (treasury, metadata) = coin::create_currency<Q>(
-            witness,
-            9,
-            b"Q",
-            b"Quote",
-            b"",
-            option::none<Url>(),
-            ctx
-        );
-        transfer::public_transfer(treasury, tx_context::sender(ctx));
-        transfer::public_transfer(metadata, tx_context::sender(ctx));
-    }
+public struct Q has drop {}
+
+fun init(witness: Q, ctx: &mut TxContext) {
+    let (treasury, metadata) = coin::create_currency<Q>(
+        witness,
+        9,
+        b"Q",
+        b"Quote",
+        b"",
+        option::none<Url>(),
+        ctx,
+    );
+    transfer::public_transfer(treasury, tx_context::sender(ctx));
+    transfer::public_transfer(metadata, tx_context::sender(ctx));
 }

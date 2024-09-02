@@ -2,16 +2,25 @@
 
 [move]
 version = 2
-manifest_digest = "9B4503E476069F069DBE725F008DC72F1E49917F879CD84B54B8D3C38C2EFB72"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+manifest_digest = "35EEA97D60D29F06D44ECBC878C919B5E79C2A94B14C542D6A429B33F9572E97"
+deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { name = "AxelarGateway" },
+  { name = "GasService" },
   { name = "Sui" },
 ]
 
 [[move.package]]
 name = "AxelarGateway"
 source = { local = "../axelar_gateway" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "GasService"
+source = { local = "../gas_service" }
 
 dependencies = [
   { name = "Sui" },
@@ -30,6 +39,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.26.1"
+compiler-version = "1.32.0"
 edition = "2024.beta"
 flavor = "sui"

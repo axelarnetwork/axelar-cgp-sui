@@ -1,4 +1,5 @@
 import { bcs } from '@mysten/sui/bcs';
+import { UID } from './types';
 
 function getAxelarStructs() {
     const Bytes32 = bcs.Address;
@@ -63,6 +64,17 @@ function getAxelarStructs() {
         data: bcs.vector(bcs.U8),
     });
 
+    const Bag = bcs.struct('Bag', {
+        id: UID,
+        size: bcs.U64,
+    });
+
+    const Operators = bcs.struct('Operators', {
+        id: UID,
+        operators: bcs.vector(bcs.Address),
+        caps: Bag,
+    });
+
     return {
         Bytes32,
         Message,
@@ -75,6 +87,8 @@ function getAxelarStructs() {
         MoveCall,
         Transaction,
         EncodedMessage,
+        Bag,
+        Operators,
     };
 }
 

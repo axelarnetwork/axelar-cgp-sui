@@ -79,7 +79,7 @@ First of all, as we mentioned before, for applications to 'validate' themselves 
 - The shared object has to have a field called `get_call_info_object_ids` that is a `vector<address>`.
 - The module that defined the shared object type has to implement a function called `get_call_info`, which has no types, and takes the incoming call `payload` as the first argument, followed by a number of shared objects whose ids are specified by the `get_call_info_object_ids` mentioned above. This function has to return a `std::ascii::String` which is the JSON encoded call data to fullfill the contract call.
 - This calldata has the following 3 fields:
-  - `target`: the target method, in the form of `packag_iId::module_name::function_name`.
+  - `target`: the target method, in the form of `package_id::module_name::function_name`.
   - `arguments`: an array of arguments that can be:
     - `contractCall`: the `ApprovedMessage` object (see below).
     - `pure:${info}`: a pure argument specified by `$info`.
