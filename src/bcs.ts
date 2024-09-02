@@ -1,8 +1,49 @@
 import { bcs } from '@mysten/sui/bcs';
 import { UID } from './types';
 
-function getAxelarStructs() {
+function getCommonStructs() {
     const Bytes32 = bcs.Address;
+
+    const Channel = bcs.struct('Channel', {
+        id: UID,
+    });
+
+    const Bag = bcs.struct('Bag', {
+        id: UID,
+        size: bcs.U64,
+    });
+
+    const CoinBag = bcs.struct('CoinBag', {
+        bag: Bag,
+    });
+
+    const DiscoveryTable = bcs.struct('DiscoveryTable', {
+        id: UID,
+    });
+
+    const Discovery = bcs.struct('Discovery', {
+        id: UID,
+        fields: DiscoveryTable,
+    });
+
+    const Table = bcs.struct('Table', {
+        id: UID,
+        size: bcs.U64,
+    });
+
+    return {
+        Bytes32,
+        Channel,
+        Bag,
+        CoinBag,
+        DiscoveryTable,
+        Discovery,
+        Table,
+    };
+}
+
+function getGatewayStructs() {
+    const { Bytes32, Bag } = getCommonStructs();
 
     const Message = bcs.struct('Message', {
         source_chain: bcs.String,
@@ -64,15 +105,23 @@ function getAxelarStructs() {
         data: bcs.vector(bcs.U8),
     });
 
-    const Bag = bcs.struct('Bag', {
-        id: UID,
-        size: bcs.U64,
-    });
-
     const Operators = bcs.struct('Operators', {
         id: UID,
         operators: bcs.vector(bcs.Address),
         caps: Bag,
+    });
+
+    const ExecuteData = bcs.struct('ExecuteData', {
+        payload: bcs.vector(bcs.U8),
+        proof: bcs.vector(bcs.U8),
+    });
+
+    const ApprovedMessage = bcs.struct('ApprovedMessage', {
+        source_chain: bcs.String,
+        message_id: bcs.String,
+        source_address: bcs.String,
+        destination_id: Bytes32,
+        payload: bcs.vector(bcs.U8),
     });
 
     return {
@@ -89,10 +138,14 @@ function getAxelarStructs() {
         EncodedMessage,
         Bag,
         Operators,
+        ExecuteData,
+        ApprovedMessage,
     };
 }
 
 function getSquidStructs() {
+    const { Channel, CoinBag } = getCommonStructs();
+
     const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
         swap_type: bcs.U8,
         pool_id: bcs.Address,
@@ -119,14 +172,72 @@ function getSquidStructs() {
         metadata: bcs.vector(bcs.U8),
     });
 
+    const Squid = bcs.struct('Squid', {
+        id: UID,
+        channel: Channel,
+        coin_bag: CoinBag,
+    });
+
     return {
         DeepbookV2SwapData,
         SuiTransferSwapData,
         ItsTransferSwapData,
+        Squid,
+    };
+}
+
+function getITSStructs() {
+    const { Table, Bag, Channel } = getCommonStructs();
+
+    const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
+        trusted_addresses: Table,
+    });
+
+    const ITS = bcs.struct('ITS', {
+        id: UID,
+        channel: Channel,
+        address_tracker: InterchainAddressTracker,
+        unregistered_coin_types: Table,
+        unregistered_coin_info: Bag,
+        registered_coin_types: Table,
+        registered_coins: Bag,
+    });
+
+    return {
+        InterchainAddressTracker,
+        ITS,
+    };
+}
+
+function getGMPStructs() {
+    const { Channel } = getCommonStructs();
+
+    const Singleton = bcs.struct('Singleton', {
+        id: UID,
+        channel: Channel,
+    });
+
+    return {
+        Singleton,
+    };
+}
+
+function getGasServiceStructs() {
+    const GasService = bcs.struct('GasService', {
+        id: UID,
+        balance: bcs.U64,
+    });
+
+    return {
+        GasService,
     };
 }
 
 export const bcsStructs = {
-    gateway: getAxelarStructs(),
+    common: getCommonStructs(),
+    gateway: getGatewayStructs(),
     squid: getSquidStructs(),
+    gmp: getGMPStructs(),
+    gasService: getGasServiceStructs(),
+    its: getITSStructs(),
 };
