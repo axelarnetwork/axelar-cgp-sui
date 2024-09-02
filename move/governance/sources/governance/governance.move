@@ -123,122 +123,75 @@ use sui::test_scenario;
 #[test_only]
 use sui::test_utils;
 
-    #[test_only]
-    use std::ascii;
-    #[test_only]
-    use sui::test_scenario;
-    #[test_only]
-    use sui::test_utils;
-
-    #[test_only]
-    public fun new_for_testing(
-        trusted_source_chain: String,
-        trusted_source_address: String,
-        message_type: u256,
-        ctx: &mut TxContext,
-    ): Governance {
-        Governance {
-            id: object::new(ctx),
-            trusted_source_chain,
-            trusted_source_address,
-            message_type,
-            channel: channel::new(ctx),
-            caps: table::new<ID, UpgradeCap>(ctx),
-        }
+#[test_only]
+public fun new_for_testing(
+    trusted_source_chain: String,
+    trusted_source_address: String,
+    message_type: u256,
+    ctx: &mut TxContext,
+): Governance {
+    Governance {
+        id: object::new(ctx),
+        trusted_source_chain,
+        trusted_source_address,
+        message_type,
+        channel: channel::new(ctx),
+        caps: table::new<ID, UpgradeCap>(ctx),
     }
+}
 
-    #[test]
-    fun test_new() {
-        let trusted_source_chain = ascii::string(b"Axelar");
-        let trusted_source_address = ascii::string(b"0x0");
-        let message_type = 2;
-        let mut ctx = tx_context::dummy();
-        let package_id = object::id_from_bytes(
-            hex::decode(
-                type_name::get<Governance>().get_address().into_bytes()
-            )
-        );
-        let upgrade_cap = package::test_publish(package_id, &mut ctx);
-        let initial_owner = @0x1;
-        let mut scenario = test_scenario::begin(initial_owner);
-        {   
-            test_scenario::sender(&scenario);
-            new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
-        };
-
-        test_scenario::next_tx(&mut scenario, initial_owner);
-        {   
-            let governance = test_scenario::take_shared<Governance>(&scenario);
-            test_scenario::return_shared(governance);
-        };
-
-        test_scenario::end(scenario);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotSelfUpgradeCap)]
-    fun test_new_incorrect_upgrade_cap() {
-        let trusted_source_chain = ascii::string(b"Axelar");
-        let trusted_source_address = ascii::string(b"0x0");
-        let message_type = 2;
-        let mut ctx = tx_context::dummy();
-        let uid = object::new(&mut ctx);
-        let upgrade_cap = package::test_publish(object::uid_to_inner(&uid), &mut ctx);
+#[test]
+fun test_new() {
+    let trusted_source_chain = ascii::string(b"Axelar");
+    let trusted_source_address = ascii::string(b"0x0");
+    let message_type = 2;
+    let mut ctx = tx_context::dummy();
+    let package_id = object::id_from_bytes(
+        hex::decode(
+            type_name::get<Governance>().get_address().into_bytes()
+        )
+    );
+    let upgrade_cap = package::test_publish(package_id, &mut ctx);
+    let initial_owner = @0x1;
+    let mut scenario = test_scenario::begin(initial_owner);
+    {   
+        test_scenario::sender(&scenario);
         new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
-
-        test_utils::destroy(uid);
-    }    
-
-    #[test]
-    #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
-    fun test_new_immutable_upgrade() {
-        let trusted_source_chain = ascii::string(b"Axelar");
-        let trusted_source_address = ascii::string(b"0x0");
-        let message_type = 2;
-        let mut ctx = tx_context::dummy();
-        let package_id = object::id_from_bytes(
-            hex::decode(
-                type_name::get<Governance>().get_address().into_bytes()
-            )
-        );
-        let upgrade_cap = package::test_publish(package_id, &mut ctx);
-        let initial_owner = @0x1;
-        let mut scenario = test_scenario::begin(initial_owner);
-        {   
-            test_scenario::sender(&scenario);
-            new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
-        };
-
-        test_scenario::next_tx(&mut scenario, initial_owner);
-        {   
-            let upgrade_cap = test_scenario::take_shared<UpgradeCap>(&scenario);
-            test_scenario::return_shared(upgrade_cap);
-        };
-
-        test_scenario::end(scenario);
-    }
-
-    #[test]
-    fun test_is_governance() {
-        let trusted_source_chain = ascii::string(b"Axelar");
-        let trusted_source_address = ascii::string(b"0x0");
-        let message_type = 2;
-        let mut ctx = tx_context::dummy();
-    
-        let governance = Governance{
-            id: object::new(&mut ctx),
-            trusted_source_chain,
-            trusted_source_address,
-            message_type,
-            upgrade_cap,
-            &mut ctx,
-        );
     };
 
     test_scenario::next_tx(&mut scenario, initial_owner);
-    {
+    {   
         let governance = test_scenario::take_shared<Governance>(&scenario);
         test_scenario::return_shared(governance);
+    };
+
+    test_scenario::end(scenario);
+}   
+
+#[test]
+#[expected_failure(abort_code = test_scenario::EEmptyInventory)]
+fun test_new_immutable_upgrade() {
+    let trusted_source_chain = ascii::string(b"Axelar");
+    let trusted_source_address = ascii::string(b"0x0");
+    let message_type = 2;
+    let mut ctx = tx_context::dummy();
+    let package_id = object::id_from_bytes(
+        hex::decode(
+            type_name::get<Governance>().get_address().into_bytes()
+        )
+    );
+    let upgrade_cap = package::test_publish(package_id, &mut ctx);
+    let initial_owner = @0x1;
+    let mut scenario = test_scenario::begin(initial_owner);
+    {   
+        test_scenario::sender(&scenario);
+        new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+    };
+
+    test_scenario::next_tx(&mut scenario, initial_owner);
+    {   
+        let upgrade_cap = test_scenario::take_shared<UpgradeCap>(&scenario);
+        test_scenario::return_shared(upgrade_cap);
     };
 
     test_scenario::end(scenario);
@@ -265,39 +218,6 @@ fun test_new_incorrect_upgrade_cap() {
     );
 
     test_utils::destroy(uid);
-}
-
-#[test]
-#[expected_failure(abort_code = test_scenario::EEmptyInventory)]
-fun test_new_immutable_upgrade() {
-    let trusted_source_chain = ascii::string(b"Axelar");
-    let trusted_source_address = ascii::string(b"0x0");
-    let message_type = 2;
-    let mut ctx = tx_context::dummy();
-    let package_id = object::id_from_bytes(
-        hex::decode(type_name::get<Governance>().get_address().into_bytes()),
-    );
-    let upgrade_cap = package::test_publish(package_id, &mut ctx);
-    let initial_owner = @0x1;
-    let mut scenario = test_scenario::begin(initial_owner);
-    {
-        test_scenario::sender(&scenario);
-        new(
-            trusted_source_chain,
-            trusted_source_address,
-            message_type,
-            upgrade_cap,
-            &mut ctx,
-        );
-    };
-
-    test_scenario::next_tx(&mut scenario, initial_owner);
-    {
-        let upgrade_cap = test_scenario::take_shared<UpgradeCap>(&scenario);
-        test_scenario::return_shared(upgrade_cap);
-    };
-
-    test_scenario::end(scenario);
 }
 
 #[test]
