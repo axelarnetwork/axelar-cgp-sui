@@ -127,8 +127,8 @@ public fun remove_operator(
 
 /// Stores a capability in the `Operators` struct.
 public fun store_cap<T: key + store>(
-    self: &mut Operators, 
-    _: &OwnerCap, 
+    self: &mut Operators,
+    _: &OwnerCap,
     cap: T,
 ) {
     let cap_id = object::id(&cap);
