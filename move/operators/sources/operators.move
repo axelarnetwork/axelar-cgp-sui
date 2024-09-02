@@ -95,10 +95,10 @@ fun init(ctx: &mut TxContext) {
 
 /// Adds a new operator by issuing an `OperatorCap` and storing its ID.
 public fun add_operator(
-    self: &mut Operators, 
-    _: &OwnerCap, 
-    new_operator: address, 
-    ctx: &mut TxContext
+    self: &mut Operators,
+    _: &OwnerCap,
+    new_operator: address,
+    ctx: &mut TxContext,
 ) {
     let operator_cap = OperatorCap {
         id: object::new(ctx),
@@ -114,9 +114,9 @@ public fun add_operator(
 
 /// Removes an operator by ID, revoking their `OperatorCap`.
 public fun remove_operator(
-    self: &mut Operators, 
-    _: &OwnerCap, 
-    operator: address
+    self: &mut Operators,
+    _: &OwnerCap,
+    operator: address,
 ) {
     self.operators.remove(&operator);
 
@@ -129,7 +129,7 @@ public fun remove_operator(
 public fun store_cap<T: key + store>(
     self: &mut Operators, 
     _: &OwnerCap, 
-    cap: T
+    cap: T,
 ) {
     let cap_id = object::id(&cap);
     self.caps.add(cap_id, cap);
@@ -146,7 +146,7 @@ public fun loan_cap<T: key + store>(
     self: &mut Operators,
     _operator_cap: &OperatorCap,
     cap_id: ID,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): (T, Borrow) {
     assert!(self.operators.contains(&ctx.sender()), EOperatorNotFound);
     assert!(self.caps.contains(cap_id), ECapNotFound);
@@ -169,7 +169,7 @@ public fun restore_cap<T: key + store>(
     self: &mut Operators,
     _operator_cap: &OperatorCap,
     cap: T,
-    borrow_obj: Borrow
+    borrow_obj: Borrow,
 ) {
     let cap_id = object::id(&cap);
 
@@ -185,9 +185,9 @@ public fun restore_cap<T: key + store>(
 
 /// Removes a capability from the `Operators` struct.
 public fun remove_cap<T: key + store>(
-    self: &mut Operators, 
-    _: &OwnerCap, 
-    cap_id: ID
+    self: &mut Operators,
+    _: &OwnerCap,
+    cap_id: ID,
 ): T {
     event::emit(CapabilityRemoved {
         cap_id,
