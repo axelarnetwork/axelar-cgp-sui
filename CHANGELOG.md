@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
--   26a618f: Formatted move modules with "Prettier Move" plugin to compatible with Sui 1.31.1
+-   26a618f: Formatted move modules with "Prettier Move" plugin to compatible with Sui 1.32.0
 
 ### Patch Changes
 
