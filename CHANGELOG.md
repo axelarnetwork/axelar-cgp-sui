@@ -1,5 +1,15 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.5.0
+
+### Minor Changes
+
+-   26a618f: Formatted move modules with "Prettier Move" plugin to compatible with Sui 1.31.1
+
+### Patch Changes
+
+-   ed0e5d0: chore: add more structs
+
 ## 0.4.1
 
 ### Patch Changes
