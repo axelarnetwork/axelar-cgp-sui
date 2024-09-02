@@ -44,6 +44,9 @@ const EOperatorNotFound: u64 = 0;
 /// When the capability is not found.
 const ECapNotFound: u64 = 1;
 
+// When the cap trying to restore does not match the Borrow object.
+const ECapIdMissmatch: u64 = 2;
+
 // ------
 // Events
 // ------
@@ -177,7 +180,7 @@ public fun restore_cap<T: key + store>(
     let Borrow { id } = borrow_obj;
 
     // Make sure the Borrow object corresponds to cap returned.
-    assert!(id == cap_id);
+    assert!(id == cap_id, ECapIdMissmatch);
 
     // Add the capability back to the `Operators` struct
     self.caps.add(cap_id, cap);
