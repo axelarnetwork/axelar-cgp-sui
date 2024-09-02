@@ -11,9 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  SUI_VERSION: mainnet-v1.25.3
-
 jobs:
   test-js:
     runs-on: ubuntu-latest
@@ -23,14 +20,15 @@ jobs:
 
       - name: Setup Sui CLI and install dependencies
         uses: ./.github/actions/install
-        with:
-          SUI_VERSION: ${{ env.SUI_VERSION }}
 
       - name: Build TS and Move Modules
         run: npm run build
 
+      - name: Initialize Sui Config
+        run: echo -e "y\n\n1" | sui client envs
+
       - name: Run Localnet
-        run: nohup sh -c "sui-test-validator" > nohup.out 2> nohup.err < /dev/null &
+        run: nohup sh -c "RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis" > nohup.out 2> nohup.err < /dev/null &
 
       - name: Sleep for 30 seconds
         run: sleep 30s

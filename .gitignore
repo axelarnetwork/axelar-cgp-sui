@@ -72,3 +72,6 @@ target/
 dist
 # move_compile
 move_compile/
+
+# binaries
+sui-binaries/

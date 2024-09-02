@@ -34,14 +34,12 @@ module its::service {
     /**
      * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
      */
-    const AXELAR_CHAIN_NAME: vector<u8> = b"Axelarnet";
-    const ITS_HUB_CHAIN_NAME: vector<u8> = b"hub";
+    const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
 
     /**
-     * @dev Special trusted address value that indicates that the ITS call
-     * for that destination chain should be routed via the ITS hub.
+     * @dev Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
      */
-    const ITS_HUB_TRUSTED_ADDRESS: vector<u8> = b"hub";
+    const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
@@ -57,8 +55,9 @@ module its::service {
     const ENotDistributor: u64 = 6;
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
-    const ESenderNotHub: u64 = 9;
-    const ERemainingData: u64 = 10;
+    const EMalformedTrustedAddresses: u64 = 9;
+    const ESenderNotHub: u64 = 10;
+    const EUntrustedChain: u64 = 11;
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
@@ -308,7 +307,7 @@ module its::service {
 
         let mut reader = abi::new_reader(payload);
         if (reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
-            assert!(source_chain.into_bytes() == AXELAR_CHAIN_NAME, ESenderNotHub);
+            assert!(source_chain.into_bytes() == ITS_HUB_CHAIN_NAME, ESenderNotHub);
             source_chain = ascii::string(reader.read_bytes());
             payload = reader.read_bytes();
         };
