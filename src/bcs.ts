@@ -1,8 +1,53 @@
+import { fromHEX, toHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { UID } from './types';
 
+function getCommonStructs() {
+    const Bytes32 = bcs.fixedArray(32, bcs.u8()).transform({
+        input: (id: string) => fromHEX(id),
+        output: (id) => toHEX(Uint8Array.from(id)),
+    });
+
+    const Channel = bcs.struct('Channel', {
+        id: UID,
+    });
+
+    const Bag = bcs.struct('Bag', {
+        id: UID,
+        size: bcs.U64,
+    });
+
+    const CoinBag = bcs.struct('CoinBag', {
+        bag: Bag,
+    });
+
+    const DiscoveryTable = bcs.struct('DiscoveryTable', {
+        id: UID,
+    });
+
+    const Discovery = bcs.struct('Discovery', {
+        id: UID,
+        fields: DiscoveryTable,
+    });
+
+    const Table = bcs.struct('Table', {
+        id: UID,
+        size: bcs.U64,
+    });
+
+    return {
+        Bytes32,
+        Channel,
+        Bag,
+        CoinBag,
+        DiscoveryTable,
+        Discovery,
+        Table,
+    };
+}
+
 function getAxelarStructs() {
-    const Bytes32 = bcs.Address;
+    const { Bytes32, Bag } = getCommonStructs();
 
     const Message = bcs.struct('Message', {
         source_chain: bcs.String,
@@ -42,12 +87,6 @@ function getAxelarStructs() {
         name: bcs.String,
     });
 
-    /// Arguments are prefixed with:
-    /// - 0 for objects followed by exactly 32 bytes that cointain the object id
-    /// - 1 for pures followed by the bcs encoded form of the pure
-    /// - 2 for the call contract object, followed by nothing (to be passed into the target function)
-    /// - 3 for the payload of the contract call (to be passed into the intermediate function)
-    /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedMessage out), and then another u8 specifying which argument to input.
     const MoveCall = bcs.struct('MoveCall', {
         function: Function,
         arguments: bcs.vector(bcs.vector(bcs.U8)),
@@ -64,15 +103,23 @@ function getAxelarStructs() {
         data: bcs.vector(bcs.U8),
     });
 
-    const Bag = bcs.struct('Bag', {
-        id: UID,
-        size: bcs.U64,
-    });
-
     const Operators = bcs.struct('Operators', {
         id: UID,
         operators: bcs.vector(bcs.Address),
         caps: Bag,
+    });
+
+    const ExecuteData = bcs.struct('ExecuteData', {
+        payload: bcs.vector(bcs.U8),
+        proof: bcs.vector(bcs.U8),
+    });
+
+    const ApprovedMessage = bcs.struct('ApprovedMessage', {
+        source_chain: bcs.String,
+        message_id: bcs.String,
+        source_address: bcs.String,
+        destination_id: Bytes32,
+        payload: bcs.vector(bcs.U8),
     });
 
     return {
@@ -89,10 +136,14 @@ function getAxelarStructs() {
         EncodedMessage,
         Bag,
         Operators,
+        ExecuteData,
+        ApprovedMessage,
     };
 }
 
 function getSquidStructs() {
+    const { Channel, CoinBag } = getCommonStructs();
+
     const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
         swap_type: bcs.U8,
         pool_id: bcs.Address,
@@ -119,14 +170,72 @@ function getSquidStructs() {
         metadata: bcs.vector(bcs.U8),
     });
 
+    const Squid = bcs.struct('Squid', {
+        id: UID,
+        channel: Channel,
+        coin_bag: CoinBag,
+    });
+
     return {
         DeepbookV2SwapData,
         SuiTransferSwapData,
         ItsTransferSwapData,
+        Squid,
+    };
+}
+
+function getITSStructs() {
+    const { Table, Bag, Channel } = getCommonStructs();
+
+    const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
+        trusted_addresses: Table,
+    });
+
+    const ITS = bcs.struct('ITS', {
+        id: UID,
+        channel: Channel,
+        address_tracker: InterchainAddressTracker,
+        unregistered_coin_types: Table,
+        unregistered_coin_info: Bag,
+        registered_coin_types: Table,
+        registered_coins: Bag,
+    });
+
+    return {
+        InterchainAddressTracker,
+        ITS,
+    };
+}
+
+function getGMPStructs() {
+    const { Channel } = getCommonStructs();
+
+    const Singleton = bcs.struct('Singleton', {
+        id: UID,
+        channel: Channel,
+    });
+
+    return {
+        Singleton,
+    };
+}
+
+function getGasServiceStructs() {
+    const GasService = bcs.struct('GasService', {
+        id: UID,
+        balance: bcs.U64,
+    });
+
+    return {
+        GasService,
     };
 }
 
 export const bcsStructs = {
+    common: getCommonStructs(),
     gateway: getAxelarStructs(),
     squid: getSquidStructs(),
+    gmp: getGMPStructs(),
+    gasService: getGasServiceStructs(),
+    its: getITSStructs(),
 };
