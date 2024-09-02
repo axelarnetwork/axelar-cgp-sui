@@ -1,62 +1,62 @@
-module axelar_gateway::bytes32 {
-    use sui::bcs::BCS;
-    use sui::address;
+module axelar_gateway::bytes32;
 
-    // -----
-    // Types
-    // -----
+use sui::address;
+use sui::bcs::BCS;
 
-    public struct Bytes32 has copy, drop, store {
-        bytes: address,
-    }
+// -----
+// Types
+// -----
 
-    // ---------
-    // Constants
-    // ---------
+public struct Bytes32 has copy, drop, store {
+    bytes: address,
+}
 
-    const LENGTH: u64 = 32;
+// ---------
+// Constants
+// ---------
 
-    // ----------------
-    // Public Functions
-    // ----------------
+const LENGTH: u64 = 32;
 
-    /// Casts an address to a bytes32
-    public fun new(bytes: address): Bytes32 {
-        Bytes32{bytes: bytes}
-    }
+// ----------------
+// Public Functions
+// ----------------
 
-    public fun default(): Bytes32 {
-        Bytes32{bytes: @0x0}
-    }
+/// Casts an address to a bytes32
+public fun new(bytes: address): Bytes32 {
+    Bytes32 { bytes: bytes }
+}
 
-    public fun from_bytes(bytes: vector<u8>): Bytes32 {
-        new(address::from_bytes(bytes))
-    }
+public fun default(): Bytes32 {
+    Bytes32 { bytes: @0x0 }
+}
 
-    public fun from_address(addr: address): Bytes32 {
-        new(addr)
-    }
+public fun from_bytes(bytes: vector<u8>): Bytes32 {
+    new(address::from_bytes(bytes))
+}
 
-    public fun to_bytes(self: Bytes32): vector<u8> {
-        self.bytes.to_bytes()
-    }
+public fun from_address(addr: address): Bytes32 {
+    new(addr)
+}
 
-    public fun length(_self: &Bytes32): u64 {
-        LENGTH
-    }
+public fun to_bytes(self: Bytes32): vector<u8> {
+    self.bytes.to_bytes()
+}
 
-    public(package) fun peel(bcs: &mut BCS): Bytes32 {
-        new(bcs.peel_address())
-    }
+public fun length(_self: &Bytes32): u64 {
+    LENGTH
+}
 
-    // -----
-    // Tests
-    // -----
+public(package) fun peel(bcs: &mut BCS): Bytes32 {
+    new(bcs.peel_address())
+}
 
-    #[test]
-    public fun test_new() {
-        let actual = new(@0x1);
+// -----
+// Tests
+// -----
 
-        assert!(actual.to_bytes() == @0x1.to_bytes(), 0);
-    }
+#[test]
+public fun test_new() {
+    let actual = new(@0x1);
+
+    assert!(actual.to_bytes() == @0x1.to_bytes(), 0);
 }
