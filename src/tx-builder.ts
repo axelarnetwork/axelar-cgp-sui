@@ -309,6 +309,15 @@ export class TxBuilder {
             },
         });
 
+        await this.client.waitForTransaction({
+            digest: result.digest,
+            options: {
+                showEffects: true,
+                showObjectChanges: true,
+                ...options,
+            },
+        });
+
         if (!result.confirmedLocalExecution) {
             while (true) {
                 try {
