@@ -1,10 +1,11 @@
 module operators::operators;
 
+use std::ascii::String;
+use std::type_name;
+
 use sui::bag::{Self, Bag};
 use sui::vec_set::{Self, VecSet};
 use sui::event;
-use std::ascii::String;
-use std::type_name;
 
 // -----
 // Types
@@ -93,7 +94,12 @@ fun init(ctx: &mut TxContext) {
 // ----------------
 
 /// Adds a new operator by issuing an `OperatorCap` and storing its ID.
-public fun add_operator(self: &mut Operators, _: &OwnerCap, new_operator: address, ctx: &mut TxContext) {
+public fun add_operator(
+    self: &mut Operators, 
+    _: &OwnerCap, 
+    new_operator: address, 
+    ctx: &mut TxContext
+) {
     let operator_cap = OperatorCap {
         id: object::new(ctx),
     };
@@ -107,7 +113,11 @@ public fun add_operator(self: &mut Operators, _: &OwnerCap, new_operator: addres
 }
 
 /// Removes an operator by ID, revoking their `OperatorCap`.
-public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator: address) {
+public fun remove_operator(
+    self: &mut Operators, 
+    _: &OwnerCap, 
+    operator: address
+) {
     self.operators.remove(&operator);
 
     event::emit(OperatorRemoved {
@@ -116,7 +126,11 @@ public fun remove_operator(self: &mut Operators, _: &OwnerCap, operator: address
 }
 
 /// Stores a capability in the `Operators` struct.
-public fun store_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap: T) {
+public fun store_cap<T: key + store>(
+    self: &mut Operators, 
+    _: &OwnerCap, 
+    cap: T
+) {
     let cap_id = object::id(&cap);
     self.caps.add(cap_id, cap);
 
@@ -170,7 +184,11 @@ public fun restore_cap<T: key + store>(
 }
 
 /// Removes a capability from the `Operators` struct.
-public fun remove_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap_id: ID): T {
+public fun remove_cap<T: key + store>(
+    self: &mut Operators, 
+    _: &OwnerCap, 
+    cap_id: ID
+): T {
     event::emit(CapabilityRemoved {
         cap_id,
         cap_name: type_name::get<T>().into_string(),
