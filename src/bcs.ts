@@ -42,7 +42,7 @@ function getCommonStructs() {
     };
 }
 
-function getAxelarStructs() {
+function getGatewayStructs() {
     const { Bytes32, Bag } = getCommonStructs();
 
     const Message = bcs.struct('Message', {
@@ -235,7 +235,7 @@ function getGasServiceStructs() {
 
 export const bcsStructs = {
     common: getCommonStructs(),
-    gateway: getAxelarStructs(),
+    gateway: getGatewayStructs(),
     squid: getSquidStructs(),
     gmp: getGMPStructs(),
     gasService: getGasServiceStructs(),
