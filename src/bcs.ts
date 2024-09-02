@@ -1,12 +1,8 @@
-import { fromHEX, toHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { UID } from './types';
 
 function getCommonStructs() {
-    const Bytes32 = bcs.fixedArray(32, bcs.u8()).transform({
-        input: (id: string) => fromHEX(id),
-        output: (id) => toHEX(Uint8Array.from(id)),
-    });
+    const Bytes32 = bcs.Address;
 
     const Channel = bcs.struct('Channel', {
         id: UID,
