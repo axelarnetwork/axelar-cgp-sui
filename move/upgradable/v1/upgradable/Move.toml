@@ -1,0 +1,11 @@
+[package]
+name = "Upgradable"
+version = "0.1.0"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.25.3" }
+VersionControl = { local = "../version_control" }
+
+[addresses]
+upgradable = "0x0"

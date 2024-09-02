@@ -13,9 +13,9 @@ const secp256k1 = require('secp256k1');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
-async function publishPackage(client, keypair, packageName) {
+async function publishPackage(client, keypair, packageName,  fromDir = null) {
     const compileDir = `${__dirname}/../move_compile`;
-    copyMovePackage(packageName, null, compileDir);
+    copyMovePackage(packageName, fromDir, compileDir);
     const builder = new TxBuilder(client);
     await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair);
