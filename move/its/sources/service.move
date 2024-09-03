@@ -314,17 +314,14 @@ module its::service {
 
         // Check whether the ITS call should be routed via ITS hub for this destination chain
         if (destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
-            let mut writter = abi::new_writer(3);
-            writter.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
-            writter.write_bytes(destination_chain.into_bytes());
-            writter.write_bytes(payload);
-            payload = writter.into_bytes();
+            let mut writer = abi::new_writer(3);
+            writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
+            writer.write_bytes(destination_chain.into_bytes());
+            writer.write_bytes(payload);
+            payload = writer.into_bytes();
             destination_chain = ascii::string(ITS_HUB_CHAIN_NAME);
             destination_address = self.get_trusted_address(destination_chain);
         };
-
-        // Check whether no trusted address was set for the destination chain
-        assert!(destination_address.length() > 0, EUntrustedChain);
 
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
