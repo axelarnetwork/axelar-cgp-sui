@@ -313,7 +313,7 @@ module its::service {
         assert!(destination_chain.into_bytes() != ITS_HUB_CHAIN_NAME, EUntrustedChain);
 
         // Check whether the ITS call should be routed via ITS hub for this destination chain
-        if(destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
+        if (destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
             let mut writter = abi::new_writer(3);
             writter.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
             writter.write_bytes(destination_chain.into_bytes());
