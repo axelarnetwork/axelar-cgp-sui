@@ -30,9 +30,7 @@ module its::service {
     const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
-    /**
-     * @dev Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
-     */
+    // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
     const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
 
     /**
