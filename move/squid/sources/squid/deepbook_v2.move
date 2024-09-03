@@ -190,7 +190,7 @@ module squid::deepbook_v2 {
             );
             amount_left = amount_left - used;
             output = output + max_out;
-            if(amount_left < lot_size) break;
+            if (amount_left < lot_size) break;
         };
         (amount_left, output)
 
@@ -226,7 +226,7 @@ module squid::deepbook_v2 {
 
     public fun estimate<T1, T2>(self: &mut SwapInfo, pool: &Pool<T1, T2>, clock: &Clock) {
         let data = self.get_data_estimating();
-        if(data.length() == 0) return;
+        if (data.length() == 0) return;
 
         let mut bcs = bcs::new(data);
 
@@ -249,7 +249,7 @@ module squid::deepbook_v2 {
 
         let lot_size = bcs.peel_u64();
         let should_sweep = bcs.peel_bool();
-        if(has_base) {
+        if (has_base) {
             let (amount_left, output) = predict_base_for_quote(
                 pool,
                 // these are run in sequence before anything is done with balances, so `get_estimate` is the correct function to use.
@@ -257,11 +257,11 @@ module squid::deepbook_v2 {
                 lot_size,
                 clock,
             );
-            if(min_output > output) {
+            if (min_output > output) {
                 self.skip_swap();
                 return
             };
-            if(!should_sweep) self.coin_bag().store_estimate<T1>(amount_left);
+            if (!should_sweep) self.coin_bag().store_estimate<T1>(amount_left);
             self.coin_bag().store_estimate<T2>(output);
         } else {
             let (amount_left, output) = predict_quote_for_base(
@@ -270,18 +270,18 @@ module squid::deepbook_v2 {
                 lot_size,
                 clock,
             );
-            if(min_output > output) {
+            if (min_output > output) {
                 self.skip_swap();
                 return
             };
-            if(!should_sweep) self.coin_bag().store_estimate<T2>(amount_left);
+            if (!should_sweep) self.coin_bag().store_estimate<T2>(amount_left);
             self.coin_bag().store_estimate<T1>(output);
         }
     }
 
     public fun swap<T1, T2>(self: &mut SwapInfo, pool: &mut Pool<T1, T2>, squid: &mut Squid, clock: &Clock, ctx: &mut TxContext) {
         let data = self.get_data_swapping();
-        if(data.length() == 0) return;
+        if (data.length() == 0) return;
         let swap_data = peel_swap_data(data);
 
         assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
@@ -298,11 +298,11 @@ module squid::deepbook_v2 {
             EWrongCoinType,
         );
 
-        if(swap_data.has_base) {
+        if (swap_data.has_base) {
             let mut base_balance = self.coin_bag().get_balance<T1>().destroy_some();
             let leftover = base_balance.value() % swap_data.lot_size;
-            if(leftover > 0) {
-                if(swap_data.should_sweep) {
+            if (leftover > 0) {
+                if (swap_data.should_sweep) {
                     squid.coin_bag().store_balance<T1>(
                         base_balance.split(leftover)
                     );
@@ -331,7 +331,7 @@ module squid::deepbook_v2 {
             );
             assert!(swap_data.min_output <= base_coin.value(), ENotEnoughOutput);
             self.coin_bag().store_balance<T1>(base_coin.into_balance());
-            if(swap_data.should_sweep) {
+            if (swap_data.should_sweep) {
                 squid.coin_bag().store_balance<T2>(quote_coin.into_balance());
             } else {
                 self.coin_bag().store_balance<T2>(quote_coin.into_balance());

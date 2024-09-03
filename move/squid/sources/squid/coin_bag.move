@@ -19,7 +19,7 @@ module squid::coin_bag {
     public(package) fun store_balance<T>(self: &mut CoinBag, balance: Balance<T>) {
         let key = get_balance_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             self.bag.borrow_mut<address, Balance<T>>(key).join(
                 balance,
             );
@@ -34,7 +34,7 @@ module squid::coin_bag {
     public(package) fun get_balance<T>(self: &mut CoinBag): Option<Balance<T>> {
         let key = get_balance_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             option::some(self.bag.remove<address, Balance<T>>(key))
         } else {
             option::none<Balance<T>>()
@@ -45,7 +45,7 @@ module squid::coin_bag {
     public(package) fun get_balance_amount<T>(self: &CoinBag): u64 {
         let key = get_balance_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             self.bag.borrow<address, Balance<T>>(key).value()
         } else {
             0
@@ -56,7 +56,7 @@ module squid::coin_bag {
     public(package) fun store_estimate<T>(self: &mut CoinBag, estimate: u64) {
         let key = get_estimate_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             let previous = self.bag.borrow_mut<address, u64>(key);
             *previous = *previous + estimate;
         } else {
@@ -70,7 +70,7 @@ module squid::coin_bag {
     public(package) fun get_estimate<T>(self: &mut CoinBag): u64 {
         let key = get_estimate_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             self.bag.remove<address, u64>(key)
         } else {
             0
@@ -80,7 +80,7 @@ module squid::coin_bag {
     public(package) fun get_estimate_amount<T>(self: &CoinBag): u64 {
         let key = get_estimate_key<T>();
         
-        if(self.bag.contains(key)) {
+        if (self.bag.contains(key)) {
             *self.bag.borrow<address, u64>(key)
         } else {
             0
