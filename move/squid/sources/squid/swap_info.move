@@ -37,14 +37,14 @@ module squid::swap_info {
 
     public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
         let index = self.swap_index;
-        if(index == 0 && self.status == ESTIMATING) {
+        if (index == 0 && self.status == ESTIMATING) {
             assert!(self.estimate_index == self.swap_data.length(), ENotDoneEstimating);
             self.status = SWAPPING;
         };
         assert!(index < self.swap_data.length(), EOutOfSwaps);
 
         self.swap_index = index + 1;
-        if(self.status == SKIP_SWAP) {
+        if (self.status == SKIP_SWAP) {
             vector[]
         } else {
             assert!(self.status == SWAPPING, ENotSwapping);
