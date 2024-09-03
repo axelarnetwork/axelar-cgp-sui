@@ -1,6 +1,4 @@
 module its::trusted_addresses {
-    use std::ascii::String;
-    
     use sui::bcs::BCS;
 
     const EMalformedTrustedAddresses: u64 = 0;
