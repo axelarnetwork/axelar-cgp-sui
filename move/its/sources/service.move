@@ -72,7 +72,7 @@ module its::service {
         writer
             .write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN)
             .write_u256(token_id.to_u256())
-            .write_bytes(*string::bytes(&name))
+            .write_bytes(*string::as_bytes(&name))
             .write_bytes(*ascii::as_bytes(&symbol))
             .write_u256((decimals as u256))
             .write_bytes(vector::empty());
