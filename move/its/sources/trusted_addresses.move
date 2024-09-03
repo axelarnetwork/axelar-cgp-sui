@@ -29,6 +29,7 @@ module its::trusted_addresses {
         (trusted_chains, trusted_addresses)
     }
 
+    // === Tests ===
     #[test_only]
     public fun new_for_testing(trusted_chains: vector<vector<u8>>, trusted_addresses: vector<vector<u8>>): TrustedAddresses {
         TrustedAddresses {

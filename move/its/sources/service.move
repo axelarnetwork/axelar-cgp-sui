@@ -336,6 +336,7 @@ module its::service {
         gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
     }
 
+    // === Tests ===
     #[test_only]
     use its::coin::COIN;
 

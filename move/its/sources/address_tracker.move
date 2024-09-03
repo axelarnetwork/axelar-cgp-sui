@@ -61,6 +61,7 @@ module its::address_tracker {
         }
     }
 
+    // === Tests ===
     #[test]
     fun test_address_tracker() {
         let ctx = &mut sui::tx_context::dummy();

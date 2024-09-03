@@ -146,7 +146,7 @@ module its::coin_management {
         self.treasury_cap.is_some()
     }
 
-    
+    // === Tests ===
     #[test_only]
     public struct COIN_MANAGEMENT has drop {}
 

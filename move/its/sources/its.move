@@ -232,6 +232,7 @@ module its::its {
         self.registered_coin_types.remove(token_id)
     }
 
+    // === Tests ===
     #[test_only]
     public fun new_for_testing(): ITS {
         let ctx = &mut sui::tx_context::dummy();
