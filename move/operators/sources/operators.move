@@ -2,10 +2,10 @@ module operators::operators;
 
 use std::ascii::String;
 use std::type_name;
+
 use sui::bag::{Self, Bag};
-use sui::borrow::{Self, Borrow};
-use sui::event;
 use sui::vec_set::{Self, VecSet};
+use sui::event;
 
 // -----
 // Types
@@ -28,8 +28,10 @@ public struct Operators has key {
     operators: VecSet<address>,
     // map-like collection of capabilities stored as Sui objects
     caps: Bag,
-    // map-like collection of Referents storing loaned capabilities. Referents only get stored for the duration of the tx.
-    loaned_caps: Bag,
+}
+
+public struct Borrow {
+    id: ID,
 }
 
 // ------
@@ -41,6 +43,9 @@ const EOperatorNotFound: u64 = 0;
 
 /// When the capability is not found.
 const ECapNotFound: u64 = 1;
+
+// When the cap trying to restore does not match the Borrow object.
+const ECapIdMismatch: u64 = 2;
 
 // ------
 // Events
@@ -78,7 +83,6 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         operators: vec_set::empty(),
         caps: bag::new(ctx),
-        loaned_caps: bag::new(ctx),
     });
 
     let cap = OwnerCap {
@@ -153,17 +157,13 @@ public fun loan_cap<T: key + store>(
     // Remove the capability from the `Operators` struct to loan it out
     let cap = self.caps.remove(cap_id);
 
-    // Create a new `Referent` to store the loaned capability
-    let mut referent = borrow::new(cap, ctx);
-
-    // Create a `Borrow` hot potato object from the `Referent` that needs to be returned within the same tx
-    let (loaned_cap, borrow_obj) = borrow::borrow(&mut referent);
-
-    // Store the `Referent` in the `Operators` struct
-    self.loaned_caps.add(cap_id, referent);
+    // Create the Borrow object which tracks the id of the cap loaned.
+    let borrow_obj = Borrow {
+        id: object::id(&cap),
+    };
 
     // Return a tuple of the borrowed capability and the Borrow hot potato object
-    (loaned_cap, borrow_obj)
+    (cap, borrow_obj)
 }
 
 /// Restores a previously loaned capability back to the `Operators` struct.
@@ -171,20 +171,16 @@ public fun loan_cap<T: key + store>(
 public fun restore_cap<T: key + store>(
     self: &mut Operators,
     _operator_cap: &OperatorCap,
-    cap_id: ID,
-    loaned_cap: T,
+    cap: T,
     borrow_obj: Borrow,
 ) {
-    assert!(self.loaned_caps.contains(cap_id), ECapNotFound);
+    let cap_id = object::id(&cap);
 
-    // Remove the `Referent` from the `Operators` struct
-    let mut referent = self.loaned_caps.remove(cap_id);
+    // Destroy the Borrow object and capture the id it tracks.
+    let Borrow { id } = borrow_obj;
 
-    // Put back the borrowed capability and `T` capability into the `Referent`
-    borrow::put_back(&mut referent, loaned_cap, borrow_obj);
-
-    // Unpack the `Referent` struct and get the `T` capability
-    let cap: T = borrow::destroy(referent);
+    // Make sure the Borrow object corresponds to cap returned.
+    assert!(id == cap_id, ECapIdMismatch);
 
     // Add the capability back to the `Operators` struct
     self.caps.add(cap_id, cap);
@@ -214,17 +210,15 @@ fun new_operators(ctx: &mut TxContext): Operators {
         id: object::new(ctx),
         operators: vec_set::empty(),
         caps: bag::new(ctx),
-        loaned_caps: bag::new(ctx),
     }
 }
 
 #[test_only]
 fun destroy_operators(operators: Operators) {
-    let Operators { id, operators, caps, loaned_caps } = operators;
+    let Operators { id, operators, caps } = operators;
 
     id.delete();
     caps.destroy_empty();
-    loaned_caps.destroy_empty();
 
     let mut keys = operators.into_keys();
 
@@ -310,10 +304,8 @@ fun test_store_and_remove_cap() {
         external_id,
         ctx,
     );
-    assert!(operators.loaned_caps.contains(external_id), 1);
-    assert!(!operators.caps.contains(external_id), 2);
-    restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
-    assert!(!operators.loaned_caps.contains(external_id), 3);
+    assert!(!operators.caps.contains(external_id), 1);
+    restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
     assert!(operators.caps.contains(external_id), 2);
 
     let removed_cap = remove_cap<OwnerCap>(
@@ -362,7 +354,7 @@ fun test_borrow_cap_not_operator() {
         external_id,
         ctx,
     );
-    restore_cap(&mut operators, &operator_cap, external_id, cap, loaned_cap);
+    restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
 
     destroy_operator_cap(operator_cap);
     destroy_owner_cap(owner_cap);
@@ -385,7 +377,7 @@ fun test_borrow_cap_no_such_cap() {
         operator_id,
         ctx,
     );
-    restore_cap(&mut operators, &operator_cap, operator_id, cap, loaned_cap);
+    restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
 
     destroy_operator_cap(operator_cap);
     destroy_owner_cap(owner_cap);
