@@ -8,7 +8,7 @@
 
 ### Patch Changes
 
--   fd494a4: update sui rev to testnet-v1.32.0
+-   fd494a4: Updated sui rev to testnet-v1.32.0
 
 ## 0.5.0
 
