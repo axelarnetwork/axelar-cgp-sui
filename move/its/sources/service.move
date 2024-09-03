@@ -297,7 +297,7 @@ module its::service {
             source_chain = ascii::string(reader.read_bytes());
             payload = reader.read_bytes();
 
-            assert!(self.trusted_address(source_chain) == ITS_HUB_ROUTING_IDENTIFIER, EUntrustedChain);
+            assert!(self.get_trusted_address(source_chain) == ITS_HUB_ROUTING_IDENTIFIER, EUntrustedChain);
         } else {
             assert!(source_chain.into_bytes() != ITS_HUB_CHAIN_NAME, EUntrustedChain);
         };
