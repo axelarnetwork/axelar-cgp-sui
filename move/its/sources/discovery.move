@@ -81,9 +81,11 @@ module its::discovery {
 
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             get_interchain_transfer_tx(self, &mut reader)
-        } else {
-            assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
+        } else if (message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN) {
+            
             get_deploy_interchain_token_tx(self, &mut reader)
+        } else {
+            assert!(false, EUnsupportedMessageType);
         }
     }
 
