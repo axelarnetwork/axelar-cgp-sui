@@ -25,23 +25,27 @@ module its::service {
     use axelar_gateway::gateway;
     use axelar_gateway::channel::Channel;
 
+    // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
     const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
-    const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
-
-    // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
-    const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
-
-    // Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
-    const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
-
+    const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;    
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
 
+
+
+    // === HUB CONSTANTS ===
+    // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
+    const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
+    // Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
+    const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
+
+    // === The maximum number of decimals allowed ===
     const DECIMALS_CAP: u8 = 9;
 
+    // === ERRROS CODES ===
     const EUntrustedAddress: u64 = 0;
     const EInvalidMessageType: u64 = 1;
     const EWrongDestination: u64 = 2;
@@ -54,10 +58,12 @@ module its::service {
     const EUntrustedChain: u64 = 9;
     const ERemainingData: u64 = 19;
 
+    // === Events ===
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
     }
 
+    // === Public Functions ===
     public fun register_coin<T>(
         self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>
     ): TokenId {

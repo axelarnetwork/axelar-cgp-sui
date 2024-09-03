@@ -10,6 +10,9 @@ module its::coin_management {
 
     use its::flow_limit::{Self, FlowLimit};
 
+    // ------
+    // Errors
+    // ------
     /// Trying to add a distributor to a `CoinManagement` that does not
     /// have a `TreasuryCap`.
     const EDistributorNeedsTreasuryCap: u64 = 0;
@@ -26,6 +29,9 @@ module its::coin_management {
         dust: u256,
     }
 
+    // ------
+    // Functions to create CoinManagement
+    // ------
     /// Create a new `CoinManagement` with a `TreasuryCap`.
     /// This type of `CoinManagement` allows minting and burning of coins.
     public fun new_with_cap<T>(treasury_cap: TreasuryCap<T>): CoinManagement<T> {
@@ -54,6 +60,10 @@ module its::coin_management {
         }
     }
 
+
+    // ------
+    // Functions that modify CoinManagement
+    // ------
     /// Adds the distributor address to the `CoinManagement`.
     /// Only works for a `CoinManagement` with a `TreasuryCap`.
     public fun add_distributor<T>(self: &mut CoinManagement<T>, distributor: address) {

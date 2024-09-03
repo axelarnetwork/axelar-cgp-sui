@@ -5,6 +5,9 @@ module its::address_tracker {
 
     use sui::table::{Self, Table};
 
+    // ------
+    // Errors
+    // ------
     /// Attempt to borrow a trusted address but it's not registered.
     const ENoAddress: u64 = 0;
 
@@ -13,6 +16,9 @@ module its::address_tracker {
         trusted_addresses: Table<String, String>
     }
 
+    // ------
+    // Getters
+    // ------
     /// Get the trusted address for a chain.
     public fun get_trusted_address(
         self: &InterchainAddressTracker, chain_name: String

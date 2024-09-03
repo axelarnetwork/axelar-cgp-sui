@@ -18,9 +18,12 @@ module its::its {
     use its::coin_management::CoinManagement;
     use its::trusted_addresses::TrustedAddresses;
 
-    /// Trying to read a token that doesn't exist.
-    const ENotFound: u64 = 0;
-    const EUnregisteredCoin: u64 = 1;
+
+    // ------
+    // Errors
+    // ------
+    /// Trying to find a coin that doesn't exist.
+    const EUnregisteredCoin: u64 = 0;
 
     public struct ITS has key {
         id: UID,
@@ -47,6 +50,7 @@ module its::its {
         coin_metadata: CoinMetadata<T>,
     }
 
+    // === Initializer ===
     fun init(ctx: &mut TxContext) {
         transfer::share_object(ITS {
             id: object::new(ctx),
@@ -66,37 +70,13 @@ module its::its {
         });
     }
 
-    public(package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
-        self.relayer_discovery_id = object::id(relayer_discovery);
-    }
-
-    public(package) fun relayer_discovery_id(self: &ITS): ID {
-        self.relayer_discovery_id
-    }
-
-    public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
-        self.address_tracker.set_trusted_address(chain_name, trusted_address);
-    }
-
-    public(package) fun set_trusted_addresses(self: &mut ITS, trusted_addresses: TrustedAddresses) {
-        let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
-        let length = chain_names.length();
-        let mut i = 0;
-        while(i < length) {
-            self.set_trusted_address(
-                ascii::string(chain_names.pop_back()),
-                ascii::string(trusted_addresses.pop_back()),
-            );
-            i = i + 1;
-        }
-    }
-
+    // === Getters ===
     public fun get_unregistered_coin_type(
         self: &ITS, symbol: &String, decimals: u8
     ): &TypeName {
         let key = token_id::unregistered_token_id(symbol, decimals);
 
-        assert!(self.unregistered_coin_types.contains(key), ENotFound);
+        assert!(self.unregistered_coin_types.contains(key), EUnregisteredCoin);
         &self.unregistered_coin_types[key]
     }
 
@@ -108,15 +88,6 @@ module its::its {
     public fun get_coin_data<T>(self: &ITS, token_id: TokenId): &CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &self.registered_coins[token_id]
-    }
-
-    public(package) fun get_coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
-        assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
-        &mut self.registered_coins[token_id]
-    }
-
-    public(package) fun get_coin_scaling<T>(self: &CoinData<T>): u256 {
-        self.coin_info.scaling()
     }
 
     public fun get_coin_info<T>(self: &ITS, token_id: TokenId): &CoinInfo<T> {
@@ -152,6 +123,40 @@ module its::its {
     }
 
     // === Friend-only ===
+    public(package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
+        self.relayer_discovery_id = object::id(relayer_discovery);
+    }
+
+    public(package) fun relayer_discovery_id(self: &ITS): ID {
+        self.relayer_discovery_id
+    }
+
+    public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+        self.address_tracker.set_trusted_address(chain_name, trusted_address);
+    }
+
+    public(package) fun set_trusted_addresses(self: &mut ITS, trusted_addresses: TrustedAddresses) {
+        let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
+        let length = chain_names.length();
+        let mut i = 0;
+        while(i < length) {
+            self.set_trusted_address(
+                ascii::string(chain_names.pop_back()),
+                ascii::string(trusted_addresses.pop_back()),
+            );
+            i = i + 1;
+        }
+    }
+
+    public(package) fun get_coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
+        assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
+        &mut self.registered_coins[token_id]
+    }
+
+    public(package) fun get_coin_scaling<T>(self: &CoinData<T>): u256 {
+        self.coin_info.scaling()
+    }
+
     public(package) fun channel(self: &ITS): &Channel {
         &self.channel
     }
@@ -210,7 +215,6 @@ module its::its {
     }
 
     // === Private ===
-
     fun add_unregistered_coin_type(self: &mut ITS, token_id: UnregisteredTokenId, type_name: TypeName) {
         self.unregistered_coin_types.add(token_id, type_name);
     }
