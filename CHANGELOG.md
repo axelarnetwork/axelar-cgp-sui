@@ -1,5 +1,15 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.6.0
+
+### Minor Changes
+
+-   2dccf33: Using a custom hot potato object for the operators module instead of Sui's Borrow, because our design fits better this way.
+
+### Patch Changes
+
+-   fd494a4: Updated sui rev to testnet-v1.32.0
+
 ## 0.5.0
 
 ### Minor Changes
