@@ -33,7 +33,7 @@ module its::service {
     // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
     const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
 
-    //Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
+    // Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
     const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
@@ -297,7 +297,7 @@ module its::service {
             source_chain = ascii::string(reader.read_bytes());
             payload = reader.read_bytes();
 
-            assert!(self.trusted_addresses(source_chain) == ITS_HUB_ROUTING_IDENTIFIER, EUntrustedChain);
+            assert!(self.trusted_address(source_chain) == ITS_HUB_ROUTING_IDENTIFIER, EUntrustedChain);
         } else {
             assert!(source_chain.into_bytes() != ITS_HUB_CHAIN_NAME, EUntrustedChain);
         };
