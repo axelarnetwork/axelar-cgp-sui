@@ -51,9 +51,8 @@ module its::service {
     const ENotDistributor: u64 = 6;
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
-    const EMalformedTrustedAddresses: u64 = 9;
-    const EUntrustedChain: u64 = 10;
-    const ERemainingData: u64 = 11;
+    const EUntrustedChain: u64 = 9;
+    const ERemainingData: u64 = 19;
 
     public struct CoinRegistered<phantom T> has copy, drop {
         token_id: TokenId,
@@ -1325,14 +1324,17 @@ module its::service {
         let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
         let source_address = ascii::string(b"Address");
         let message_id = ascii::string(b"message_id");
+        let origin_chain = ascii::string(b"Source Chain");
+        let payload = b"payload";
 
         let mut writer = abi::new_writer(3);
         writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
-        writer.write_bytes(b"Source Chain");
-        writer.write_bytes(b"payload");
+        writer.write_bytes(origin_chain.into_bytes());
+        writer.write_bytes(payload);
         let payload = writer.into_bytes();
 
-        its.set_trusted_address(ascii::string(ITS_HUB_CHAIN_NAME), source_address);
+        its.set_trusted_address(source_chain, source_address);
+        its.set_trusted_address(origin_chain, ascii::string(ITS_HUB_ROUTING_IDENTIFIER));
 
         let approved_message = channel::new_approved_message(
             source_chain,
@@ -1348,7 +1350,7 @@ module its::service {
     }
 
     #[test]
-    #[expected_failure(abort_code = ESenderNotHub)]
+    #[expected_failure(abort_code = EUntrustedChain)]
     fun test_decode_approved_message_sender_not_hub() {
         let mut its = its::its::new_for_testing();
         let source_chain = ascii::string(b"Chain Name");
@@ -1375,6 +1377,39 @@ module its::service {
     }
 
     #[test]
+    #[expected_failure(abort_code = EUntrustedChain)]
+    fun test_decode_approved_message_origin_not_hub_routed() {
+        let mut its = its::its::new_for_testing();
+        let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
+        let source_address = ascii::string(b"Address");
+        let message_id = ascii::string(b"message_id");
+        let origin_chain = ascii::string(b"Source Chain");
+        let origin_trusted_address = ascii::string(b"Origin Trusted Address");
+        let payload = b"payload";
+
+        let mut writer = abi::new_writer(3);
+        writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+        writer.write_bytes(origin_chain.into_bytes());
+        writer.write_bytes(payload);
+        let payload = writer.into_bytes();
+
+        its.set_trusted_address(source_chain, source_address);
+        its.set_trusted_address(origin_chain, origin_trusted_address);
+
+        let approved_message = channel::new_approved_message(
+            source_chain,
+            message_id,
+            source_address,
+            its.channel().to_address(),
+            payload,
+        );
+
+        decode_approved_message(&mut its, approved_message);
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
     fun test_send_payload_to_hub() {
         let mut its = its::its::new_for_testing();
         let destination_chain = ascii::string(b"Destination Chain");
@@ -1385,7 +1420,7 @@ module its::service {
         its.set_trusted_address(ascii::string(ITS_HUB_CHAIN_NAME), hub_address);
         its.set_trusted_address(destination_chain, ascii::string(ITS_HUB_ROUTING_IDENTIFIER));
 
-        send_payload(&its, destination_chain, payload);
+        send_payload(&mut its, destination_chain, payload);
 
         sui::test_utils::destroy(its);
     }
