@@ -151,6 +151,19 @@ public fun setup(
     transfer::share_object(gateway);
 }
 
+#[syntax(index)]
+public fun borrow(self: &Gateway, command_id: Bytes32): &MessageStatus {
+    table::borrow(&self.messages, command_id)
+}
+
+#[syntax(index)]
+public fun borrow_mut(
+    self: &mut Gateway,
+    command_id: Bytes32,
+): &mut MessageStatus {
+    table::borrow_mut(&mut self.messages, command_id)
+}
+
 // -----------
 // Entrypoints
 // -----------
@@ -252,7 +265,7 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    self.messages[command_id] == MessageStatus::Approved(message.hash())
+    self[command_id] == MessageStatus::Approved(message.hash())
 }
 
 public fun is_message_executed(
@@ -265,7 +278,7 @@ public fun is_message_executed(
         message_id,
     );
 
-    self.messages[command_id] == MessageStatus::Executed
+    self[command_id] == MessageStatus::Executed
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -289,18 +302,12 @@ public fun take_approved_message(
     );
 
     assert!(
-        is_message_approved(
-            self,
-            source_chain,
-            message_id,
-            source_address,
-            destination_id,
-            bytes32::from_bytes(hash::keccak256(&payload)),
-        ),
+        self[command_id] == MessageStatus::Approved(message.hash()),
         EMessageNotApproved,
     );
 
-    *table::borrow_mut(&mut self.messages, command_id) = MessageStatus::Executed;
+    let message_status_ref = &mut self[command_id];
+    *message_status_ref = MessageStatus::Executed;
 
     sui::event::emit(MessageExecuted {
         message,
