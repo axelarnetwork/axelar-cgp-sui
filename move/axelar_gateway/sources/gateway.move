@@ -307,6 +307,7 @@ public fun take_approved_message(
         EMessageNotApproved,
     );
 
+    table::remove(&mut self.messages, command_id);
     table::add(&mut self.messages, command_id, MessageStatus::Executed);
 
     sui::event::emit(MessageExecuted {
@@ -445,8 +446,8 @@ public fun destroy_for_testing(gateway: Gateway) {
 #[test]
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
-    let operator: ERROR = 123456;
-    let domain_separator = bytes32::new(ERROR, 789012);
+    let operator = @123456;
+    let domain_separator = bytes32::new(@789012);
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
@@ -587,7 +588,7 @@ fun test_approve_message() {
         2,
     );
 
-    let MessageStatus { .. } = gateway.messages.remove(message.command_id());
+    gateway.messages.remove(message.command_id());
 
     gateway.destroy_for_testing();
     channel.destroy();
@@ -698,7 +699,7 @@ fun test_take_approved_message_message_not_approved() {
         .messages
         .add(
             message.command_id(),
-            MessageStatus { status: axelar_gateway::bytes32::new(@0x3) },
+            MessageStatus::Approved(axelar_gateway::bytes32::new(@0x3)),
         );
 
     let approved_message = take_approved_message(
@@ -710,7 +711,7 @@ fun test_take_approved_message_message_not_approved() {
         vector[0, 1, 2],
     );
 
-    let MessageStatus { .. } = gateway.messages.remove(message.command_id());
+    gateway.messages.remove(message.command_id());
 
     approved_message.destroy_for_testing();
     gateway.destroy_for_testing();
