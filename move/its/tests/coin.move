@@ -3,7 +3,7 @@ module its::coin {
     use sui::url::{Url};
     use sui::coin::{Self, CoinMetadata, TreasuryCap};
 
-    public struct COIN has drop{}
+    public struct COIN has drop {}
     
 
     // -----
