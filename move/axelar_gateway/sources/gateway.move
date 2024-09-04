@@ -58,8 +58,6 @@ const ENotLatestSigners: u64 = 3;
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
 
-const MESSAGE_EXECUTED: address = @0x1;
-
 /// An object holding the state of the Axelar bridge.
 /// The central piece in managing call approval creation and signature verification.
 public struct Gateway has key {
@@ -71,11 +69,13 @@ public struct Gateway has key {
 
 /// The Status of the message.
 /// Can be either one of three statuses:
-/// - Non-existent: Set to bytes32(0)
+/// - NonExistent
 /// - Approved: Set to the hash of the message
-/// - Executed: Set to bytes32(1)
-public struct MessageStatus has store {
-    status: Bytes32,
+/// - Execute
+public enum MessageStatus has copy, drop, store {
+    NonExistent,
+    Approved(Bytes32),
+    Executed,
 }
 
 // ------------
@@ -237,6 +237,17 @@ public fun call_contract(
     })
 }
 
+public fun get_message_status(
+    self: &Gateway,
+    command_id: Bytes32,
+): MessageStatus {
+    if (table::contains(&self.messages, command_id)) {
+        *table::borrow(&self.messages, command_id)
+    } else {
+        MessageStatus::NonExistent
+    }
+}
+
 public fun is_message_approved(
     self: &Gateway,
     source_chain: String,
@@ -254,7 +265,7 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    self.messages[command_id].status == message.hash()
+    self.messages[command_id] == MessageStatus::Approved(message.hash())
 }
 
 public fun is_message_executed(
@@ -267,7 +278,7 @@ public fun is_message_executed(
         message_id,
     );
 
-    self.messages[command_id].status == bytes32::new(@0x1)
+    self.messages[command_id] == MessageStatus::Executed
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -291,11 +302,12 @@ public fun take_approved_message(
     );
 
     assert!(
-        self.messages[command_id].status == message.hash(),
+        get_message_status(self, command_id) ==
+        MessageStatus::Approved(message.hash()),
         EMessageNotApproved,
     );
 
-    self.messages[command_id].status = bytes32::new(MESSAGE_EXECUTED);
+    table::add(&mut self.messages, command_id, MessageStatus::Executed);
 
     sui::event::emit(MessageExecuted {
         message,
@@ -372,7 +384,7 @@ fun approve_message(self: &mut Gateway, message: &message::Message) {
         .messages
         .add(
             command_id,
-            MessageStatus { status: message.hash() },
+            MessageStatus::Approved(message.hash()),
         );
 
     sui::event::emit(MessageApproved {
@@ -433,8 +445,8 @@ public fun destroy_for_testing(gateway: Gateway) {
 #[test]
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
-    let operator = @123456;
-    let domain_separator = bytes32::new(@789012);
+    let operator: ERROR = 123456;
+    let domain_separator = bytes32::new(ERROR, 789012);
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
