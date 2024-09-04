@@ -5,8 +5,6 @@ module upgradable::upgradable {
     use version_control::version_control::{Self, VersionControl};
 
     const VERSION: u64 = 0;
-    const FUNCTION_INDEX_SET: u8 = 0;
-    const FUNCTION_INDEX_GET: u8 = 1;
 
     public struct Singleton has key {
         id: UID,
@@ -14,19 +12,17 @@ module upgradable::upgradable {
 
     public struct DataV0 has store {
         value: u64,
-        version: u64,
         version_control: VersionControl,
     }
 
     fun init(ctx: &mut TxContext) {
         let mut id = object::new(ctx);
         let version_control = version_control::new(vector[
-            vector[FUNCTION_INDEX_GET, FUNCTION_INDEX_SET]
+            vector[b"get", b"set"],
         ]);
 
         dynamic_field::add(&mut id, 0, DataV0 {
             value: 0,
-            version: VERSION,
             version_control,
         });
 
@@ -45,13 +41,13 @@ module upgradable::upgradable {
 
     public fun set(self: &mut Singleton, value: u64) {
         let data = self.borrow_data_mut();
-        data.version_control.check(FUNCTION_INDEX_SET, VERSION);
+        data.version_control.check(b"set", VERSION);
         data.value = value;
     }
 
     public fun get(self: &Singleton): u64 {
         let data = self.borrow_data();
-        data.version_control.check(FUNCTION_INDEX_GET, VERSION);
+        data.version_control.check(b"get", VERSION);
         data.value
     }
 }

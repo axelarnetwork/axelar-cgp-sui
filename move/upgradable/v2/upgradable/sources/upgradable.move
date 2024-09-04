@@ -6,8 +6,6 @@ module upgradable::upgradable {
     use version_control::version_control::{Self, VersionControl};
 
     const VERSION: u64 = 1;
-    const FUNCTION_INDEX_SET: u8 = 0;
-    const FUNCTION_INDEX_GET: u8 = 1;
 
     const EIncorrectVersion: u64 = 0;
 
@@ -17,7 +15,6 @@ module upgradable::upgradable {
 
     public struct DataV0 has store {
         value: u64,
-        version: u64,
         version_control: VersionControl,
     }
 
@@ -27,14 +24,13 @@ module upgradable::upgradable {
 
     entry fun upgrade(self: &mut Singleton) {
         let data = self.borrow_data_mut();
-        assert!(data.version < VERSION, EIncorrectVersion);
-        data.version = VERSION;
+        assert!(data.version_control.version() < VERSION, EIncorrectVersion);
         data.version_control = version_control::new(vector[
             vector[
-                FUNCTION_INDEX_GET,
+                b"get",
             ],
             vector[
-                FUNCTION_INDEX_GET, FUNCTION_INDEX_SET,
+                b"get", b"set",
             ],
         ]);
     }
@@ -49,7 +45,7 @@ module upgradable::upgradable {
 
     public fun set(self: &mut Singleton, value: u64) {
         let data = self.borrow_data_mut();
-        data.version_control.check(FUNCTION_INDEX_SET, VERSION);
+        data.version_control.check(b"set", VERSION);
         data.value = value;
         event::emit({
             ValueSet{
@@ -60,7 +56,7 @@ module upgradable::upgradable {
 
     public fun get(self: &Singleton): u64 {
         let data = self.borrow_data();
-        data.version_control.check(FUNCTION_INDEX_GET, VERSION);
+        data.version_control.check(b"get", VERSION);
         data.value
     }
 }
