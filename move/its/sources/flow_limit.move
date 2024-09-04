@@ -23,7 +23,7 @@ module its::flow_limit {
 
     fun update_epoch(self: &mut FlowLimit, clock: &Clock) {
         let epoch = clock.timestamp_ms() / EPOCH_TIME;
-        if(epoch > self.current_epoch) {
+        if (epoch > self.current_epoch) {
             self.current_epoch = epoch;
             self.flow_in = 0;
             self.flow_out = 0;
