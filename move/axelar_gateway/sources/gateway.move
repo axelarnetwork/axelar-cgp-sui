@@ -68,12 +68,10 @@ public struct Gateway has key {
 }
 
 /// The Status of the message.
-/// Can be either one of three statuses:
-/// - NonExistent
+/// Can be either one of two statuses:
 /// - Approved: Set to the hash of the message
-/// - Execute
+/// - Executed: Message was already executed
 public enum MessageStatus has copy, drop, store {
-    NonExistent,
     Approved(Bytes32),
     Executed,
 }
