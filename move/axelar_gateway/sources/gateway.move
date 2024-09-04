@@ -237,17 +237,6 @@ public fun call_contract(
     })
 }
 
-public fun get_message_status(
-    self: &Gateway,
-    command_id: Bytes32,
-): MessageStatus {
-    if (table::contains(&self.messages, command_id)) {
-        *table::borrow(&self.messages, command_id)
-    } else {
-        MessageStatus::NonExistent
-    }
-}
-
 public fun is_message_approved(
     self: &Gateway,
     source_chain: String,
