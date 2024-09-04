@@ -30,7 +30,7 @@ module its::coin_management {
     }
 
     // ------
-    // Functions to create CoinManagement
+    // Public Functions to create CoinManagement
     // ------
     /// Create a new `CoinManagement` with a `TreasuryCap`.
     /// This type of `CoinManagement` allows minting and burning of coins.
