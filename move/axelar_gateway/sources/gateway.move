@@ -302,13 +302,18 @@ public fun take_approved_message(
     );
 
     assert!(
-        get_message_status(self, command_id) ==
-        MessageStatus::Approved(message.hash()),
+        is_message_approved(
+            self,
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            bytes32::from_bytes(hash::keccak256(&payload)),
+        ),
         EMessageNotApproved,
     );
 
-    table::remove(&mut self.messages, command_id);
-    table::add(&mut self.messages, command_id, MessageStatus::Executed);
+    *table::borrow_mut(&mut self.messages, command_id) = MessageStatus::Executed;
 
     sui::event::emit(MessageExecuted {
         message,
