@@ -2,13 +2,14 @@
 
 [move]
 version = 2
-manifest_digest = "D23E570D2E1EA047E79883A121CD9A2BC3CB4FD243725EDD86CC933C73C302AB"
-deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+manifest_digest = "4679762A1C6D5F818EF182909BF92324DE41B1DA9A1206389B760D44BFE0750C"
+deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "AxelarGateway" },
-  { name = "DeepBook" },
   { name = "ITS" },
   { name = "Sui" },
+  { name = "deepbook" },
+  { name = "token" },
 ]
 
 [[move.package]]
@@ -24,15 +25,6 @@ name = "AxelarGateway"
 source = { local = "../axelar_gateway" }
 
 dependencies = [
-  { name = "Sui" },
-]
-
-[[move.package]]
-name = "DeepBook"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/deepbook" }
-
-dependencies = [
-  { name = "MoveStdlib" },
   { name = "Sui" },
 ]
 
@@ -58,17 +50,34 @@ dependencies = [
 
 [[move.package]]
 name = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 name = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
 ]
 
+[[move.package]]
+name = "deepbook"
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "testnet", subdir = "packages/deepbook" }
+
+dependencies = [
+  { name = "Sui" },
+  { name = "token" },
+]
+
+[[move.package]]
+name = "token"
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "testnet", subdir = "packages/token" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
 [move.toolchain-version]
-compiler-version = "1.32.0"
+compiler-version = "1.33.0"
 edition = "2024.beta"
 flavor = "sui"

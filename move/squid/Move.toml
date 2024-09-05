@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024.beta"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
-DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "mainnet-v1.32.2" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+deepbook = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/deepbook", rev = "testnet" }
+token = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/token", rev = "testnet" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 
