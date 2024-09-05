@@ -2,28 +2,26 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const {
-    publishPackage,
-    getRandomBytes32,
-    expectEvent,
-    approveMessage,
-} = require('./utils');
+const { publishPackage, getRandomBytes32, expectEvent, approveMessage } = require('./utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: {
-        gateway: { WeightedSigners, MessageToSign, Proof },
+        gateway: { WeightedSigners },
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
-const { utils: { arrayify, hexlify, keccak256, defaultAbiCoder }, constants: { HashZero } } = require('ethers');
+const {
+    utils: { arrayify, hexlify, keccak256, defaultAbiCoder },
+    constants: { HashZero },
+} = require('ethers');
 
 const clock = '0x6';
 const sui = '0x2';
-const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES = "0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68";
+const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES = '0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68';
 // This is because of a discrepancy between decimals and remote decimals;
 const multiplier = 10000;
 
-describe.only('ITS', () => {
+describe('ITS', () => {
     let client;
     const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const deployer = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
@@ -70,13 +68,7 @@ describe.only('ITS', () => {
     async function newExample() {
         const result = await publishPackage(client, keypair, 'example');
         exampleId = result.packageId;
-        singleton = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${exampleId}::its_example::Singleton`,
-        ).objectId;
-    }
-
-    async function sleep(ms = 1000) {
-        await new Promise((resolve) => setTimeout(resolve, ms));
+        singleton = result.publishTxn.objectChanges.find((change) => change.objectType === `${exampleId}::its_example::Singleton`).objectId;
     }
 
     const minimumRotationDelay = 1000;
@@ -110,7 +102,7 @@ describe.only('ITS', () => {
         ).objectId;
 
         await publishPackage(client, deployer, 'abi');
-        result  = await publishPackage(client, deployer, 'governance');
+        result = await publishPackage(client, deployer, 'governance');
         const governanceId = result.packageId;
         const governanceUpgradeCap = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${sui}::package::UpgradeCap`,
@@ -118,9 +110,7 @@ describe.only('ITS', () => {
 
         result = await publishPackage(client, deployer, 'its');
         packageId = result.packageId;
-        its = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${packageId}::its::ITS`,
-        ).objectId;
+        its = result.publishTxn.objectChanges.find((change) => change.objectType === `${packageId}::its::ITS`).objectId;
 
         calculateNextSigners();
 
@@ -150,13 +140,8 @@ describe.only('ITS', () => {
         const messageType = 1234;
         await builder.moveCall({
             target: `${governanceId}::governance::new`,
-            arguments: [
-                trustedSourceChain,
-                trustedSourceAddress,
-                messageType,
-                governanceUpgradeCap,
-            ],
-        })
+            arguments: [trustedSourceChain, trustedSourceAddress, messageType, governanceUpgradeCap],
+        });
 
         result = await builder.signAndExecute(deployer);
         gateway = result.objectChanges.find((change) => change.objectType === `${axelarPackageId}::gateway::Gateway`).objectId;
@@ -176,16 +161,22 @@ describe.only('ITS', () => {
 
         const channelId = itsData.data.content.fields.channel.fields.id.id;
 
-        const payload = defaultAbiCoder.encode(['bytes32', 'bytes'], [
-            MESSAGE_TYPE_SET_TRUSTED_ADDRESSES,
-            bcs.struct('Trusted Addresses', {
-                chain_names: bcs.vector(bcs.String),
-                trusted_addresses: bcs.vector(bcs.String),
-            }).serialize({
-                chain_names: [remoteChain],
-                trusted_addresses: [trustedAddress],
-            }).toBytes(),
-        ]);
+        const payload = defaultAbiCoder.encode(
+            ['bytes32', 'bytes'],
+            [
+                MESSAGE_TYPE_SET_TRUSTED_ADDRESSES,
+                bcs
+                    .struct('Trusted Addresses', {
+                        chain_names: bcs.vector(bcs.String),
+                        trusted_addresses: bcs.vector(bcs.String),
+                    })
+                    .serialize({
+                        chain_names: [remoteChain],
+                        trusted_addresses: [trustedAddress],
+                    })
+                    .toBytes(),
+            ],
+        );
         const message = {
             source_chain: trustedSourceChain,
             message_id: 'Message Id 0',
@@ -201,23 +192,12 @@ describe.only('ITS', () => {
 
         const approvedMessage = await builder.moveCall({
             target: `${axelarPackageId}::gateway::take_approved_message`,
-            arguments: [
-                gateway,
-                message.source_chain,
-                message.message_id,
-                message.source_address,
-                message.destination_id,
-                message.payload,
-            ],
+            arguments: [gateway, message.source_chain, message.message_id, message.source_address, message.destination_id, message.payload],
         });
 
         await builder.moveCall({
             target: `${packageId}::service::set_trusted_addresses`,
-            arguments: [
-                its,
-                governance,
-                approvedMessage,
-            ],
+            arguments: [its, governance, approvedMessage],
         });
 
         await builder.signAndExecute(keypair);
@@ -227,19 +207,16 @@ describe.only('ITS', () => {
         it('Should register a coin', async () => {
             await newExample();
 
-            let builder = new TxBuilder(client);
+            const builder = new TxBuilder(client);
 
             await builder.moveCall({
                 target: `${exampleId}::its_example::register_coin`,
-                arguments: [
-                    singleton,
-                    its,
-                ],
+                arguments: [singleton, its],
                 typeArguments: [],
             });
-            
+
             await expectEvent(builder, keypair, {
-                type: `${packageId}::service::CoinRegistered<${exampleId}::its_example::ITS_EXAMPLE>`
+                type: `${packageId}::service::CoinRegistered<${exampleId}::its_example::ITS_EXAMPLE>`,
             });
         });
 
@@ -248,47 +225,29 @@ describe.only('ITS', () => {
             const destinationAddress = '0x1234';
             await newExample();
 
-            let builder = new TxBuilder(client);
+            const builder = new TxBuilder(client);
 
             const coin = await builder.moveCall({
                 target: `${exampleId}::its_example::mint`,
-                arguments: [
-                    singleton,
-                    amount,
-                ],
+                arguments: [singleton, amount],
                 typeArguments: [],
             });
             await builder.moveCall({
                 target: `${exampleId}::its_example::register_coin`,
-                arguments: [
-                    singleton,
-                    its,
-                ],
+                arguments: [singleton, its],
                 typeArguments: [],
             });
             const gas = await builder.moveCall({
                 target: `${sui}::coin::zero`,
                 arguments: [],
-                typeArguments: [
-                    `${sui}::sui::SUI`
-                ],
-            }); 
+                typeArguments: [`${sui}::sui::SUI`],
+            });
             await builder.moveCall({
                 target: `${exampleId}::its_example::send_interchain_transfer`,
-                arguments: [
-                    singleton, 
-                    its,
-                    remoteChain, 
-                    '0x1234', 
-                    coin,
-                    '0x',
-                    gasService, 
-                    gas, 
-                    clock,
-                ],
+                arguments: [singleton, its, remoteChain, '0x1234', coin, '0x', gasService, gas, clock],
                 typeArguments: [],
             });
-            
+
             await expectEvent(builder, keypair, {
                 type: `${packageId}::service::InterchainTransfer<${exampleId}::its_example::ITS_EXAMPLE>`,
                 arguments: {
