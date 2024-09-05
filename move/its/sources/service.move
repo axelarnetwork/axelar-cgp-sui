@@ -105,8 +105,8 @@ module its::service {
         destination_chain: String,
         destination_address: vector<u8>,
         metadata: vector<u8>,
+        source_channel: &Channel,
         clock: &Clock,
-        ctx: &mut TxContext,
     ) {
         let amount = self.coin_management_mut(token_id)
             .take_coin(coin, clock);
@@ -116,7 +116,7 @@ module its::service {
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(ctx.sender().to_bytes())
+            .write_bytes(source_channel.to_address().to_bytes())
             .write_bytes(destination_address)
             .write_u256(amount)
             .write_bytes(data);
@@ -403,10 +403,13 @@ module its::service {
         let destination_chain = ascii::string(b"Chain Name");
         let destination_address = b"address";
         let metadata = b"";
+        let source_channel = channel::new(ctx);
         let clock = sui::clock::create_for_testing(ctx);
-        interchain_transfer<COIN>(&mut its, token_id, coin, destination_chain, destination_address, metadata, &clock, ctx);
+
+        interchain_transfer<COIN>(&mut its, token_id, coin, destination_chain, destination_address, metadata, &source_channel, &clock);
 
         clock.destroy_for_testing();
+        source_channel.destroy();
         sui::test_utils::destroy(its);
     }
 
