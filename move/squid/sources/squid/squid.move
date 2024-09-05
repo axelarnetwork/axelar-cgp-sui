@@ -90,8 +90,8 @@ module squid::squid {
             std::ascii::string(b"Chain Name"),
             b"Destination Address",
             b"",
+            &squid.channel,
             &clock,
-            ctx
         );
 
         let source_chain = std::ascii::string(b"Chain Name");
