@@ -8,7 +8,7 @@ runs:
     - name: Get Sui Version
       shell: bash
       run: |
-        SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)   
+        SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)
         echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
 
     - name: Install Dependencies
@@ -28,11 +28,9 @@ runs:
       shell: bash
       if: steps.cache-sui.outputs.cache-hit != 'true'
       run: |
-        curl -L -o sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ env.SUI_VERSION }}/sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
-        tar -xvf sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
         mkdir -p sui-binaries
-        mv ./sui ./sui-binaries/
-        mv ./sui-debug ./sui-binaries/
+        curl -L -o sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ env.SUI_VERSION }}/sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
+        tar -xvf sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz -C sui-binaries
         rm -rf sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
 
     - name: Save Sui binaries
@@ -40,7 +38,7 @@ runs:
       id: cache-sui-save
       uses: actions/cache@v4
       with:
-        path: sui-binaries/
+        path: download/sui-binaries/
         key: sui-${{ env.SUI_VERSION }}
 
     - name: Add Sui binaries to PATH
