@@ -248,9 +248,9 @@ export class TxBuilder {
 
     /**
      * Prepare a move build by creating a temporary directory to store the compiled move code
-     * @returns {dir: string, rm: () => void}
-     * - dir is the path to the temporary directory
-     * - rm is a function to remove the temporary directory
+     * @returns {tmpdir: string, rmTmpDir: () => void}
+     * - tmpdir is the path to the temporary directory
+     * - rmTmpDir is a function to remove the temporary directory
      */
     private prepareMoveBuild() {
         const tmpdir = fs.mkdtempSync(`${__dirname}/.move-build-`);
@@ -302,6 +302,15 @@ export class TxBuilder {
         let result = await this.client.signAndExecuteTransaction({
             transaction: this.tx,
             signer: keypair,
+            options: {
+                showEffects: true,
+                showObjectChanges: true,
+                ...options,
+            },
+        });
+
+        await this.client.waitForTransaction({
+            digest: result.digest,
             options: {
                 showEffects: true,
                 showObjectChanges: true,

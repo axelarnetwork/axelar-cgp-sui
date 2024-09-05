@@ -19,6 +19,8 @@ module its::discovery {
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     //const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+    //const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
+    const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
     public fun get_interchain_transfer_info(payload: vector<u8>): (TokenId, address, u64, vector<u8>) {
         let mut reader = abi::new_reader(payload);
@@ -66,9 +68,16 @@ module its::discovery {
         ));
     }
 
-    public fun get_call_info(self: &ITS, payload: vector<u8>): Transaction {
+    public fun get_call_info(self: &ITS, mut payload: vector<u8>): Transaction {
         let mut reader = abi::new_reader(payload);
-        let message_type = reader.read_u256();
+        let mut message_type = reader.read_u256();
+
+        if (message_type == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+            reader.skip_slot();
+            payload = reader.read_bytes();
+            reader = abi::new_reader(payload);
+            message_type = reader.read_u256();
+        };
 
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             get_interchain_transfer_tx(self, &mut reader)
@@ -169,6 +178,7 @@ module its::discovery {
         )
     }
 
+    // === Tests ===
     #[test_only]
     fun get_initial_tx(self: &ITS): Transaction {
         let mut arg = vector[0];
@@ -200,7 +210,7 @@ module its::discovery {
     #[test]
     fun test_discovery_initial() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -215,7 +225,7 @@ module its::discovery {
     #[test]
     fun test_discovery_interchain_transfer() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -236,7 +246,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
-        its.test_add_registered_coin_type(its::token_id::from_address(token_id), type_arg);
+        its.add_registered_coin_type_for_testing(its::token_id::from_address(token_id), type_arg);
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);
@@ -268,7 +278,7 @@ module its::discovery {
     #[test]
     fun test_discovery_interchain_transfer_with_data() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -296,7 +306,7 @@ module its::discovery {
             .write_bytes(data);
         let payload = writer.into_bytes();
 
-        its.test_add_registered_coin_type(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
+        its.add_registered_coin_type_for_testing(its::token_id::from_address(token_id), std::type_name::get<RelayerDiscovery>());
 
         let mut reader = abi::new_reader(payload);
         reader.skip_slot(); // skip message_type
@@ -310,7 +320,7 @@ module its::discovery {
     #[test]
     fun test_discovery_deploy_token() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut its = its::its::new();
+        let mut its = its::its::new_for_testing();
         let mut discovery = axelar_gateway::discovery::new(ctx);
 
         register_transaction(&mut its, &mut discovery);
@@ -331,7 +341,7 @@ module its::discovery {
         let payload = writer.into_bytes();
 
         let type_arg = std::type_name::get<RelayerDiscovery>();
-        its.test_add_unregistered_coin_type(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
+        its.add_unregistered_coin_type_for_testing(its::token_id::unregistered_token_id(&ascii::string(symbol), (decimals as u8)), type_arg);
         let tx_block = get_call_info(&its, payload);
 
         let mut reader = abi::new_reader(payload);

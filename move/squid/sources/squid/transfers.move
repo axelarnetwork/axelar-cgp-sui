@@ -100,7 +100,7 @@ module squid::transfers {
         );
 
         let option = swap_info.coin_bag().get_balance<T>();
-        if(option.is_none()) {
+        if (option.is_none()) {
             option.destroy_none();
             return
         };
@@ -121,7 +121,7 @@ module squid::transfers {
         );
 
         let option = swap_info.coin_bag().get_balance<T>();
-        if(option.is_none()) {
+        if (option.is_none()) {
             option.destroy_none();
             return
         };

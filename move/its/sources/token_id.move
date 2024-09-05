@@ -72,6 +72,7 @@ module its::token_id {
         UnregisteredTokenId { id }
     }
 
+    // === Tests ===
     #[test]
     fun test() {
         use std::string;
