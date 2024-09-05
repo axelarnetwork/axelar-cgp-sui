@@ -1,6 +1,12 @@
 name: Install Dependencies
 description: 'Setup Sui CLI and install dependencies'
 
+inputs:
+  version_file:
+    description: 'Path to the version.json file'
+    required: false
+    default: 'version.json'
+
 runs:
   using: 'composite'
 
@@ -8,7 +14,7 @@ runs:
     - name: Get Sui Version
       shell: bash
       run: |
-        SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)
+        SUI_VERSION=$(jq -r '.SUI_VERSION' "${{ inputs.version_file }}")
         echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
 
     - name: Install Dependencies
