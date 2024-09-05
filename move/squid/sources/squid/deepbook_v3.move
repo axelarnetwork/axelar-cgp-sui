@@ -10,16 +10,15 @@ module squid::deepbook_v3 {
 
     use axelar_gateway::discovery::{Self, MoveCall};
 
-    use squid::swap_info::{SwapInfo};
+    use squid::swap_info::SwapInfo;
     use squid::squid::Squid;
-
-    const FLOAT_SCALING: u128 = 1_000_000_000;
 
     const EWrongSwapType: u64 = 0;
     const EWrongPool: u64 = 1;
     const EWrongCoinType: u64 = 2;
 
     const SWAP_TYPE: u8 = 1;
+    const FLOAT_SCALING: u128 = 1_000_000_000;
 
     public struct DeepbookV3SwapData has drop {
         swap_type: u8,
@@ -121,7 +120,7 @@ module squid::deepbook_v3 {
             let base_fee = base_in.split(base_fee_amount, ctx);
             squid.coin_bag().store_balance(base_fee.into_balance());
 
-            // Calculate how much DEEP is required and get it from Squid.
+            // Calculate the DEEP quantity required and get it from Squid.
             let (_, _, deep_required) = pool.get_quote_quantity_out(
                 base_in.value(),
                 clock
@@ -145,11 +144,13 @@ module squid::deepbook_v3 {
             };
             
         } else {
+            // Get quote coin, split away taker fees and store it in Squid.
             let mut quote_in = self.coin_bag().get_balance<Q>().destroy_some().into_coin(ctx);
             let quote_fee_amount = mul_scaled(quote_in.value(), taker_fee);
             let quote_fee = quote_in.split(quote_fee_amount, ctx);
             squid.coin_bag().store_balance(quote_fee.into_balance());
 
+            // Calculate the DEEP quantity required and get it from Squid.
             let (_, _, deep_required) = pool.get_base_quantity_out(
                 quote_in.value(),
                 clock
@@ -239,6 +240,8 @@ module squid::deepbook_v3 {
         }
     }
 
+    /// Multiply two u64 numbers and divide by FLOAT_SCALING. Rounded down.
+    /// Used for multiplying the balance by DeepBook's taker fee.
     fun mul_scaled(x: u64, y: u64): u64 {
         let x = x as u128;
         let y = y as u128;
