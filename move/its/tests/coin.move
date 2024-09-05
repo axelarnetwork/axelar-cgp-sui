@@ -3,8 +3,12 @@ module its::coin {
     use sui::url::{Url};
     use sui::coin::{Self, CoinMetadata, TreasuryCap};
 
-    public struct COIN has drop{}
+    public struct COIN has drop {}
     
+
+    // -----
+    // Coin creation functions.
+    // -----
 
     public fun create_treasury_and_metadata(symbol: vector<u8>, decimals: u8, ctx: &mut TxContext): (TreasuryCap<COIN>, CoinMetadata<COIN>) {
         coin::create_currency<COIN>(

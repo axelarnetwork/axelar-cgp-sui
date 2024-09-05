@@ -83,6 +83,9 @@ module its::utils {
         res
     }
     
+    // -----
+    // Tests
+    // -----
     #[test]
     fun test_get_module_from_symbol() {
         let symbol = ascii::string(b"1(TheCool1234Coin) _ []!rdt");

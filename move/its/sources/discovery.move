@@ -178,6 +178,7 @@ module its::discovery {
         )
     }
 
+    // === Tests ===
     #[test_only]
     fun get_initial_tx(self: &ITS): Transaction {
         let mut arg = vector[0];
