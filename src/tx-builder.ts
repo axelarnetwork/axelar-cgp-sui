@@ -319,7 +319,7 @@ export class TxBuilder {
         });
 
         if (!result.confirmedLocalExecution) {
-            while (true) {
+            for(let i = 0; i < 20; i++) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
@@ -331,8 +331,11 @@ export class TxBuilder {
                     });
                     break;
                 } catch (e) {
-                    console.log(e);
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    if (i < 19) {
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    } else {
+                        throw (e);
+                    }
                 }
             }
         }

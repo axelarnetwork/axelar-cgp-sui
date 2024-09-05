@@ -274,6 +274,8 @@ describe('Axelar Gateway', () => {
         });
 
         it('Should Execute Contract Call', async () => {
+            await publishPackage(client, keypair, 'governance');
+            await publishPackage(client, keypair, 'its');
             await publishPackage(client, keypair, 'gas_service');
             const result = await publishPackage(client, keypair, 'example');
 
@@ -285,7 +287,6 @@ describe('Axelar Gateway', () => {
                     showContent: true,
                 },
             });
-
             const channelId = sinlgetonData.data.content.fields.channel.fields.id.id;
 
             let builder = new TxBuilder(client);
@@ -296,7 +297,6 @@ describe('Axelar Gateway', () => {
             });
 
             await builder.signAndExecute(keypair);
-
             const payload = '0x0123';
             const message = {
                 source_chain: 'Ethereum',

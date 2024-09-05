@@ -6,7 +6,6 @@ edition = "2024.beta"
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
 AxelarGateway = { local = "../axelar_gateway" }
-GasService = { local = "../gas_service" }
 Governance = { local = "../governance" }
 
 [addresses]
