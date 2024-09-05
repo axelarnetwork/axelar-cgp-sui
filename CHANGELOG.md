@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
--   3bcb7d3: chore: refactor gateway contract to use enum
+-   a19430c: chore: refactor gateway contract to use enum
 -   396cc29: chore: include version.json in published package
 -   3bcb7d3: chore: make sui workflow reusable
 
