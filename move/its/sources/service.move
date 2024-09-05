@@ -8,15 +8,12 @@ module its::service {
     use sui::event;
     use sui::bcs;
     use sui::clock::Clock;
-    use sui::sui::SUI;
     use sui::hash::keccak256;
 
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
     use axelar_gateway::gateway;
-
-    use gas_service::gas_service::{Self, GasService};
 
     use governance::governance::{Self, Governance};
 
@@ -90,7 +87,7 @@ module its::service {
     }
 
     public fun deploy_remote_interchain_token<T>(
-        self: &mut ITS, token_id: TokenId, destination_chain: String, gas_service: &mut GasService, gas: Coin<SUI>, ctx: &TxContext,
+        self: &mut ITS, token_id: TokenId, destination_chain: String,
     ) {
         let coin_info = self.get_coin_info<T>(token_id);
         let name = coin_info.name();
@@ -106,7 +103,7 @@ module its::service {
             .write_u256((decimals as u256))
             .write_bytes(vector::empty());
 
-        send_payload(self, destination_chain, writer.into_bytes(), gas_service, gas, ctx);
+        send_payload(self, destination_chain, writer.into_bytes());
     }
 
     public fun interchain_transfer<T>(
@@ -123,17 +120,17 @@ module its::service {
             .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
-        let source_address = ctx.sender().to_bytes();
+        let source_address = source_channel.to_address().to_bytes();
 
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(source_channel.to_address().to_bytes())
+            .write_bytes(source_address)
             .write_bytes(destination_address)
             .write_u256(amount)
             .write_bytes(data);
 
-        send_payload(self, destination_chain, writer.into_bytes(), gas_service, gas, ctx);
+        send_payload(self, destination_chain, writer.into_bytes());
 
         let data_hash = if (data.length() == 0) {
             @0x0
