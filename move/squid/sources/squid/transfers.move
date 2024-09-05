@@ -5,11 +5,8 @@ module squid::transfers {
     use sui::bcs::{Self, BCS};
     use sui::coin;
     use sui::clock::Clock;
-    use sui::sui::SUI;
 
     use axelar_gateway::discovery::{Self, MoveCall};
-
-    use gas_service::gas_service::GasService;
 
     use its::service;
     use its::its::ITS;

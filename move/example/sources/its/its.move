@@ -7,14 +7,11 @@ module example::its_example {
     use sui::address;
     use sui::hex;
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-    use sui::sui::SUI;
     use sui::clock::Clock;
     use sui::url::Url;
 
     use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
     use axelar_gateway::discovery::{Self, RelayerDiscovery, Transaction};
-
-    use gas_service::gas_service::GasService;
 
     use its::service;
     use its::its::ITS;
@@ -167,10 +164,7 @@ module example::its_example {
         destination_address: vector<u8>, 
         coin: Coin<ITS_EXAMPLE>,
         metadata: vector<u8>,
-        gas_service: &mut GasService, 
-        gas: Coin<SUI>, 
         clock: &Clock,
-        ctx: &mut TxContext,
     ) {
         let token_id = *self.token_id.borrow();
         service::interchain_transfer<ITS_EXAMPLE>(
@@ -180,11 +174,8 @@ module example::its_example {
             destination_chain,
             destination_address,
             metadata,
-            gas_service, 
-            gas,
             &self.channel,
             clock,
-            ctx,
         );
     }
 

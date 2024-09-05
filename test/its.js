@@ -35,7 +35,7 @@ describe('ITS', () => {
     let its;
     let axelarPackageId;
     let gasService, gasServicePackageId;
-    let exampleId, singleton;
+    let exampleId, singleton, singletonChannel;
     let governance;
     const remoteChain = 'Remote Chain';
     const trustedAddress = 'Trusted Address';
@@ -69,6 +69,15 @@ describe('ITS', () => {
         const result = await publishPackage(client, keypair, 'example');
         exampleId = result.packageId;
         singleton = result.publishTxn.objectChanges.find((change) => change.objectType === `${exampleId}::its_example::Singleton`).objectId;
+
+        const singletonData = await client.getObject({
+            id: singleton,
+            options: {
+                showContent: true,
+            },
+        });
+
+        singletonChannel = singletonData.data.content.fields.channel.fields.id.id;
     }
 
     const minimumRotationDelay = 1000;
@@ -237,21 +246,15 @@ describe('ITS', () => {
                 arguments: [singleton, its],
                 typeArguments: [],
             });
-            const gas = await builder.moveCall({
-                target: `${sui}::coin::zero`,
-                arguments: [],
-                typeArguments: [`${sui}::sui::SUI`],
-            });
             await builder.moveCall({
                 target: `${exampleId}::its_example::send_interchain_transfer`,
-                arguments: [singleton, its, remoteChain, '0x1234', coin, '0x', gasService, gas, clock],
+                arguments: [singleton, its, remoteChain, '0x1234', coin, '0x', clock],
                 typeArguments: [],
             });
-
             await expectEvent(builder, keypair, {
                 type: `${packageId}::service::InterchainTransfer<${exampleId}::its_example::ITS_EXAMPLE>`,
                 arguments: {
-                    source_address: arrayify(keypair.toSuiAddress()),
+                    source_address: arrayify(singletonChannel),
                     destination_chain: remoteChain,
                     destination_address: arrayify(destinationAddress),
                     amount: `${amount * multiplier}`,
