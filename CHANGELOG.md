@@ -1,5 +1,13 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.6.1
+
+### Patch Changes
+
+-   3bcb7d3: chore: refactor gateway contract to use enum
+-   396cc29: chore: include version.json in published package
+-   3bcb7d3: chore: make sui workflow reusable
+
 ## 0.6.0
 
 ### Minor Changes
