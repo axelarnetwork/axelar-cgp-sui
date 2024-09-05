@@ -56,7 +56,7 @@ module its::service {
     const ENonZeroTotalSupply: u64 = 7;
     const EUnregisteredCoinHasUrl: u64 = 8;
     const EUntrustedChain: u64 = 9;
-    const ERemainingData: u64 = 19;
+    const ERemainingData: u64 = 10;
 
     // === Events ===
     public struct CoinRegistered<phantom T> has copy, drop {
