@@ -13,6 +13,8 @@ module squid::deepbook_v3 {
     use squid::swap_info::{SwapInfo};
     use squid::squid::Squid;
 
+    const FLOAT_SCALING: u128 = 1_000_000_000;
+
     const EWrongSwapType: u64 = 0;
     const EWrongPool: u64 = 1;
     const EWrongCoinType: u64 = 2;
@@ -48,9 +50,15 @@ module squid::deepbook_v3 {
             EWrongCoinType,
         );
 
+        let (taker_fee, _, _) = pool.pool_trade_params();
+
         if (swap_data.has_base) {
+            let base_quantity = self.coin_bag().get_estimate<B>();
+            let base_fee = mul_scaled(base_quantity, taker_fee);
+            let base_in = base_quantity - base_fee;
+
             let (base_out, quote_out, _deep_required) = pool.get_quote_quantity_out(
-                self.coin_bag().get_estimate<B>(),
+                base_in,
                 clock
             );
             if (swap_data.min_output > quote_out) {
@@ -60,8 +68,12 @@ module squid::deepbook_v3 {
             if (!swap_data.should_sweep) self.coin_bag().store_estimate<B>(base_out);
             self.coin_bag().store_estimate<Q>(quote_out);
         } else {
+            let quote_quantity = self.coin_bag().get_estimate<Q>();
+            let quote_fee = mul_scaled(quote_quantity, taker_fee);
+            let quote_in = quote_quantity - quote_fee;
+
             let (base_out, quote_out, _deep_required) = pool.get_base_quantity_out(
-                self.coin_bag().get_estimate<Q>(),
+                quote_in,
                 clock
             );
             if (swap_data.min_output > base_out) {
@@ -74,8 +86,10 @@ module squid::deepbook_v3 {
     }
 
     /// Perform a swap. First, check how much DEEP is required to perform the swap.
-    /// Then, get that amount of DEEP from squid. Use it to swap the entire amount
-    /// of the base or quote currency. Store any remaining DEEP back in squid.
+    /// Then, get that amount of DEEP from squid. Get the taker_fee for this swap and
+    /// split that amount from the input token. Store the fee in Squid. Use the remaining
+    /// input token to perform the swap. Store the output tokens in the coin bag.
+    /// Store the remaining DEEP back in squid.
     public fun swap<B, Q>(
         self: &mut SwapInfo,
         pool: &mut Pool<B, Q>,
@@ -98,13 +112,21 @@ module squid::deepbook_v3 {
             EWrongCoinType,
         );
 
+        let (taker_fee, _, _) = pool.pool_trade_params();
+
         if (swap_data.has_base) {
+            // Get base coin, split away taker fees and store it in Squid.
+            let mut base_in = self.coin_bag().get_balance<B>().destroy_some().into_coin(ctx);
+            let base_fee_amount = mul_scaled(base_in.value(), taker_fee);
+            let base_fee = base_in.split(base_fee_amount, ctx);
+            squid.coin_bag().store_balance(base_fee.into_balance());
+
+            // Calculate how much DEEP is required and get it from Squid.
             let (_, _, deep_required) = pool.get_quote_quantity_out(
-                self.coin_bag().get_estimate<B>(),
+                base_in.value(),
                 clock
             );
             let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).destroy_some().into_coin(ctx);
-            let base_in = self.coin_bag().get_balance<B>().destroy_some().into_coin(ctx);
 
             let (base_out, quote_out, deep_out) = pool.swap_exact_base_for_quote<B, Q>(
                 base_in,
@@ -123,12 +145,16 @@ module squid::deepbook_v3 {
             };
             
         } else {
+            let mut quote_in = self.coin_bag().get_balance<Q>().destroy_some().into_coin(ctx);
+            let quote_fee_amount = mul_scaled(quote_in.value(), taker_fee);
+            let quote_fee = quote_in.split(quote_fee_amount, ctx);
+            squid.coin_bag().store_balance(quote_fee.into_balance());
+
             let (_, _, deep_required) = pool.get_base_quantity_out(
-                self.coin_bag().get_estimate<Q>(),
+                quote_in.value(),
                 clock
             );
             let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).destroy_some().into_coin(ctx);
-            let quote_in = self.coin_bag().get_balance<Q>().destroy_some().into_coin(ctx);
 
             let (quote_out, base_out, deep_out) = pool.swap_exact_quote_for_base<B, Q>(
                 quote_in,
@@ -211,5 +237,12 @@ module squid::deepbook_v3 {
             lot_size: bcs.peel_u64(),
             should_sweep: bcs.peel_bool(),
         }
+    }
+
+    fun mul_scaled(x: u64, y: u64): u64 {
+        let x = x as u128;
+        let y = y as u128;
+
+        ((x * y / FLOAT_SCALING) as u64)
     }
 }
