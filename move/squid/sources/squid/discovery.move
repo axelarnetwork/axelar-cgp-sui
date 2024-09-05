@@ -94,7 +94,7 @@ module squid::discovery {
                 move_calls.push_back(transfers::get_sui_transfer_move_call(package_id, bcs, swap_info_arg));
             } else {
                 assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
-                move_calls.push_back(transfers::get_its_transfer_move_call(package_id, bcs, swap_info_arg, its_arg));
+                move_calls.push_back(transfers::get_its_transfer_move_call(package_id, bcs, swap_info_arg, squid_arg, its_arg));
             };
 
             i = i + 1;

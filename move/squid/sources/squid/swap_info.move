@@ -37,14 +37,14 @@ module squid::swap_info {
 
     public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
         let index = self.swap_index;
-        if(index == 0 && self.status == ESTIMATING) {
+        if (index == 0 && self.status == ESTIMATING) {
             assert!(self.estimate_index == self.swap_data.length(), ENotDoneEstimating);
             self.status = SWAPPING;
         };
         assert!(index < self.swap_data.length(), EOutOfSwaps);
 
         self.swap_index = index + 1;
-        if(self.status == SKIP_SWAP) {
+        if (self.status == SKIP_SWAP) {
             vector[]
         } else {
             assert!(self.status == SWAPPING, ENotSwapping);
@@ -69,6 +69,7 @@ module squid::swap_info {
     public(package) fun coin_bag(self: &mut SwapInfo): &mut CoinBag {
         &mut self.coin_bag
     }
+
     public(package) fun swap_data(self: &SwapInfo, i: u64): vector<u8> {
         self.swap_data[i]
     }
@@ -85,7 +86,7 @@ module squid::swap_info {
         );
         assert!(
             self.status == SWAPPING ||
-            self.status == SKIP_SWAP, ENotDoneSwapping
+            self.status == SKIP_SWAP, ENotDoneEstimating
         );
         self.destroy();
     }
@@ -99,5 +100,202 @@ module squid::swap_info {
             coin_bag,
         } = self;
         coin_bag.destroy();
+    }
+
+    #[test]
+    fun test_swap_data() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+
+        assert!(swap_info.get_data_estimating() == swap1, 0);
+        assert!(swap_info.get_data_estimating() == swap2, 0);
+        assert!(swap_info.get_data_swapping() == swap1, 0);
+        assert!(swap_info.get_data_swapping() == swap2, 0);
+
+        swap_info.finalize();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotDoneEstimating)]
+    fun test_get_data_swapping_not_done_estimating() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+
+        swap_info.get_data_swapping();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotSwapping)]
+    fun test_get_data_swapping_not_swapping() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.swap_index = 1;
+
+        swap_info.get_data_swapping();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EOutOfSwaps)]
+    fun test_get_data_swapping_out_of_swaps() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.swap_index = 2;
+
+        swap_info.get_data_swapping();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    fun test_get_data_swapping_skip_swap() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.skip_swap();
+
+        swap_info.get_data_swapping();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EOutOfEstimates)]
+    fun test_get_data_estimating_out_of_swaps() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.estimate_index = 2;
+
+        swap_info.get_data_estimating();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotEstimating)]
+    fun test_get_data_estimating_not_estimating() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.status = SWAPPING;
+
+        swap_info.get_data_estimating();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    fun test_get_data_estimating_skip_swap() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.skip_swap();
+
+        swap_info.get_data_estimating();
+
+        swap_info.destroy();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotDoneSwapping)]
+    fun test_finalize_not_done_swapping() {
+        let ctx = &mut tx_context::dummy();
+
+        let swap1 = b"1";
+        let swap2 = b"2";
+
+        let data = std::bcs::to_bytes(&vector[
+            swap1,
+            swap2,
+        ]);
+
+        let mut swap_info = new(data, ctx);
+        swap_info.status = SWAPPING;
+
+        swap_info.finalize();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotDoneEstimating)]
+    fun test_finalize_not_done_estimating() {
+        let ctx = &mut tx_context::dummy();
+
+        let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
+
+        let swap_info = new(data, ctx);
+
+        swap_info.finalize();
     }
 }
