@@ -34,7 +34,6 @@ describe('ITS', () => {
     let discovery;
     let its;
     let axelarPackageId;
-    let gasService, gasServicePackageId;
     let exampleId, singleton, singletonChannel;
     let governance;
     const remoteChain = 'Remote Chain';
@@ -102,12 +101,6 @@ describe('ITS', () => {
         ).objectId;
         discovery = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${axelarPackageId}::discovery::RelayerDiscovery`,
-        ).objectId;
-
-        result = await publishPackage(client, deployer, 'gas_service');
-        gasServicePackageId = result.packageId;
-        gasService = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${gasServicePackageId}::gas_service::GasService`,
         ).objectId;
 
         await publishPackage(client, deployer, 'abi');
