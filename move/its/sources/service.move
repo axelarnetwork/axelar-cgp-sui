@@ -12,6 +12,8 @@ module its::service {
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage};
+    use axelar_gateway::gateway::{Self, MessageTicket};
+    use axelar_gateway::channel::Channel;
 
     use governance::governance::{Self, Governance};
 
@@ -21,10 +23,6 @@ module its::service {
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
     use its::trusted_addresses;
-
-    use axelar_gateway::gateway;
-    use axelar_gateway::message_ticket::MessageTicket;
-    use axelar_gateway::channel::Channel;
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
