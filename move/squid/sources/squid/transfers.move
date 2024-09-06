@@ -7,9 +7,8 @@ module squid::transfers {
     use sui::clock::Clock;
 
     use axelar_gateway::discovery::{Self, MoveCall};
-    use axelar_gateway::gateway::MessageTicket;
 
-    use its::service;
+    use its::service::{Self, InterchainTransferTicket};
     use its::its::ITS;
     use its::token_id::{Self, TokenId};
 
@@ -110,9 +109,9 @@ module squid::transfers {
     }
 
     // This will break squid for now, since the MessageTicket is not submitted by discovery.
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, its: &mut ITS, clock: &Clock, ctx: &mut TxContext): Option<MessageTicket> {
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, ctx: &mut TxContext): Option<InterchainTransferTicket<T>> {
         let data = swap_info.get_data_swapping();
-        if (data.length() == 0) return option::none<MessageTicket>();
+        if (data.length() == 0) return option::none<InterchainTransferTicket<T>>();
         let swap_data = new_its_transfer_swap_data(data);
 
         assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
@@ -125,19 +124,17 @@ module squid::transfers {
         let option = swap_info.coin_bag().get_balance<T>();
         if (option.is_none()) {
             option.destroy_none();
-            return option::none<MessageTicket>()
+            return option::none<InterchainTransferTicket<T>>()
         };
         
         option::some(
-            service::interchain_transfer(
-                its,
+            service::prepare_interchain_transfer(
                 swap_data.token_id,
                 coin::from_balance(option.destroy_some(), ctx),
                 swap_data.destination_chain,
                 swap_data.destination_address,
                 swap_data.metadata,
                 squid.borrow_channel(),
-                clock,
             )
         )
     }

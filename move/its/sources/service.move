@@ -33,7 +33,21 @@ module its::service {
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
 
+    // === VERSIOM ===
+    const VERSION: u64 = 0;
 
+    /// -------
+    /// Structs
+    /// -------
+    public struct InterchainTransferTicket<phantom T>{
+        token_id: TokenId,
+        coin: Coin<T>,
+        source_address: address,
+        destination_chain: String,
+        destination_address: vector<u8>,
+        metadata: vector<u8>,
+        version: u64,
+    }
 
     // === HUB CONSTANTS ===
     // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
@@ -56,6 +70,7 @@ module its::service {
     const EUnregisteredCoinHasUrl: u64 = 8;
     const EUntrustedChain: u64 = 9;
     const ERemainingData: u64 = 10;
+    const ENewerTicket: u64 = 11;
 
     // === Events ===
     public struct CoinRegistered<phantom T> has copy, drop {
@@ -97,16 +112,40 @@ module its::service {
         prepare_message(self, destination_chain, writer.into_bytes())
     }
 
-    public fun interchain_transfer<T>(
-        self: &mut ITS,
+    public fun prepare_interchain_transfer<T>(
         token_id: TokenId,
         coin: Coin<T>,
         destination_chain: String,
         destination_address: vector<u8>,
         metadata: vector<u8>,
         source_channel: &Channel,
+    ): InterchainTransferTicket<T> {
+        InterchainTransferTicket<T> {
+            token_id,
+            coin,
+            source_address: source_channel.to_address(),
+            destination_chain,
+            destination_address,
+            metadata,
+            version: VERSION,
+        }
+    }
+
+    public fun submit_interchain_transfer<T>(
+        self: &mut ITS,
+        ticket: InterchainTransferTicket<T>,
         clock: &Clock,
     ): MessageTicket {
+        let InterchainTransferTicket {
+           token_id,
+           coin,
+           source_address,
+           destination_chain,
+           destination_address,
+           metadata, 
+           version,
+        } = ticket;
+        assert!(version <= VERSION, ENewerTicket);
         let amount = self.coin_management_mut(token_id)
             .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
@@ -115,7 +154,7 @@ module its::service {
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
-            .write_bytes(source_channel.to_address().to_bytes())
+            .write_bytes(source_address.to_bytes())
             .write_bytes(destination_address)
             .write_u256(amount)
             .write_bytes(data);
@@ -427,8 +466,8 @@ module its::service {
         let source_channel = channel::new(ctx);
         let clock = sui::clock::create_for_testing(ctx);
 
-        let message_ticket = interchain_transfer<COIN>(&mut its, token_id, coin, destination_chain, destination_address, metadata, &source_channel, &clock);
-
+        let interchain_transfer_ticket = prepare_interchain_transfer<COIN>(token_id, coin, destination_chain, destination_address, metadata, &source_channel);
+        let message_ticket = submit_interchain_transfer<COIN>(&mut its, interchain_transfer_ticket, &clock);
         let mut writer = abi::new_writer(6);
 
         writer
