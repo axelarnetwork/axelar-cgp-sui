@@ -36,6 +36,9 @@ jobs:
       - name: Sleep for 30 seconds
         run: sleep 30s
         shell: bash
+    
+      - name: Check Sui Move Build
+        run: sui move build --dump-bytecode-as-base64 --path /home/runner/work/axelar-cgp-sui/axelar-cgp-sui/move_compile/governance
 
       - name: Test
         run: npm run test-js
