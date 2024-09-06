@@ -274,6 +274,7 @@ describe('Axelar Gateway', () => {
         });
 
         it('Should Execute Contract Call', async () => {
+            await publishPackage(client, keypair, 'abi');
             await publishPackage(client, keypair, 'governance');
             await publishPackage(client, keypair, 'its');
             await publishPackage(client, keypair, 'gas_service');
