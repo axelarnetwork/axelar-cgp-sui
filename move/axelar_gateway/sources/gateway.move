@@ -30,7 +30,7 @@ module axelar_gateway::gateway;
 use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::message::{Self, Message};
+use axelar_gateway::message::{Self};
 use axelar_gateway::proof::{Self, Proof};
 use axelar_gateway::weighted_signers::{Self, WeightedSigners};
 use std::ascii::String;
@@ -151,6 +151,10 @@ public fun setup(
     transfer::share_object(gateway);
 }
 
+// -----------
+// Index Syntax
+// -----------
+
 #[syntax(index)]
 public fun borrow(self: &Gateway, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
@@ -165,6 +169,28 @@ public fun borrow_mut(
 }
 
 // -----------
+// Macros
+// -----------
+macro fun peel_vec<$T>(
+    $data: vector<u8>,
+    $peel_fn: |&mut _| -> $T,
+): vector<$T> {
+    let mut bcs = bcs::new($data);
+    let mut result = vector::empty<$T>();
+    let mut len = bcs.peel_vec_length();
+
+    while (len > 0) {
+        result.push_back($peel_fn(&mut bcs));
+        len = len - 1;
+    };
+
+    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
+    assert!(result.length() > 0, EInvalidLength);
+
+    result
+}
+
+// -----------
 // Entrypoints
 // -----------
 
@@ -176,7 +202,13 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    let messages = peel_messages(*&message_data);
+    let messages = peel_vec!(message_data, |bcs| message::peel(bcs));
+    // let weighted_signers = peel_vec(
+    //     weighted_signers_data,
+    //     |bcs| weighted_signers::peel(bcs),
+    // );
+    // let proof = peel_vec(proof_data, |bcs| proof::peel(bcs));
+    // let messages = peel_messages(*&message_data);
     let proof = peel_proof(proof_data);
 
     let _ = self
@@ -327,24 +359,6 @@ public fun take_approved_message(
 // Private Functions
 // -----------------
 
-fun peel_messages(message_data: vector<u8>): vector<Message> {
-    let mut bcs = bcs::new(message_data);
-
-    let mut messages = vector::empty<Message>();
-    let mut len = bcs.peel_vec_length();
-
-    while (len > 0) {
-        messages.push_back(message::peel(&mut bcs));
-
-        len = len - 1;
-    };
-
-    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
-    assert!(messages.length() > 0, EInvalidLength);
-
-    messages
-}
-
 fun peel_weighted_signers(weighted_signers_data: vector<u8>): WeightedSigners {
     let mut bcs = bcs::new(weighted_signers_data);
 
@@ -445,8 +459,8 @@ public fun destroy_for_testing(gateway: Gateway) {
 #[test]
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
-    let operator = @123456;
-    let domain_separator = bytes32::new(@789012);
+    let operator: ERROR = 123456;
+    let domain_separator = bytes32::new(ERROR, 789012);
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
