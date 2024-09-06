@@ -33,7 +33,6 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof::{Self, Proof};
 use axelar_gateway::weighted_signers::{Self, WeightedSigners};
-use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::bcs;
@@ -71,6 +70,15 @@ public struct Gateway has key {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
+}
+
+// === Ticket ===
+public struct MessageTicket {
+    source_id: address,
+    destination_chain: String,
+    destination_address: String,
+    payload: vector<u8>,
+    version: u64,
 }
 
 /// The Status of the message.
@@ -241,13 +249,13 @@ public fun prepare_message(
     destination_address: String,
     payload: vector<u8>,
 ): MessageTicket {
-    message_ticket::new(
-        channel.to_address(),
+    MessageTicket{
+        source_id: channel.to_address(),
         destination_chain,
         destination_address,
         payload,
-        VERSION,
-    )
+        version: VERSION,
+    }
 }
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
@@ -255,15 +263,20 @@ public fun prepare_message(
 entry fun submit_message(
     message: MessageTicket,
 ) {
-    let payload = message.payload();
+    let MessageTicket {
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    } = message;
     sui::event::emit(ContractCall {
-        source_id: message.source_id(),
-        destination_chain: message.destination_address(),
-        destination_address: message.destination_address(),
+        source_id,
+        destination_chain,
+        destination_address,
         payload,
         payload_hash: address::from_bytes(hash::keccak256(&payload)),
     });
-    message.destroy();
 }
 
 public fun is_message_approved(
@@ -301,6 +314,7 @@ public fun is_message_executed(
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
+/// I think this should be entry
 public fun take_approved_message(
     self: &mut Gateway,
     source_chain: String,
@@ -339,6 +353,29 @@ public fun take_approved_message(
         destination_id,
         payload,
     )
+}
+
+// --------------
+// Ticket Getters
+// --------------
+public fun source_id(self: &MessageTicket): address {
+    self.source_id
+}
+
+public fun destination_chain(self: &MessageTicket): String {
+    self.destination_chain
+}
+
+public fun destination_address(self: &MessageTicket): String {
+    self.destination_address
+}
+
+public fun payload(self: &MessageTicket): vector<u8> {
+    self.payload
+}
+
+public fun version(self: &MessageTicket): u64 {
+    self.version
 }
 
 // -----------------

@@ -7,7 +7,7 @@ module squid::transfers {
     use sui::clock::Clock;
 
     use axelar_gateway::discovery::{Self, MoveCall};
-    use axelar_gateway::message_ticket::MessageTicket;
+    use axelar_gateway::gateway::MessageTicket;
 
     use its::service;
     use its::its::ITS;
