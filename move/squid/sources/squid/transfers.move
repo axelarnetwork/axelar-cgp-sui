@@ -7,6 +7,7 @@ module squid::transfers {
     use sui::clock::Clock;
 
     use axelar_gateway::discovery::{Self, MoveCall};
+    use axelar_gateway::message_ticket::MessageTicket;
 
     use its::service;
     use its::its::ITS;
@@ -108,9 +109,10 @@ module squid::transfers {
         transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), swap_data.recipient);
     }
 
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, its: &mut ITS, clock: &Clock, ctx: &mut TxContext) {
+    // This will break squid for now, since the MessageTicket is not submitted by discovery.
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, its: &mut ITS, clock: &Clock, ctx: &mut TxContext): Option<MessageTicket> {
         let data = swap_info.get_data_swapping();
-        if (data.length() == 0) return;
+        if (data.length() == 0) return option::none<MessageTicket>();
         let swap_data = new_its_transfer_swap_data(data);
 
         assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
@@ -123,19 +125,21 @@ module squid::transfers {
         let option = swap_info.coin_bag().get_balance<T>();
         if (option.is_none()) {
             option.destroy_none();
-            return
+            return option::none<MessageTicket>()
         };
         
-        service::interchain_transfer(
-            its,
-            swap_data.token_id,
-            coin::from_balance(option.destroy_some(), ctx),
-            swap_data.destination_chain,
-            swap_data.destination_address,
-            swap_data.metadata,
-            squid.borrow_channel(),
-            clock,
-        );
+        option::some(
+            service::interchain_transfer(
+                its,
+                swap_data.token_id,
+                coin::from_balance(option.destroy_some(), ctx),
+                swap_data.destination_chain,
+                swap_data.destination_address,
+                swap_data.metadata,
+                squid.borrow_channel(),
+                clock,
+            )
+        )
     }
 
     public(package) fun get_sui_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {

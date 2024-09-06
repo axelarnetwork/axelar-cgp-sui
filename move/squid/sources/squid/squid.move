@@ -82,16 +82,18 @@ module squid::squid {
 
         let token_id = its::service::register_coin(&mut its, coin_info, coin_management);
 
-        // This gives some coin to the service;
-        service::interchain_transfer(
-            &mut its,
-            token_id,
-            coin,
-            std::ascii::string(b"Chain Name"),
-            b"Destination Address",
-            b"",
-            &squid.channel,
-            &clock,
+        // This gives some coin to the service.
+        sui::test_utils::destroy(
+            service::interchain_transfer(
+                &mut its,
+                token_id,
+                coin,
+                std::ascii::string(b"Chain Name"),
+                b"Destination Address",
+                b"",
+                &squid.channel,
+                &clock,
+            )
         );
 
         let source_chain = std::ascii::string(b"Chain Name");

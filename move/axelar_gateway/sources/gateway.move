@@ -33,6 +33,7 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof::{Self, Proof};
 use axelar_gateway::weighted_signers::{Self, WeightedSigners};
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::bcs;
@@ -57,6 +58,11 @@ const ENotLatestSigners: u64 = 3;
 // -----
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
+
+// ------
+// Version
+// ------
+const VERSION: u64 = 0;
 
 /// An object holding the state of the Axelar bridge.
 /// The central piece in managing call approval creation and signature verification.
@@ -228,24 +234,36 @@ entry fun rotate_signers(
 // Public Functions
 // ----------------
 
-/// Call a contract on the destination chain by sending an event from an
-/// authorized Channel. Currently we require Channel to be mutable to prevent
-/// frozen object scenario or when someone exposes the Channel to the outer
-/// world. However, this restriction may be lifted in the future, and having
-/// an immutable reference should be enough.
-public fun call_contract(
+/// Prepare a MessageTicket to call a contract on the destination chain.
+public fun prepare_message(
     channel: &Channel,
     destination_chain: String,
     destination_address: String,
     payload: vector<u8>,
-) {
-    sui::event::emit(ContractCall {
-        source_id: object::id_address(channel),
+): MessageTicket {
+    message_ticket::new(
+        channel.to_address(),
         destination_chain,
         destination_address,
         payload,
+        VERSION,
+    )
+}
+
+/// Submit the MessageTicket which causes a contract call by sending an event from an
+/// authorized Channel.
+entry fun submit_message(
+    message: MessageTicket,
+) {
+    let payload = message.payload();
+    sui::event::emit(ContractCall {
+        source_id: message.source_id(),
+        destination_chain: message.destination_address(),
+        destination_address: message.destination_address(),
+        payload,
         payload_hash: address::from_bytes(hash::keccak256(&payload)),
-    })
+    });
+    message.destroy();
 }
 
 public fun is_message_approved(
