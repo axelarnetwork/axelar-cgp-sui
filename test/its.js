@@ -104,6 +104,7 @@ describe('ITS', () => {
         ).objectId;
 
         await publishPackage(client, deployer, 'abi');
+        await publishPackage(client, deployer, 'gas_service');
         result = await publishPackage(client, deployer, 'governance');
         const governanceId = result.packageId;
         const governanceUpgradeCap = result.publishTxn.objectChanges.find(
