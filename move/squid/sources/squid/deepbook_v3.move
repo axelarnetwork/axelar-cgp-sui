@@ -226,7 +226,7 @@ module squid::deepbook_v3 {
         )
     }
 
-    fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
+    public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
         let mut bcs = bcs::new(data);
         DeepbookV3SwapData {
             swap_type: bcs.peel_u8(),
@@ -247,5 +247,28 @@ module squid::deepbook_v3 {
         let y = y as u128;
 
         ((x * y / FLOAT_SCALING) as u64)
+    }
+
+    #[test_only]
+    public(package) fun new_swap_data(
+        swap_type: u8,
+        pool_id: address,
+        has_base: bool,
+        min_output: u64,
+        base_type: String,
+        quote_type: String,
+        lot_size: u64,
+        should_sweep: bool,
+    ): DeepbookV3SwapData {
+        DeepbookV3SwapData {
+            swap_type,
+            pool_id,
+            has_base,
+            min_output,
+            base_type,
+            quote_type,
+            lot_size,
+            should_sweep,
+        }
     }
 }
