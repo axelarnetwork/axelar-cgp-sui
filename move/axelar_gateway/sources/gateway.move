@@ -31,15 +31,15 @@ use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
-use axelar_gateway::proof::{Self};
-use axelar_gateway::weighted_signers::{Self};
-use utils::utils;
-use sui::bcs;
+use axelar_gateway::proof;
+use axelar_gateway::weighted_signers;
 use std::ascii::String;
 use sui::address;
+use sui::bcs;
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
+use utils::utils;
 
 // ------
 // Errors
@@ -140,7 +140,10 @@ public fun setup(
             domain_separator,
             minimum_rotation_delay,
             previous_signers_retention,
-            utils::peel_data!(initial_signers, |bcs| weighted_signers::peel(bcs)),
+            utils::peel_data!(
+                initial_signers,
+                |bcs| weighted_signers::peel(bcs),
+            ),
             clock,
             ctx,
         ),
@@ -185,13 +188,7 @@ entry fun approve_messages(
             proof,
         );
 
-    let mut i = 0;
-
-    while (i < messages.length()) {
-        self.approve_message(&messages[i]);
-
-        i = i + 1;
-    };
+    messages.length().do!(|i| self.approve_message(&messages[i]));
 }
 
 /// The main entrypoint for rotating Axelar signers.
@@ -204,7 +201,10 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let weighted_signers = utils::peel_data!(new_signers_data, |bcs| weighted_signers::peel(bcs));
+    let weighted_signers = utils::peel_data!(
+        new_signers_data,
+        |bcs| weighted_signers::peel(bcs),
+    );
     let proof = utils::peel_data!(proof_data, |bcs| proof::peel(bcs));
 
     let enforce_rotation_delay = ctx.sender() != self.operator;
@@ -330,12 +330,10 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
     utils::peel_data!(
         message_data,
         |bcs| {
-            let mut messages = vector::empty<Message>();
-            let mut len = bcs.peel_vec_length();
-            while (len > 0) {
-                messages.push_back(message::peel(bcs));
-                len = len - 1;
-            };
+            let messages = vector::tabulate!(
+                bcs.peel_vec_length(),
+                |_| message::peel(bcs),
+            );
             assert!(messages.length() > 0, EInvalidLength);
             messages
         },
