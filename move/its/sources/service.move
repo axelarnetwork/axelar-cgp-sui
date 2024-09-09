@@ -24,6 +24,9 @@ module its::service {
     use its::utils as its_utils;
     use its::trusted_addresses;
 
+    // === VERSION ===
+    const VERSION: u64 = 0;
+
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -33,12 +36,9 @@ module its::service {
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
 
-    // === VERSIOM ===
-    const VERSION: u64 = 0;
-
-    /// -------
-    /// Structs
-    /// -------
+    /// -----
+    /// Types
+    /// -----
     public struct InterchainTransferTicket<phantom T>{
         token_id: TokenId,
         coin: Coin<T>,
@@ -131,7 +131,7 @@ module its::service {
         }
     }
 
-    public fun submit_interchain_transfer<T>(
+    public fun send_interchain_transfer<T>(
         self: &mut ITS,
         ticket: InterchainTransferTicket<T>,
         clock: &Clock,
@@ -467,7 +467,7 @@ module its::service {
         let clock = sui::clock::create_for_testing(ctx);
 
         let interchain_transfer_ticket = prepare_interchain_transfer<COIN>(token_id, coin, destination_chain, destination_address, metadata, &source_channel);
-        let message_ticket = submit_interchain_transfer<COIN>(&mut its, interchain_transfer_ticket, &clock);
+        let message_ticket = send_interchain_transfer<COIN>(&mut its, interchain_transfer_ticket, &clock);
         let mut writer = abi::new_writer(6);
 
         writer
