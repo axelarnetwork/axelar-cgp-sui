@@ -74,7 +74,7 @@ public struct Gateway has key {
     signers: AxelarSigners,
 }
 
-// === Ticket ===
+/// [docstring]
 public struct MessageTicket {
     source_id: address,
     destination_chain: String,
