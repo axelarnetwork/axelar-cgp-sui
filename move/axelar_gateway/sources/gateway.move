@@ -34,6 +34,7 @@ use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof::{Self};
 use axelar_gateway::weighted_signers::{Self};
 use utils::utils;
+use sui::bcs;
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -203,7 +204,7 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let weighted_signers = utils::peel_data!(new_signers_data, |bcs| weighted_signers::peel(bcs)); 
+    let weighted_signers = utils::peel_data!(new_signers_data, |bcs| weighted_signers::peel(bcs));
     let proof = utils::peel_data!(proof_data, |bcs| proof::peel(bcs));
 
     let enforce_rotation_delay = ctx.sender() != self.operator;
@@ -597,7 +598,7 @@ fun test_peel_messages() {
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
 fun test_peel_messages_no_remaining_data() {
     let message1 = message::new(
         std::ascii::string(b"Source Chain 1"),
@@ -629,7 +630,7 @@ fun test_peel_weighted_signers() {
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
 fun test_peel_weighted_signers_no_remaining_data() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let mut bytes = bcs::to_bytes(&signers);
@@ -648,13 +649,13 @@ fun test_peel_proof() {
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
 fun test_peel_proof_no_remaining_data() {
     let proof = axelar_gateway::proof::dummy();
     let mut bytes = bcs::to_bytes(&proof);
     bytes.push_back(0);
 
-    peel_data!(bytes, |bcs| proof::peel(bcs));
+    utils::peel_data!(bytes, |bcs| proof::peel(bcs));
 }
 
 #[test]
