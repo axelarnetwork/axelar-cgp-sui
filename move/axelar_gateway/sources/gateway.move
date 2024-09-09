@@ -41,6 +41,11 @@ use sui::hash;
 use sui::table::{Self, Table};
 
 // ------
+// Version
+// ------
+const VERSION: u64 = 0;
+
+// ------
 // Errors
 // ------
 /// Trying to `take_approved_message` for a message that is not approved.
@@ -51,17 +56,14 @@ const EInvalidLength: u64 = 1;
 const ERemainingData: u64 = 2;
 /// Not latest signers
 const ENotLatestSigners: u64 = 3;
+/// MessageTickets created from newer versions cannot be sent here
+const ENewerMessage: u64 = 4;
 
 // -----
 // Types
 // -----
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
-
-// ------
-// Version
-// ------
-const VERSION: u64 = 0;
 
 /// An object holding the state of the Axelar bridge.
 /// The central piece in managing call approval creation and signature verification.
@@ -249,7 +251,7 @@ public fun prepare_message(
     destination_address: String,
     payload: vector<u8>,
 ): MessageTicket {
-    MessageTicket{
+    MessageTicket {
         source_id: channel.to_address(),
         destination_chain,
         destination_address,
@@ -260,7 +262,7 @@ public fun prepare_message(
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
 /// authorized Channel.
-entry fun submit_message(
+public entry fun send_message(
     message: MessageTicket,
 ) {
     let MessageTicket {
@@ -270,6 +272,7 @@ entry fun submit_message(
         payload,
         version,
     } = message;
+    assert!(version <= VERSION, ENewerMessage);
     sui::event::emit(ContractCall {
         source_id,
         destination_chain,
@@ -314,7 +317,6 @@ public fun is_message_executed(
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
-/// I think this should be entry
 public fun take_approved_message(
     self: &mut Gateway,
     source_chain: String,
