@@ -75,6 +75,7 @@ public struct Gateway has key {
 }
 
 /// [docstring]
+/// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
 public struct MessageTicket {
     source_id: address,
     destination_chain: String,
@@ -262,7 +263,7 @@ public fun prepare_message(
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
 /// authorized Channel.
-public entry fun send_message(
+public fun send_message(
     message: MessageTicket,
 ) {
     let MessageTicket {
