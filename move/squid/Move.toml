@@ -6,6 +6,7 @@ edition = "2024.beta"
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
 DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "mainnet-v1.32.2" }
+Utils = { local = "../utils" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 
