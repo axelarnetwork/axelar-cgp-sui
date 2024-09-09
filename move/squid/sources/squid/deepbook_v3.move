@@ -125,7 +125,7 @@ module squid::deepbook_v3 {
                 base_in.value(),
                 clock
             );
-            let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).destroy_some().into_coin(ctx);
+            let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).into_coin(ctx);
 
             let (base_out, quote_out, deep_out) = pool.swap_exact_base_for_quote<B, Q>(
                 base_in,
@@ -155,7 +155,7 @@ module squid::deepbook_v3 {
                 quote_in.value(),
                 clock
             );
-            let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).destroy_some().into_coin(ctx);
+            let deep_in = squid.coin_bag().get_exact_balance<DEEP>(deep_required).into_coin(ctx);
 
             let (quote_out, base_out, deep_out) = pool.swap_exact_quote_for_base<B, Q>(
                 quote_in,
@@ -213,7 +213,7 @@ module squid::deepbook_v3 {
         discovery::new_move_call(
             discovery::new_function(
                 package_id,
-                ascii::string(b"deepbook_v2"),
+                ascii::string(b"deepbook_v3"),
                 ascii::string(b"swap"),
             ),
             vector[
