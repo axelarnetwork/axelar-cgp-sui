@@ -151,10 +151,6 @@ public fun setup(
     transfer::share_object(gateway);
 }
 
-// -----------
-// Index Syntax
-// -----------
-
 #[syntax(index)]
 public fun borrow(self: &Gateway, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
@@ -168,9 +164,9 @@ public fun borrow_mut(
     table::borrow_mut(&mut self.messages, command_id)
 }
 
-// -----------
+// -----
 // Macros
-// -----------
+// -----
 macro fun peel_data<$T>($data: vector<u8>, $peel_fn: |&mut _| -> $T): $T {
     let mut bcs = bcs::new($data);
     let result = $peel_fn(&mut bcs);
