@@ -35,11 +35,12 @@ use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
 use std::ascii::String;
 use sui::address;
-use sui::bcs;
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
 use utils::utils;
+#[test_only]
+use sui::bcs;
 
 // ------
 // Errors
