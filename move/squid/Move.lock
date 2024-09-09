@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "4679762A1C6D5F818EF182909BF92324DE41B1DA9A1206389B760D44BFE0750C"
+manifest_digest = "0AB42970C877F554928F82682074B5F635B28551B17E4F17DCE257F3D44E824B"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "AxelarGateway" },
@@ -50,11 +50,11 @@ dependencies = [
 
 [[move.package]]
 name = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 name = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
@@ -62,7 +62,7 @@ dependencies = [
 
 [[move.package]]
 name = "deepbook"
-source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "testnet", subdir = "packages/deepbook" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/deepbook" }
 
 dependencies = [
   { name = "Sui" },
@@ -71,7 +71,7 @@ dependencies = [
 
 [[move.package]]
 name = "token"
-source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "testnet", subdir = "packages/token" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/token" }
 
 dependencies = [
   { name = "Sui" },
