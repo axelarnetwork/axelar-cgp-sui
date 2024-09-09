@@ -35,7 +35,7 @@ use axelar_gateway::proof::{Self};
 use axelar_gateway::weighted_signers::{Self};
 use std::ascii::String;
 use sui::address;
-use sui::bcs;
+use sui::bcs::{Self, BCS};
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
@@ -167,7 +167,7 @@ public fun borrow_mut(
 // -----
 // Macros
 // -----
-macro fun peel_data<$T>($data: vector<u8>, $peel_fn: |&mut _| -> $T): $T {
+macro fun peel_data<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
     let mut bcs = bcs::new($data);
     let result = $peel_fn(&mut bcs);
     assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
