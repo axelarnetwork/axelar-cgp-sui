@@ -34,7 +34,7 @@ module squid::deepbook_v3 {
     /// Estimate the output of a swap. If the output is less than the minimum output, the swap is skipped.
     /// If the swap is not skipped, the estimate is stored in the coin bag.
     public fun estimate<B, Q>(self: &mut SwapInfo, pool: &Pool<B, Q>, clock: &Clock) {
-        let data = self.get_data_swapping();
+        let data = self.get_data_estimating();
         if (data.length() == 0) return;
         let swap_data = peel_swap_data(data);
 
