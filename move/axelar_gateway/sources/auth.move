@@ -5,6 +5,7 @@ use axelar_gateway::proof::{Proof, Signature};
 use axelar_gateway::weighted_signer;
 use axelar_gateway::weighted_signers::WeightedSigners;
 use sui::bcs;
+use sui::option;
 use sui::clock::Clock;
 use sui::event;
 use sui::table::{Self, Table};
@@ -157,38 +158,24 @@ fun validate_signatures(
     signers: &WeightedSigners,
     signatures: &vector<Signature>,
 ) {
-    let signers_length = signers.signers().length();
-    let signatures_length = signatures.length();
-    assert!(signatures_length != 0, ELowSignaturesWeight);
+    assert!(!vector::is_empty(signatures), ELowSignaturesWeight);
 
-    let threshold = signers.threshold();
-    let mut signer_index = 0;
-    let mut total_weight = 0;
-    let mut i = 0;
+    let total_weight = signatures.fold!(
+        0,
+        |acc, signature| {
+            let pub_key = signature.recover_pub_key(&message);
+            let weight = find_signer_weight(signers, pub_key);
+            acc + weight
+        }
+    );
 
-    while (i < signatures_length) {
-        let pub_key = signatures[i].recover_pub_key(&message);
+    assert!(total_weight >= signers.threshold(), ELowSignaturesWeight);
+}
 
-        while (
-            signer_index < signers_length &&
-            signers.signers()[signer_index].pub_key() != pub_key
-        ) {
-            signer_index = signer_index + 1;
-        };
-
-        assert!(signer_index < signers_length, EMalformedSigners);
-
-        total_weight = total_weight + signers.signers()[signer_index].weight();
-
-        if (total_weight >= threshold) {
-            return
-        };
-
-        signer_index = signer_index + 1;
-        i = i + 1;
-    };
-
-    abort ELowSignaturesWeight
+fun find_signer_weight(signers: &WeightedSigners, pub_key: PublicKey): u64 {
+    let signer_opt = signers.signers().find!(|signer| signer.pub_key() == pub_key);
+    assert!(option::is_some(&signer_opt), EMalformedSigners);
+    option::extract(&mut signer_opt).weight()
 }
 
 fun validate_signers(signers: &WeightedSigners) {
