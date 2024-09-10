@@ -17,9 +17,23 @@ public struct WeightedSigners has copy, drop, store {
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 
-/// ----------------
-/// Public Functions
-/// ----------------
+/// -----------------
+/// Package Functions
+/// -----------------
+public(package) fun peel(bcs: &mut BCS): WeightedSigners {
+    let len = bcs.peel_vec_length();
+    assert!(len > 0, EInvalidLength);
+    WeightedSigners {
+        signers: vector::tabulate!(len, |_| weighted_signer::peel(bcs)),
+        threshold: bcs.peel_u128(),
+        nonce: bytes32::peel(bcs)
+    }
+}
+
+public(package) fun hash(self: &WeightedSigners): Bytes32 {
+    bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
+}
+
 public(package) fun signers(self: &WeightedSigners): vector<WeightedSigner> {
     self.signers
 }
@@ -30,35 +44,6 @@ public(package) fun threshold(self: &WeightedSigners): u128 {
 
 public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
-}
-
-/// -----------------
-/// Package Functions
-/// -----------------
-public(package) fun peel(bcs: &mut BCS): WeightedSigners {
-    let mut signers = vector::empty<WeightedSigner>();
-
-    let mut length = bcs.peel_vec_length();
-    assert!(length > 0, EInvalidLength);
-
-    while (length > 0) {
-        signers.push_back(weighted_signer::peel(bcs));
-
-        length = length - 1;
-    };
-
-    let threshold = bcs.peel_u128();
-    let nonce = bytes32::peel(bcs);
-
-    WeightedSigners {
-        signers,
-        threshold,
-        nonce,
-    }
-}
-
-public(package) fun hash(self: &WeightedSigners): Bytes32 {
-    bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
 }
 
 #[test_only]
@@ -112,7 +97,7 @@ public fun dummy(): WeightedSigners {
         32,
     ];
     let signer = axelar_gateway::weighted_signer::new(pub_key, 123);
-    let nonce = bytes32::new(@3456);
+    let nonce = bytes32::new(ERROR, 3456);
     let threshold = 100;
     WeightedSigners {
         signers: vector[signer],
