@@ -94,3 +94,30 @@ fun test_default() {
         i = i + 1;
     }
 }
+
+#[test]
+fun test_lt() {
+    let signer1 = new(
+        x"000100000000000000000000000000000000000000000000000000000000000000",
+        1,
+    );
+    let signer2 = new(
+        x"000200000000000000000000000000000000000000000000000000000000000000",
+        2,
+    );
+    let signer3 = new(
+        x"000100000000000000000000000000000000000000000000000000000000000001",
+        3,
+    );
+
+    // Less than
+    assert!(lt(&signer1, &signer2), 0);
+    assert!(lt(&signer1, &signer3), 2);
+
+    // Not less than
+    assert!(!lt(&signer2, &signer1), 1);
+    assert!(!lt(&signer3, &signer1), 3);
+
+    // Equal
+    assert!(!lt(&signer1, &signer1), 4); // !(signer1 < signer1)
+}
