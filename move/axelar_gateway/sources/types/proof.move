@@ -68,20 +68,11 @@ public(package) fun peel_signature(bcs: &mut BCS): Signature {
 
 public(package) fun peel(bcs: &mut BCS): Proof {
     let signers = weighted_signers::peel(bcs);
-
-    let mut signatures = vector::empty<Signature>();
-
-    let mut length = bcs.peel_vec_length();
-
-    while (length > 0) {
-        signatures.push_back(peel_signature(bcs));
-
-        length = length - 1;
-    };
+    let length = bcs.peel_vec_length();
 
     Proof {
         signers,
-        signatures,
+        signatures: vector::tabulate!(length, |_| peel_signature(bcs)),
     }
 }
 
