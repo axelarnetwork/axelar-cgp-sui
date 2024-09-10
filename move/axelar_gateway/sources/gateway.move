@@ -141,7 +141,7 @@ public fun setup(
             domain_separator,
             minimum_rotation_delay,
             previous_signers_retention,
-            utils::peel_data!(
+            utils::peel!(
                 initial_signers,
                 |bcs| weighted_signers::peel(bcs),
             ),
@@ -179,7 +179,7 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    let proof = utils::peel_data!(proof_data, |bcs| proof::peel(bcs));
+    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
     let _ = self
@@ -202,11 +202,11 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let weighted_signers = utils::peel_data!(
+    let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
     );
-    let proof = utils::peel_data!(proof_data, |bcs| proof::peel(bcs));
+    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
 
     let enforce_rotation_delay = ctx.sender() != self.operator;
 
@@ -328,7 +328,7 @@ public fun take_approved_message(
 // -----------------
 
 fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel_data!(
+    utils::peel!(
         message_data,
         |bcs| {
             let messages = vector::tabulate!(
@@ -623,7 +623,7 @@ fun test_peel_messages_no_zero_messages() {
 fun test_peel_weighted_signers() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let bytes = bcs::to_bytes(&signers);
-    let result = utils::peel_data!(bytes, |bcs| weighted_signers::peel(bcs));
+    let result = utils::peel!(bytes, |bcs| weighted_signers::peel(bcs));
 
     assert!(result == signers, 0);
 }
@@ -635,14 +635,14 @@ fun test_peel_weighted_signers_no_remaining_data() {
     let mut bytes = bcs::to_bytes(&signers);
     bytes.push_back(0);
 
-    utils::peel_data!(bytes, |bcs| weighted_signers::peel(bcs));
+    utils::peel!(bytes, |bcs| weighted_signers::peel(bcs));
 }
 
 #[test]
 fun test_peel_proof() {
     let proof = axelar_gateway::proof::dummy();
     let bytes = bcs::to_bytes(&proof);
-    let result = utils::peel_data!(bytes, |bcs| proof::peel(bcs));
+    let result = utils::peel!(bytes, |bcs| proof::peel(bcs));
 
     assert!(result == proof, 0);
 }
@@ -654,7 +654,7 @@ fun test_peel_proof_no_remaining_data() {
     let mut bytes = bcs::to_bytes(&proof);
     bytes.push_back(0);
 
-    utils::peel_data!(bytes, |bcs| proof::peel(bcs));
+    utils::peel!(bytes, |bcs| proof::peel(bcs));
 }
 
 #[test]
