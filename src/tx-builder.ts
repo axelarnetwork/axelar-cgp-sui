@@ -282,8 +282,9 @@ export class TxBuilder {
             return { modules, dependencies, digest };
         } catch (e) {
             console.log(e);
-            rmTmpDir();
             throw e;
+        } finally {
+            rmTmpDir();
         }
     }
 
