@@ -61,3 +61,76 @@ public fun push_back(self: &mut VersionControl, function_names: vector<vector<u8
 public fun check(self: &VersionControl, version: u64, function: vector<u8>) {
     assert!(self.allowed_functions[version].contains(&function), EFunctionNotSupported);
 }
+
+#[test]
+fun test_new() {
+    let version_control = new(
+        vector[
+            vector[
+                b"function_name_1",
+            ],
+        ]
+    );
+    assert!(version_control.allowed_functions.length() == 1, 0);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1"), 1);
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2"), 2);
+}
+
+#[test]
+fun test_allowed_functions() {
+    let mut version_control = new(
+        vector[
+            vector[
+                b"function_name_1",
+            ],
+        ]
+    );
+    assert!(version_control.allowed_functions == version_control.allowed_functions(), 0);
+}
+
+#[test]
+fun test_push_back() {
+    let mut version_control = new(
+        vector[
+            vector[
+                b"function_name_1",
+            ],
+        ]
+    );
+    version_control.push_back(
+        vector[
+            b"function_name_1", b"function_name_2",
+        ]
+    );
+    assert!(version_control.allowed_functions.length() == 2, 0);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1"), 1);
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2"), 2);
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_1"), 1);
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_2"), 2);
+}
+
+#[test]
+fun test_check() {
+    let mut version_control = new(
+        vector[
+            vector[
+                b"function_name_1",
+            ],
+        ]
+    );
+    version_control.check(0, b"function_name_1");
+}
+
+#[test]
+#[expected_failure(abort_code = EFunctionNotSupported)]
+fun test_check_function_not_supported() {
+    let mut version_control = new(
+        vector[
+            vector[
+                b"function_name_1",
+            ],
+        ]
+    );
+    version_control.check(0, b"function_name_2");
+}
+
