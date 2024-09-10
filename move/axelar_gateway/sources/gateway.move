@@ -39,8 +39,6 @@ use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
 use utils::utils;
-#[test_only]
-use sui::bcs;
 
 // ------
 // Errors
@@ -367,6 +365,9 @@ fun approve_message(self: &mut Gateway, message: &message::Message) {
         message: *message,
     });
 }
+
+#[test_only]
+use sui::bcs;
 
 #[test_only]
 public fun create_for_testing(
