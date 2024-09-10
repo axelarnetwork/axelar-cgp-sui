@@ -131,23 +131,13 @@ public fun new_move_call(
 }
 
 public fun new_move_call_from_bcs(bcs: &mut BCS): MoveCall {
-    let function = new_function_from_bcs(bcs);
-    let arguments = bcs.peel_vec_vec_u8();
-    let length = bcs.peel_vec_length();
-    let mut type_arguments = vector[];
-    let mut i = 0;
-
-    while (i < length) {
-        let mut type_argument = ascii::try_string(bcs.peel_vec_u8());
-        assert!(type_argument.is_some(), EInvalidString);
-        type_arguments.push_back(type_argument.extract());
-        i = i + 1;
-    };
-
     MoveCall {
-        function,
-        arguments,
-        type_arguments,
+        function: new_function_from_bcs(bcs),
+        arguments: bcs.peel_vec_vec_u8(),
+        type_arguments: vector::tabulate!(
+            bcs.peel_vec_length(),
+            |_| peel_type(bcs),
+        ),
     }
 }
 
@@ -162,19 +152,12 @@ public fun new_transaction(
 }
 
 public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
-    let is_final = bcs.peel_bool();
-    let length = bcs.peel_vec_length();
-    let mut move_calls = vector[];
-    let mut i = 0;
-
-    while (i < length) {
-        move_calls.push_back(new_move_call_from_bcs(bcs));
-        i = i + 1;
-    };
-
     Transaction {
-        is_final,
-        move_calls,
+        is_final: bcs.peel_bool(),
+        move_calls: vector::tabulate!(
+            bcs.peel_vec_length(),
+            |_| new_move_call_from_bcs(bcs),
+        ),
     }
 }
 
@@ -187,6 +170,12 @@ public fun package_id<T>(): address {
             ),
         ),
     )
+}
+
+fun peel_type(bcs: &mut BCS): ascii::String {
+    let mut type_argument = ascii::try_string(bcs.peel_vec_u8());
+    assert!(type_argument.is_some(), EInvalidString);
+    type_argument.extract()
 }
 
 #[test_only]
