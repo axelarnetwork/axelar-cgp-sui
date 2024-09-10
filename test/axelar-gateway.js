@@ -221,9 +221,15 @@ describe('Axelar Gateway', () => {
             const payload = '0x1234';
             const builder = new TxBuilder(client);
 
-            await builder.moveCall({
-                target: `${packageId}::gateway::call_contract`,
+            const messageTicket = await builder.moveCall({
+                target: `${packageId}::gateway::prepare_message`,
                 arguments: [channel, destinationChain, destinationAddress, payload],
+                typeArguments: [],
+            });
+
+            await builder.moveCall({
+                target: `${packageId}::gateway::send_message`,
+                arguments: [messageTicket],
                 typeArguments: [],
             });
 
@@ -337,6 +343,7 @@ describe('Axelar Gateway', () => {
         });
     });
 
+    // I think this is as duplicate.
     describe('Contract Call', () => {
         let channel;
         before(async () => {
@@ -361,9 +368,14 @@ describe('Axelar Gateway', () => {
             const payload = '0x1234';
             const builder = new TxBuilder(client);
 
-            await builder.moveCall({
-                target: `${packageId}::gateway::call_contract`,
+            const message_ticket = await builder.moveCall({
+                target: `${packageId}::gateway::prepare_message`,
                 arguments: [channel, destinationChain, destinationAddress, payload],
+                typeArguments: [],
+            });            
+            await builder.moveCall({
+                target: `${packageId}::gateway::send_message`,
+                arguments: [message_ticket],
                 typeArguments: [],
             });
 
