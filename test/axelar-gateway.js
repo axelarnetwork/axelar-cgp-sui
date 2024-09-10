@@ -368,14 +368,14 @@ describe('Axelar Gateway', () => {
             const payload = '0x1234';
             const builder = new TxBuilder(client);
 
-            const message_ticket = await builder.moveCall({
+            const messageTicket = await builder.moveCall({
                 target: `${packageId}::gateway::prepare_message`,
                 arguments: [channel, destinationChain, destinationAddress, payload],
                 typeArguments: [],
-            });            
+            });
             await builder.moveCall({
                 target: `${packageId}::gateway::send_message`,
-                arguments: [message_ticket],
+                arguments: [messageTicket],
                 typeArguments: [],
             });
 
