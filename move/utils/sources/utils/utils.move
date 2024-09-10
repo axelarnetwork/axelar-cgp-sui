@@ -34,3 +34,24 @@ public macro fun peel<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
 }
 
 public fun error_remaining_data(): u64 { ERemainingData }
+
+#[test]
+fun test_peel_success() {
+    let test_bytes = b"test";
+    let data = bcs::to_bytes(&test_bytes);
+    let peeled_data: vector<u8> = peel!(
+        data,
+        |bcs| bcs::peel_vec_u8(bcs),
+    );
+    assert!(peeled_data == test_bytes, 0);
+}
+
+#[test]
+#[expected_failure(abort_code = ERemainingData)]
+fun test_peel_error() {
+    let data = b"ab";
+    let _peeled: u8 = peel!(
+        data,
+        |bcs| bcs::peel_u8(bcs),
+    );
+}
