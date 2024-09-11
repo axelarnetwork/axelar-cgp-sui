@@ -10,9 +10,10 @@ use sui::bcs::{Self, BCS};
 /**
 * Peel data from a BCS encoded vector
 * @dev This macro is used to peel data from a BCS encoded vector
+* The macro will assert that there is no remaining data in the BCS after peelin. If there is remaining data, the macro will panic.
 * @param $data The BCS encoded vector
 * @param $peel_fn The function to peel the data
-* @returns The peeled data
+* @returns The peeled data or an error if there is any remaining data in the BCS
 * Example Usage:
 * ```move
 * use axelar_gateway::proof;
