@@ -362,7 +362,7 @@ fun approve_message(self: &mut Gateway, message: message::Message) {
         );
 
     sui::event::emit(MessageApproved {
-        message: message,
+        message,
     });
 }
 
