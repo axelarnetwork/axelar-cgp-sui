@@ -23,6 +23,7 @@ const EInvalidLength: u64 = 0;
 public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     let len = bcs.peel_vec_length();
     assert!(len > 0, EInvalidLength);
+
     WeightedSigners {
         signers: vector::tabulate!(len, |_| weighted_signer::peel(bcs)),
         threshold: bcs.peel_u128(),
