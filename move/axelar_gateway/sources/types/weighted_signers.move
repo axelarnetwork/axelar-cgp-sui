@@ -47,6 +47,21 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
 }
 
+public(package) macro fun find($s: &WeightedSigners, $f: |WeightedSigner| -> bool): Option<WeightedSigner> {
+    let s = $s;  // Bind $s to a local variable to avoid using macro parameter directly in a path expression which is not allowed
+    let signers = s.signers();
+    let mut signer_option = signers.find_index!($f);
+
+    if (signer_option.is_none()) {
+        return option::none()
+    };
+
+    let signer_index = signer_option.extract();
+    let signer = signers[signer_index];
+
+    option::some(signer)
+}
+
 #[test_only]
 public fun create_for_testing(
     signers: vector<WeightedSigner>,

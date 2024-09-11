@@ -157,34 +157,35 @@ fun validate_signatures(
     signers: &WeightedSigners,
     signatures: &vector<Signature>,
 ) {
-    let signers_length = signers.signers().length();
+    // let signers_length = signers.signers().length();
     let signatures_length = signatures.length();
     assert!(signatures_length != 0, ELowSignaturesWeight);
 
     let threshold = signers.threshold();
-    let mut signer_index = 0;
+    // let mut signer_index = 0;
     let mut total_weight = 0;
     let mut i = 0;
 
     while (i < signatures_length) {
         let pub_key = signatures[i].recover_pub_key(&message);
 
-        while (
-            signer_index < signers_length &&
-            signers.signers()[signer_index].pub_key() != pub_key
-        ) {
-            signer_index = signer_index + 1;
+        let mut signer_option = signers.find!(|signer| {
+            signer.pub_key() == pub_key
+        });
+
+        if(signer_option.is_none()) {
+            abort EMalformedSigners
         };
 
-        assert!(signer_index < signers_length, EMalformedSigners);
+        let signer = signer_option.extract();
 
-        total_weight = total_weight + signers.signers()[signer_index].weight();
+        total_weight = total_weight + signer.weight();
 
         if (total_weight >= threshold) {
             return
         };
 
-        signer_index = signer_index + 1;
+        // signer_index = signer_index + 1;
         i = i + 1;
     };
 
