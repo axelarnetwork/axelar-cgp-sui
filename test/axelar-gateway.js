@@ -81,6 +81,7 @@ describe('Axelar Gateway', () => {
             ),
         );
 
+        await publishPackage(client, deployer, 'utils');
         let result = await publishPackage(client, deployer, 'axelar_gateway');
         packageId = result.packageId;
         const creatorCap = result.publishTxn.objectChanges.find(

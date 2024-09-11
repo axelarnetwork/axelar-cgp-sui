@@ -271,16 +271,18 @@ export class TxBuilder {
 
         const { tmpdir, rmTmpDir } = this.prepareMoveBuild();
 
-        const { modules, dependencies, digest } = JSON.parse(
-            execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
-                encoding: 'utf-8',
-                stdio: 'pipe', // silent the output
-            }),
-        );
+        try {
+            const { modules, dependencies, digest } = JSON.parse(
+                execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
+                    encoding: 'utf-8',
+                    stdio: 'pipe', // silent the output
+                }),
+            );
 
-        rmTmpDir();
-
-        return { modules, dependencies, digest };
+            return { modules, dependencies, digest };
+        } finally {
+            rmTmpDir();
+        }
     }
 
     async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
