@@ -33,6 +33,7 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -70,16 +71,6 @@ public struct Gateway has key {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
-}
-
-/// [docstring]
-/// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
-public struct MessageTicket {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    version: u64,
 }
 
 /// The Status of the message.
@@ -250,13 +241,13 @@ public fun prepare_message(
     destination_address: String,
     payload: vector<u8>,
 ): MessageTicket {
-    MessageTicket {
-        source_id: channel.to_address(),
+    message_ticket::new(
+        channel.to_address(),
         destination_chain,
         destination_address,
         payload,
-        version: VERSION,
-    }
+        VERSION,
+    )
 }
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
@@ -264,13 +255,13 @@ public fun prepare_message(
 public fun send_message(
     message: MessageTicket,
 ) {
-    let MessageTicket {
+    let (
         source_id,
         destination_chain,
         destination_address,
         payload,
         version,
-    } = message;
+    ) = message.destroy();
     assert!(version <= VERSION, ENewerMessage);
     sui::event::emit(ContractCall {
         source_id,
@@ -354,29 +345,6 @@ public fun take_approved_message(
         destination_id,
         payload,
     )
-}
-
-// --------------
-// Ticket Getters
-// --------------
-public fun source_id(self: &MessageTicket): address {
-    self.source_id
-}
-
-public fun destination_chain(self: &MessageTicket): String {
-    self.destination_chain
-}
-
-public fun destination_address(self: &MessageTicket): String {
-    self.destination_address
-}
-
-public fun payload(self: &MessageTicket): vector<u8> {
-    self.payload
-}
-
-public fun version(self: &MessageTicket): u64 {
-    self.version
 }
 
 // -----------------
