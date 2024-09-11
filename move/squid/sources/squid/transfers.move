@@ -4,12 +4,10 @@ module squid::transfers {
 
     use sui::bcs::{Self, BCS};
     use sui::coin;
-    use sui::clock::Clock;
 
     use axelar_gateway::discovery::{Self, MoveCall};
 
     use its::service::{Self, InterchainTransferTicket};
-    use its::its::ITS;
     use its::token_id::{Self, TokenId};
 
     use squid::swap_info::{SwapInfo};

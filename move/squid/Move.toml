@@ -8,6 +8,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 DeepBook = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/deepbook", rev = "mainnet-v1.32.2" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
+VersionControl = { local = "../version_control" }
 
 [addresses]
 squid = "0xa6"

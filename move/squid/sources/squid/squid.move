@@ -91,7 +91,7 @@ module squid::squid {
             &squid.channel,
         );
         sui::test_utils::destroy(
-            service::submit_interchain_transfer(&mut its, interchain_transfer_ticket, &clock)
+            service::send_interchain_transfer(&mut its, interchain_transfer_ticket, &clock)
         );
         
         let source_chain = std::ascii::string(b"Chain Name");
