@@ -82,7 +82,7 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 // -----
 
 #[test]
-fun test_default() {
+fun verify_default_signer() {
     let signer = default();
 
     assert!(signer.weight == 0, 0);
@@ -96,7 +96,7 @@ fun test_default() {
 }
 
 #[test]
-fun test_lt() {
+fun compare_weight_signers() {
     let signer1 = new(
         x"000100000000000000000000000000000000000000000000000000000000000000",
         1,
@@ -111,13 +111,13 @@ fun test_lt() {
     );
 
     // Less than
-    assert!(lt(&signer1, &signer2), 0);
-    assert!(lt(&signer1, &signer3), 2);
+    assert!(signer1.lt(&signer2), 0);
+    assert!(signer1.lt(&signer3), 2);
 
     // Not less than
-    assert!(!lt(&signer2, &signer1), 1);
-    assert!(!lt(&signer3, &signer1), 3);
+    assert!(!signer2.lt(&signer1), 1);
+    assert!(!signer3.lt(&signer1), 3);
 
     // Equal
-    assert!(!lt(&signer1, &signer1), 4); // !(signer1 < signer1)
+    assert!(!signer1.lt(&signer1), 4); // !(signer1 < signer1)
 }
