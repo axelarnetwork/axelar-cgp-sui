@@ -187,7 +187,7 @@ entry fun approve_messages(
             proof,
         );
 
-    messages.length().do!(|i| self.approve_message(&messages[i]));
+    messages.do!(|message| self.approve_message(&message));
 }
 
 /// The main entrypoint for rotating Axelar signers.
