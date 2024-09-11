@@ -12,7 +12,8 @@ module its::service {
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage};
-    use axelar_gateway::gateway::{Self, MessageTicket};
+    use axelar_gateway::gateway;
+    use axelar_gateway::message_ticket::MessageTicket;
     use axelar_gateway::channel::Channel;
 
     use governance::governance::{Self, Governance};
