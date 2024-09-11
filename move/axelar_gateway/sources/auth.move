@@ -163,23 +163,15 @@ fun validate_signatures(
 
     let threshold = signers.threshold();
     // let mut signer_index = 0;
-    let mut total_weight = 0;
+    let mut total_weight: u128 = 0;
     let mut i = 0;
 
     while (i < signatures_length) {
         let pub_key = signatures[i].recover_pub_key(&message);
 
-        let mut signer_option = signers.find!(|signer| {
-            signer.pub_key() == pub_key
-        });
+        let weight = get_signer_weight(signers, &pub_key);
 
-        if(signer_option.is_none()) {
-            abort EMalformedSigners
-        };
-
-        let signer = signer_option.extract();
-
-        total_weight = total_weight + signer.weight();
+        total_weight = total_weight + weight;
 
         if (total_weight >= threshold) {
             return
@@ -190,6 +182,21 @@ fun validate_signatures(
     };
 
     abort ELowSignaturesWeight
+}
+
+fun get_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
+    signers
+        .find!(|signer| signer.pub_key() == pub_key)
+        .map!(|signer| signer.weight())
+        .handle_signer_weight()
+}
+
+public fun handle_signer_weight(weight: Option<u128>): u128 {
+    assert!(weight.is_some(), EMalformedSigners);
+    let weight = weight.extract();
+    assert!(weight != 0, EInvalidWeights);
+
+    weight
 }
 
 fun validate_signers(signers: &WeightedSigners) {
