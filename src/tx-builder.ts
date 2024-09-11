@@ -280,9 +280,6 @@ export class TxBuilder {
             );
 
             return { modules, dependencies, digest };
-        } catch (e) {
-            // Remove the temporary directory before rethrowing the error
-            throw e;
         } finally {
             rmTmpDir();
         }
