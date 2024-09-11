@@ -1,6 +1,8 @@
 module squid::squid {
     use sui::clock::Clock;
     
+    use version_control::version_control::{Self, VersionControl};
+
     use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
     use its::service;
@@ -9,10 +11,14 @@ module squid::squid {
     use squid::coin_bag::{Self, CoinBag};
     use squid::swap_info::{Self, SwapInfo};
 
+    // Version
+    const VERSION: u64 = 0;
+
     public struct Squid has key, store{
         id: UID,
         channel: Channel,
         coin_bag: CoinBag,
+        version_control: VersionControl,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -20,6 +26,7 @@ module squid::squid {
             id: object::new(ctx),
             channel: channel::new(ctx),
             coin_bag: coin_bag::new(ctx),
+            version_control: new_version_control(),
         });
     }
 
@@ -28,6 +35,7 @@ module squid::squid {
     }
 
     public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext): SwapInfo {
+        self.version_control.check(VERSION, b"start_swap");
         let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
             its,
             approved_message,
@@ -49,12 +57,26 @@ module squid::squid {
         &mut self.coin_bag
     }
 
+    /// -------
+    /// Private
+    /// -------
+    fun new_version_control(): VersionControl {
+        version_control::new(
+            vector[
+                vector[
+                    b"start_swap",
+                ],
+            ]
+        )
+    }
+
     #[test_only]
     public fun new_for_testing(ctx: &mut TxContext): Squid {
         Squid {
             id: object::new(ctx),
             channel: channel::new(ctx),
             coin_bag: coin_bag::new(ctx),
+            version_control: new_version_control(),
         }
     }
 
