@@ -31,7 +31,7 @@ public macro fun peel<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
 
 
 #[test]
-fun test_peel_success() {
+fun peel_bcs_data_succeeds() {
     let test_bytes = b"test";
     let data = bcs::to_bytes(&test_bytes);
     let peeled_data: vector<u8> = peel!(
@@ -43,7 +43,7 @@ fun test_peel_success() {
 
 #[test]
 #[expected_failure]
-fun test_peel_error() {
+fun peel_bcs_data_fails_when_data_remains() {
     let data = b"ab";
     let _peeled: u8 = peel!(
         data,
