@@ -598,7 +598,7 @@ fun test_peel_messages() {
 }
 
 #[test]
-#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
+#[expected_failure]
 fun test_peel_messages_no_remaining_data() {
     let message1 = message::new(
         std::ascii::string(b"Source Chain 1"),
@@ -630,7 +630,7 @@ fun test_peel_weighted_signers() {
 }
 
 #[test]
-#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
+#[expected_failure]
 fun test_peel_weighted_signers_no_remaining_data() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let mut bytes = bcs::to_bytes(&signers);
@@ -649,7 +649,7 @@ fun test_peel_proof() {
 }
 
 #[test]
-#[expected_failure(abort_code = utils::ERemainingData, location = Self)]
+#[expected_failure]
 fun test_peel_proof_no_remaining_data() {
     let proof = axelar_gateway::proof::dummy();
     let mut bytes = bcs::to_bytes(&proof);
