@@ -38,7 +38,7 @@ fun peel_bcs_data_succeeds() {
         data,
         |bcs| bcs::peel_vec_u8(bcs),
     );
-    assert!(peeled_data == test_bytes, 0);
+    assert!(peeled_data == test_bytes);
 }
 
 #[test]
