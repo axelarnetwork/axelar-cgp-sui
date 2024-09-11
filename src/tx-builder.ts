@@ -281,7 +281,7 @@ export class TxBuilder {
 
             return { modules, dependencies, digest };
         } catch (e) {
-            console.log(e);
+            // Remove the temporary directory before rethrowing the error
             throw e;
         } finally {
             rmTmpDir();
