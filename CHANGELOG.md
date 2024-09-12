@@ -1,5 +1,15 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.6.2
+
+### Patch Changes
+
+-   b0cb54e: chore: refactor weighted_signers module
+-   39bf114: chore: refactor discovery module
+-   7f36eea: chore: refactor proof module
+-   8cb75ed: feat: use channel to figure out source address for its
+-   544d8e1: chore: apply macro function to reduce duplication in gateway contract
+
 ## 0.6.1
 
 ### Patch Changes
