@@ -1,8 +1,8 @@
 module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::proof::{Proof};
-use axelar_gateway::weighted_signers::{WeightedSigners};
+use axelar_gateway::proof::Proof;
+use axelar_gateway::weighted_signers::WeightedSigners;
 use sui::bcs;
 use sui::clock::Clock;
 use sui::event;
