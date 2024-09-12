@@ -81,7 +81,6 @@ public(package) fun parse_weight(signer: Option<WeightedSigner>): u128 {
     value
 }
 
-
 /// Check if self.signer is less than other.signer as bytes
 public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
     let mut i = 0;
