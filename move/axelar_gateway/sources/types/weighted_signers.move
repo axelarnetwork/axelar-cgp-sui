@@ -91,7 +91,6 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
 }
 
-
 #[test_only]
 public fun create_for_testing(
     signers: vector<WeightedSigner>,
