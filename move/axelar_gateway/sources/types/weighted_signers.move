@@ -97,7 +97,7 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
 /// Otherwise, the error `EInvalidSigners` is raised.
 fun validate_signers_order(signers: vector<WeightedSigner>) {
     let mut previous = weighted_signer::default();
-    signers.do!<WeightedSigner>(
+    signers.do!(
         |signer| {
             signer.validate(&previous);
             previous = signer;
