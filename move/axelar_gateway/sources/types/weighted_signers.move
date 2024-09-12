@@ -17,6 +17,20 @@ public struct WeightedSigners has copy, drop, store {
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 
+///-----
+/// Macros
+///-----
+public(package) macro fun find(
+    $s: &WeightedSigners,
+    $f: |WeightedSigner| -> bool,
+): Option<WeightedSigner> {
+    // Bind $s to a local variable to avoid using macro parameter directly in a path expression which is not allowed
+    let s = $s;
+    let signers = s.signers();
+
+    signers.find_index!($f).map!(|index| signers[index])
+}
+
 /// -----------------
 /// Package Functions
 /// -----------------
@@ -45,17 +59,6 @@ public(package) fun threshold(self: &WeightedSigners): u128 {
 
 public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
-}
-
-public(package) macro fun find(
-    $s: &WeightedSigners,
-    $f: |WeightedSigner| -> bool,
-): Option<WeightedSigner> {
-    // Bind $s to a local variable to avoid using macro parameter directly in a path expression which is not allowed
-    let s = $s;
-    let signers = s.signers();
-
-    signers.find_index!($f).map!(|index| signers[index])
 }
 
 #[test_only]
