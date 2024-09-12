@@ -33,6 +33,7 @@ public fun weight(self: &WeightedSigner): u128 {
 const EInvalidPubKeyLength: u64 = 0;
 const EInvalidOperators: u64 = 1;
 const EInvalidWeights: u64 = 2;
+const EMalformedSigners: u64 = 3;
 
 // -----------------
 // Package Functions
@@ -62,12 +63,22 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
     new(pub_key, weight)
 }
 
-public (package) fun validate(self: &WeightedSigner, previous_signer: &WeightedSigner) {
+public(package) fun validate(self: &WeightedSigner, previous_signer: &WeightedSigner) {
     assert!(previous_signer.lt(self), EInvalidOperators);
 
     let weight = self.weight();
 
     assert!(weight != 0, EInvalidWeights);
+}
+
+/// Extracts the weight from the option and asserts that it is not zero.
+public(package) fun parse_weight(signer: Option<WeightedSigner>): u128 {
+    let mut weight = signer.map!(|signer| signer.weight());
+    assert!(weight.is_some(), EMalformedSigners);
+    let value = weight.extract();
+    assert!(value != 0, EInvalidWeights);
+
+    value
 }
 
 

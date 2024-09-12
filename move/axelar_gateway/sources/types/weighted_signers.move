@@ -17,6 +17,7 @@ public struct WeightedSigners has copy, drop, store {
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 const EInvalidThreshold: u64 = 1;
+/// For when operators have changed, and proof is no longer valid.
 const EInvalidOperators: u64 = 2;
 
 ///-----
@@ -65,6 +66,13 @@ public(package) fun validate(self: &WeightedSigners) {
     let threshold = self.threshold();
 
     assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
+}
+
+/// Finds the weight of a signer in the weighted signers.
+public(package) fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
+    let signer = signers.find!(|signer| signer.pub_key() == pub_key);
+
+    weighted_signer::parse_weight(signer)
 }
 
 public(package) fun hash(self: &WeightedSigners): Bytes32 {

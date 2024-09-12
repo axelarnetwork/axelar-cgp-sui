@@ -2,7 +2,7 @@ module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::proof::{Proof, Signature};
-use axelar_gateway::weighted_signers::{Self, WeightedSigners};
+use axelar_gateway::weighted_signers::{WeightedSigners};
 use sui::bcs;
 use sui::clock::Clock;
 use sui::event;
@@ -11,11 +11,9 @@ use sui::table::{Self, Table};
 // ------
 // Errors
 // ------
-const EInvalidWeights: u64 = 0;
-const EInsufficientRotationDelay: u64 = 1;
+const EInsufficientRotationDelay: u64 = 0;
 /// For when number of signatures for the call approvals is below the threshold.
 const ELowSignaturesWeight: u64 = 2;
-const EMalformedSigners: u64 = 3;
 const EInvalidEpoch: u64 = 4;
 
 // -----
@@ -41,6 +39,13 @@ public struct MessageToSign has copy, drop, store {
     signers_hash: Bytes32,
     data_hash: Bytes32,
 }
+
+/// -----
+/// Macros
+/// -----
+// public(package) macro fun validate!<$T>($s: &$T) {
+//     $T::validate($s)
+// }
 
 // ------
 // Events
@@ -126,7 +131,8 @@ public(package) fun rotate_signers(
     new_signers: WeightedSigners,
     enforce_rotation_delay: bool,
 ) {
-    weighted_signers::validate(&new_signers);
+
+    new_signers.validate();
 
     self.update_rotation_timestamp(clock, enforce_rotation_delay);
 
@@ -165,7 +171,7 @@ fun validate_signatures(
     signatures.do_ref!<Signature>(|signature| {
         let pub_key = signature.recover_pub_key(&message);
 
-        let weight = find_signer_weight(signers, &pub_key);
+        let weight = signers.find_signer_weight(&pub_key);
 
         total_weight = total_weight + weight;
 
@@ -173,24 +179,6 @@ fun validate_signatures(
     });
 
     assert!(total_weight >= threshold, ELowSignaturesWeight);
-}
-
-/// Finds the weight of a signer in the weighted signers.
-fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
-    let mut weight = signers
-        .find!(|signer| signer.pub_key() == pub_key)
-        .map!(|signer| signer.weight());
-
-    parse_signer_weight(&mut weight)
-}
-
-/// Extracts the weight from the option and asserts that it is not zero.
-fun parse_signer_weight(weight: &mut Option<u128>): u128 {
-    assert!(weight.is_some(), EMalformedSigners);
-    let value = weight.extract();
-    assert!(value != 0, EInvalidWeights);
-
-    value
 }
 
 fun update_rotation_timestamp(
