@@ -72,6 +72,7 @@ public(package) fun validate(self: &WeightedSigner, previous_signer: &WeightedSi
 }
 
 /// Extracts the weight from the option and asserts that it is not zero.
+/// Otherwise, the error `EMalformedSigners` is raised.
 public(package) fun parse_weight(signer: Option<WeightedSigner>): u128 {
     let mut weight = signer.map!(|signer| signer.weight());
     assert!(weight.is_some(), EMalformedSigners);

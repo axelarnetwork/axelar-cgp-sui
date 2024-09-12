@@ -37,6 +37,8 @@ public(package) macro fun find(
 /// -----------------
 /// Package Functions
 /// -----------------
+
+/// Create a new weighted signers from the given data.
 public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     let len = bcs.peel_vec_length();
     assert!(len > 0, EInvalidLength);
@@ -48,6 +50,9 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     }
 }
 
+/// Validates the weighted signers.
+/// The total weight of the signers must be greater than or equal to the threshold.
+/// Otherwise, the error `EInvalidThreshold` is raised.
 public(package) fun validate(self: &WeightedSigners) {
     let signers_length = self.signers().length();
     assert!(signers_length != 0, EInvalidOperators);
@@ -66,7 +71,7 @@ public(package) fun validate(self: &WeightedSigners) {
     assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
 }
 
-/// Finds the weight of a signer in the weighted signers.
+/// Finds the weight of a signer in the weighted signers by its public key.
 public(package) fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
     let signer = signers.find!(|signer| signer.pub_key() == pub_key);
 
