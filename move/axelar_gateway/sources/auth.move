@@ -40,13 +40,6 @@ public struct MessageToSign has copy, drop, store {
     data_hash: Bytes32,
 }
 
-/// -----
-/// Macros
-/// -----
-// public(package) macro fun validate!<$T>($s: &$T) {
-//     $T::validate($s)
-// }
-
 // ------
 // Events
 // ------
