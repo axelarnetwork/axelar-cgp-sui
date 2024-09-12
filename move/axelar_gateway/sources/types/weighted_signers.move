@@ -168,7 +168,7 @@ public fun dummy(): WeightedSigners {
         32,
     ];
     let signer = axelar_gateway::weighted_signer::new(pub_key, 123);
-    let nonce = bytes32::new(ERROR, 3456);
+    let nonce = bytes32::new(@3456);
     let threshold = 100;
     WeightedSigners {
         signers: vector[signer],
