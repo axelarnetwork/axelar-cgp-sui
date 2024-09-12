@@ -56,10 +56,8 @@ public(package) fun validate(self: &WeightedSigners) {
     let mut previous_signer = weighted_signer::default();
 
     self.signers().do!<WeightedSigner>(|signer| {
-        let weight = signer.weight();
         signer.validate(&previous_signer);
-        total_weight = total_weight + weight;
-
+        total_weight = total_weight + signer.weight();
         previous_signer = signer;
     });
 
