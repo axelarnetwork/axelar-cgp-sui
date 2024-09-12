@@ -75,7 +75,7 @@ public(package) fun validate(
     let threshold = signers.threshold();
     let mut total_weight: u128 = 0;
 
-    signatures.do_ref!<Signature>(|signature| {
+    signatures.do_ref!(|signature| {
         let pub_key = signature.recover_pub_key(&message);
 
         let weight = signers.find_signer_weight(&pub_key);
