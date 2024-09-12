@@ -104,11 +104,6 @@ public(package) fun peel(bcs: &mut BCS): Proof {
         signatures: vector::tabulate!(length, |_| peel_signature(bcs)),
     }
 }
-/// ------
-/// Internal
-/// ------
-
-
 
 #[test_only]
 public fun create_for_testing(
