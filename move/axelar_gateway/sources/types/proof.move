@@ -70,8 +70,7 @@ public(package) fun validate(
 ) {
     let signers = self.signers();
     let signatures = self.signatures();
-    let signatures_length = signatures.length();
-    assert!(signatures_length != 0, ELowSignaturesWeight);
+    assert!(signatures.length() != 0, ELowSignaturesWeight);
 
     let threshold = signers.threshold();
     let mut total_weight: u128 = 0;

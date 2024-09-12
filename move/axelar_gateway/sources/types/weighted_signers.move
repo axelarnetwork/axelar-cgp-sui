@@ -57,7 +57,7 @@ public(package) fun validate(self: &WeightedSigners) {
 
     self.signers().do!<WeightedSigner>(|signer| {
         let weight = signer.weight();
-        weighted_signer::validate(&signer, &previous_signer);
+        signer.validate(&previous_signer);
         total_weight = total_weight + weight;
 
         previous_signer = signer;
