@@ -169,7 +169,7 @@ fun validate_signatures(
     while (i < signatures_length) {
         let pub_key = signatures[i].recover_pub_key(&message);
 
-        let weight = get_signer_weight(signers, &pub_key);
+        let weight = find_signer_weight(signers, &pub_key);
 
         total_weight = total_weight + weight;
 
@@ -184,19 +184,22 @@ fun validate_signatures(
     abort ELowSignaturesWeight
 }
 
-fun get_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
-    signers
+/// Finds the weight of a signer in the weighted signers.
+fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
+    let mut weight = signers
         .find!(|signer| signer.pub_key() == pub_key)
-        .map!(|signer| signer.weight())
-        .handle_signer_weight()
+        .map!(|signer| signer.weight());
+
+    parse_signer_weight(&mut weight)
 }
 
-public fun handle_signer_weight(weight: Option<u128>): u128 {
+/// Extracts the weight from the option and asserts that it is not zero.
+fun parse_signer_weight(weight: &mut Option<u128>): u128 {
     assert!(weight.is_some(), EMalformedSigners);
-    let weight = weight.extract();
-    assert!(weight != 0, EInvalidWeights);
+    let value = weight.extract();
+    assert!(value != 0, EInvalidWeights);
 
-    weight
+    value
 }
 
 fun validate_signers(signers: &WeightedSigners) {
