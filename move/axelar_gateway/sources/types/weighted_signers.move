@@ -73,9 +73,9 @@ public(package) fun validate(self: &WeightedSigners) {
 
 /// Finds the weight of a signer in the weighted signers by its public key.
 public(package) fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
-    let signer = signers.find!(|signer| signer.pub_key() == pub_key);
+    let mut signer = signers.find!(|signer| signer.pub_key() == pub_key);
 
-    weighted_signer::parse_weight(signer)
+    weighted_signer::parse_weight(&mut signer)
 }
 
 public(package) fun hash(self: &WeightedSigners): Bytes32 {

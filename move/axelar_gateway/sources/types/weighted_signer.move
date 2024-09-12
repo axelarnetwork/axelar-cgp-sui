@@ -63,23 +63,20 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
     new(pub_key, weight)
 }
 
-public(package) fun validate(self: &WeightedSigner, previous_signer: &WeightedSigner) {
+public(package) fun validate(
+    self: &WeightedSigner,
+    previous_signer: &WeightedSigner,
+) {
     assert!(previous_signer.lt(self), EInvalidOperators);
-
-    let weight = self.weight();
-
-    assert!(weight != 0, EInvalidWeights);
+    validate_weight(self.weight());
 }
 
 /// Extracts the weight from the option and asserts that it is not zero.
 /// Otherwise, the error `EMalformedSigners` is raised.
-public(package) fun parse_weight(signer: Option<WeightedSigner>): u128 {
-    let mut weight = signer.map!(|signer| signer.weight());
-    assert!(weight.is_some(), EMalformedSigners);
-    let value = weight.extract();
-    assert!(value != 0, EInvalidWeights);
-
-    value
+public(package) fun parse_weight(signer: &mut Option<WeightedSigner>): u128 {
+    let weight = extract_weight_or_abort(signer);
+    validate_weight(weight);
+    weight
 }
 
 /// Check if self.signer is less than other.signer as bytes
@@ -97,6 +94,19 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
     };
 
     false
+}
+
+/// -----
+/// Internal
+/// -----
+
+fun validate_weight(weight: u128) {
+    assert!(weight != 0, EInvalidWeights);
+}
+
+fun extract_weight_or_abort(signer: &mut Option<WeightedSigner>): u128 {
+    assert!(signer.is_some(), EMalformedSigners);
+    signer.extract().weight()
 }
 
 // -----
