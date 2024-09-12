@@ -176,7 +176,7 @@ fun validate_signatures(
         if (total_weight >= threshold) return
     });
 
-    abort ELowSignaturesWeight
+    assert!(total_weight >= threshold, ELowSignaturesWeight);
 }
 
 /// Finds the weight of a signer in the weighted signers.
