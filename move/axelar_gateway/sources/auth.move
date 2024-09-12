@@ -152,34 +152,29 @@ public(package) fun rotate_signers(
 // Internal Functions
 // ------------------
 
+/// Validates the signatures of a message against the signers.
+/// The total weight of the signatures must be greater than or equal to the threshold.
+/// Otherwise, the error `ELowSignaturesWeight` is raised.
 fun validate_signatures(
     message: vector<u8>,
     signers: &WeightedSigners,
     signatures: &vector<Signature>,
 ) {
-    // let signers_length = signers.signers().length();
     let signatures_length = signatures.length();
     assert!(signatures_length != 0, ELowSignaturesWeight);
 
     let threshold = signers.threshold();
-    // let mut signer_index = 0;
     let mut total_weight: u128 = 0;
-    let mut i = 0;
 
-    while (i < signatures_length) {
-        let pub_key = signatures[i].recover_pub_key(&message);
+    signatures.do_ref!<Signature>(|signature| {
+        let pub_key = signature.recover_pub_key(&message);
 
         let weight = find_signer_weight(signers, &pub_key);
 
         total_weight = total_weight + weight;
 
-        if (total_weight >= threshold) {
-            return
-        };
-
-        // signer_index = signer_index + 1;
-        i = i + 1;
-    };
+        if (total_weight >= threshold) return
+    });
 
     abort ELowSignaturesWeight
 }
