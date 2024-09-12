@@ -27,6 +27,7 @@ const SIGNATURE_LENGTH: u64 = 65;
 // ------
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
+const ELowSignaturesWeight: u64 = 1;
 
 // ----------------
 // Public Functions
@@ -60,6 +61,34 @@ public(package) fun recover_pub_key(
     ecdsa::secp256k1_ecrecover(&self.bytes, message, 0)
 }
 
+/// Validates the signatures of a message against the signers.
+/// The total weight of the signatures must be greater than or equal to the threshold.
+/// Otherwise, the error `ELowSignaturesWeight` is raised.
+public(package) fun validate(
+    self: &Proof,
+    message: vector<u8>
+) {
+    let signers = self.signers();
+    let signatures = self.signatures();
+    let signatures_length = signatures.length();
+    assert!(signatures_length != 0, ELowSignaturesWeight);
+
+    let threshold = signers.threshold();
+    let mut total_weight: u128 = 0;
+
+    signatures.do_ref!<Signature>(|signature| {
+        let pub_key = signature.recover_pub_key(&message);
+
+        let weight = signers.find_signer_weight(&pub_key);
+
+        total_weight = total_weight + weight;
+
+        if (total_weight >= threshold) return
+    });
+
+    assert!(total_weight >= threshold, ELowSignaturesWeight);
+}
+
 public(package) fun peel_signature(bcs: &mut BCS): Signature {
     let bytes = bcs.peel_vec_u8();
 
@@ -75,6 +104,11 @@ public(package) fun peel(bcs: &mut BCS): Proof {
         signatures: vector::tabulate!(length, |_| peel_signature(bcs)),
     }
 }
+/// ------
+/// Internal
+/// ------
+
+
 
 #[test_only]
 public fun create_for_testing(

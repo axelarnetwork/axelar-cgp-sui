@@ -1,7 +1,7 @@
 module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::proof::{Proof, Signature};
+use axelar_gateway::proof::{Proof};
 use axelar_gateway::weighted_signers::{WeightedSigners};
 use sui::bcs;
 use sui::clock::Clock;
@@ -13,7 +13,6 @@ use sui::table::{Self, Table};
 // ------
 const EInsufficientRotationDelay: u64 = 0;
 /// For when number of signatures for the call approvals is below the threshold.
-const ELowSignaturesWeight: u64 = 2;
 const EInvalidEpoch: u64 = 4;
 
 // -----
@@ -109,11 +108,7 @@ public(package) fun validate_proof(
         data_hash,
     };
 
-    validate_signatures(
-        bcs::to_bytes(&message),
-        signers,
-        proof.signatures(),
-    );
+    proof.validate(bcs::to_bytes(&message));
 
     is_latest_signers
 }
@@ -124,7 +119,6 @@ public(package) fun rotate_signers(
     new_signers: WeightedSigners,
     enforce_rotation_delay: bool,
 ) {
-
     new_signers.validate();
 
     self.update_rotation_timestamp(clock, enforce_rotation_delay);
@@ -146,33 +140,6 @@ public(package) fun rotate_signers(
 // ------------------
 // Internal Functions
 // ------------------
-
-/// Validates the signatures of a message against the signers.
-/// The total weight of the signatures must be greater than or equal to the threshold.
-/// Otherwise, the error `ELowSignaturesWeight` is raised.
-fun validate_signatures(
-    message: vector<u8>,
-    signers: &WeightedSigners,
-    signatures: &vector<Signature>,
-) {
-    let signatures_length = signatures.length();
-    assert!(signatures_length != 0, ELowSignaturesWeight);
-
-    let threshold = signers.threshold();
-    let mut total_weight: u128 = 0;
-
-    signatures.do_ref!<Signature>(|signature| {
-        let pub_key = signature.recover_pub_key(&message);
-
-        let weight = signers.find_signer_weight(&pub_key);
-
-        total_weight = total_weight + weight;
-
-        if (total_weight >= threshold) return
-    });
-
-    assert!(total_weight >= threshold, ELowSignaturesWeight);
-}
 
 fun update_rotation_timestamp(
     self: &mut AxelarSigners,
