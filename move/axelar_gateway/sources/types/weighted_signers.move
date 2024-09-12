@@ -16,6 +16,8 @@ public struct WeightedSigners has copy, drop, store {
 /// ------
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
+const EInvalidThreshold: u64 = 1;
+const EInvalidOperators: u64 = 2;
 
 ///-----
 /// Macros
@@ -45,6 +47,26 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     }
 }
 
+public(package) fun validate(self: &WeightedSigners) {
+    let signers_length = self.signers().length();
+    assert!(signers_length != 0, EInvalidOperators);
+
+    let mut total_weight = 0;
+    let mut previous_signer = weighted_signer::default();
+
+    self.signers().do!<WeightedSigner>(|signer| {
+        let weight = signer.weight();
+        weighted_signer::validate(&signer, &previous_signer);
+        total_weight = total_weight + weight;
+
+        previous_signer = signer;
+    });
+
+    let threshold = self.threshold();
+
+    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
+}
+
 public(package) fun hash(self: &WeightedSigners): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
 }
@@ -60,6 +82,7 @@ public(package) fun threshold(self: &WeightedSigners): u128 {
 public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
 }
+
 
 #[test_only]
 public fun create_for_testing(

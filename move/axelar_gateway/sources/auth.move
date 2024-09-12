@@ -2,8 +2,7 @@ module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::proof::{Proof, Signature};
-use axelar_gateway::weighted_signer::{Self, WeightedSigner};
-use axelar_gateway::weighted_signers::WeightedSigners;
+use axelar_gateway::weighted_signers::{Self, WeightedSigners};
 use sui::bcs;
 use sui::clock::Clock;
 use sui::event;
@@ -13,14 +12,11 @@ use sui::table::{Self, Table};
 // Errors
 // ------
 const EInvalidWeights: u64 = 0;
-const EInvalidThreshold: u64 = 1;
-/// For when operators have changed, and proof is no longer valid.
-const EInvalidOperators: u64 = 2;
-const EInsufficientRotationDelay: u64 = 3;
+const EInsufficientRotationDelay: u64 = 1;
 /// For when number of signatures for the call approvals is below the threshold.
-const ELowSignaturesWeight: u64 = 4;
-const EMalformedSigners: u64 = 5;
-const EInvalidEpoch: u64 = 6;
+const ELowSignaturesWeight: u64 = 2;
+const EMalformedSigners: u64 = 3;
+const EInvalidEpoch: u64 = 4;
 
 // -----
 // Types
@@ -130,7 +126,7 @@ public(package) fun rotate_signers(
     new_signers: WeightedSigners,
     enforce_rotation_delay: bool,
 ) {
-    validate_signers(&new_signers);
+    weighted_signers::validate(&new_signers);
 
     self.update_rotation_timestamp(clock, enforce_rotation_delay);
 
@@ -195,34 +191,6 @@ fun parse_signer_weight(weight: &mut Option<u128>): u128 {
     assert!(value != 0, EInvalidWeights);
 
     value
-}
-
-fun validate_signers(signers: &WeightedSigners) {
-    let signers_length = signers.signers().length();
-    assert!(signers_length != 0, EInvalidOperators);
-
-    let mut total_weight = 0;
-    let mut previous_signer = weighted_signer::default();
-    
-    signers.signers().do!<WeightedSigner>(|signer| {
-        let weight = signer.weight();
-        validate_signer(&previous_signer, &signer);
-        total_weight = total_weight + weight;
-
-        previous_signer = signer;
-    });
-
-    let threshold = signers.threshold();
-
-    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
-}
-
-fun validate_signer(previous_signer: &WeightedSigner, signer: &WeightedSigner) {
-    assert!(previous_signer.lt(signer), EInvalidOperators);
-
-    let weight = signer.weight();
-
-    assert!(weight != 0, EInvalidWeights);
 }
 
 fun update_rotation_timestamp(
