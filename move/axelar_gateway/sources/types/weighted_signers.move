@@ -46,34 +46,25 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     WeightedSigners {
         signers: vector::tabulate!(len, |_| weighted_signer::peel(bcs)),
         threshold: bcs.peel_u128(),
-        nonce: bytes32::peel(bcs)
+        nonce: bytes32::peel(bcs),
     }
 }
 
-/// Validates the weighted signers.
-/// The total weight of the signers must be greater than or equal to the threshold.
-/// Otherwise, the error `EInvalidThreshold` is raised.
 public(package) fun validate(self: &WeightedSigners) {
-    let signers_length = self.signers().length();
-    assert!(signers_length != 0, EInvalidOperators);
+    let signers = self.signers();
+    assert!(!vector::is_empty(&signers), EInvalidOperators);
 
-    let mut total_weight = 0;
-    let mut previous_signer = weighted_signer::default();
-
-    self.signers().do!<WeightedSigner>(|signer| {
-        signer.validate(&previous_signer);
-        total_weight = total_weight + signer.weight();
-        previous_signer = signer;
-    });
-
-    let threshold = self.threshold();
-
-    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
+    validate_signers_order(signers);
+    let total_weight = calculate_total_weight(signers);
+    validate_threshold(self.threshold(), total_weight);
 }
 
 /// Finds the weight of a signer in the weighted signers by its public key.
-public(package) fun find_signer_weight(signers: &WeightedSigners, pub_key: &vector<u8>): u128 {
-    let mut signer = signers.find!(|signer| signer.pub_key() == pub_key);
+public(package) fun find_signer_weight(
+    self: &WeightedSigners,
+    pub_key: &vector<u8>,
+): u128 {
+    let mut signer = self.find!(|signer| signer.pub_key() == pub_key);
 
     weighted_signer::parse_weight(&mut signer)
 }
@@ -92,6 +83,38 @@ public(package) fun threshold(self: &WeightedSigners): u128 {
 
 public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
+}
+
+/// -----
+/// Internal Functions
+/// -----
+
+/// Validates the order of the signers.
+/// The signers must be in ascending order by their public key.
+/// Otherwise, the error `EInvalidOperators` is raised.
+fun validate_signers_order(signers: vector<WeightedSigner>) {
+    let mut previous = weighted_signer::default();
+    signers.do!<WeightedSigner>(
+        |signer| {
+            signer.validate(&previous);
+            previous = signer;
+        },
+    );
+}
+
+/// Calculates the total weight of the signers.
+fun calculate_total_weight(signers: vector<WeightedSigner>): u128 {
+    signers.fold!<WeightedSigner, u128>(
+        0,
+        |acc, signer| acc + signer.weight(),
+    )
+}
+
+/// Validates the threshold.
+/// The threshold must be greater than zero and less than or equal to the total weight of the signers.
+/// Otherwise, the error `EInvalidThreshold` is raised.
+fun validate_threshold(threshold: u128, total_weight: u128) {
+    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
 }
 
 #[test_only]
@@ -145,7 +168,7 @@ public fun dummy(): WeightedSigners {
         32,
     ];
     let signer = axelar_gateway::weighted_signer::new(pub_key, 123);
-    let nonce = bytes32::new(@3456);
+    let nonce = bytes32::new(ERROR, 3456);
     let threshold = 100;
     WeightedSigners {
         signers: vector[signer],
