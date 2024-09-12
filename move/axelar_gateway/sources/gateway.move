@@ -33,7 +33,7 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
-use axelar_gateway::message_ticket::{Self, Message};
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -76,7 +76,7 @@ public struct Gateway has key {
 /// The Status of the message.
 /// Can be either one of two statuses:
 /// - Approved: Set to the hash of the message
-/// - Executed: Message was already executed
+/// - Executed: MessageTicket was already executed
 public enum MessageStatus has copy, drop, store {
     Approved(Bytes32),
     Executed,
@@ -234,13 +234,13 @@ entry fun rotate_signers(
 // Public Functions
 // ----------------
 
-/// Prepare a Message to call a contract on the destination chain.
+/// Prepare a MessageTicket to call a contract on the destination chain.
 public fun prepare_message(
     channel: &Channel,
     destination_chain: String,
     destination_address: String,
     payload: vector<u8>,
-): Message {
+): MessageTicket {
     message_ticket::new(
         channel.to_address(),
         destination_chain,
@@ -250,10 +250,10 @@ public fun prepare_message(
     )
 }
 
-/// Submit the Message which causes a contract call by sending an event from an
+/// Submit the MessageTicket which causes a contract call by sending an event from an
 /// authorized Channel.
 public fun send_message(
-    message: Message,
+    message: MessageTicket,
 ) {
     let (
         source_id,
