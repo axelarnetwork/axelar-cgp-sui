@@ -55,11 +55,10 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
 /// 2. The threshold is greater than zero.
 /// 3. The threshold is less than or equal to the total weight of the signers.
 public(package) fun validate(self: &WeightedSigners) {
-    let signers = self.signers();
-    assert!(!vector::is_empty(&signers), EInvalidSigners);
+    assert!(!self.signers.is_empty(), EInvalidSigners);
 
-    validate_signers_order(signers);
-    let total_weight = calculate_total_weight(signers);
+    validate_signers_order(self.signers);
+    let total_weight = calculate_total_weight(self.signers);
     validate_threshold(self.threshold(), total_weight);
 }
 
