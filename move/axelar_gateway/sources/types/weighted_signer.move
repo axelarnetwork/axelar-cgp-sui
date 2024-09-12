@@ -31,7 +31,7 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 const EInvalidPubKeyLength: u64 = 0;
-const EInvalidOperators: u64 = 1;
+const EInvalidSigners: u64 = 1;
 const EInvalidWeights: u64 = 2;
 const EMalformedSigners: u64 = 3;
 
@@ -67,7 +67,7 @@ public(package) fun validate(
     self: &WeightedSigner,
     previous_signer: &WeightedSigner,
 ) {
-    assert!(previous_signer.lt(self), EInvalidOperators);
+    assert!(previous_signer.lt(self), EInvalidSigners);
     validate_weight(self.weight());
 }
 

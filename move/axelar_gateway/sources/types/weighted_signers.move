@@ -18,7 +18,7 @@ public struct WeightedSigners has copy, drop, store {
 const EInvalidLength: u64 = 0;
 const EInvalidThreshold: u64 = 1;
 /// For when operators have changed, and proof is no longer valid.
-const EInvalidOperators: u64 = 2;
+const EInvalidSigners: u64 = 2;
 
 ///-----
 /// Macros
@@ -56,7 +56,7 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
 /// 3. The threshold is less than or equal to the total weight of the signers.
 public(package) fun validate(self: &WeightedSigners) {
     let signers = self.signers();
-    assert!(!vector::is_empty(&signers), EInvalidOperators);
+    assert!(!vector::is_empty(&signers), EInvalidSigners);
 
     validate_signers_order(signers);
     let total_weight = calculate_total_weight(signers);
@@ -95,7 +95,7 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
 
 /// Validates the order of the signers.
 /// The signers must be in ascending order by their public key.
-/// Otherwise, the error `EInvalidOperators` is raised.
+/// Otherwise, the error `EInvalidSigners` is raised.
 fun validate_signers_order(signers: vector<WeightedSigner>) {
     let mut previous = weighted_signer::default();
     signers.do!<WeightedSigner>(
