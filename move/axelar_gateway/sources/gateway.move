@@ -195,7 +195,7 @@ entry fun approve_messages(
             proof,
         );
 
-    messages.do!(|message| self.approve_message(&message));
+    messages.do!(|message| self.approve_message(message));
 }
 
 /// The main entrypoint for rotating Axelar signers.
@@ -372,7 +372,7 @@ fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&typed_data))
 }
 
-fun approve_message(self: &mut Gateway, message: &message::Message) {
+fun approve_message(self: &mut Gateway, message: message::Message) {
     let command_id = message.command_id();
 
     // If the message was already approved, ignore it.
@@ -388,7 +388,7 @@ fun approve_message(self: &mut Gateway, message: &message::Message) {
         );
 
     sui::event::emit(MessageApproved {
-        message: *message,
+        message,
     });
 }
 
@@ -539,9 +539,9 @@ fun test_approve_message() {
 
     let mut gateway = dummy(ctx);
 
-    approve_message(&mut gateway, &message);
+    approve_message(&mut gateway, message);
     // The second approve message should do nothing.
-    approve_message(&mut gateway, &message);
+    approve_message(&mut gateway, message);
 
     assert!(
         is_message_approved(
