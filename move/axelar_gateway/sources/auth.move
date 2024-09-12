@@ -2,7 +2,7 @@ module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::proof::{Proof, Signature};
-use axelar_gateway::weighted_signer;
+use axelar_gateway::weighted_signer::{Self, WeightedSigner};
 use axelar_gateway::weighted_signers::WeightedSigners;
 use sui::bcs;
 use sui::clock::Clock;
@@ -202,22 +202,22 @@ fun validate_signers(signers: &WeightedSigners) {
     assert!(signers_length != 0, EInvalidOperators);
 
     let mut total_weight = 0;
-    let mut i = 0;
     let mut previous_signer = weighted_signer::default();
+    
+    signers.signers().do!<WeightedSigner>(|signer| {
+        assert!(previous_signer.lt(&signer), EInvalidOperators);
 
-    while (i < signers_length) {
-        let current_signer = signers.signers()[i];
-        assert!(previous_signer.lt(&current_signer), EInvalidOperators);
+        let weight = signer.weight();
 
-        let weight = current_signer.weight();
         assert!(weight != 0, EInvalidWeights);
 
         total_weight = total_weight + weight;
-        i = i + 1;
-        previous_signer = current_signer;
-    };
+
+        previous_signer = signer;
+    });
 
     let threshold = signers.threshold();
+
     assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
 }
 
