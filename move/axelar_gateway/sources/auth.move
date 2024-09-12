@@ -13,7 +13,7 @@ use sui::table::{Self, Table};
 // ------
 const EInsufficientRotationDelay: u64 = 0;
 /// For when number of signatures for the call approvals is below the threshold.
-const EInvalidEpoch: u64 = 4;
+const EInvalidEpoch: u64 = 1;
 
 // -----
 // Types
