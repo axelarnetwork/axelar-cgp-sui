@@ -4,9 +4,9 @@
 
 ### Patch Changes
 
--   b0cb54e: chore: refactor weighted_signers module
--   39bf114: chore: refactor discovery module
--   7f36eea: chore: refactor proof module
+-   b0cb54e: refactor: weighted_signers module
+-   39bf114: refactor: discovery module
+-   7f36eea: refactor: proof module
 -   8cb75ed: feat: use channel to figure out source address for its
 -   544d8e1: chore: apply macro function to reduce duplication in gateway contract
 
