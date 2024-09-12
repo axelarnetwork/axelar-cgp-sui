@@ -50,6 +50,10 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     }
 }
 
+/// Validates the weighted signers. The following must be true:
+/// 1. The signers are in ascending order by their public key.
+/// 2. The threshold is greater than zero.
+/// 3. The threshold is less than or equal to the total weight of the signers.
 public(package) fun validate(self: &WeightedSigners) {
     let signers = self.signers();
     assert!(!vector::is_empty(&signers), EInvalidOperators);
