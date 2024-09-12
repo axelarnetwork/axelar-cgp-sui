@@ -205,12 +205,8 @@ fun validate_signers(signers: &WeightedSigners) {
     let mut previous_signer = weighted_signer::default();
     
     signers.signers().do!<WeightedSigner>(|signer| {
-        assert!(previous_signer.lt(&signer), EInvalidOperators);
-
         let weight = signer.weight();
-
-        assert!(weight != 0, EInvalidWeights);
-
+        validate_signer(&previous_signer, &signer);
         total_weight = total_weight + weight;
 
         previous_signer = signer;
@@ -219,6 +215,14 @@ fun validate_signers(signers: &WeightedSigners) {
     let threshold = signers.threshold();
 
     assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
+}
+
+fun validate_signer(previous_signer: &WeightedSigner, signer: &WeightedSigner) {
+    assert!(previous_signer.lt(signer), EInvalidOperators);
+
+    let weight = signer.weight();
+
+    assert!(weight != 0, EInvalidWeights);
 }
 
 fun update_rotation_timestamp(
