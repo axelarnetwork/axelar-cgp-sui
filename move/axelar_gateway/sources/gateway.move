@@ -33,7 +33,7 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
-use axelar_gateway::message_ticket::{Self, MessageTicket};
+use axelar_gateway::message_ticket::{Self, Message};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -234,13 +234,13 @@ entry fun rotate_signers(
 // Public Functions
 // ----------------
 
-/// Prepare a MessageTicket to call a contract on the destination chain.
+/// Prepare a Message to call a contract on the destination chain.
 public fun prepare_message(
     channel: &Channel,
     destination_chain: String,
     destination_address: String,
     payload: vector<u8>,
-): MessageTicket {
+): Message {
     message_ticket::new(
         channel.to_address(),
         destination_chain,
@@ -250,10 +250,10 @@ public fun prepare_message(
     )
 }
 
-/// Submit the MessageTicket which causes a contract call by sending an event from an
+/// Submit the Message which causes a contract call by sending an event from an
 /// authorized Channel.
 public fun send_message(
-    message: MessageTicket,
+    message: Message,
 ) {
     let (
         source_id,
