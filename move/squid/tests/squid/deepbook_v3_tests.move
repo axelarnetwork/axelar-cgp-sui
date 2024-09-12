@@ -39,16 +39,6 @@ fun test_serialize() {
     let mut swap_info = swap_info::new(data, test.ctx());
     let data2 = swap_info.get_data_estimating();
     let swap_data2 = deepbook_v3::peel_swap_data(data2);
-    let swap_data = deepbook_v3::new_swap_data(
-        1,
-        id_to_address(&pool_id),
-        true,
-        100,
-        type_name::get<SUI>().into_string(),
-        type_name::get<USDC>().into_string(),
-        1,
-        true,
-    );
     assert_eq(swap_data, swap_data2);
 
     let clock = test.take_shared<Clock>();

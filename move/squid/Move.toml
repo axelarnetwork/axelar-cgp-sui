@@ -7,6 +7,7 @@ edition = "2024.beta"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
 deepbook = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/deepbook", rev = "deepbook/mainnet-1.32.2" }
 token = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/token", rev = "deepbook/mainnet-1.32.2" }
+Utils = { local = "../utils" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 
