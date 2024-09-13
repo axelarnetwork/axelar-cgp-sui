@@ -19,7 +19,6 @@ const EInvalidLength: u64 = 0;
 const EInvalidThreshold: u64 = 1;
 /// For when operators have changed, and proof is no longer valid.
 const EInvalidSigners: u64 = 2;
-const EMalformedSigners: u64 = 3;
 
 /// -----------------
 /// Package Functions
@@ -46,27 +45,6 @@ public(package) fun validate(self: &WeightedSigners) {
     self.validate_threshold();
 }
 
-/// Finds the weight of a signer in the weighted signers by its public key.
-public(package) fun find_signer_weight(
-    self: &WeightedSigners,
-    signer_index: u64,
-    pub_key: &vector<u8>,
-): (u128, u64) {
-    let signers = self.signers;
-    let length = signers.length();
-    let mut index = signer_index;
-
-    // Find the first signer that satisfies the predicate
-    while (index < length && signers[index].pub_key() != pub_key) {
-        index = index + 1;
-    };
-
-    // If no signer satisfies the predicate, return an error
-    assert!(index < length, EMalformedSigners);
-
-    (signers[index].parse_weight(), index)
-}
-
 public(package) fun hash(self: &WeightedSigners): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
 }
@@ -91,10 +69,9 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
 /// The signers must be in ascending order by their public key.
 /// Otherwise, the error `EInvalidSigners` is raised.
 fun validate_signers(self: &WeightedSigners) {
-    let signers = self.signers;
-    assert!(!signers.is_empty(), EInvalidSigners);
+    assert!(!self.signers.is_empty(), EInvalidSigners);
     let mut previous = weighted_signer::default();
-    signers.do!(
+    self.signers.do!(
         |signer| {
             signer.validate();
             assert!(previous.lt(&signer), EInvalidSigners);
