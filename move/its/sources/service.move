@@ -472,7 +472,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let destination_address = @0x1;
@@ -522,7 +522,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let destination_address = @0x1;
@@ -572,7 +572,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let destination_address = @0x1;
@@ -623,7 +623,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let channel = channel::new(ctx);
@@ -681,7 +681,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let channel = channel::new(ctx);
@@ -734,7 +734,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let channel = channel::new(ctx);
@@ -787,7 +787,7 @@ module its::service {
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let message_source_address = ascii::string(b"Address");
         let its_source_address = b"Source Address";
         let channel = channel::new(ctx);
@@ -826,7 +826,7 @@ module its::service {
         let mut its = its::its::new_for_testing();
 
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let source_address = ascii::string(b"Address");
         let name = b"Token Name";
         let symbol = b"Symbol";
@@ -867,7 +867,7 @@ module its::service {
         let mut its = its::its::new_for_testing();
 
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let source_address = ascii::string(b"Address");
         let name = b"Token Name";
         let symbol = b"Symbol";
@@ -910,7 +910,7 @@ module its::service {
         let mut its = its::its::new_for_testing();
 
         let source_chain = ascii::string(b"Chain Name");
-        let message_id = ascii::string(b"MessageTicket Id");
+        let message_id = ascii::string(b"Message Id");
         let source_address = ascii::string(b"Address");
         let name = b"Token Name";
         let symbol = b"Symbol";
@@ -1459,7 +1459,7 @@ module its::service {
     }
 
     #[test]
-    fun test_send_payload_to_hub() {
+    fun test_prepare_message_to_hub() {
         let mut its = its::its::new_for_testing();
         let destination_chain = ascii::string(b"Destination Chain");
         let hub_address = ascii::string(b"Address");
@@ -1471,7 +1471,8 @@ module its::service {
 
         let message_ticket = prepare_message(&mut its, destination_chain, payload);
 
-
+        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME), 0);
+        assert!(message_ticket.destination_address() == hub_address, 1);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(message_ticket);

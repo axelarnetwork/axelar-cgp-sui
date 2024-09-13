@@ -78,7 +78,7 @@ public(package) fun destroy(self: MessageTicket): (
     )
 }
 
-#[test-only]
+#[test_only]
 public fun new_for_testing(
     source_id: address,
     destination_chain: String,
