@@ -33,7 +33,6 @@ public fun weight(self: &WeightedSigner): u128 {
 const EInvalidPubKeyLength: u64 = 0;
 const EInvalidSigners: u64 = 1;
 const EInvalidWeights: u64 = 2;
-const EMalformedSigners: u64 = 3;
 
 // -----------------
 // Package Functions
@@ -73,8 +72,8 @@ public(package) fun validate(
 
 /// Extracts the weight from the option and asserts that it is not zero.
 /// Otherwise, the error `EMalformedSigners` is raised.
-public(package) fun parse_weight(signer: &mut Option<WeightedSigner>): u128 {
-    let weight = extract_weight_or_abort(signer);
+public(package) fun parse_weight(signer: &WeightedSigner): u128 {
+    let weight = signer.weight();
     validate_weight(weight);
     weight
 }
@@ -102,11 +101,6 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 
 fun validate_weight(weight: u128) {
     assert!(weight != 0, EInvalidWeights);
-}
-
-fun extract_weight_or_abort(signer: &mut Option<WeightedSigner>): u128 {
-    assert!(signer.is_some(), EMalformedSigners);
-    signer.extract().weight()
 }
 
 // -----

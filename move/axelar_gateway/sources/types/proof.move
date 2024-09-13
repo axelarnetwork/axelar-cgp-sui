@@ -74,12 +74,14 @@ public(package) fun validate(
 
     let threshold = signers.threshold();
     let mut total_weight: u128 = 0;
+    let mut signer_index = 0;
 
     signatures.do_ref!(|signature| {
         let pub_key = signature.recover_pub_key(&message);
 
-        let weight = signers.find_signer_weight(&pub_key);
+        let (weight, index) = signers.find_signer_weight(signer_index, &pub_key);
 
+        signer_index = index;
         total_weight = total_weight + weight;
 
         if (total_weight >= threshold) return
