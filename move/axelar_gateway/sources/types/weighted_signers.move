@@ -86,7 +86,7 @@ public(package) fun find_signer_weight(
     // The index of the signer is returned as well for reuse in the macro call
     let (signer, index) = self.find!(signer_index, |signer| signer.pub_key() == pub_key);
 
-    (weighted_signer::parse_weight(&signer), index)
+    (signer.parse_weight(), index)
 }
 
 public(package) fun hash(self: &WeightedSigners): Bytes32 {

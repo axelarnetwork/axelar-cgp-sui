@@ -67,12 +67,10 @@ public(package) fun validate(
     self.validate_weight();
 }
 
-/// Extracts the weight from the option and asserts that it is not zero.
-/// Otherwise, the error `EMalformedSigners` is raised.
-public(package) fun parse_weight(signer: &WeightedSigner): u128 {
-    signer.validate_weight();
-
-    signer.weight
+/// Validates the weight and returns it.
+public(package) fun parse_weight(self: &WeightedSigner): u128 {
+    self.validate_weight();
+    self.weight
 }
 
 /// Check if self.signer is less than other.signer as bytes
