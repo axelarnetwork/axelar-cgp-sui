@@ -93,9 +93,12 @@ public(package) fun validate(
     let threshold = signers.threshold();
     let mut total_weight: u128 = 0;
     let mut signer_index = 0;
+    let mut i = 0;
     let message_bytes = bcs::to_bytes(&message);
 
-    signatures.do_ref!(|signature| {
+    while(i < signatures.length()) {
+        let signature = signatures[i];
+
         let pub_key = signature.recover_pub_key(&message_bytes);
 
         let (weight, index) = signers.find_signer_weight(signer_index, &pub_key);
@@ -104,8 +107,10 @@ public(package) fun validate(
 
         total_weight = total_weight + weight;
 
+        i = i + 1;
+
         if (total_weight >= threshold) return
-    });
+    };
 
     assert!(total_weight >= threshold, ELowSignaturesWeight);
 }
