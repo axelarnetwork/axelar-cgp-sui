@@ -1,9 +1,8 @@
 module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::proof::Proof;
+use axelar_gateway::proof::{Self, Proof};
 use axelar_gateway::weighted_signers::WeightedSigners;
-use sui::bcs;
 use sui::clock::Clock;
 use sui::event;
 use sui::table::{Self, Table};
@@ -31,12 +30,6 @@ public struct AxelarSigners has store {
     last_rotation_timestamp: u64,
     /// Number of previous signers retained (latest signer isn't included in the count).
     previous_signers_retention: u64,
-}
-
-public struct MessageToSign has copy, drop, store {
-    domain_separator: Bytes32,
-    signers_hash: Bytes32,
-    data_hash: Bytes32,
 }
 
 // ------
@@ -102,13 +95,13 @@ public(package) fun validate_proof(
         EInvalidEpoch,
     );
 
-    let message = MessageToSign {
-        domain_separator: self.domain_separator,
+    let message = proof::new_message_to_sign(
+        self.domain_separator,
         signers_hash,
-        data_hash,
-    };
+        data_hash
+    );
 
-    proof.validate(bcs::to_bytes(&message));
+    proof.validate(message);
 
     is_latest_signers
 }

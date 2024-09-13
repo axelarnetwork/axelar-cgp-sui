@@ -1,7 +1,8 @@
 module axelar_gateway::proof;
 
 use axelar_gateway::weighted_signers::{Self, WeightedSigners};
-use sui::bcs::BCS;
+use axelar_gateway::bytes32::{Bytes32};
+use sui::bcs::{Self, BCS};
 use sui::ecdsa_k1 as ecdsa;
 
 // -----
@@ -16,6 +17,11 @@ public struct Proof has copy, drop, store {
     signatures: vector<Signature>,
 }
 
+public struct MessageToSign has copy, drop, store {
+    domain_separator: Bytes32,
+    signers_hash: Bytes32,
+    data_hash: Bytes32,
+}
 // ---------
 // Constants
 // ---------
@@ -53,6 +59,18 @@ public(package) fun new_signature(bytes: vector<u8>): Signature {
     }
 }
 
+public(package) fun new_message_to_sign(
+    domain_separator: Bytes32,
+    signers_hash: Bytes32,
+    data_hash: Bytes32,
+): MessageToSign {
+    MessageToSign {
+        domain_separator,
+        signers_hash,
+        data_hash,
+    }
+}
+
 /// Recover the public key from an EVM recoverable signature, using keccak256 as the hash function
 public(package) fun recover_pub_key(
     self: &Signature,
@@ -66,7 +84,7 @@ public(package) fun recover_pub_key(
 /// Otherwise, the error `ELowSignaturesWeight` is raised.
 public(package) fun validate(
     self: &Proof,
-    message: vector<u8>
+    message: MessageToSign,
 ) {
     let signers = self.signers();
     let signatures = self.signatures();
@@ -75,13 +93,15 @@ public(package) fun validate(
     let threshold = signers.threshold();
     let mut total_weight: u128 = 0;
     let mut signer_index = 0;
+    let message_bytes = bcs::to_bytes(&message);
 
     signatures.do_ref!(|signature| {
-        let pub_key = signature.recover_pub_key(&message);
+        let pub_key = signature.recover_pub_key(&message_bytes);
 
         let (weight, index) = signers.find_signer_weight(signer_index, &pub_key);
 
         signer_index = index;
+
         total_weight = total_weight + weight;
 
         if (total_weight >= threshold) return
