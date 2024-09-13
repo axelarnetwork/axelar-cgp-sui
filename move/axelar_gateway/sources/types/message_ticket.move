@@ -40,7 +40,7 @@ public fun version(self: &MessageTicket): u64 {
 }
 
 // ------
-// Friend
+// Package Functions
 // ------
 public(package) fun new(
     source_id: address,
