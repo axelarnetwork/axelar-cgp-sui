@@ -58,7 +58,7 @@ public(package) fun new(
     }
 }
 
-public (package) fun destroy(self: MessageTicket): (
+public(package) fun destroy(self: MessageTicket): (
     address, String, String, vector<u8>, u64,
 ) {
     let MessageTicket {
