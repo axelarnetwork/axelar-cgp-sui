@@ -34,6 +34,7 @@ const SIGNATURE_LENGTH: u64 = 65;
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 const ELowSignaturesWeight: u64 = 1;
+const EMalformedSigners: u64 = 2;
 
 // ----------------
 // Public Functions
@@ -101,7 +102,7 @@ public(package) fun validate(
 
         let pub_key = signature.recover_pub_key(&message_bytes);
 
-        let (weight, index) = signers.find_signer_weight(signer_index, &pub_key);
+        let (weight, index) = find_weight_by_pub_key_from(signers, signer_index, &pub_key);
 
         signer_index = index;
 
@@ -113,6 +114,27 @@ public(package) fun validate(
     };
 
     assert!(total_weight >= threshold, ELowSignaturesWeight);
+}
+
+/// Finds the weight of a signer in the weighted signers by its public key.
+public(package) fun find_weight_by_pub_key_from(
+    weight_signers: &WeightedSigners,
+    signer_index: u64,
+    pub_key: &vector<u8>,
+): (u128, u64) {
+    let signers = weight_signers.signers();
+    let length = signers.length();
+    let mut index = signer_index;
+
+    // Find the first signer that satisfies the predicate
+    while (index < length && signers[index].pub_key() != pub_key) {
+        index = index + 1;
+    };
+
+    // If no signer satisfies the predicate, return an error
+    assert!(index < length, EMalformedSigners);
+
+    (signers[index].parse_weight(), index)
 }
 
 public(package) fun peel_signature(bcs: &mut BCS): Signature {

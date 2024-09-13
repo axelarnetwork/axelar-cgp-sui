@@ -21,36 +21,6 @@ const EInvalidThreshold: u64 = 1;
 const EInvalidSigners: u64 = 2;
 const EMalformedSigners: u64 = 3;
 
-///-----
-/// Macros
-///-----
-
-/// Finds the first signer that satisfies the predicate.
-/// The predicate is a function that takes a `WeightedSigner` as an argument and returns a boolean.
-/// The function returns the first signer that satisfies the predicate and the index of the signer.
-/// If no signer satisfies the predicate, the error `EMalformedSigners` is raised.
-public(package) macro fun find(
-    $s: &WeightedSigners,
-    $index: u64,
-    $f: |WeightedSigner| -> bool,
-): (WeightedSigner, u64) {
-    // Bind $s to a local variable to avoid using macro parameter directly in a path expression which is not allowed
-    let s = $s;
-    let signers = s.signers();
-    let length = signers.length();
-    let mut index = $index;
-
-    // Find the first signer that satisfies the predicate
-    while (index < length && !$f(signers[index])) {
-        index = index + 1;
-    };
-
-    // If no signer satisfies the predicate, return an error
-    assert!(index < length, EMalformedSigners);
-
-    (signers[index], index)
-}
-
 /// -----------------
 /// Package Functions
 /// -----------------
@@ -82,11 +52,19 @@ public(package) fun find_signer_weight(
     signer_index: u64,
     pub_key: &vector<u8>,
 ): (u128, u64) {
-    // Find the signer by its public key
-    // The index of the signer is returned as well for reuse in the macro call
-    let (signer, index) = self.find!(signer_index, |signer| signer.pub_key() == pub_key);
+    let signers = self.signers;
+    let length = signers.length();
+    let mut index = signer_index;
 
-    (signer.parse_weight(), index)
+    // Find the first signer that satisfies the predicate
+    while (index < length && signers[index].pub_key() != pub_key) {
+        index = index + 1;
+    };
+
+    // If no signer satisfies the predicate, return an error
+    assert!(index < length, EMalformedSigners);
+
+    (signers[index].parse_weight(), index)
 }
 
 public(package) fun hash(self: &WeightedSigners): Bytes32 {
