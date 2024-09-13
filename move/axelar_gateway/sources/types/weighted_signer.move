@@ -31,8 +31,7 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 const EInvalidPubKeyLength: u64 = 0;
-const EInvalidSigners: u64 = 1;
-const EInvalidWeights: u64 = 2;
+const EInvalidWeights: u64 = 1;
 
 // -----------------
 // Package Functions
@@ -64,18 +63,16 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
 
 public(package) fun validate(
     self: &WeightedSigner,
-    previous_signer: &WeightedSigner,
 ) {
-    assert!(previous_signer.lt(self), EInvalidSigners);
-    validate_weight(self.weight());
+    self.validate_weight();
 }
 
 /// Extracts the weight from the option and asserts that it is not zero.
 /// Otherwise, the error `EMalformedSigners` is raised.
 public(package) fun parse_weight(signer: &WeightedSigner): u128 {
-    let weight = signer.weight();
-    validate_weight(weight);
-    weight
+    signer.validate_weight();
+
+    signer.weight
 }
 
 /// Check if self.signer is less than other.signer as bytes
@@ -99,8 +96,8 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 /// Internal
 /// -----
 
-fun validate_weight(weight: u128) {
-    assert!(weight != 0, EInvalidWeights);
+fun validate_weight(self: &WeightedSigner) {
+    assert!(self.weight != 0, EInvalidWeights);
 }
 
 // -----

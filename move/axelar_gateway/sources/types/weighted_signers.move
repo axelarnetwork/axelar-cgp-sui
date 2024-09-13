@@ -118,7 +118,8 @@ fun validate_signers(self: &WeightedSigners) {
     let mut previous = weighted_signer::default();
     signers.do!(
         |signer| {
-            signer.validate(&previous);
+            signer.validate();
+            assert!(previous.lt(&signer), EInvalidSigners);
             previous = signer;
         },
     );
