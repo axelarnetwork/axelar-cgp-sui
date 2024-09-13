@@ -92,9 +92,7 @@ fun total_weight(self: &WeightedSigners): u128 {
 /// The threshold must be greater than zero and less than or equal to the total weight of the signers.
 /// Otherwise, the error `EInvalidThreshold` is raised.
 fun validate_threshold(self: &WeightedSigners) {
-    let threshold = self.threshold();
-    let total_weight = self.total_weight();
-    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
+    assert!(self.threshold != 0 && self.total_weight() >= self.threshold, EInvalidThreshold);
 }
 
 #[test_only]
