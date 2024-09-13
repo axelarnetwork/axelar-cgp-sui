@@ -70,11 +70,11 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
 /// Otherwise, the error `EInvalidSigners` is raised.
 fun validate_signers(self: &WeightedSigners) {
     assert!(!self.signers.is_empty(), EInvalidSigners);
-    let mut previous = weighted_signer::default();
-    self.signers.do!(
+    let mut previous = &weighted_signer::default();
+    self.signers.do_ref!(
         |signer| {
             signer.validate();
-            assert!(previous.lt(&signer), EInvalidSigners);
+            assert!(previous.lt(signer), EInvalidSigners);
             previous = signer;
         },
     );
