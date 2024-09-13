@@ -134,7 +134,7 @@ public(package) fun find_weight_by_pub_key_from(
     // If no signer satisfies the predicate, return an error
     assert!(index < length, EMalformedSigners);
 
-    (signers[index].parse_weight(), index)
+    (signers[index].weight(), index)
 }
 
 public(package) fun peel_signature(bcs: &mut BCS): Signature {

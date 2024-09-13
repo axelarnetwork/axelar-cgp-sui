@@ -67,12 +67,6 @@ public(package) fun validate(
     self.validate_weight();
 }
 
-/// Validates the weight and returns it.
-public(package) fun parse_weight(self: &WeightedSigner): u128 {
-    self.validate_weight();
-    self.weight
-}
-
 /// Check if self.signer is less than other.signer as bytes
 public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
     let mut i = 0;
