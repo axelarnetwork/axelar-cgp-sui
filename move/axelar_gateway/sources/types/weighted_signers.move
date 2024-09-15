@@ -17,8 +17,9 @@ public struct WeightedSigners has copy, drop, store {
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 const EInvalidThreshold: u64 = 1;
-/// Invalid signer ordering, weights, or threshold
+/// Invalid signer weights or threshold
 const EInvalidSigners: u64 = 2;
+const EInvalidSignerOrder: u64 = 3;
 
 /// -----------------
 /// Package Functions
@@ -74,7 +75,7 @@ fun validate_signers(self: &WeightedSigners) {
     self.signers.do_ref!(
         |signer| {
             signer.validate();
-            assert!(previous.lt(signer), EInvalidSigners);
+            assert!(previous.lt(signer), EInvalidSignerOrder);
             previous = signer;
         },
     );
