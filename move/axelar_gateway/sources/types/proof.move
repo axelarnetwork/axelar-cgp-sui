@@ -71,11 +71,12 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
     assert!(signatures.length() != 0, ELowSignaturesWeight);
 
     let threshold = signers.threshold();
+    let signatures_length = signatures.length();
     let mut total_weight: u128 = 0;
     let mut signer_index = 0;
     let mut i = 0;
 
-    while (i < signatures.length()) {
+    while (i < signatures_length) {
         let pub_key = signatures[i].recover_pub_key(&message);
 
         let (weight, index) = find_weight_by_pub_key_from(
@@ -84,16 +85,17 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
             &pub_key,
         );
 
-        signer_index = index;
+        assert!(signer_index < signatures_length, EMalformedSigners);
 
         total_weight = total_weight + weight;
 
-        i = i + 1;
+        if (total_weight >= threshold) return;
 
-        if (total_weight >= threshold) return
+        i = i + 1;
+        signer_index = index + 1;
     };
 
-    assert!(total_weight >= threshold, ELowSignaturesWeight);
+    abort ELowSignaturesWeight
 }
 
 /// Finds the weight of a signer in the weighted signers by its public key.
