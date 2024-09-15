@@ -17,7 +17,7 @@ public struct WeightedSigners has copy, drop, store {
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
 const EInvalidThreshold: u64 = 1;
-/// For when operators have changed, and proof is no longer valid.
+/// Invalid signer ordering, weights, or threshold
 const EInvalidSigners: u64 = 2;
 
 /// -----------------
