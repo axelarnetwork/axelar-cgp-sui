@@ -98,7 +98,7 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
 
 /// Finds the weight of a signer in the weighted signers by its public key.
 fun find_weight_by_pub_key_from(
-    weight_signers: &WeightedSigners,
+    signers: &WeightedSigners,
     signer_index: u64,
     pub_key: &vector<u8>,
 ): (u128, u64) {
