@@ -50,8 +50,8 @@ public(package) fun hash(self: &WeightedSigners): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
 }
 
-public(package) fun signers(self: &WeightedSigners): vector<WeightedSigner> {
-    self.signers
+public(package) fun signers(self: &WeightedSigners): &vector<WeightedSigner> {
+    &self.signers
 }
 
 public(package) fun threshold(self: &WeightedSigners): u128 {

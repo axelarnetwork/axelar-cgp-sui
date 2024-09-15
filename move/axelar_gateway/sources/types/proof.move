@@ -76,7 +76,7 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
     let mut i = 0;
 
     while (i < signatures.length()) {
-        let pub_key = signature[i].recover_pub_key(&message);
+        let pub_key = signatures[i].recover_pub_key(&message);
 
         let (weight, index) = find_weight_by_pub_key_from(
             signers,
@@ -102,7 +102,7 @@ fun find_weight_by_pub_key_from(
     signer_index: u64,
     pub_key: &vector<u8>,
 ): (u128, u64) {
-    let signers = weight_signers.signers();
+    let signers = signers.signers();
     let length = signers.length();
     let mut index = signer_index;
 
