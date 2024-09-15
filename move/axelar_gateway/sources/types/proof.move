@@ -65,10 +65,7 @@ public(package) fun recover_pub_key(
 /// Validates the signatures of a message against the signers.
 /// The total weight of the signatures must be greater than or equal to the threshold.
 /// Otherwise, the error `ELowSignaturesWeight` is raised.
-public(package) fun validate(
-    self: &Proof,
-    message: vector<u8>,
-) {
+public(package) fun validate(self: &Proof, message: vector<u8>) {
     let signers = &self.signers;
     let signatures = &self.signatures;
     assert!(signatures.length() != 0, ELowSignaturesWeight);
@@ -78,12 +75,16 @@ public(package) fun validate(
     let mut signer_index = 0;
     let mut i = 0;
 
-    while(i < signatures.length()) {
+    while (i < signatures.length()) {
         let signature = signatures[i];
 
         let pub_key = signature.recover_pub_key(&message);
 
-        let (weight, index) = find_weight_by_pub_key_from(signers, signer_index, &pub_key);
+        let (weight, index) = find_weight_by_pub_key_from(
+            signers,
+            signer_index,
+            &pub_key,
+        );
 
         signer_index = index;
 

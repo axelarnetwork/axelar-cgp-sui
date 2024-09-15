@@ -61,10 +61,8 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
     new(pub_key, weight)
 }
 
-public(package) fun validate(
-    self: &WeightedSigner,
-) {
-    self.validate_weight();
+public(package) fun validate(self: &WeightedSigner) {
+    assert!(self.weight != 0, EInvalidWeight);
 }
 
 /// Check if self.signer is less than other.signer as bytes
@@ -82,14 +80,6 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
     };
 
     false
-}
-
-/// -----
-/// Internal
-/// -----
-
-fun validate_weight(self: &WeightedSigner) {
-    assert!(self.weight != 0, EInvalidWeight);
 }
 
 // -----
