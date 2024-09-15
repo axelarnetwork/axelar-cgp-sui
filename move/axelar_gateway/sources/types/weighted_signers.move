@@ -24,7 +24,7 @@ const EInvalidSigners: u64 = 2;
 /// Package Functions
 /// -----------------
 
-/// Create a new weighted signers from the given data.
+/// Decode a `WeightedSigners` from the BCS encoded bytes.
 public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     let len = bcs.peel_vec_length();
     assert!(len > 0, EInvalidLength);
