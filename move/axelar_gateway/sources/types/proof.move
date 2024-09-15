@@ -1,7 +1,7 @@
 module axelar_gateway::proof;
 
 use axelar_gateway::weighted_signers::{Self, WeightedSigners};
-use sui::bcs::{BCS};
+use sui::bcs::BCS;
 use sui::ecdsa_k1 as ecdsa;
 
 // -----
@@ -15,6 +15,7 @@ public struct Proof has copy, drop, store {
     signers: WeightedSigners,
     signatures: vector<Signature>,
 }
+
 // ---------
 // Constants
 // ---------
@@ -68,8 +69,8 @@ public(package) fun validate(
     self: &Proof,
     message: vector<u8>,
 ) {
-    let signers = self.signers();
-    let signatures = self.signatures();
+    let signers = &self.signers;
+    let signatures = &self.signatures;
     assert!(signatures.length() != 0, ELowSignaturesWeight);
 
     let threshold = signers.threshold();

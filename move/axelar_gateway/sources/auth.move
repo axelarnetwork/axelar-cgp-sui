@@ -33,6 +33,12 @@ public struct AxelarSigners has store {
     previous_signers_retention: u64,
 }
 
+public struct MessageToSign has copy, drop, store {
+    domain_separator: Bytes32,
+    signers_hash: Bytes32,
+    data_hash: Bytes32,
+}
+
 // ------
 // Events
 // ------
@@ -41,12 +47,6 @@ public struct SignersRotated has copy, drop {
     epoch: u64,
     signers_hash: Bytes32,
     signers: WeightedSigners,
-}
-
-public struct MessageToSign has copy, drop, store {
-    domain_separator: Bytes32,
-    signers_hash: Bytes32,
-    data_hash: Bytes32,
 }
 
 // -----------------
