@@ -40,10 +40,10 @@ public fun version(self: &MessageTicket): u64 {
     self.version
 }
 
-// ------
+// -----------------
 // Package Functions
-// ------
-public(package) fun new(
+// -----------------
+public (package) fun new(
     source_id: address,
     destination_chain: String,
     destination_address: String,
@@ -59,7 +59,7 @@ public(package) fun new(
     }
 }
 
-public(package) fun destroy(self: MessageTicket): (
+public (package) fun destroy(self: MessageTicket): (
     address, String, String, vector<u8>, u64,
 ) {
     let MessageTicket {
