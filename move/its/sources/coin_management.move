@@ -89,7 +89,7 @@ module its::coin_management {
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user. Returns the amount that the ITS is supposed to give on other chains.
-    public(package) fun take_balance<T>(self: &mut CoinManagement<T>, to_take: Balance<T>, clock: &Clock): u256 {
+    public (package) fun take_balance<T>(self: &mut CoinManagement<T>, to_take: Balance<T>, clock: &Clock): u256 {
         self.flow_limit.add_flow_out(to_take.value(), clock);
         let amount = (to_take.value() as u256) * self.scaling;
         if (has_capability(self)) {
@@ -103,7 +103,7 @@ module its::coin_management {
     }
 
     /// Withdraws or mints the given amount of coins. Any leftover amount from previous transfers is added to the coin here.
-    public(package) fun give_coin<T>(
+    public (package) fun give_coin<T>(
         self: &mut CoinManagement<T>, mut amount: u256, clock: &Clock, ctx: &mut TxContext
     ): Coin<T> {        
         amount  = amount + self.dust;
@@ -117,19 +117,19 @@ module its::coin_management {
         }
     }
 
-    public(package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
+    public (package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
         self.scaling = scaling;
     }
 
     // helper function to mint as a distributor.
-    public(package) fun mint<T>(self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
+    public (package) fun mint<T>(self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
         self.treasury_cap
             .borrow_mut()
             .mint(amount, ctx)
     }
 
     // helper function to burn as a distributor.
-    public(package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
+    public (package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
         self.treasury_cap
             .borrow_mut()
             .supply_mut()
