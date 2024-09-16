@@ -107,8 +107,8 @@ module squid::transfers {
         transfer::public_transfer(coin::from_balance(option.destroy_some(), ctx), swap_data.recipient);
     }
 
-    // This will break squid for now, since the MessageTicket is not submitted by discovery.
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, ctx: &mut TxContext): Option<InterchainTransferTicket<T>> {
+    // TODO: This will break squid for now, since the MessageTicket is not submitted by discovery.
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, its: &mut ITS, clock: &Clock, ctx: &mut TxContext): Option<MessageTicket> {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return option::none<InterchainTransferTicket<T>>();
         let swap_data = new_its_transfer_swap_data(data);

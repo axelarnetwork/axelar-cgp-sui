@@ -76,7 +76,7 @@ public struct Gateway has key {
 /// The Status of the message.
 /// Can be either one of two statuses:
 /// - Approved: Set to the hash of the message
-/// - Executed: MessageTicket was already executed
+/// - Executed: Message was already executed
 public enum MessageStatus has copy, drop, store {
     Approved(Bytes32),
     Executed,

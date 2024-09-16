@@ -2,11 +2,12 @@ module axelar_gateway::message_ticket;
 
 use std::ascii::String;
 
-
-
 // -----
 // Types
 // -----
+/// This hot potato object is created to capture all the information about a remote contract call.
+/// In can then be submitted to the gateway to send the Message.
+/// It is advised that modules return this Message ticket to be submitted by the frontend, so that when the gateway package is upgraded, the app doesn't need to upgrade as well, ensuring forward compatibility.
 /// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
 public struct MessageTicket {
     source_id: address,
@@ -39,9 +40,9 @@ public fun version(self: &MessageTicket): u64 {
     self.version
 }
 
-// ------
-// Friend
-// ------
+// -----------------
+// Package Functions
+// -----------------
 public (package) fun new(
     source_id: address,
     destination_chain: String,
@@ -75,4 +76,21 @@ public (package) fun destroy(self: MessageTicket): (
         payload,
         version,
     )
+}
+
+#[test_only]
+public fun new_for_testing(
+    source_id: address,
+    destination_chain: String,
+    destination_address: String,
+    payload: vector<u8>,
+    version: u64,
+): MessageTicket {
+    MessageTicket {
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version
+    }
 }
