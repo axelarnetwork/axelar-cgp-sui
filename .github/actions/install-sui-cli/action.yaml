@@ -18,7 +18,7 @@ runs:
 
     - name: Parse input
       shell: bash
-      run: echo SUI_VERSION=${ inputs.sui-version } >> GITHUB_ENV
+      run: echo "SUI_VERSION=$(echo ${{ inputs.sui-version }})" >> GITHUB_ENV
 
     - name: Cache Sui binaries
       id: cache-sui
