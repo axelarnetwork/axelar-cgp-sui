@@ -10,13 +10,14 @@ runs:
   using: 'composite'
 
   steps:
-    - name: test
+    - name: Parse input
       shell: bash
-      run: echo ${{ inputs.node-version }}
+      run: echo "NODE_VERSION=${{ inputs.node-version }}" >> GITHUB_ENV
+
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
 
