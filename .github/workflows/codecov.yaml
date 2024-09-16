@@ -21,8 +21,6 @@ jobs:
 
       - name: Setup Node Dependencies
         uses: ./.github/actions/install-node-dependencies
-        with:
-          node-version: 18
 
       - name: Coverage
         run: npm run coverage

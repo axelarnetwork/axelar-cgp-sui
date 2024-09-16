@@ -20,8 +20,6 @@ jobs:
 
       - name: Setup Node Dependencies
         uses: ./.github/actions/install-node-dependencies
-        with:
-          node-version: 18
 
       - name: Build TS and SUI modules
         run: npm run build
