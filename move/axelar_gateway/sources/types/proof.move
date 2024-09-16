@@ -85,8 +85,6 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
             &pub_key,
         );
 
-        assert!(signer_index < signatures_length, EMalformedSigners);
-
         total_weight = total_weight + weight;
 
         if (total_weight >= threshold) return;
