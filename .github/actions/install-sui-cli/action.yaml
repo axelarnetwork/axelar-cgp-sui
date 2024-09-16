@@ -1,5 +1,5 @@
 name: Install Sui CLI
-description: 'Setup Sui CLI'
+description: 'Install Sui CLI'
 
 inputs:
   sui-version:
