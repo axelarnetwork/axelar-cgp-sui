@@ -18,17 +18,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get Sui Version
-        id: sui_version
-        shell: bash
-        run: |
-          SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)
-          echo "sui_version=$SUI_VERSION" >> $GITHUB_OUTPUT
-
       - name: Setup Sui CLI
         uses: ./.github/actions/install-sui-cli
         with:
-          sui_version: ${{ steps.sui_version.outputs.sui_version }}
+          sui-version: $(jq -r '.SUI_VERSION' version.json)
 
       - name: Setup Node
         uses: actions/setup-node@v4
