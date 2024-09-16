@@ -15,7 +15,6 @@ runs:
       run: echo ${{ inputs.node-version }}
     - name: Setup Node
       uses: actions/setup-node@v4
-      shell: bash
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
