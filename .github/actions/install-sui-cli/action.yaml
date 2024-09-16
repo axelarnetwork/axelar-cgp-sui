@@ -16,25 +16,21 @@ runs:
         sudo apt-get update
         sudo apt-get install -y libpq-dev
 
-    - name: Parse input
-      shell: bash
-      run: echo "SUI_VERSION=$(echo ${{ inputs.sui-version }})" >> GITHUB_ENV
-
     - name: Cache Sui binaries
       id: cache-sui
       uses: actions/cache@v4
       with:
         path: sui-binaries/
-        key: sui-${{ env.SUI_VERSION }}
+        key: sui-${{ inputs.sui-version }}
 
     - name: Download and Install Sui
       shell: bash
       if: steps.cache-sui.outputs.cache-hit != 'true'
       run: |
         mkdir -p sui-binaries
-        curl -L -o sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ env.SUI_VERSION }}/sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
-        tar -xvf sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz -C sui-binaries
-        rm -rf sui-${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz
+        curl -L -o sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ inputs.sui-version }}/sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz
+        tar -xvf sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz -C sui-binaries
+        rm -rf sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz
 
     - name: Save Sui binaries
       if: steps.cache-sui.outputs.cache-hit != 'true'
@@ -42,7 +38,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: sui-binaries/
-        key: sui-${{ env.SUI_VERSION }}
+        key: sui-${{ inputs.sui-version }}
 
     - name: Add Sui binaries to PATH
       shell: bash

@@ -17,12 +17,12 @@ jobs:
       - name: Setup Sui CLI
         uses: ./.github/actions/install-sui-cli
         with:
-          sui-version: $(jq -r '.SUI_VERSION' version.json)
+          sui-version: "$(jq -r '.SUI_VERSION' version.json)"
 
       - name: Setup Node Dependencies
         uses: ./.github/actions/install-node-dependencies
         with:
-          node-version: $(jq -r '.NODE_VERSION' version.json)
+          node-version: "$(jq -r '.NODE_VERSION' version.json)"
 
       - name: Coverage
         run: npm run coverage
