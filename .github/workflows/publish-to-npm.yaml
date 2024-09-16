@@ -39,7 +39,7 @@ jobs:
       - name: Setup Sui CLI
         uses: ./.github/actions/install-sui-cli
         with:
-          sui_version: ${{ steps.sui_version.outputs.sui_version }}
+          sui_version: $(jq -r '.SUI_VERSION' version.json)
 
       - name: Setup Node
         uses: actions/setup-node@v4
