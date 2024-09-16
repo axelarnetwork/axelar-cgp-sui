@@ -126,7 +126,7 @@ module its::its {
         self.channel.to_address()
     }
 
-    // === Friend-only ===
+    // === Package Functions ===
     public(package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
         self.relayer_discovery_id = object::id(relayer_discovery);
     }

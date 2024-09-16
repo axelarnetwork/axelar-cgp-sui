@@ -20,9 +20,9 @@ public struct InterchainTransferTicket<phantom T>{
     version: u64,
 }
 
-// ------
-// Friend
-// ------
+// -----------------
+// Package Functions
+// -----------------
 public (package) fun new<T>(    
     token_id: TokenId,
     balance: Balance<T>,
