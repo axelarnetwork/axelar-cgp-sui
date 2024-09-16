@@ -15,6 +15,7 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libpq-dev
+        echo ${{ inputs.sui-version }}
 
     - name: Cache Sui binaries
       id: cache-sui
