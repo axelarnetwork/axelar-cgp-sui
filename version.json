@@ -1,3 +1,4 @@
 {
-    "SUI_VERSION": "mainnet-v1.32.2"
+    "SUI_VERSION": "mainnet-v1.32.2",
+    "NODE_VERSION": "18"
 }

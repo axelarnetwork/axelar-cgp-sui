@@ -18,16 +18,10 @@ jobs:
         with:
           sui-version: $(jq -r '.SUI_VERSION' version.json)
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node Dependencies
+        uses: ./.github/actions/install-node-dependencies
         with:
-          node-version: 18
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-  
-      - name: Install dependencies
-        shell: bash
-        run: npm ci
+          node-version: $(jq -r '.NODE_VERSION' version.json)
 
       - name: Build TS and SUI modules
         run: npm run build
