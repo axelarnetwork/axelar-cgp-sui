@@ -12,7 +12,7 @@ runs:
   steps:
     - name: Parse input
       shell: bash
-      run: echo "NODE_VERSION=${{ inputs.node-version }}" >> GITHUB_ENV
+      run: echo NODE_VERSION=${{ inputs.node-version }} >> GITHUB_ENV
 
     - name: Setup Node
       uses: actions/setup-node@v4
