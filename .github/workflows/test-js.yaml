@@ -18,8 +18,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Sui CLI and install dependencies
-        uses: ./.github/actions/install
+      - name: Get Sui Version
+        id: sui_version
+        shell: bash
+        run: |
+          SUI_VERSION=$(jq -r '.SUI_VERSION' version.json)
+          echo "sui_version=$SUI_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Sui CLI
+        uses: ./.github/actions/install-sui-cli
+        with:
+          sui_version: ${{ steps.sui_version.outputs.sui_version }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+  
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
 
       - name: Build TS and Move Modules
         run: npm run build
