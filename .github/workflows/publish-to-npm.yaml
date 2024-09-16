@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node Dependencies
         uses: ./.github/actions/install-node-dependencies
         with:
-          node-version: $(jq -r '.NODE_VERSION' version.json)
+          node-version: 18
 
       - name: Create GitHub Release
         if: steps.check-changeset-files.outputs.has_changeset_files == 'false'
