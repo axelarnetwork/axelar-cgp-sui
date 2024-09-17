@@ -54,9 +54,9 @@ const EMessageNotApproved: u64 = 0;
 /// Invalid length of vector
 const EInvalidLength: u64 = 1;
 /// Not latest signers
-const ENotLatestSigners: u64 = 3;
+const ENotLatestSigners: u64 = 2;
 /// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 4;
+const ENewerMessage: u64 = 3;
 
 // -----
 // Types
