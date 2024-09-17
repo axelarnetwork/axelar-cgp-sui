@@ -64,6 +64,14 @@ const ENewerMessage: u64 = 4;
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
 
+// -------
+// Structs
+// -------
+public struct Gateway has key {
+    id: UID,
+    inner: Versioned,
+}
+
 // ------------
 // Capabilities
 // ------------
@@ -122,7 +130,7 @@ public fun setup(
     let CreatorCap { id } = cap;
     id.delete();
 
-    let gateway = versioned::create(
+    let inner = versioned::create(
         VERSION,
         gateway_data::new(
             operator,
@@ -142,17 +150,22 @@ public fun setup(
         ctx,
     );
     // Share the gateway object for anyone to use.
-    transfer::public_share_object(gateway);
+    transfer::share_object(Gateway {
+        id: object::new(ctx),
+        inner,
+    });
 }
 
 // ------
 // Macros
 // ------
-macro fun data($gateway: &Versioned): &GatewayDataV0 {
-    versioned::load_value<GatewayDataV0>($gateway)
+macro fun data($self: &Gateway): &GatewayDataV0 {
+    let gateway = $self;
+    gateway.inner.load_value<GatewayDataV0>()
 }
-macro fun data_mut($gateway: &mut Versioned): &mut GatewayDataV0 {
-    versioned::load_value_mut<GatewayDataV0>($gateway)
+macro fun data_mut($self: &mut Gateway): &mut GatewayDataV0 {
+    let gateway = $self;
+    gateway.inner.load_value_mut<GatewayDataV0>()
 }
 
 // -----------
@@ -163,11 +176,11 @@ macro fun data_mut($gateway: &mut Versioned): &mut GatewayDataV0 {
 /// If proof is valid, message approvals are stored in the Gateway object, if not already approved before.
 /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
 entry fun approve_messages(
-    gateway: &mut Versioned,
+    self: &mut Gateway,
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    let data = data_mut!(gateway);
+    let data = data_mut!(self);
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
@@ -185,13 +198,13 @@ entry fun approve_messages(
 /// If proof is valid, signers stored on the Gateway object are rotated.
 /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
 entry fun rotate_signers(
-    gateway: &mut Versioned,
+    self: &mut Gateway,
     clock: &Clock,
     new_signers_data: vector<u8>,
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let data = data_mut!(gateway);
+    let data = data_mut!(self);
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
@@ -257,7 +270,7 @@ public fun send_message(
 }
 
 public fun is_message_approved(
-    gateway: &Versioned,
+    self: &Gateway,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -273,11 +286,11 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    data!(gateway)[command_id] == message_status::approved(message.hash())
+    data!(self)[command_id] == message_status::approved(message.hash())
 }
 
 public fun is_message_executed(
-    gateway: &Versioned,
+    self: &Gateway,
     source_chain: String,
     message_id: String,
 ): bool {
@@ -286,20 +299,20 @@ public fun is_message_executed(
         message_id,
     );
 
-    data!(gateway)[command_id] == message_status::executed()
+    data!(self)[command_id] == message_status::executed()
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
 public fun take_approved_message(
-    gateway: &mut Versioned,
+    self: &mut Gateway,
     source_chain: String,
     message_id: String,
     source_address: String,
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
-    let data = data_mut!(gateway);
+    let data = data_mut!(self);
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
@@ -389,8 +402,8 @@ public fun create_for_testing(
     initial_signers: weighted_signers::WeightedSigners,
     clock: &Clock,
     ctx: &mut TxContext,
-): Versioned {
-    versioned::create(
+): Gateway {
+    let inner = versioned::create(
         VERSION,
         gateway_data::new(
             operator,
@@ -405,12 +418,16 @@ public fun create_for_testing(
             ),
         ),
         ctx,
-    )
+    );
+    Gateway {
+        id: object::new(ctx),
+        inner,
+    }
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): Versioned {
-    versioned::create(
+public fun dummy(ctx: &mut TxContext): Gateway {
+    let inner = versioned::create(
         VERSION,
         gateway_data::new(
             @0x0,
@@ -418,12 +435,22 @@ public fun dummy(ctx: &mut TxContext): Versioned {
             auth::dummy(ctx),
         ),
         ctx,
-    )
+    );
+    Gateway {
+        id: object::new(ctx),
+        inner,
+    }
 }
 
 #[test_only]
-public fun destroy_for_testing(gateway: Versioned) {
-    let data = gateway.destroy<GatewayDataV0>();
+public fun destroy_for_testing(self: Gateway) {
+    let Gateway {
+        id, 
+        inner,
+    } = self;
+    id.delete();
+
+    let data = inner.destroy<GatewayDataV0>();
     let (
         _,
         messages,
@@ -470,13 +497,18 @@ fun test_setup() {
     assert!(shared.length() == 1, 0);
 
     let gateway_id = shared[0];
-    let gateway = scenario.take_shared_by_id<Versioned>(gateway_id);
+    let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
+    let Gateway {
+        id,
+        inner,
+    } = gateway;
+    id.delete();
 
     let (
         operator_result,
         messages,
         signers,
-    ) = gateway.destroy<GatewayDataV0>().destroy_for_testing();
+    ) = inner.destroy<GatewayDataV0>().destroy_for_testing();
 
     assert!(operator == operator_result, 1);
     messages.destroy_empty();
