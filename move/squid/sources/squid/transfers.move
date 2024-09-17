@@ -6,6 +6,7 @@ module squid::transfers {
     use sui::coin;
 
     use axelar_gateway::discovery::{Self, MoveCall};
+    use axelar_gateway::message_ticket::MessageTicket;
 
     use its::interchain_transfer_ticket::InterchainTransferTicket;
     use its::service::{Self};

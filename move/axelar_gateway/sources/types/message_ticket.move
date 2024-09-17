@@ -94,3 +94,41 @@ public fun new_for_testing(
         version
     }
 }
+
+#[test]
+fun test_all() {
+    let source_id: address = @0x123;
+    let destination_chain: String = std::ascii::string(b"Destination Chain");
+    let destination_address: String = std::ascii::string(b"Destination Address");
+    let payload: vector<u8> = b"payload";
+    let version: u64 = 2;
+    
+    let message_ticket = new(
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    );
+
+    assert!(message_ticket.source_id() == source_id, 0);
+    assert!(message_ticket.destination_chain() == destination_chain, 1);
+    assert!(message_ticket.destination_address() == destination_address, 2);
+    assert!(message_ticket.payload() == payload, 3);
+    assert!(message_ticket.version() == version, 4);
+
+    let (
+        result_source_id,
+        result_destination_chain,
+        result_destination_address,
+        result_payload,
+        result_version,
+    ) = message_ticket.destroy();
+
+
+    assert!(result_source_id == source_id, 0);
+    assert!(result_destination_chain == destination_chain, 1);
+    assert!(result_destination_address == destination_address, 2);
+    assert!(result_payload == payload, 3);
+    assert!(result_version == version, 4);
+}
