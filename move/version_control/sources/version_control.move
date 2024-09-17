@@ -1,6 +1,8 @@
 /// This module implements a custom version control scheme to maximize versioning customizability.
 module version_control::version_control;
 
+use std::ascii::String;
+
 use sui::vec_set::{Self, VecSet};
 
 // ------
@@ -12,8 +14,9 @@ const EFunctionNotSupported: vector<u8> = b"function is not supported in this ve
 // -----
 // Types
 // -----
+/// The function names are stored as Strings. They are however input as vector<u8> for ease of instantiation.
 public struct VersionControl has store, copy, drop {
-    allowed_functions: vector<VecSet<vector<u8>>>,
+    allowed_functions: vector<VecSet<String>>,
 }
 
 // ----------------
@@ -34,7 +37,7 @@ public fun new(allowed_functions: vector<vector<vector<u8>>>): VersionControl {
     VersionControl {
         allowed_functions: allowed_functions.map!(
             |function_names| vec_set::from_keys(
-                function_names
+                function_names.map!(|function_name| function_name.to_ascii_string())
             )
         )
     }
@@ -42,7 +45,7 @@ public fun new(allowed_functions: vector<vector<vector<u8>>>): VersionControl {
 
 /// This allowes for anyone to modify the raw data of allowed functions.
 /// Do not pass a mutable reference of your VersionControl to anyone you do not trust because they can modify it.
-public fun allowed_functions(self: &mut VersionControl): &mut vector<VecSet<vector<u8>>> {
+public fun allowed_functions(self: &mut VersionControl): &mut vector<VecSet<String>> {
     &mut self.allowed_functions
 }
 
@@ -50,7 +53,7 @@ public fun allowed_functions(self: &mut VersionControl): &mut vector<VecSet<vect
 public fun push_back(self: &mut VersionControl, function_names: vector<vector<u8>>) {
     self.allowed_functions.push_back(
         vec_set::from_keys(
-            function_names
+            function_names.map!(|function_name| function_name.to_ascii_string())
         )
     );
 }
@@ -63,7 +66,7 @@ public fun push_back(self: &mut VersionControl, function_names: vector<vector<u8
 /// }
 /// ```
 public fun check(self: &VersionControl, version: u64, function: vector<u8>) {
-    assert!(self.allowed_functions[version].contains(&function), EFunctionNotSupported);
+    assert!(self.allowed_functions[version].contains(&function.to_ascii_string()), EFunctionNotSupported);
 }
 
 #[test]
@@ -76,8 +79,8 @@ fun test_new() {
         ]
     );
     assert!(version_control.allowed_functions.length() == 1, 0);
-    assert!(version_control.allowed_functions[0].contains(&b"function_name_1"), 1);
-    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2"), 2);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()), 1);
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()), 2);
 }
 
 #[test]
@@ -107,10 +110,10 @@ fun test_push_back() {
         ]
     );
     assert!(version_control.allowed_functions.length() == 2, 0);
-    assert!(version_control.allowed_functions[0].contains(&b"function_name_1"), 1);
-    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2"), 2);
-    assert!(version_control.allowed_functions[1].contains(&b"function_name_1"), 1);
-    assert!(version_control.allowed_functions[1].contains(&b"function_name_2"), 2);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()), 1);
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()), 2);
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_1".to_ascii_string()), 1);
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_2".to_ascii_string()), 2);
 }
 
 #[test]
@@ -128,7 +131,7 @@ fun test_check() {
 #[test]
 #[expected_failure(abort_code = EFunctionNotSupported)]
 fun test_check_function_not_supported() {
-    let mut version_control = new(
+    let version_control = new(
         vector[
             vector[
                 b"function_name_1",
