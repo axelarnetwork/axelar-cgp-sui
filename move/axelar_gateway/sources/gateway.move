@@ -403,6 +403,7 @@ fun approve_message(self: &mut Gateway, message: message::Message) {
 fun version_control(): VersionControl {
     version_control::new(
         vector [
+            // Version 0
             vector [
                 b"approve_messages",
                 b"rotate_signers",
