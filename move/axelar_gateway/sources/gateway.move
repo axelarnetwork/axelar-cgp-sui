@@ -73,16 +73,6 @@ public struct Gateway has key {
     signers: AxelarSigners,
 }
 
-/// [docstring]
-/// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
-public struct MessageTicket {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    version: u64,
-}
-
 /// The Status of the message.
 /// Can be either one of two statuses:
 /// - Approved: Set to the hash of the message
@@ -355,29 +345,6 @@ public fun take_approved_message(
         destination_id,
         payload,
     )
-}
-
-// --------------
-// Ticket Getters
-// --------------
-public fun source_id(self: &MessageTicket): address {
-    self.source_id
-}
-
-public fun destination_chain(self: &MessageTicket): String {
-    self.destination_chain
-}
-
-public fun destination_address(self: &MessageTicket): String {
-    self.destination_address
-}
-
-public fun payload(self: &MessageTicket): vector<u8> {
-    self.payload
-}
-
-public fun version(self: &MessageTicket): u64 {
-    self.version
 }
 
 // -----------------

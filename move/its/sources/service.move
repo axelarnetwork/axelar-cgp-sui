@@ -29,9 +29,6 @@ module its::service {
     // === VERSION ===
     const VERSION: u64 = 0;
 
-    // === VERSION ===
-    const VERSION: u64 = 0;
-
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
