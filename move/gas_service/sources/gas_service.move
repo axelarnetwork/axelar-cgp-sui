@@ -2,11 +2,17 @@ module gas_service::gas_service;
 
 use std::ascii::String;
 use sui::address;
-use sui::balance::{Self, Balance};
+use sui::balance::Balance;
 use sui::coin::{Self, Coin};
 use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
+use sui::versioned::{Self, Versioned};
+
+use gas_service::gas_service_data::{Self, GasServiceDataV0};
+
+// Version
+const VERSION: u64 = 0;
 
 // -----
 // Types
@@ -14,7 +20,7 @@ use sui::sui::SUI;
 
 public struct GasService has key, store {
     id: UID,
-    balance: Balance<SUI>,
+    inner: Versioned,
 }
 
 public struct GasCollectorCap has key, store {
@@ -60,7 +66,11 @@ public struct GasCollected<phantom T> has copy, drop {
 fun init(ctx: &mut TxContext) {
     transfer::share_object(GasService {
         id: object::new(ctx),
-        balance: balance::zero<SUI>(),
+        inner: versioned::create(
+            VERSION,
+            gas_service_data::new(),
+            ctx,
+        ),
     });
 
     transfer::public_transfer(
@@ -69,6 +79,34 @@ fun init(ctx: &mut TxContext) {
         },
         ctx.sender(),
     );
+}
+
+// ------
+// Macros
+// ------
+// We allow unused functions here, vbecause if in the future anyone wants to access the balance mutliple times
+// they should load it with data first. The getter `balance!()` is here for tests and completeness.
+#[allow(unused_function)]
+macro fun data($self: &GasService): &GasServiceDataV0 {
+    let gas_service = $self;
+    gas_service.inner.load_value<GasServiceDataV0>()
+}
+
+#[allow(unused_function)]
+macro fun data_mut($self: &GasService): &mut GasServiceDataV0 {
+    let gas_service = $self;
+    gas_service.inner.load_value_mut<GasServiceDataV0>()
+}
+
+#[allow(unused_function)]
+macro fun balance($self: &GasService): &Balance<SUI> {
+    let gas_service = $self;
+    gas_service.inner.load_value<GasServiceDataV0>().balance()
+}
+
+macro fun balance_mut($self: &GasService): &mut Balance<SUI> {
+    let gas_service = $self;
+    gas_service.inner.load_value_mut<GasServiceDataV0>().balance_mut()
 }
 
 // ----------------
@@ -89,7 +127,7 @@ public fun pay_gas(
     params: vector<u8>,
 ) {
     let value = coin.value();
-    coin::put(&mut self.balance, coin);
+    coin::put(self.balance_mut!(), coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -113,7 +151,7 @@ public fun add_gas(
     params: vector<u8>,
 ) {
     let value = coin.value();
-    coin::put(&mut self.balance, coin);
+    coin::put(self.balance_mut!(), coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
@@ -131,7 +169,7 @@ public fun collect_gas(
     ctx: &mut TxContext,
 ) {
     transfer::public_transfer(
-        coin::take(&mut self.balance, amount, ctx),
+        coin::take(self.balance_mut!(), amount, ctx),
         receiver,
     );
 
@@ -150,7 +188,7 @@ public fun refund(
     ctx: &mut TxContext,
 ) {
     transfer::public_transfer(
-        coin::take(&mut self.balance, amount, ctx),
+        coin::take(self.balance_mut!(), amount, ctx),
         receiver,
     );
 
@@ -169,7 +207,11 @@ public fun refund(
 fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
     let service = GasService {
         id: object::new(ctx),
-        balance: balance::zero<SUI>(),
+        inner: versioned::create(
+            VERSION,
+            gas_service_data::new(),
+            ctx,
+        ),
     };
 
     let cap = GasCollectorCap {
@@ -181,9 +223,10 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
 
 #[test_only]
 fun destroy(self: GasService) {
-    let GasService { id, balance } = self;
+    let GasService { id, inner } = self;
     id.delete();
-    balance.destroy_for_testing();
+    let (data) = inner.destroy<GasServiceDataV0>();
+    data.destroy_for_testing();
 }
 
 #[test_only]
@@ -217,7 +260,7 @@ fun test_pay_gas() {
         vector[],
     );
 
-    assert!(service.balance.value() == value, 0);
+    assert!(service.balance!().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -239,7 +282,7 @@ fun test_add_gas() {
         vector[],
     );
 
-    assert!(service.balance.value() == value, 0);
+    assert!(service.balance!().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -268,7 +311,7 @@ fun test_collect_gas() {
         ctx,
     );
 
-    assert!(service.balance.value() == 0, 0);
+    assert!(service.balance!().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -298,7 +341,7 @@ fun test_refund() {
         ctx,
     );
 
-    assert!(service.balance.value() == 0, 0);
+    assert!(service.balance!().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
