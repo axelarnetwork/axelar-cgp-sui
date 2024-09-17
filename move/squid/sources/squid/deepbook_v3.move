@@ -175,7 +175,7 @@ module squid::deepbook_v3 {
         }
     }
 
-    public(package) fun get_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+    public (package) fun get_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let mut pool_arg = vector[0];
         pool_arg.append(bcs.peel_address().to_bytes());
 
@@ -200,7 +200,7 @@ module squid::deepbook_v3 {
             )
     }
 
-    public(package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>): MoveCall {
+    public (package) fun get_swap_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>): MoveCall {
         let mut pool_arg = vector[0];
         pool_arg.append(bcs.peel_address().to_bytes());
 
@@ -226,7 +226,7 @@ module squid::deepbook_v3 {
         )
     }
 
-    public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
+    public (package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
         let mut bcs = bcs::new(data);
         DeepbookV3SwapData {
             swap_type: bcs.peel_u8(),
@@ -250,7 +250,7 @@ module squid::deepbook_v3 {
     }
 
     #[test_only]
-    public(package) fun new_swap_data(
+    public (package) fun new_swap_data(
         swap_type: u8,
         pool_id: address,
         has_base: bool,

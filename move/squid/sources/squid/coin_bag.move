@@ -13,13 +13,13 @@ module squid::coin_bag {
         bag: Bag,
     }
 
-    public(package) fun new(ctx: &mut TxContext): CoinBag {
+    public (package) fun new(ctx: &mut TxContext): CoinBag {
         CoinBag{
             bag: bag::new(ctx),
         }
     }
 
-    public(package) fun store_balance<T>(self: &mut CoinBag, balance: Balance<T>) {
+    public (package) fun store_balance<T>(self: &mut CoinBag, balance: Balance<T>) {
         let key = get_balance_key<T>();
         
         if (self.bag.contains(key)) {
@@ -34,7 +34,7 @@ module squid::coin_bag {
         }
     }
 
-    public(package) fun get_balance<T>(self: &mut CoinBag): Option<Balance<T>> {
+    public (package) fun get_balance<T>(self: &mut CoinBag): Option<Balance<T>> {
         let key = get_balance_key<T>();
         
         if (self.bag.contains(key)) {
@@ -44,7 +44,7 @@ module squid::coin_bag {
         }
     }
 
-    public(package) fun get_exact_balance<T>(self: &mut CoinBag, amount: u64): Balance<T> {
+    public (package) fun get_exact_balance<T>(self: &mut CoinBag, amount: u64): Balance<T> {
         let key = get_balance_key<T>();
 
         assert!(self.bag.contains(key), EKeyNotExist);
@@ -55,7 +55,7 @@ module squid::coin_bag {
     }
 
 
-    public(package) fun get_balance_amount<T>(self: &CoinBag): u64 {
+    public (package) fun get_balance_amount<T>(self: &CoinBag): u64 {
         let key = get_balance_key<T>();
         
         if (self.bag.contains(key)) {
@@ -66,7 +66,7 @@ module squid::coin_bag {
     }
 
 
-    public(package) fun store_estimate<T>(self: &mut CoinBag, estimate: u64) {
+    public (package) fun store_estimate<T>(self: &mut CoinBag, estimate: u64) {
         let key = get_estimate_key<T>();
         
         if (self.bag.contains(key)) {
@@ -80,7 +80,7 @@ module squid::coin_bag {
         }
     }
 
-    public(package) fun get_estimate<T>(self: &mut CoinBag): u64 {
+    public (package) fun get_estimate<T>(self: &mut CoinBag): u64 {
         let key = get_estimate_key<T>();
         
         if (self.bag.contains(key)) {
@@ -90,7 +90,7 @@ module squid::coin_bag {
         }
     }
 
-    public(package) fun get_estimate_amount<T>(self: &CoinBag): u64 {
+    public (package) fun get_estimate_amount<T>(self: &CoinBag): u64 {
         let key = get_estimate_key<T>();
         
         if (self.bag.contains(key)) {
@@ -100,7 +100,7 @@ module squid::coin_bag {
         }
     }
 
-    public(package) fun destroy(self: CoinBag) {
+    public (package) fun destroy(self: CoinBag) {
         let CoinBag { bag } = self;
         bag.destroy_empty();
     }
