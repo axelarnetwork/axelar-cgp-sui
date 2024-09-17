@@ -27,18 +27,21 @@
 ///
 module axelar_gateway::gateway;
 
-use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
+use axelar_gateway::auth::{Self, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
+use axelar_gateway::gateway_data::{Self, GatewayDataV0};
+use axelar_gateway::message_status;
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
 use sui::hash;
-use sui::table::{Self, Table};
+use sui::table::{Self};
+use sui::versioned::{Self, Versioned};
 use utils::utils;
 
 // ------
@@ -58,29 +61,8 @@ const ENotLatestSigners: u64 = 3;
 /// MessageTickets created from newer versions cannot be sent here
 const ENewerMessage: u64 = 4;
 
-// -----
-// Types
-// -----
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
-
-/// An object holding the state of the Axelar bridge.
-/// The central piece in managing call approval creation and signature verification.
-public struct Gateway has key {
-    id: UID,
-    operator: address,
-    messages: Table<Bytes32, MessageStatus>,
-    signers: AxelarSigners,
-}
-
-/// The Status of the message.
-/// Can be either one of two statuses:
-/// - Approved: Set to the hash of the message
-/// - Executed: Message was already executed
-public enum MessageStatus has copy, drop, store {
-    Approved(Bytes32),
-    Executed,
-}
 
 // ------------
 // Capabilities
@@ -126,6 +108,7 @@ fun init(ctx: &mut TxContext) {
 }
 
 /// Setup the module by creating a new Gateway object.
+#[allow(lint(share_owned))]
 public fun setup(
     cap: CreatorCap,
     operator: address,
@@ -139,38 +122,37 @@ public fun setup(
     let CreatorCap { id } = cap;
     id.delete();
 
-    let gateway = Gateway {
-        id: object::new(ctx),
-        operator,
-        messages: table::new(ctx),
-        signers: auth::setup(
-            domain_separator,
-            minimum_rotation_delay,
-            previous_signers_retention,
-            utils::peel!(
-                initial_signers,
-                |bcs| weighted_signers::peel(bcs),
+    let gateway = versioned::create(
+        VERSION,
+        gateway_data::new(
+            operator,
+            table::new(ctx),
+            auth::setup(
+                domain_separator,
+                minimum_rotation_delay,
+                previous_signers_retention,
+                utils::peel!(
+                    initial_signers,
+                    |bcs| weighted_signers::peel(bcs),
+                ),
+                clock,
+                ctx,
             ),
-            clock,
-            ctx,
         ),
-    };
-
+        ctx,
+    );
     // Share the gateway object for anyone to use.
-    transfer::share_object(gateway);
+    transfer::public_share_object(gateway);
 }
 
-#[syntax(index)]
-public fun borrow(self: &Gateway, command_id: Bytes32): &MessageStatus {
-    table::borrow(&self.messages, command_id)
+// ------
+// Macros
+// ------
+macro fun data($gateway: &Versioned): &GatewayDataV0 {
+    versioned::load_value<GatewayDataV0>($gateway)
 }
-
-#[syntax(index)]
-public fun borrow_mut(
-    self: &mut Gateway,
-    command_id: Bytes32,
-): &mut MessageStatus {
-    table::borrow_mut(&mut self.messages, command_id)
+macro fun data_mut($gateway: &mut Versioned): &mut GatewayDataV0 {
+    versioned::load_value_mut<GatewayDataV0>($gateway)
 }
 
 // -----------
@@ -181,43 +163,45 @@ public fun borrow_mut(
 /// If proof is valid, message approvals are stored in the Gateway object, if not already approved before.
 /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
 entry fun approve_messages(
-    self: &mut Gateway,
+    gateway: &mut Versioned,
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
+    let data = data_mut!(gateway);
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
-    let _ = self
-        .signers
+    let _ = data
+        .signers()
         .validate_proof(
             data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data),
             proof,
         );
 
-    messages.do!(|message| self.approve_message(message));
+    messages.do!(|message| approve_message(data, message));
 }
 
 /// The main entrypoint for rotating Axelar signers.
 /// If proof is valid, signers stored on the Gateway object are rotated.
 /// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
 entry fun rotate_signers(
-    self: &mut Gateway,
+    gateway: &mut Versioned,
     clock: &Clock,
     new_signers_data: vector<u8>,
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
+    let data = data_mut!(gateway);
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
     );
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
 
-    let enforce_rotation_delay = ctx.sender() != self.operator;
+    let enforce_rotation_delay = ctx.sender() != data.operator();
 
-    let is_latest_signers = self
-        .signers
+    let is_latest_signers = data
+        .signers()
         .validate_proof(
             data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
             proof,
@@ -225,8 +209,8 @@ entry fun rotate_signers(
     assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
 
     // This will fail if signers are duplicated
-    self
-        .signers
+    data
+        .signers_mut()
         .rotate_signers(clock, weighted_signers, enforce_rotation_delay);
 }
 
@@ -273,7 +257,7 @@ public fun send_message(
 }
 
 public fun is_message_approved(
-    self: &Gateway,
+    gateway: &Versioned,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -289,11 +273,11 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    self[command_id] == MessageStatus::Approved(message.hash())
+    data!(gateway)[command_id] == message_status::approved(message.hash())
 }
 
 public fun is_message_executed(
-    self: &Gateway,
+    gateway: &Versioned,
     source_chain: String,
     message_id: String,
 ): bool {
@@ -302,19 +286,20 @@ public fun is_message_executed(
         message_id,
     );
 
-    self[command_id] == MessageStatus::Executed
+    data!(gateway)[command_id] == message_status::executed()
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
 public fun take_approved_message(
-    self: &mut Gateway,
+    gateway: &mut Versioned,
     source_chain: String,
     message_id: String,
     source_address: String,
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
+    let data = data_mut!(gateway);
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
@@ -326,12 +311,12 @@ public fun take_approved_message(
     );
 
     assert!(
-        self[command_id] == MessageStatus::Approved(message.hash()),
+        data[command_id] == message_status::approved(message.hash()),
         EMessageNotApproved,
     );
 
-    let message_status_ref = &mut self[command_id];
-    *message_status_ref = MessageStatus::Executed;
+    let message_status_ref = &mut data[command_id];
+    *message_status_ref = message_status::executed();
 
     sui::event::emit(MessageExecuted {
         message,
@@ -372,19 +357,19 @@ fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&typed_data))
 }
 
-fun approve_message(self: &mut Gateway, message: message::Message) {
+fun approve_message(data: &mut GatewayDataV0, message: message::Message) {
     let command_id = message.command_id();
 
     // If the message was already approved, ignore it.
-    if (self.messages.contains(command_id)) {
+    if (data.messages().contains(command_id)) {
         return
     };
 
-    self
-        .messages
+    data
+        .messages_mut()
         .add(
             command_id,
-            MessageStatus::Approved(message.hash()),
+            message_status::approved(message.hash()),
         );
 
     sui::event::emit(MessageApproved {
@@ -404,42 +389,47 @@ public fun create_for_testing(
     initial_signers: weighted_signers::WeightedSigners,
     clock: &Clock,
     ctx: &mut TxContext,
-): Gateway {
-    Gateway {
-        id: object::new(ctx),
-        operator,
-        messages: table::new(ctx),
-        signers: auth::setup(
-            domain_separator,
-            minimum_rotation_delay,
-            previous_signers_retention,
-            initial_signers,
-            clock,
-            ctx,
+): Versioned {
+    versioned::create(
+        VERSION,
+        gateway_data::new(
+            operator,
+            table::new(ctx),
+            auth::setup(
+                domain_separator,
+                minimum_rotation_delay,
+                previous_signers_retention,
+                initial_signers,
+                clock,
+                ctx,
+            ),
         ),
-    }
+        ctx,
+    )
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): Gateway {
-    Gateway {
-        id: object::new(ctx),
-        operator: @0x0,
-        messages: table::new(ctx),
-        signers: auth::dummy(ctx),
-    }
+public fun dummy(ctx: &mut TxContext): Versioned {
+    versioned::create(
+        VERSION,
+        gateway_data::new(
+            @0x0,
+            table::new(ctx),
+            auth::dummy(ctx),
+        ),
+        ctx,
+    )
 }
 
 #[test_only]
-public fun destroy_for_testing(gateway: Gateway) {
-    let Gateway {
-        id,
-        operator: _,
+public fun destroy_for_testing(gateway: Versioned) {
+    let data = gateway.destroy<GatewayDataV0>();
+    let (
+        _,
         messages,
         signers,
-    } = gateway;
+    ) = data.destroy_for_testing();
 
-    id.delete();
     let (_, table, _, _, _, _) = signers.destroy_for_testing();
     table.destroy_empty();
     messages.destroy_empty();
@@ -480,16 +470,14 @@ fun test_setup() {
     assert!(shared.length() == 1, 0);
 
     let gateway_id = shared[0];
-    let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
+    let gateway = scenario.take_shared_by_id<Versioned>(gateway_id);
 
-    let Gateway {
-        id,
-        operator: operator_result,
+    let (
+        operator_result,
         messages,
         signers,
-    } = { gateway };
+    ) = gateway.destroy<GatewayDataV0>().destroy_for_testing();
 
-    id.delete();
     assert!(operator == operator_result, 1);
     messages.destroy_empty();
 
@@ -539,9 +527,9 @@ fun test_approve_message() {
 
     let mut gateway = dummy(ctx);
 
-    approve_message(&mut gateway, message);
+    approve_message(data_mut!(&mut gateway), message);
     // The second approve message should do nothing.
-    approve_message(&mut gateway, message);
+    approve_message(data_mut!(&mut gateway), message);
 
     assert!(
         is_message_approved(
@@ -590,9 +578,9 @@ fun test_approve_message() {
         2,
     );
 
-    gateway.messages.remove(message.command_id());
+    data_mut!(&mut gateway).messages_mut().remove(message.command_id());
 
-    gateway.destroy_for_testing();
+    destroy_for_testing(gateway);
     channel.destroy();
 }
 
@@ -697,11 +685,11 @@ fun test_take_approved_message_message_not_approved() {
         axelar_gateway::bytes32::new(@0x2),
     );
 
-    gateway
-        .messages
+    data_mut!(&mut gateway)
+        .messages_mut()
         .add(
             message.command_id(),
-            MessageStatus::Approved(axelar_gateway::bytes32::new(@0x3)),
+            message_status::approved(axelar_gateway::bytes32::new(@0x3)),
         );
 
     let approved_message = take_approved_message(
@@ -713,10 +701,10 @@ fun test_take_approved_message_message_not_approved() {
         vector[0, 1, 2],
     );
 
-    gateway.messages.remove(message.command_id());
+    data_mut!(&mut gateway).messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
-    gateway.destroy_for_testing();
+    destroy_for_testing(gateway);
 }
 
 #[test]
