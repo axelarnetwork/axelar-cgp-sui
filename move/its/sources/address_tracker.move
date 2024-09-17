@@ -36,14 +36,14 @@ module its::address_tracker {
     // === Protected ===
 
     /// Create a new interchain address tracker.
-    public(package) fun new(ctx: &mut TxContext): InterchainAddressTracker {
+    public (package) fun new(ctx: &mut TxContext): InterchainAddressTracker {
         InterchainAddressTracker {
             trusted_addresses: table::new(ctx),
         }
     }
 
     /// Set the trusted address for a chain or adds it if it doesn't exist.
-    public(package) fun set_trusted_address(
+    public (package) fun set_trusted_address(
         self: &mut InterchainAddressTracker,
         chain_name: String,
         trusted_address: String
