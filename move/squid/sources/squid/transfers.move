@@ -6,7 +6,6 @@ module squid::transfers {
     use sui::coin;
 
     use axelar_gateway::discovery::{Self, MoveCall};
-    use axelar_gateway::message_ticket::MessageTicket;
 
     use its::interchain_transfer_ticket::InterchainTransferTicket;
     use its::service::{Self};
@@ -109,7 +108,7 @@ module squid::transfers {
     }
 
     // TODO: This will break squid for now, since the MessageTicket is not submitted by discovery.
-    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, its: &mut ITS, clock: &Clock, ctx: &mut TxContext): Option<MessageTicket> {
+    public fun its_transfer<T>(swap_info: &mut SwapInfo, squid: &Squid, ctx: &mut TxContext): Option<InterchainTransferTicket<T>> {
         let data = swap_info.get_data_swapping();
         if (data.length() == 0) return option::none<InterchainTransferTicket<T>>();
         let swap_data = new_its_transfer_swap_data(data);
