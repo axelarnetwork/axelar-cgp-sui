@@ -14,11 +14,11 @@ use sui::bcs::{Self, BCS};
 use sui::hex;
 use sui::table::{Self, Table};
 
-/// TypeArgument is not a valid string.
-const EInvalidString: u64 = 0;
+#[error]
+const EInvalidString: vector<u8> = b"TypeArgument is not a valid string.";
 
-/// Channel not found.
-const EChannelNotFound: u64 = 1;
+#[error]
+const EChannelNotFound: vector<u8> = b"Channel not found.";
 
 /// A central shared object that stores discovery configuration for the
 /// Relayer. The Relayer will use this object to discover and execute the
