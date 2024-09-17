@@ -118,7 +118,7 @@ fun test_push_back() {
 
 #[test]
 fun test_check() {
-    let mut version_control = new(
+    let version_control = new(
         vector[
             vector[
                 b"function_name_1",
