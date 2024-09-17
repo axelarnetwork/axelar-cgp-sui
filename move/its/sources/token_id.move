@@ -51,7 +51,7 @@ module its::token_id {
         TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
 
-    public(package) fun from_coin_data<T>(
+    public (package) fun from_coin_data<T>(
         coin_info: &CoinInfo<T>, coin_management: &CoinManagement<T>
     ): TokenId {
         from_info<T>(

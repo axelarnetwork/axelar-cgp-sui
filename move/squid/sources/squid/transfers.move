@@ -138,7 +138,7 @@ module squid::transfers {
         )
     }
 
-    public(package) fun get_sui_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+    public (package) fun get_sui_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
         discovery::new_move_call(
             discovery::new_function(
@@ -153,7 +153,7 @@ module squid::transfers {
         )
     }
 
-    public(package) fun get_its_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+    public (package) fun get_its_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
         discovery::new_move_call(
             discovery::new_function(
@@ -168,7 +168,7 @@ module squid::transfers {
         )
     }
 
-    public(package) fun get_sui_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
+    public (package) fun get_sui_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
         discovery::new_move_call(
             discovery::new_function(
@@ -183,7 +183,7 @@ module squid::transfers {
         )
     }
 
-    public(package) fun get_its_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>, its_arg: vector<u8>): MoveCall {
+    public (package) fun get_its_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>, its_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
         discovery::new_move_call(
             discovery::new_function(

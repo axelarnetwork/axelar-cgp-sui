@@ -12,7 +12,7 @@ module its::flow_limit {
         current_epoch: u64,
     }
 
-    public(package) fun new(): FlowLimit {
+    public (package) fun new(): FlowLimit {
         FlowLimit {
             flow_limit: 0,
             flow_in: 0,
@@ -30,7 +30,7 @@ module its::flow_limit {
         }
     }
 
-    public(package) fun add_flow_in(self: &mut FlowLimit, amount: u64, clock: &Clock) {
+    public (package) fun add_flow_in(self: &mut FlowLimit, amount: u64, clock: &Clock) {
         if (self.flow_limit == 0) return;
         
         update_epoch(self, clock);
@@ -38,7 +38,7 @@ module its::flow_limit {
         self.flow_in = self.flow_in + amount;
     }
 
-    public(package) fun add_flow_out(self: &mut FlowLimit, amount: u64, clock: &Clock) {
+    public (package) fun add_flow_out(self: &mut FlowLimit, amount: u64, clock: &Clock) {
         if (self.flow_limit == 0) return;
 
         update_epoch(self, clock);
@@ -46,7 +46,7 @@ module its::flow_limit {
         self.flow_out = self.flow_out + amount;
     }
 
-    public(package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: u64) {
+    public (package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: u64) {
         self.flow_limit = flow_limit;
     }
 }
