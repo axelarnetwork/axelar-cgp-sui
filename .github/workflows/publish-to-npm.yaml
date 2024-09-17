@@ -29,8 +29,13 @@ jobs:
             echo "has_changeset_files=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup Sui CLI and install dependencies
-        uses: ./.github/actions/install
+      - name: Setup Sui CLI
+        uses: ./.github/actions/install-sui-cli
+        with:
+          sui-version: $(jq -r '.SUI_VERSION' version.json)
+
+      - name: Setup Node Dependencies
+        uses: ./.github/actions/install-node-dependencies
 
       - name: Create GitHub Release
         if: steps.check-changeset-files.outputs.has_changeset_files == 'false'

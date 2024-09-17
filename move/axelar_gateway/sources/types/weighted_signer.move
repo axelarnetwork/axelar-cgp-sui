@@ -31,6 +31,7 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 const EInvalidPubKeyLength: u64 = 0;
+const EInvalidWeight: u64 = 1;
 
 // -----------------
 // Package Functions
@@ -58,6 +59,10 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
     let weight = bcs.peel_u128();
 
     new(pub_key, weight)
+}
+
+public(package) fun validate(self: &WeightedSigner) {
+    assert!(self.weight != 0, EInvalidWeight);
 }
 
 /// Check if self.signer is less than other.signer as bytes
