@@ -12,6 +12,9 @@ module its::service {
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage};
+    use axelar_gateway::gateway;
+    use axelar_gateway::message_ticket::MessageTicket;
+    use axelar_gateway::channel::Channel;
 
     use governance::governance::{Self, Governance};
 
@@ -21,9 +24,6 @@ module its::service {
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
     use its::trusted_addresses;
-
-    use axelar_gateway::gateway;
-    use axelar_gateway::channel::Channel;
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -80,7 +80,7 @@ module its::service {
 
     public fun deploy_remote_interchain_token<T>(
         self: &mut ITS, token_id: TokenId, destination_chain: String
-    ) {
+    ): MessageTicket {
         let coin_info = self.get_coin_info<T>(token_id);
         let name = coin_info.name();
         let symbol = coin_info.symbol();
@@ -95,7 +95,7 @@ module its::service {
             .write_u256((decimals as u256))
             .write_bytes(vector::empty());
 
-        send_payload(self, destination_chain, writer.into_bytes());
+        prepare_message(self, destination_chain, writer.into_bytes())
     }
 
     public fun interchain_transfer<T>(
@@ -107,7 +107,7 @@ module its::service {
         metadata: vector<u8>,
         source_channel: &Channel,
         clock: &Clock,
-    ) {
+    ): MessageTicket {
         let amount = self.coin_management_mut(token_id)
             .take_coin(coin, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
@@ -121,7 +121,7 @@ module its::service {
             .write_u256(amount)
             .write_bytes(data);
 
-        send_payload(self, destination_chain, writer.into_bytes());
+        prepare_message(self, destination_chain, writer.into_bytes())
     }
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext) {
@@ -316,7 +316,7 @@ module its::service {
     }
 
     /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
-    fun send_payload(self: &mut ITS, mut destination_chain: String, mut payload: vector<u8>) {
+    fun prepare_message(self: &mut ITS, mut destination_chain: String, mut payload: vector<u8>): MessageTicket {
         let mut destination_address = self.get_trusted_address(destination_chain);
 
         // Prevent sending directly to the ITS Hub chain. This is not supported yet, so fail early to prevent the user from having their funds stuck.
@@ -333,7 +333,7 @@ module its::service {
             destination_address = self.get_trusted_address(destination_chain);
         };
 
-        gateway::call_contract(self.channel_mut(), destination_chain, destination_address, payload);
+        gateway::prepare_message(self.channel_mut(), destination_chain, destination_address, payload)
     }
 
     // === Tests ===
@@ -368,24 +368,45 @@ module its::service {
     #[test]
     fun test_deploy_remote_interchain_token() {
         let mut its = its::its::new_for_testing();
+        let token_name = string::utf8(b"Name");
+        let token_symbol = ascii::string(b"Symbol");
+        let token_decimals = 10;
+        let remote_decimals = 12;
 
         let coin_info = its::coin_info::from_info<COIN>(
-            string::utf8(b"Name"),
-            ascii::string(b"Symbol"),
-            10,
-            12,
+            token_name,
+            token_symbol,
+            token_decimals,
+            remote_decimals,
         );
         let coin_management = its::coin_management::new_locked();
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let destination_chain = ascii::string(b"Chain Name");
-        deploy_remote_interchain_token<COIN>(&mut its, token_id, destination_chain);
+        let message_ticket = deploy_remote_interchain_token<COIN>(&mut its, token_id, destination_chain);
+        
+        let mut writer = abi::new_writer(6);
+
+        writer
+            .write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_bytes(*token_name.as_bytes())
+            .write_bytes(*token_symbol.as_bytes())
+            .write_u256((token_decimals as u256))
+            .write_bytes(vector::empty());
+
+        assert!(message_ticket.source_id() == its.channel().to_address(), 0);
+        assert!(message_ticket.destination_chain() == destination_chain, 1);
+        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain), 2);
+        assert!(message_ticket.payload() == writer.into_bytes(), 3);
+        assert!(message_ticket.version() == 0, 4);
 
         sui::test_utils::destroy(its);
+        sui::test_utils::destroy(message_ticket);
     }
 
     #[test]
-    fun test_deploy_interchain_transfer() {
+    fun test_deploy_interchain_token() {
         let ctx = &mut tx_context::dummy();
         let mut its = its::its::new_for_testing();
 
@@ -395,6 +416,7 @@ module its::service {
             10,
             12,
         );
+        let scaling = coin_info.scaling();
         let coin_management = its::coin_management::new_locked();
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
@@ -406,11 +428,28 @@ module its::service {
         let source_channel = channel::new(ctx);
         let clock = sui::clock::create_for_testing(ctx);
 
-        interchain_transfer<COIN>(&mut its, token_id, coin, destination_chain, destination_address, metadata, &source_channel, &clock);
+        let message_ticket = interchain_transfer<COIN>(&mut its, token_id, coin, destination_chain, destination_address, metadata, &source_channel, &clock);
+
+        let mut writer = abi::new_writer(6);
+
+        writer
+            .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
+            .write_u256(token_id.to_u256())
+            .write_bytes(source_channel.to_address().to_bytes())
+            .write_bytes(destination_address)
+            .write_u256((amount as u256) * scaling)
+            .write_bytes(b"");
+
+        assert!(message_ticket.source_id() == its.channel().to_address(), 0);
+        assert!(message_ticket.destination_chain() == destination_chain, 1);
+        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain), 2);
+        assert!(message_ticket.payload() == writer.into_bytes(), 3);
+        assert!(message_ticket.version() == 0, 4);
 
         clock.destroy_for_testing();
         source_channel.destroy();
         sui::test_utils::destroy(its);
+        sui::test_utils::destroy(message_ticket);
     }
 
     #[test]
@@ -1420,7 +1459,7 @@ module its::service {
     }
 
     #[test]
-    fun test_send_payload_to_hub() {
+    fun test_prepare_message_to_hub() {
         let mut its = its::its::new_for_testing();
         let destination_chain = ascii::string(b"Destination Chain");
         let hub_address = ascii::string(b"Address");
@@ -1430,8 +1469,12 @@ module its::service {
         its.set_trusted_address(ascii::string(ITS_HUB_CHAIN_NAME), hub_address);
         its.set_trusted_address(destination_chain, ascii::string(ITS_HUB_ROUTING_IDENTIFIER));
 
-        send_payload(&mut its, destination_chain, payload);
+        let message_ticket = prepare_message(&mut its, destination_chain, payload);
+
+        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME), 0);
+        assert!(message_ticket.destination_address() == hub_address, 1);
 
         sui::test_utils::destroy(its);
+        sui::test_utils::destroy(message_ticket);
     }
 }

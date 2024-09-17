@@ -222,9 +222,15 @@ describe('Axelar Gateway', () => {
             const payload = '0x1234';
             const builder = new TxBuilder(client);
 
-            await builder.moveCall({
-                target: `${packageId}::gateway::call_contract`,
+            const messageTicket = await builder.moveCall({
+                target: `${packageId}::gateway::prepare_message`,
                 arguments: [channel, destinationChain, destinationAddress, payload],
+                typeArguments: [],
+            });
+
+            await builder.moveCall({
+                target: `${packageId}::gateway::send_message`,
+                arguments: [messageTicket],
                 typeArguments: [],
             });
 
@@ -335,49 +341,6 @@ describe('Axelar Gateway', () => {
 
             expect(bcs.Bool.parse(new Uint8Array(resp.results[1].returnValues[0][0]))).to.equal(false);
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(true);
-        });
-    });
-
-    describe('Contract Call', () => {
-        let channel;
-        before(async () => {
-            const builder = new TxBuilder(client);
-
-            channel = await builder.moveCall({
-                target: `${packageId}::channel::new`,
-                arguments: [],
-                typeArguments: [],
-            });
-
-            builder.tx.transferObjects([channel], keypair.toSuiAddress());
-
-            const response = await builder.signAndExecute(keypair);
-
-            channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
-        });
-
-        it('Make Contract Call', async () => {
-            const destinationChain = 'Destination Chain';
-            const destinationAddress = 'Destination Address';
-            const payload = '0x1234';
-            const builder = new TxBuilder(client);
-
-            await builder.moveCall({
-                target: `${packageId}::gateway::call_contract`,
-                arguments: [channel, destinationChain, destinationAddress, payload],
-                typeArguments: [],
-            });
-
-            await expectEvent(builder, keypair, {
-                type: `${packageId}::gateway::ContractCall`,
-                arguments: {
-                    destination_address: destinationAddress,
-                    destination_chain: destinationChain,
-                    payload: arrayify(payload),
-                    payload_hash: keccak256(payload),
-                    source_id: channel,
-                },
-            });
         });
     });
 });

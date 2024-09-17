@@ -85,12 +85,14 @@ public fun send_call(
         refund_address,
         params,
     );
-    gateway::call_contract(
+    let message_ticket = gateway::prepare_message(
         &singleton.channel,
         destination_chain,
         destination_address,
         payload,
     );
+
+    gateway::send_message(message_ticket);
 }
 
 public fun execute(call: ApprovedMessage, singleton: &mut Singleton) {
