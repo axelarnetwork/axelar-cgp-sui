@@ -33,12 +33,18 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
 use utils::utils;
+
+// ------
+// Version
+// ------
+const VERSION: u64 = 0;
 
 // ------
 // Errors
@@ -48,7 +54,9 @@ const EMessageNotApproved: u64 = 0;
 /// Invalid length of vector
 const EInvalidLength: u64 = 1;
 /// Not latest signers
-const ENotLatestSigners: u64 = 2;
+const ENotLatestSigners: u64 = 3;
+/// MessageTickets created from newer versions cannot be sent here
+const ENewerMessage: u64 = 4;
 
 // -----
 // Types
@@ -226,24 +234,42 @@ entry fun rotate_signers(
 // Public Functions
 // ----------------
 
-/// Call a contract on the destination chain by sending an event from an
-/// authorized Channel. Currently we require Channel to be mutable to prevent
-/// frozen object scenario or when someone exposes the Channel to the outer
-/// world. However, this restriction may be lifted in the future, and having
-/// an immutable reference should be enough.
-public fun call_contract(
+/// Prepare a MessageTicket to call a contract on the destination chain.
+public fun prepare_message(
     channel: &Channel,
     destination_chain: String,
     destination_address: String,
     payload: vector<u8>,
+): MessageTicket {
+    message_ticket::new(
+        channel.to_address(),
+        destination_chain,
+        destination_address,
+        payload,
+        VERSION,
+    )
+}
+
+/// Submit the MessageTicket which causes a contract call by sending an event from an
+/// authorized Channel.
+public fun send_message(
+    message: MessageTicket,
 ) {
+    let (
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    ) = message.destroy();
+    assert!(version <= VERSION, ENewerMessage);
     sui::event::emit(ContractCall {
-        source_id: object::id_address(channel),
+        source_id,
         destination_chain,
         destination_address,
         payload,
         payload_hash: address::from_bytes(hash::keccak256(&payload)),
-    })
+    });
 }
 
 public fun is_message_approved(
