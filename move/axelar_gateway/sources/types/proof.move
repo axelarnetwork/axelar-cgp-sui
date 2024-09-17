@@ -26,9 +26,14 @@ const SIGNATURE_LENGTH: u64 = 65;
 // Errors
 // ------
 /// Invalid length of the bytes
-const EInvalidLength: u64 = 0;
-const ELowSignaturesWeight: u64 = 1;
-const EMalformedSigners: u64 = 2;
+#[error]
+const EInvalidLength: vector<u8> = b"Invalid signature length: expected 65 bytes";
+
+#[error]    
+const ELowSignaturesWeight: vector<u8> = b"Insufficient signatures weight";
+
+#[error]
+const ESignerNotFound: vector<u8> = b"No signer found with the specified public key in the given range";
 
 // ----------------
 // Public Functions
@@ -112,7 +117,7 @@ fun find_weight_by_pub_key_from(
     };
 
     // If no signer satisfies the predicate, return an error
-    assert!(index < length, EMalformedSigners);
+    assert!(index < length, ESignerNotFound);
 
     (signers[index].weight(), index)
 }
