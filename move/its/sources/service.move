@@ -12,7 +12,8 @@ module its::service {
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage};
-    use axelar_gateway::gateway::{Self, MessageTicket};
+    use axelar_gateway::gateway;
+    use axelar_gateway::message_ticket::MessageTicket;
     use axelar_gateway::channel::Channel;
 
     use governance::governance::{Self, Governance};
@@ -136,7 +137,7 @@ module its::service {
         ticket: InterchainTransferTicket<T>,
         clock: &Clock,
     ): MessageTicket {
-        let InterchainTransferTicket {
+        let (
            token_id,
            coin,
            source_address,
@@ -144,7 +145,7 @@ module its::service {
            destination_address,
            metadata, 
            version,
-        } = ticket;
+         ) = ticket.destroy();
         assert!(version <= VERSION, ENewerTicket);
         let amount = self.coin_management_mut(token_id)
             .take_coin(coin, clock);
@@ -1497,7 +1498,7 @@ module its::service {
     }
 
     #[test]
-    fun test_send_payload_to_hub() {
+    fun test_prepare_message_to_hub() {
         let mut its = its::its::new_for_testing();
         let destination_chain = ascii::string(b"Destination Chain");
         let hub_address = ascii::string(b"Address");
@@ -1509,7 +1510,8 @@ module its::service {
 
         let message_ticket = prepare_message(&mut its, destination_chain, payload);
 
-
+        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME), 0);
+        assert!(message_ticket.destination_address() == hub_address, 1);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(message_ticket);

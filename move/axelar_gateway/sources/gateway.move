@@ -33,6 +33,7 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -250,13 +251,13 @@ public fun prepare_message(
     destination_address: String,
     payload: vector<u8>,
 ): MessageTicket {
-    MessageTicket {
-        source_id: channel.to_address(),
+    message_ticket::new(
+        channel.to_address(),
         destination_chain,
         destination_address,
         payload,
-        version: VERSION,
-    }
+        VERSION,
+    )
 }
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
@@ -264,13 +265,13 @@ public fun prepare_message(
 public fun send_message(
     message: MessageTicket,
 ) {
-    let MessageTicket {
+    let (
         source_id,
         destination_chain,
         destination_address,
         payload,
         version,
-    } = message;
+    ) = message.destroy();
     assert!(version <= VERSION, ENewerMessage);
     sui::event::emit(ContractCall {
         source_id,

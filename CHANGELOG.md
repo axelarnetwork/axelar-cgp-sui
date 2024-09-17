@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.6.3
+
+### Patch Changes
+
+-   9716da3: refactor: auth module in axelar_gateway package
+
 ## 0.6.2
 
 ### Patch Changes
