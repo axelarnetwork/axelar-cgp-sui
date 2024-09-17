@@ -43,12 +43,14 @@ use utils::utils;
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 2;
+#[error]
+const EMessageNotApproved: vector<u8> = b"Trying to `take_approved_message` for a message that is not approved.";
+
+#[error]
+const EInvalidLength: vector<u8> = b"Invalid message vector length.";
+
+#[error]
+const ENotLatestSigners: vector<u8> = b"Not latest signers.";
 
 // -----
 // Types
@@ -214,6 +216,7 @@ entry fun rotate_signers(
             data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
             proof,
         );
+
     assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
 
     // This will fail if signers are duplicated
