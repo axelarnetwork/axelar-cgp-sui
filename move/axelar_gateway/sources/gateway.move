@@ -25,12 +25,13 @@
 ///  - CallApproval is checked for uniqueness (for this channel)
 ///  - CallApproval is checked to match the `Channel`.id
 ///
+/// The Gateway object uses a versioned field to support upgradability. The current implementation uses GatewayDataV0.
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::message::{Self, Message};
+use axelar_gateway::channel::{Channel, ApprovedMessage};
+use axelar_gateway::message;
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
@@ -53,17 +54,8 @@ const VERSION: u64 = 0;
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 2;
 /// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 3;
-
-const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
-const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
+const ENewerMessage: u64 = 0;
 
 // -------
 // Structs
@@ -83,7 +75,6 @@ public struct CreatorCap has key, store {
 // ------
 // Events
 // ------
-
 /// Emitted when a new message is sent from the SUI network.
 public struct ContractCall has copy, drop {
     source_id: address,
@@ -91,16 +82,6 @@ public struct ContractCall has copy, drop {
     destination_address: String,
     payload: vector<u8>,
     payload_hash: address,
-}
-
-/// Emitted when a new message is approved by the gateway.
-public struct MessageApproved has copy, drop {
-    message: message::Message,
-}
-
-/// Emitted when a message is taken to be executed by a channel.
-public struct MessageExecuted has copy, drop {
-    message: message::Message,
 }
 
 // -----
@@ -184,17 +165,7 @@ entry fun approve_messages(
 ) {
     let data = self.data_mut!();
     data.version_control().check(VERSION, b"approve_messages");
-    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
-    let messages = peel_messages(message_data);
-
-    let _ = data
-        .signers()
-        .validate_proof(
-            data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data),
-            proof,
-        );
-
-    messages.do!(|message| approve_message(data, message));
+    data.approve_messages(message_data, proof_data);
 }
 
 /// The main entrypoint for rotating Axelar signers.
@@ -209,26 +180,12 @@ entry fun rotate_signers(
 ) {
     let data = self.data_mut!();
     data.version_control().check(VERSION, b"rotate_signers");
-    let weighted_signers = utils::peel!(
+    data.rotate_signers(
+        clock,
         new_signers_data,
-        |bcs| weighted_signers::peel(bcs),
-    );
-    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
-
-    let enforce_rotation_delay = ctx.sender() != data.operator();
-
-    let is_latest_signers = data
-        .signers()
-        .validate_proof(
-            data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
-            proof,
-        );
-    assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
-
-    // This will fail if signers are duplicated
-    data
-        .signers_mut()
-        .rotate_signers(clock, weighted_signers, enforce_rotation_delay);
+        proof_data,
+        ctx,
+    )
 }
 
 // ----------------
@@ -283,16 +240,13 @@ public fun is_message_approved(
 ): bool {
     let data = self.data!();
     data.version_control().check(VERSION, b"is_message_approved");
-    let message = message::new(
+    data.is_message_approved(
         source_chain,
         message_id,
         source_address,
         destination_id,
         payload_hash,
-    );
-    let command_id = message.command_id();
-
-    data[command_id] == message_status::approved(message.hash())
+    )
 }
 
 public fun is_message_executed(
@@ -302,12 +256,7 @@ public fun is_message_executed(
 ): bool {
     let data = self.data!();
     data.version_control().check(VERSION, b"is_message_executed");
-    let command_id = message::message_to_command_id(
-        source_chain,
-        message_id,
-    );
-
-    data[command_id] == message_status::executed()
+    data.is_message_executed(source_chain, message_id)
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -322,30 +271,7 @@ public fun take_approved_message(
 ): ApprovedMessage {
     let data = self.data_mut!();
     data.version_control().check(VERSION, b"take_approved_message");
-    let command_id = message::message_to_command_id(source_chain, message_id);
-
-    let message = message::new(
-        source_chain,
-        message_id,
-        source_address,
-        destination_id,
-        bytes32::from_bytes(hash::keccak256(&payload)),
-    );
-
-    assert!(
-        data[command_id] == message_status::approved(message.hash()),
-        EMessageNotApproved,
-    );
-
-    let message_status_ref = &mut data[command_id];
-    *message_status_ref = message_status::executed();
-
-    sui::event::emit(MessageExecuted {
-        message,
-    });
-
-    // Friend only.
-    channel::create_approved_message(
+    data.take_approved_message(
         source_chain,
         message_id,
         source_address,
@@ -357,47 +283,6 @@ public fun take_approved_message(
 // -----------------
 // Private Functions
 // -----------------
-
-fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel!(
-        message_data,
-        |bcs| {
-            let messages = vector::tabulate!(
-                bcs.peel_vec_length(),
-                |_| message::peel(bcs),
-            );
-            assert!(messages.length() > 0, EInvalidLength);
-            messages
-        },
-    )
-}
-
-fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
-    let mut typed_data = vector::singleton(command_type);
-    typed_data.append(data);
-
-    bytes32::from_bytes(hash::keccak256(&typed_data))
-}
-
-fun approve_message(data: &mut GatewayDataV0, message: message::Message) {
-    let command_id = message.command_id();
-
-    // If the message was already approved, ignore it.
-    if (data.messages().contains(command_id)) {
-        return
-    };
-
-    data
-        .messages_mut()
-        .add(
-            command_id,
-            message_status::approved(message.hash()),
-        );
-
-    sui::event::emit(MessageApproved {
-        message,
-    });
-}
 
 fun version_control(): VersionControl {
     version_control::new(
@@ -565,136 +450,6 @@ fun test_setup() {
 }
 
 #[test]
-fun test_approve_message() {
-    let ctx = &mut sui::tx_context::dummy();
-
-    let message_id = std::ascii::string(b"Message Id");
-    let channel = axelar_gateway::channel::new(ctx);
-    let source_chain = std::ascii::string(b"Source Chain");
-    let source_address = std::ascii::string(b"Destination Address");
-    let payload = vector[0, 1, 2, 3];
-    let payload_hash = axelar_gateway::bytes32::new(
-        address::from_bytes(hash::keccak256(&payload)),
-    );
-
-    let message = message::new(
-        source_chain,
-        message_id,
-        source_address,
-        channel.to_address(),
-        payload_hash,
-    );
-
-    let mut gateway = dummy(ctx);
-
-    approve_message(data_mut!(&mut gateway), message);
-    // The second approve message should do nothing.
-    approve_message(data_mut!(&mut gateway), message);
-
-    assert!(
-        is_message_approved(
-            &gateway,
-            source_chain,
-            message_id,
-            source_address,
-            channel.to_address(),
-            payload_hash,
-        ) ==
-        true,
-        0,
-    );
-
-    let approved_message = take_approved_message(
-        &mut gateway,
-        source_chain,
-        message_id,
-        source_address,
-        channel.to_address(),
-        payload,
-    );
-
-    channel.consume_approved_message(approved_message);
-
-    assert!(
-        is_message_approved(
-            &gateway,
-            source_chain,
-            message_id,
-            source_address,
-            channel.to_address(),
-            payload_hash,
-        ) ==
-        false,
-        1,
-    );
-
-    assert!(
-        is_message_executed(
-            &gateway,
-            source_chain,
-            message_id,
-        ) ==
-        true,
-        2,
-    );
-
-    data_mut!(&mut gateway).messages_mut().remove(message.command_id());
-
-    destroy_for_testing(gateway);
-    channel.destroy();
-}
-
-#[test]
-fun test_peel_messages() {
-    let message1 = message::new(
-        std::ascii::string(b"Source Chain 1"),
-        std::ascii::string(b"Message Id 1"),
-        std::ascii::string(b"Source Address 1"),
-        @0x1,
-        axelar_gateway::bytes32::new(@0x2),
-    );
-
-    let message2 = message::new(
-        std::ascii::string(b"Source Chain 2"),
-        std::ascii::string(b"Message Id 2"),
-        std::ascii::string(b"Source Address 2"),
-        @0x3,
-        axelar_gateway::bytes32::new(@0x4),
-    );
-
-    let bytes = bcs::to_bytes(&vector[message1, message2]);
-
-    let messages = peel_messages(bytes);
-
-    assert!(messages.length() == 2, 0);
-    assert!(messages[0] == message1, 1);
-    assert!(messages[1] == message2, 2);
-}
-
-#[test]
-#[expected_failure]
-fun test_peel_messages_no_remaining_data() {
-    let message1 = message::new(
-        std::ascii::string(b"Source Chain 1"),
-        std::ascii::string(b"Message Id 1"),
-        std::ascii::string(b"Source Address 1"),
-        @0x1,
-        axelar_gateway::bytes32::new(@0x2),
-    );
-
-    let mut bytes = bcs::to_bytes(&vector[message1]);
-    bytes.push_back(0);
-
-    peel_messages(bytes);
-}
-
-#[test]
-#[expected_failure(abort_code = EInvalidLength)]
-fun test_peel_messages_no_zero_messages() {
-    peel_messages(bcs::to_bytes(&vector<Message>[]));
-}
-
-#[test]
 fun test_peel_weighted_signers() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let bytes = bcs::to_bytes(&signers);
@@ -733,7 +488,7 @@ fun test_peel_proof_no_remaining_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = EMessageNotApproved)]
+#[expected_failure(abort_code = axelar_gateway::gateway_data::EMessageNotApproved)]
 fun test_take_approved_message_message_not_approved() {
     let mut gateway = dummy(&mut sui::tx_context::dummy());
 
@@ -765,18 +520,4 @@ fun test_take_approved_message_message_not_approved() {
 
     approved_message.destroy_for_testing();
     destroy_for_testing(gateway);
-}
-
-#[test]
-fun test_data_hash() {
-    let command_type = 5;
-    let data = vector[0, 1, 2, 3];
-    let mut typed_data = vector::singleton(command_type);
-    typed_data.append(data);
-
-    assert!(
-        data_hash(command_type, data) ==
-        bytes32::from_bytes(hash::keccak256(&typed_data)),
-        0,
-    );
 }
