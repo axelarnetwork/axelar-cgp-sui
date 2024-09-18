@@ -146,7 +146,7 @@ public fun setup(
                 clock,
                 ctx,
             ),
-            version_control: version_control(),
+            version_control(),
         ),
         ctx,
     );
@@ -183,7 +183,7 @@ entry fun approve_messages(
     proof_data: vector<u8>,
 ) {
     let data = self.data_mut!();
-    data.version_control.check(VERSION, b"approve_messages");
+    data.version_control().check(VERSION, b"approve_messages");
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
@@ -208,7 +208,7 @@ entry fun rotate_signers(
     ctx: &TxContext,
 ) {
     let data = self.data_mut!();
-    data.version_control.check(VERSION, b"rotate_signers");
+    data.version_control().check(VERSION, b"rotate_signers");
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
@@ -281,7 +281,8 @@ public fun is_message_approved(
     destination_id: address,
     payload_hash: Bytes32,
 ): bool {
-    self.version_control.check(VERSION, b"is_message_approved");
+    let data = self.data!();
+    data.version_control().check(VERSION, b"is_message_approved");
     let message = message::new(
         source_chain,
         message_id,
@@ -291,7 +292,7 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    self.data!()[command_id] == message_status::approved(message.hash())
+    data[command_id] == message_status::approved(message.hash())
 }
 
 public fun is_message_executed(
@@ -299,13 +300,14 @@ public fun is_message_executed(
     source_chain: String,
     message_id: String,
 ): bool {
-    self.version_control.check(VERSION, b"is_message_executed");
+    let data = self.data!();
+    data.version_control().check(VERSION, b"is_message_executed");
     let command_id = message::message_to_command_id(
         source_chain,
         message_id,
     );
 
-    self.data!()[command_id] == message_status::executed()
+    data[command_id] == message_status::executed()
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -319,7 +321,7 @@ public fun take_approved_message(
     payload: vector<u8>,
 ): ApprovedMessage {
     let data = self.data_mut!();
-    data.version_control.check(VERSION, b"take_approved_message");
+    data.version_control().check(VERSION, b"take_approved_message");
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
@@ -438,6 +440,7 @@ public fun create_for_testing(
                 clock,
                 ctx,
             ),
+            version_control(),
         ),
         ctx,
     );
@@ -455,6 +458,7 @@ public fun dummy(ctx: &mut TxContext): Gateway {
             @0x0,
             table::new(ctx),
             auth::dummy(ctx),
+            version_control(),
         ),
         ctx,
     );
@@ -477,6 +481,7 @@ public fun destroy_for_testing(self: Gateway) {
         _,
         messages,
         signers,
+        _,
     ) = data.destroy_for_testing();
 
     let (_, table, _, _, _, _) = signers.destroy_for_testing();
@@ -530,6 +535,7 @@ fun test_setup() {
         operator_result,
         messages,
         signers,
+        _,
     ) = inner.destroy<GatewayDataV0>().destroy_for_testing();
 
     assert!(operator == operator_result, 1);

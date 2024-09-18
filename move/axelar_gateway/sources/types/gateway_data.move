@@ -29,6 +29,8 @@ module axelar_gateway::gateway_data;
 
 use sui::table::{Self, Table};
 
+use version_control::version_control::VersionControl;
+
 use axelar_gateway::bytes32::Bytes32;
 use axelar_gateway::auth::AxelarSigners;
 use axelar_gateway::message_status::MessageStatus;
@@ -42,6 +44,7 @@ public struct GatewayDataV0 has store {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
+    version_control: VersionControl,
 }
 // -----------------
 // Package Functions
@@ -51,11 +54,13 @@ public (package) fun new(
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
+    version_control: VersionControl,
 ): GatewayDataV0 {
     GatewayDataV0 {
         operator,
         messages,
         signers,
+        version_control,
     }
 }
 
@@ -83,6 +88,14 @@ public (package) fun signers_mut(self: &mut GatewayDataV0): &mut AxelarSigners {
     &mut self.signers
 }
 
+public (package) fun version_control(self: &GatewayDataV0): &VersionControl {
+    &self.version_control
+}
+
+public (package) fun version_control_mut(self: &mut GatewayDataV0): &mut VersionControl {
+    &mut self.version_control
+}
+
 #[syntax(index)]
 public fun borrow(self: &GatewayDataV0, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
@@ -101,16 +114,19 @@ public fun destroy_for_testing(self: GatewayDataV0): (
     address,
     Table<Bytes32, MessageStatus>,
     AxelarSigners,
+    VersionControl,
 ) {
     let GatewayDataV0 {
         operator,
         messages,
-        signers
+        signers,
+        version_control,
     } = self;
     (
         operator,
         messages,
         signers,
+        version_control,
     )
 }
 
