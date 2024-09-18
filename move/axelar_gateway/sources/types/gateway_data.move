@@ -62,7 +62,7 @@ public (package) fun new(
     }
 }
 
-public (package) fun operator(self: &GatewayDataV0): &address {
+public(package) fun operator(self: &GatewayDataV0): &address {
     &self.operator
 }
 
