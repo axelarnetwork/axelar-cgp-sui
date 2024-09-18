@@ -116,7 +116,6 @@ fun init(ctx: &mut TxContext) {
 }
 
 /// Setup the module by creating a new Gateway object.
-#[allow(lint(share_owned))]
 public fun setup(
     cap: CreatorCap,
     operator: address,
@@ -180,7 +179,7 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    let data = data_mut!(self);
+    let data = self.data_mut!();
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
@@ -204,7 +203,7 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let data = data_mut!(self);
+    let data = self.data_mut!();
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
@@ -299,7 +298,7 @@ public fun is_message_executed(
         message_id,
     );
 
-    data!(self)[command_id] == message_status::executed()
+    self.data!()[command_id] == message_status::executed()
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -312,7 +311,7 @@ public fun take_approved_message(
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
-    let data = data_mut!(self);
+    let data = self.data_mut!();
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
