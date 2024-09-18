@@ -63,6 +63,7 @@ module squid::squid {
     fun new_version_control(): VersionControl {
         version_control::new(
             vector[
+                // Version 0
                 vector[
                     b"start_swap",
                 ],
