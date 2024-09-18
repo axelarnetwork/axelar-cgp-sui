@@ -53,7 +53,7 @@ const VERSION: u64 = 0;
 const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
 
 #[error]
-const EInvalidLength: vector<u8> = b"invalid message vector length";
+const EZeroMessages: vector<u8> = b"no mesages found";
 
 #[error]
 const ENotLatestSigners: vector<u8> = b"not latest signers";
@@ -363,7 +363,7 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
                 bcs.peel_vec_length(),
                 |_| message::peel(bcs),
             );
-            assert!(messages.length() > 0, EInvalidLength);
+            assert!(messages.length() > 0, EZeroMessages);
             messages
         },
     )
@@ -645,7 +645,7 @@ fun test_peel_messages_no_remaining_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = EInvalidLength)]
+#[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {
     peel_messages(bcs::to_bytes(&vector<Message>[]));
 }
