@@ -7,6 +7,12 @@ use sui::coin::{Self, Coin};
 use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
+use version_control::version_control::{Self, VersionControl};
+
+// -------
+// Version
+// -------
+const VERSION: u64 = 0;
 
 // -----
 // Types
@@ -15,6 +21,7 @@ use sui::sui::SUI;
 public struct GasService has key, store {
     id: UID,
     balance: Balance<SUI>,
+    version_control: VersionControl,
 }
 
 public struct GasCollectorCap has key, store {
@@ -61,6 +68,7 @@ fun init(ctx: &mut TxContext) {
     transfer::share_object(GasService {
         id: object::new(ctx),
         balance: balance::zero<SUI>(),
+        version_control: version_control(),
     });
 
     transfer::public_transfer(
@@ -88,6 +96,7 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
+    self.version_control.check(VERSION, b"pay_gas");
     let value = coin.value();
     coin::put(&mut self.balance, coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
@@ -112,6 +121,7 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
+    self.version_control.check(VERSION, b"add_gas");
     let value = coin.value();
     coin::put(&mut self.balance, coin);
 
@@ -130,6 +140,7 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
+    self.version_control.check(VERSION, b"collect_gas");
     transfer::public_transfer(
         coin::take(&mut self.balance, amount, ctx),
         receiver,
@@ -149,6 +160,7 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
+    self.version_control.check(VERSION, b"refund");
     transfer::public_transfer(
         coin::take(&mut self.balance, amount, ctx),
         receiver,
@@ -161,6 +173,21 @@ public fun refund(
     });
 }
 
+// -----------------
+// Private Functions
+// -----------------
+
+fun version_control(): VersionControl {
+    version_control::new(
+        vector [
+            // Version 0
+            vector [
+                b"pay_gas", b"add_gas", b"collect_gas", b"refund", 
+            ],
+        ]
+    )
+}
+
 // -----
 // Tests
 // -----
@@ -170,6 +197,7 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
     let service = GasService {
         id: object::new(ctx),
         balance: balance::zero<SUI>(),
+        version_control: version_control(),
     };
 
     let cap = GasCollectorCap {
@@ -181,7 +209,7 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
 
 #[test_only]
 fun destroy(self: GasService) {
-    let GasService { id, balance } = self;
+    let GasService { id, balance, version_control: _ } = self;
     id.delete();
     balance.destroy_for_testing();
 }

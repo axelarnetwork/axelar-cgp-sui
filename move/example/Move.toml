@@ -8,6 +8,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 AxelarGateway = { local = "../axelar_gateway" }
 GasService = { local = "../gas_service" }
 Utils = { local = "../utils" }
+VersionControl = { local = "../version_control" }
 
 [addresses]
 example = "0xa9"

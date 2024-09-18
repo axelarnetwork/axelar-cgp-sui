@@ -9,6 +9,8 @@ module its::its {
     use sui::table::{Self, Table};
     use sui::coin::{TreasuryCap, CoinMetadata};
 
+    use version_control::version_control::{Self, VersionControl};
+
     use axelar_gateway::channel::Channel;
     use axelar_gateway::discovery::RelayerDiscovery;
 
@@ -17,7 +19,6 @@ module its::its {
     use its::coin_info::CoinInfo;
     use its::coin_management::CoinManagement;
     use its::trusted_addresses::TrustedAddresses;
-
 
     // ------
     // Errors
@@ -38,6 +39,8 @@ module its::its {
         registered_coins: Bag,
 
         relayer_discovery_id: ID,
+
+        version_control: VersionControl,
     }
 
     public struct CoinData<phantom T> has store {
@@ -67,6 +70,8 @@ module its::its {
             unregistered_coin_types: table::new(ctx),
 
             relayer_discovery_id: object::id_from_address(@0x0),
+
+            version_control: new_version_control(),
         });
     }
 
@@ -169,6 +174,14 @@ module its::its {
         &mut self.channel
     }
 
+    public (package) fun version_control(self: &ITS): &VersionControl {
+        &self.version_control
+    }
+
+    public (package) fun version_control_mut(self: &mut ITS): &mut VersionControl {
+        &mut self.version_control
+    }
+
     public (package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
         &mut coin_data.coin_management
@@ -236,6 +249,27 @@ module its::its {
         self.registered_coin_types.remove(token_id)
     }
 
+    fun new_version_control(): VersionControl {
+        version_control::new(
+            vector[
+                // Version 0
+                vector[
+                    b"register_coin",
+                    b"deploy_remote_interchain_token",
+                    b"send_interchain_transfer",
+                    b"receive_interchain_transfer",
+                    b"receive_interchain_transfer_with_data",
+                    b"receive_deploy_interchain_token",
+                    b"give_unregistered_coin",
+                    b"mint_as_distributor",
+                    b"mint_to_as_distributor",
+                    b"burn_as_distributor",
+                    b"set_trusted_addresses",
+                ]
+            ]
+        )
+    }
+
     // === Tests ===
     #[test_only]
     public fun new_for_testing(): ITS {
@@ -254,7 +288,9 @@ module its::its {
             unregistered_coin_info: bag::new(ctx),
             unregistered_coin_types: table::new(ctx),
 
-            relayer_discovery_id: object::id_from_address(@0x0)
+            relayer_discovery_id: object::id_from_address(@0x0),
+
+            version_control: new_version_control(),
         };
 
         its.set_trusted_address(std::ascii::string(b"Chain Name"), std::ascii::string(b"Address"));

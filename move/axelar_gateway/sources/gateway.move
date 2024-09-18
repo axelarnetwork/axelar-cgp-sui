@@ -42,11 +42,12 @@ use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self};
 use sui::versioned::{Self, Versioned};
+use version_control::version_control::{Self, VersionControl};
 use utils::utils;
 
-// ------
+// -------
 // Version
-// ------
+// -------
 const VERSION: u64 = 0;
 
 // ------
@@ -57,9 +58,9 @@ const EMessageNotApproved: u64 = 0;
 /// Invalid length of vector
 const EInvalidLength: u64 = 1;
 /// Not latest signers
-const ENotLatestSigners: u64 = 3;
+const ENotLatestSigners: u64 = 2;
 /// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 4;
+const ENewerMessage: u64 = 3;
 
 const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
 const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
@@ -145,9 +146,11 @@ public fun setup(
                 clock,
                 ctx,
             ),
+            version_control: version_control(),
         ),
         ctx,
     );
+
     // Share the gateway object for anyone to use.
     transfer::share_object(Gateway {
         id: object::new(ctx),
@@ -180,6 +183,7 @@ entry fun approve_messages(
     proof_data: vector<u8>,
 ) {
     let data = self.data_mut!();
+    data.version_control.check(VERSION, b"approve_messages");
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
@@ -204,6 +208,7 @@ entry fun rotate_signers(
     ctx: &TxContext,
 ) {
     let data = self.data_mut!();
+    data.version_control.check(VERSION, b"rotate_signers");
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
@@ -276,6 +281,7 @@ public fun is_message_approved(
     destination_id: address,
     payload_hash: Bytes32,
 ): bool {
+    self.version_control.check(VERSION, b"is_message_approved");
     let message = message::new(
         source_chain,
         message_id,
@@ -293,6 +299,7 @@ public fun is_message_executed(
     source_chain: String,
     message_id: String,
 ): bool {
+    self.version_control.check(VERSION, b"is_message_executed");
     let command_id = message::message_to_command_id(
         source_chain,
         message_id,
@@ -312,6 +319,7 @@ public fun take_approved_message(
     payload: vector<u8>,
 ): ApprovedMessage {
     let data = self.data_mut!();
+    data.version_control.check(VERSION, b"take_approved_message");
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
@@ -387,6 +395,21 @@ fun approve_message(data: &mut GatewayDataV0, message: message::Message) {
     sui::event::emit(MessageApproved {
         message,
     });
+}
+
+fun version_control(): VersionControl {
+    version_control::new(
+        vector [
+            // Version 0
+            vector [
+                b"approve_messages",
+                b"rotate_signers",
+                b"is_message_approved",
+                b"is_message_executed",
+                b"take_approved_message",
+            ]
+        ]
+    )
 }
 
 #[test_only]

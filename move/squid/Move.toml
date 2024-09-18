@@ -10,6 +10,7 @@ token = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packag
 Utils = { local = "../utils" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
+VersionControl = { local = "../version_control" }
 
 [addresses]
 squid = "0xa6"
