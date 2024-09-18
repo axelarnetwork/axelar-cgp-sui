@@ -146,6 +146,7 @@ macro fun data($self: &Gateway): &GatewayDataV0 {
     let gateway = $self;
     gateway.inner.load_value<GatewayDataV0>()
 }
+
 macro fun data_mut($self: &mut Gateway): &mut GatewayDataV0 {
     let gateway = $self;
     gateway.inner.load_value_mut<GatewayDataV0>()
