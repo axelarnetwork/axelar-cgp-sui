@@ -355,29 +355,6 @@ public fun take_approved_message(
     )
 }
 
-// --------------
-// Ticket Getters
-// --------------
-public fun source_id(self: &MessageTicket): address {
-    self.source_id
-}
-
-public fun destination_chain(self: &MessageTicket): String {
-    self.destination_chain
-}
-
-public fun destination_address(self: &MessageTicket): String {
-    self.destination_address
-}
-
-public fun payload(self: &MessageTicket): vector<u8> {
-    self.payload
-}
-
-public fun version(self: &MessageTicket): u64 {
-    self.version
-}
-
 // -----------------
 // Private Functions
 // -----------------
