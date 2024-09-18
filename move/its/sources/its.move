@@ -174,6 +174,14 @@ module its::its {
         &mut self.channel
     }
 
+    public (package) fun version_control(self: &ITS): &VersionControl {
+        &self.version_control
+    }
+
+    public (package) fun version_control_mut(self: &mut ITS): &mut VersionControl {
+        &mut self.version_control
+    }
+
     public (package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
         &mut coin_data.coin_management
