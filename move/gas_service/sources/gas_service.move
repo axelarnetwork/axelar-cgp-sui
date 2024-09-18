@@ -180,6 +180,7 @@ public fun refund(
 fun version_control(): VersionControl {
     version_control::new(
         vector [
+            // Version 0
             vector [
                 b"pay_gas", b"add_gas", b"collect_gas", b"refund", 
             ],
