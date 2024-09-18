@@ -16,7 +16,7 @@ public (package) fun new(): GasServiceDataV0 {
     }
 }
 
-public (package) fun balance(self: &GasServiceDataV0): &Balance<SUI> {
+public(package) fun balance(self: &GasServiceDataV0): &Balance<SUI> {
     &self.balance
 }
 
