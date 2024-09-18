@@ -29,14 +29,11 @@
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
-use axelar_gateway::bytes32::{Self, Bytes32};
+use axelar_gateway::bytes32::Bytes32;
 use axelar_gateway::channel::{Channel, ApprovedMessage};
-use axelar_gateway::message;
-use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
 use axelar_gateway::gateway_data::{Self, GatewayDataV0};
-use axelar_gateway::message_status;
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -379,7 +376,7 @@ public fun destroy_for_testing(self: Gateway) {
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
     let operator = @123456;
-    let domain_separator = bytes32::new(@789012);
+    let domain_separator = axelar_gateway::bytes32::new(@789012);
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
@@ -473,7 +470,7 @@ fun test_peel_weighted_signers_no_remaining_data() {
 fun test_peel_proof() {
     let proof = axelar_gateway::proof::dummy();
     let bytes = bcs::to_bytes(&proof);
-    let result = utils::peel!(bytes, |bcs| proof::peel(bcs));
+    let result = utils::peel!(bytes, |bcs| axelar_gateway::proof::peel(bcs));
 
     assert!(result == proof, 0);
 }
@@ -485,7 +482,7 @@ fun test_peel_proof_no_remaining_data() {
     let mut bytes = bcs::to_bytes(&proof);
     bytes.push_back(0);
 
-    utils::peel!(bytes, |bcs| proof::peel(bcs));
+    utils::peel!(bytes, |bcs| axelar_gateway::proof::peel(bcs));
 }
 
 #[test]
@@ -493,7 +490,7 @@ fun test_peel_proof_no_remaining_data() {
 fun test_take_approved_message_message_not_approved() {
     let mut gateway = dummy(&mut sui::tx_context::dummy());
 
-    let message = message::new(
+    let message = axelar_gateway::message::new(
         std::ascii::string(b"Source Chain"),
         std::ascii::string(b"Message Id"),
         std::ascii::string(b"Source Address"),
@@ -505,7 +502,7 @@ fun test_take_approved_message_message_not_approved() {
         .messages_mut()
         .add(
             message.command_id(),
-            message_status::approved(axelar_gateway::bytes32::new(@0x3)),
+            axelar_gateway::message_status::approved(axelar_gateway::bytes32::new(@0x3)),
         );
 
     let approved_message = take_approved_message(
