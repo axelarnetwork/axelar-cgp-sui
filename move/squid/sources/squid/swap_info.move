@@ -23,7 +23,7 @@ module squid::swap_info {
     const ENotDoneSwapping: u64 = 6;
 
 
-    public(package) fun new(data: vector<u8>, ctx: &mut TxContext): SwapInfo {
+    public (package) fun new(data: vector<u8>, ctx: &mut TxContext): SwapInfo {
         let swap_data = bcs::new(data).peel_vec_vec_u8();
         SwapInfo {
             swap_index: 0,
@@ -35,7 +35,7 @@ module squid::swap_info {
         }
     }
 
-    public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
+    public (package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
         let index = self.swap_index;
         if (index == 0 && self.status == ESTIMATING) {
             assert!(self.estimate_index == self.swap_data.length(), ENotDoneEstimating);
@@ -52,7 +52,7 @@ module squid::swap_info {
         }
     }
 
-    public(package) fun get_data_estimating(self: &mut SwapInfo): vector<u8> {
+    public (package) fun get_data_estimating(self: &mut SwapInfo): vector<u8> {
         let index = self.estimate_index;
         assert!(index < self.swap_data.length(), EOutOfEstimates);
 
@@ -66,15 +66,15 @@ module squid::swap_info {
         }
     }
 
-    public(package) fun coin_bag(self: &mut SwapInfo): &mut CoinBag {
+    public (package) fun coin_bag(self: &mut SwapInfo): &mut CoinBag {
         &mut self.coin_bag
     }
 
-    public(package) fun swap_data(self: &SwapInfo, i: u64): vector<u8> {
+    public (package) fun swap_data(self: &SwapInfo, i: u64): vector<u8> {
         self.swap_data[i]
     }
 
-    public(package) fun skip_swap(self: &mut SwapInfo) {
+    public (package) fun skip_swap(self: &mut SwapInfo) {
         self.status = SKIP_SWAP;
     }
 

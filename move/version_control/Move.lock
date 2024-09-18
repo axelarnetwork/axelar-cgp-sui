@@ -2,12 +2,10 @@
 
 [move]
 version = 2
-manifest_digest = "A838BF65D8151146E5E145F85319480C8F4FDD693BBA029CEE96A340572EEFA1"
-deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
+manifest_digest = "563A5A8118BE2CE886A68FEB4688B159B50448DF75C3216E814CB3FF7A5F9843"
+deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { name = "Sui" },
-  { name = "Utils" },
-  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -20,22 +18,6 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2
 
 dependencies = [
   { name = "MoveStdlib" },
-]
-
-[[move.package]]
-name = "Utils"
-source = { local = "../utils" }
-
-dependencies = [
-  { name = "Sui" },
-]
-
-[[move.package]]
-name = "VersionControl"
-source = { local = "../version_control" }
-
-dependencies = [
-  { name = "Sui" },
 ]
 
 [move.toolchain-version]

@@ -25,7 +25,7 @@ module its::utils {
         c >= NUMBERS_START && c < NUMBERS_START + NUMBERS_LENGTH
     }
 
-    public(package) fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
+    public (package) fun get_module_from_symbol(symbol: &ascii::String): ascii::String {
         let symbolBytes = ascii::as_bytes(symbol);
         let mut moduleName = vector[];
 
@@ -48,13 +48,13 @@ module its::utils {
         ascii::string(moduleName)
     }
 
-    public(package) fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
+    public (package) fun hash_coin_info(symbol: &ascii::String, decimals: &u8): address {
         let mut v = vector[*decimals];
         v.append(*symbol.as_bytes());
         address::from_bytes(keccak256(&v))
     }
 
-    public(package) fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
+    public (package) fun decode_metadata(mut metadata: vector<u8>): (u32, vector<u8>) {
         if (metadata.length() < 4) {
             (0, vector[])
         } else {
@@ -69,7 +69,7 @@ module its::utils {
         }
     }
 
-    public(package) fun pow(mut base: u256, mut exponent: u8): u256 {
+    public (package) fun pow(mut base: u256, mut exponent: u8): u256 {
         let mut res: u256 = 1;
         while (exponent > 0) {
             if (exponent % 2 == 0) {
