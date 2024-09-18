@@ -17,7 +17,7 @@ public enum MessageStatus has copy, drop, store {
 // -----------------
 // Package Functions
 // -----------------
-public (package) fun approved(hash: Bytes32): MessageStatus {
+public(package) fun approved(hash: Bytes32): MessageStatus {
     MessageStatus::Approved(hash)
 }
 
