@@ -31,15 +31,16 @@ use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::message::{Self, Message};
-use axelar_gateway::proof::{Self, Proof};
-use axelar_gateway::weighted_signers::{Self, WeightedSigners};
+use axelar_gateway::proof;
+use axelar_gateway::weighted_signers;
+use axelar_gateway::message_ticket::{Self, MessageTicket};
 use std::ascii::String;
 use sui::address;
-use sui::bcs;
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
 use version_control::version_control::{Self, VersionControl};
+use utils::utils;
 
 // ------
 // Version
@@ -53,12 +54,10 @@ const VERSION: u64 = 0;
 const EMessageNotApproved: u64 = 0;
 /// Invalid length of vector
 const EInvalidLength: u64 = 1;
-/// Remaining data after BCS decoding
-const ERemainingData: u64 = 2;
 /// Not latest signers
-const ENotLatestSigners: u64 = 3;
+const ENotLatestSigners: u64 = 2;
 /// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 4;
+const ENewerMessage: u64 = 3;
 
 // -----
 // Types
@@ -74,16 +73,6 @@ public struct Gateway has key {
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
-}
-
-/// [docstring]
-/// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
-public struct MessageTicket {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    version: u64,
 }
 
 /// The Status of the message.
@@ -160,7 +149,10 @@ public fun setup(
             domain_separator,
             minimum_rotation_delay,
             previous_signers_retention,
-            peel_weighted_signers(initial_signers),
+            utils::peel!(
+                initial_signers,
+                |bcs| weighted_signers::peel(bcs),
+            ),
             clock,
             ctx,
         ),
@@ -197,8 +189,8 @@ entry fun approve_messages(
     proof_data: vector<u8>,
 ) {
     self.version_control.check(VERSION, b"approve_messages");
-    let messages = peel_messages(*&message_data);
-    let proof = peel_proof(proof_data);
+    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
+    let messages = peel_messages(message_data);
 
     let _ = self
         .signers
@@ -207,13 +199,7 @@ entry fun approve_messages(
             proof,
         );
 
-    let mut i = 0;
-
-    while (i < messages.length()) {
-        self.approve_message(&messages[i]);
-
-        i = i + 1;
-    };
+    messages.do!(|message| self.approve_message(message));
 }
 
 /// The main entrypoint for rotating Axelar signers.
@@ -227,8 +213,11 @@ entry fun rotate_signers(
     ctx: &TxContext,
 ) {
     self.version_control.check(VERSION, b"rotate_signers");
-    let weighted_signers = peel_weighted_signers(new_signers_data);
-    let proof = peel_proof(proof_data);
+    let weighted_signers = utils::peel!(
+        new_signers_data,
+        |bcs| weighted_signers::peel(bcs),
+    );
+    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
 
     let enforce_rotation_delay = ctx.sender() != self.operator;
 
@@ -257,13 +246,13 @@ public fun prepare_message(
     destination_address: String,
     payload: vector<u8>,
 ): MessageTicket {
-    MessageTicket {
-        source_id: channel.to_address(),
+    message_ticket::new(
+        channel.to_address(),
         destination_chain,
         destination_address,
         payload,
-        version: VERSION,
-    }
+        VERSION,
+    )
 }
 
 /// Submit the MessageTicket which causes a contract call by sending an event from an
@@ -271,13 +260,13 @@ public fun prepare_message(
 public fun send_message(
     message: MessageTicket,
 ) {
-    let MessageTicket {
+    let (
         source_id,
         destination_chain,
         destination_address,
         payload,
         version,
-    } = message;
+    ) = message.destroy();
     assert!(version <= VERSION, ENewerMessage);
     sui::event::emit(ContractCall {
         source_id,
@@ -394,41 +383,17 @@ public fun version(self: &MessageTicket): u64 {
 // -----------------
 
 fun peel_messages(message_data: vector<u8>): vector<Message> {
-    let mut bcs = bcs::new(message_data);
-
-    let mut messages = vector::empty<Message>();
-    let mut len = bcs.peel_vec_length();
-
-    while (len > 0) {
-        messages.push_back(message::peel(&mut bcs));
-
-        len = len - 1;
-    };
-
-    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
-    assert!(messages.length() > 0, EInvalidLength);
-
-    messages
-}
-
-fun peel_weighted_signers(weighted_signers_data: vector<u8>): WeightedSigners {
-    let mut bcs = bcs::new(weighted_signers_data);
-
-    let weighted_signers = weighted_signers::peel(&mut bcs);
-
-    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
-
-    weighted_signers
-}
-
-fun peel_proof(proof_data: vector<u8>): Proof {
-    let mut bcs = bcs::new(proof_data);
-
-    let proof = proof::peel(&mut bcs);
-
-    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
-
-    proof
+    utils::peel!(
+        message_data,
+        |bcs| {
+            let messages = vector::tabulate!(
+                bcs.peel_vec_length(),
+                |_| message::peel(bcs),
+            );
+            assert!(messages.length() > 0, EInvalidLength);
+            messages
+        },
+    )
 }
 
 fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
@@ -438,7 +403,7 @@ fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&typed_data))
 }
 
-fun approve_message(self: &mut Gateway, message: &message::Message) {
+fun approve_message(self: &mut Gateway, message: message::Message) {
     let command_id = message.command_id();
 
     // If the message was already approved, ignore it.
@@ -454,13 +419,14 @@ fun approve_message(self: &mut Gateway, message: &message::Message) {
         );
 
     sui::event::emit(MessageApproved {
-        message: *message,
+        message,
     });
 }
 
 fun version_control(): VersionControl {
     version_control::new(
         vector [
+            // Version 0
             vector [
                 b"approve_messages",
                 b"rotate_signers",
@@ -473,12 +439,15 @@ fun version_control(): VersionControl {
 }
 
 #[test_only]
+use sui::bcs;
+
+#[test_only]
 public fun create_for_testing(
     operator: address,
     domain_separator: Bytes32,
     minimum_rotation_delay: u64,
     previous_signers_retention: u64,
-    initial_signers: WeightedSigners,
+    initial_signers: weighted_signers::WeightedSigners,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Gateway {
@@ -620,9 +589,9 @@ fun test_approve_message() {
 
     let mut gateway = dummy(ctx);
 
-    approve_message(&mut gateway, &message);
+    approve_message(&mut gateway, message);
     // The second approve message should do nothing.
-    approve_message(&mut gateway, &message);
+    approve_message(&mut gateway, message);
 
     assert!(
         is_message_approved(
@@ -705,7 +674,7 @@ fun test_peel_messages() {
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure]
 fun test_peel_messages_no_remaining_data() {
     let message1 = message::new(
         std::ascii::string(b"Source Chain 1"),
@@ -731,38 +700,38 @@ fun test_peel_messages_no_zero_messages() {
 fun test_peel_weighted_signers() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let bytes = bcs::to_bytes(&signers);
-    let result = peel_weighted_signers(bytes);
+    let result = utils::peel!(bytes, |bcs| weighted_signers::peel(bcs));
 
     assert!(result == signers, 0);
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure]
 fun test_peel_weighted_signers_no_remaining_data() {
     let signers = axelar_gateway::weighted_signers::dummy();
     let mut bytes = bcs::to_bytes(&signers);
     bytes.push_back(0);
 
-    peel_weighted_signers(bytes);
+    utils::peel!(bytes, |bcs| weighted_signers::peel(bcs));
 }
 
 #[test]
 fun test_peel_proof() {
     let proof = axelar_gateway::proof::dummy();
     let bytes = bcs::to_bytes(&proof);
-    let result = peel_proof(bytes);
+    let result = utils::peel!(bytes, |bcs| proof::peel(bcs));
 
     assert!(result == proof, 0);
 }
 
 #[test]
-#[expected_failure(abort_code = ERemainingData)]
+#[expected_failure]
 fun test_peel_proof_no_remaining_data() {
     let proof = axelar_gateway::proof::dummy();
     let mut bytes = bcs::to_bytes(&proof);
     bytes.push_back(0);
 
-    peel_proof(bytes);
+    utils::peel!(bytes, |bcs| proof::peel(bcs));
 }
 
 #[test]

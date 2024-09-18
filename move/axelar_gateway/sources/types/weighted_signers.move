@@ -16,12 +16,42 @@ public struct WeightedSigners has copy, drop, store {
 /// ------
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
+const EInvalidThreshold: u64 = 1;
+/// Invalid signer weights or threshold
+const EInvalidSigners: u64 = 2;
+const EInvalidSignerOrder: u64 = 3;
 
-/// ----------------
-/// Public Functions
-/// ----------------
-public(package) fun signers(self: &WeightedSigners): vector<WeightedSigner> {
-    self.signers
+/// -----------------
+/// Package Functions
+/// -----------------
+
+/// Decode a `WeightedSigners` from the BCS encoded bytes.
+public(package) fun peel(bcs: &mut BCS): WeightedSigners {
+    let len = bcs.peel_vec_length();
+    assert!(len > 0, EInvalidLength);
+
+    WeightedSigners {
+        signers: vector::tabulate!(len, |_| weighted_signer::peel(bcs)),
+        threshold: bcs.peel_u128(),
+        nonce: bytes32::peel(bcs),
+    }
+}
+
+/// Validates the weighted signers. The following must be true:
+/// 1. The signers are in ascending order by their public key.
+/// 2. The threshold is greater than zero.
+/// 3. The threshold is less than or equal to the total weight of the signers.
+public(package) fun validate(self: &WeightedSigners) {
+    self.validate_signers();
+    self.validate_threshold();
+}
+
+public(package) fun hash(self: &WeightedSigners): Bytes32 {
+    bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
+}
+
+public(package) fun signers(self: &WeightedSigners): &vector<WeightedSigner> {
+    &self.signers
 }
 
 public(package) fun threshold(self: &WeightedSigners): u128 {
@@ -32,33 +62,38 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
     self.nonce
 }
 
-/// -----------------
-/// Package Functions
-/// -----------------
-public(package) fun peel(bcs: &mut BCS): WeightedSigners {
-    let mut signers = vector::empty<WeightedSigner>();
+/// -----
+/// Internal Functions
+/// -----
 
-    let mut length = bcs.peel_vec_length();
-    assert!(length > 0, EInvalidLength);
-
-    while (length > 0) {
-        signers.push_back(weighted_signer::peel(bcs));
-
-        length = length - 1;
-    };
-
-    let threshold = bcs.peel_u128();
-    let nonce = bytes32::peel(bcs);
-
-    WeightedSigners {
-        signers,
-        threshold,
-        nonce,
-    }
+/// Validates the order of the signers and the length of the signers.
+/// The signers must be in ascending order by their public key.
+/// Otherwise, the error `EInvalidSigners` is raised.
+fun validate_signers(self: &WeightedSigners) {
+    assert!(!self.signers.is_empty(), EInvalidSigners);
+    let mut previous = &weighted_signer::default();
+    self.signers.do_ref!(
+        |signer| {
+            signer.validate();
+            assert!(previous.lt(signer), EInvalidSignerOrder);
+            previous = signer;
+        },
+    );
 }
 
-public(package) fun hash(self: &WeightedSigners): Bytes32 {
-    bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
+/// Calculates the total weight of the signers.
+fun total_weight(self: &WeightedSigners): u128 {
+    self.signers.fold!<WeightedSigner, u128>(
+        0,
+        |acc, signer| acc + signer.weight(),
+    )
+}
+
+/// Validates the threshold.
+/// The threshold must be greater than zero and less than or equal to the total weight of the signers.
+/// Otherwise, the error `EInvalidThreshold` is raised.
+fun validate_threshold(self: &WeightedSigners) {
+    assert!(self.threshold != 0 && self.total_weight() >= self.threshold, EInvalidThreshold);
 }
 
 #[test_only]

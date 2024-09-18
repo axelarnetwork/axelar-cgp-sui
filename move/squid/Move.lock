@@ -2,13 +2,16 @@
 
 [move]
 version = 2
-manifest_digest = "6FC304BE5574558C1A79D9C5A6DAD7A68071ABB91045D6FEAF85B1E9259F45DA"
-deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+manifest_digest = "617FD2D8FF28F7350FF7D25A2F3CFF17DF161656C01A4A1CD72939A90F37235D"
+deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { name = "AxelarGateway" },
-  { name = "DeepBook" },
   { name = "ITS" },
   { name = "Sui" },
+  { name = "Utils" },
+  { name = "VersionControl" },
+  { name = "deepbook" },
+  { name = "token" },
 ]
 
 [[move.package]]
@@ -25,15 +28,8 @@ source = { local = "../axelar_gateway" }
 
 dependencies = [
   { name = "Sui" },
-]
-
-[[move.package]]
-name = "DeepBook"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/deepbook" }
-
-dependencies = [
-  { name = "MoveStdlib" },
-  { name = "Sui" },
+  { name = "Utils" },
+  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -44,6 +40,8 @@ dependencies = [
   { name = "Abi" },
   { name = "AxelarGateway" },
   { name = "Sui" },
+  { name = "Utils" },
+  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -54,6 +52,8 @@ dependencies = [
   { name = "AxelarGateway" },
   { name = "Governance" },
   { name = "Sui" },
+  { name = "Utils" },
+  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -66,6 +66,39 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2
 
 dependencies = [
   { name = "MoveStdlib" },
+]
+
+[[move.package]]
+name = "Utils"
+source = { local = "../utils" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "VersionControl"
+source = { local = "../version_control" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "deepbook"
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/deepbook" }
+
+dependencies = [
+  { name = "Sui" },
+  { name = "token" },
+]
+
+[[move.package]]
+name = "token"
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/token" }
+
+dependencies = [
+  { name = "Sui" },
 ]
 
 [move.toolchain-version]
