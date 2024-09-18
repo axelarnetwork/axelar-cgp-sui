@@ -15,13 +15,13 @@ public struct WeightedSigners has copy, drop, store {
 /// Errors
 /// ------
 #[error]
-const EInvalidSignersLength: vector<u8> = b"Invalid signers length: expected at least 1 signer";
+const EInvalidSignersLength: vector<u8> = b"invalid signers length: expected at least 1 signer";
 
 #[error]
-const EInvalidThreshold: vector<u8> = b"Invalid threshold: expected non-zero value and less than or equal to the total weight of the signers";
+const EInvalidThreshold: vector<u8> = b"invalid threshold: expected non-zero value and less than or equal to the total weight of the signers";
 
 #[error]
-const EInvalidSignerOrder: vector<u8> = b"Invalid signer order: signers must be in ascending order by their public key";
+const EInvalidSignerOrder: vector<u8> = b"invalid signer order: signers must be in ascending order by their public key";
 
 /// -----------------
 /// Package Functions

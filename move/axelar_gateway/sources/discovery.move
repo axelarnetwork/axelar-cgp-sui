@@ -15,10 +15,10 @@ use sui::hex;
 use sui::table::{Self, Table};
 
 #[error]
-const EInvalidString: vector<u8> = b"TypeArgument is not a valid string.";
+const EInvalidString: vector<u8> = b"typeArgument is not a valid string";
 
 #[error]
-const EChannelNotFound: vector<u8> = b"Channel not found.";
+const EChannelNotFound: vector<u8> = b"channel not found";
 
 /// A central shared object that stores discovery configuration for the
 /// Relayer. The Relayer will use this object to discover and execute the

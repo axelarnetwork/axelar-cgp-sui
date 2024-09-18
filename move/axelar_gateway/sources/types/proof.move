@@ -27,13 +27,13 @@ const SIGNATURE_LENGTH: u64 = 65;
 // ------
 /// Invalid length of the bytes
 #[error]
-const EInvalidLength: vector<u8> = b"Invalid signature length: expected 65 bytes";
+const EInvalidLength: vector<u8> = b"invalid signature length: expected 65 bytes";
 
 #[error]    
-const ELowSignaturesWeight: vector<u8> = b"Insufficient signatures weight";
+const ELowSignaturesWeight: vector<u8> = b"insufficient signatures weight";
 
 #[error]
-const ESignerNotFound: vector<u8> = b"No signer found with the specified public key in the given range";
+const ESignerNotFound: vector<u8> = b"no signer found with the specified public key in the given range";
 
 // ----------------
 // Public Functions

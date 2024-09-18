@@ -40,15 +40,15 @@ public struct Borrow {
 
 /// When the operator is not found in the set of approved operators.
 #[error]
-const EOperatorNotFound: vector<u8> = b"The sender is not an operator";
+const EOperatorNotFound: vector<u8> = b"the sender is not an operator";
 
 /// When the capability is not found.
 #[error]
-const ECapNotFound: vector<u8> = b"The given capability id does not exist";
+const ECapNotFound: vector<u8> = b"the given capability id does not exist";
 
 /// When the cap trying to restore does not match the Borrow object.
 #[error]
-const ECapIdMismatch: vector<u8> = b"The ID of the returned capability does not match the ID in the Borrow object";
+const ECapIdMismatch: vector<u8> = b"the ID of the returned capability does not match the ID in the Borrow object";
 
 // ------
 // Events

@@ -31,10 +31,10 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 #[error]
-const EInvalidPubKeyLength: vector<u8> = b"Invalid public key length: expected 33 bytes";
+const EInvalidPubKeyLength: vector<u8> = b"invalid public key length: expected 33 bytes";
 
 #[error]
-const EInvalidWeight: vector<u8> = b"Invalid weight: expected non-zero value";
+const EInvalidWeight: vector<u8> = b"invalid weight: expected non-zero value";
 
 // -----------------
 // Package Functions

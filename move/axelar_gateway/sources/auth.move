@@ -12,7 +12,7 @@ use sui::table::{Self, Table};
 // Errors
 // ------
 #[error]
-const EInsufficientRotationDelay: vector<u8> = b"Insufficient rotation delay.";
+const EInsufficientRotationDelay: vector<u8> = b"insufficient rotation delay";
 
 #[error]
 const EInvalidEpoch: vector<u8> = b"the difference between current_epoch and signers_epoch exceeds the allowed retention period";

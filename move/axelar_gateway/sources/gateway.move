@@ -50,16 +50,16 @@ const VERSION: u64 = 0;
 // Errors
 // ------
 #[error]
-const EMessageNotApproved: vector<u8> = b"Trying to `take_approved_message` for a message that is not approved.";
+const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
 
 #[error]
-const EInvalidLength: vector<u8> = b"Invalid message vector length.";
+const EInvalidLength: vector<u8> = b"invalid message vector length";
 
 #[error]
-const ENotLatestSigners: vector<u8> = b"Not latest signers.";
+const ENotLatestSigners: vector<u8> = b"not latest signers";
 
 #[error]
-const ENewerMessage: vector<u8> = b"MessageTickets created from newer versions cannot be sent here";
+const ENewerMessage: vector<u8> = b"messageTickets created from newer versions cannot be sent here";
 
 // -----
 // Types

@@ -10,13 +10,13 @@ use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::{Self, Table};
 
 #[error]
-const EUntrustedAddress: vector<u8> = b"Upgrade authorization attempt from an untrusted address";
+const EUntrustedAddress: vector<u8> = b"upgrade authorization attempt from an untrusted address";
 
 #[error]
-const EInvalidMessageType: vector<u8> = b"Invalid message type for upgrade authorization";
+const EInvalidMessageType: vector<u8> = b"invalid message type for upgrade authorization";
 
 #[error]
-const ENotSelfUpgradeCap: vector<u8> = b"Governance initialization requires its own upgrade capability. The provided capability belongs to a different package";
+const ENotSelfUpgradeCap: vector<u8> = b"governance initialization requires its own upgrade capability. The provided capability belongs to a different package";
 
 #[error]
 const ENotNewPackage: vector<u8> = b"Not new package.";
