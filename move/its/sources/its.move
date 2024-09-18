@@ -126,20 +126,20 @@ module its::its {
         self.channel.to_address()
     }
 
-    // === Friend-only ===
-    public(package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
+    // === Package Functions ===
+    public (package) fun set_relayer_discovery_id(self: &mut ITS, relayer_discovery: &RelayerDiscovery) {
         self.relayer_discovery_id = object::id(relayer_discovery);
     }
 
-    public(package) fun relayer_discovery_id(self: &ITS): ID {
+    public (package) fun relayer_discovery_id(self: &ITS): ID {
         self.relayer_discovery_id
     }
 
-    public(package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
+    public (package) fun set_trusted_address(self: &mut ITS, chain_name: String, trusted_address: String) {
         self.address_tracker.set_trusted_address(chain_name, trusted_address);
     }
 
-    public(package) fun set_trusted_addresses(self: &mut ITS, trusted_addresses: TrustedAddresses) {
+    public (package) fun set_trusted_addresses(self: &mut ITS, trusted_addresses: TrustedAddresses) {
         let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
         let length = chain_names.length();
         let mut i = 0;
@@ -152,29 +152,29 @@ module its::its {
         }
     }
 
-    public(package) fun get_coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
+    public (package) fun get_coin_data_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &mut self.registered_coins[token_id]
     }
 
-    public(package) fun get_coin_scaling<T>(self: &CoinData<T>): u256 {
+    public (package) fun get_coin_scaling<T>(self: &CoinData<T>): u256 {
         self.coin_info.scaling()
     }
 
-    public(package) fun channel(self: &ITS): &Channel {
+    public (package) fun channel(self: &ITS): &Channel {
         &self.channel
     }
 
-    public(package) fun channel_mut(self: &mut ITS): &mut Channel {
+    public (package) fun channel_mut(self: &mut ITS): &mut Channel {
         &mut self.channel
     }
 
-    public(package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
+    public (package) fun coin_management_mut<T>(self: &mut ITS, token_id: TokenId): &mut CoinManagement<T> {
         let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
         &mut coin_data.coin_management
     }
 
-    public(package) fun add_unregistered_coin<T>(
+    public (package) fun add_unregistered_coin<T>(
         self: &mut ITS,
         token_id: UnregisteredTokenId,
         treasury_cap: TreasuryCap<T>,
@@ -189,7 +189,7 @@ module its::its {
         add_unregistered_coin_type(self, token_id, type_name);
     }
 
-    public(package) fun remove_unregistered_coin<T>(
+    public (package) fun remove_unregistered_coin<T>(
         self: &mut ITS, token_id: UnregisteredTokenId
     ): (TreasuryCap<T>, CoinMetadata<T>) {
         let UnregisteredCoinData<T> {
@@ -202,7 +202,7 @@ module its::its {
         (treasury_cap, coin_metadata)
     }
 
-    public(package) fun add_registered_coin<T>(
+    public (package) fun add_registered_coin<T>(
         self: &mut ITS,
         token_id: TokenId,
         mut coin_management: CoinManagement<T>,

@@ -12,7 +12,8 @@ module its::service {
     use abi::abi;
 
     use axelar_gateway::channel::{Self, ApprovedMessage};
-    use axelar_gateway::gateway::{Self, MessageTicket};
+    use axelar_gateway::gateway;
+    use axelar_gateway::message_ticket::MessageTicket;
     use axelar_gateway::channel::Channel;
 
     use governance::governance::{Self, Governance};
@@ -23,6 +24,7 @@ module its::service {
     use its::coin_management::{Self, CoinManagement};
     use its::utils as its_utils;
     use its::trusted_addresses;
+    use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 
     // === VERSION ===
     const VERSION: u64 = 0;
@@ -35,19 +37,6 @@ module its::service {
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;    
     // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
     const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 = 0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
-
-    /// -----
-    /// Types
-    /// -----
-    public struct InterchainTransferTicket<phantom T>{
-        token_id: TokenId,
-        coin: Coin<T>,
-        source_address: address,
-        destination_chain: String,
-        destination_address: vector<u8>,
-        metadata: vector<u8>,
-        version: u64,
-    }
 
     // === HUB CONSTANTS ===
     // Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
@@ -120,15 +109,15 @@ module its::service {
         metadata: vector<u8>,
         source_channel: &Channel,
     ): InterchainTransferTicket<T> {
-        InterchainTransferTicket<T> {
+        interchain_transfer_ticket::new<T>(
             token_id,
-            coin,
-            source_address: source_channel.to_address(),
+            coin.into_balance(),
+            source_channel.to_address(),
             destination_chain,
             destination_address,
             metadata,
-            version: VERSION,
-        }
+            VERSION,
+        )
     }
 
     public fun send_interchain_transfer<T>(
@@ -136,18 +125,18 @@ module its::service {
         ticket: InterchainTransferTicket<T>,
         clock: &Clock,
     ): MessageTicket {
-        let InterchainTransferTicket {
+        let (
            token_id,
-           coin,
+           balance,
            source_address,
            destination_chain,
            destination_address,
            metadata, 
            version,
-        } = ticket;
+        ) = ticket.destroy();
         assert!(version <= VERSION, ENewerTicket);
         let amount = self.coin_management_mut(token_id)
-            .take_coin(coin, clock);
+            .take_balance(balance, clock);
         let (_version, data) = its_utils::decode_metadata(metadata);
         let mut writer = abi::new_writer(6);
 
@@ -302,7 +291,7 @@ module its::service {
 
         assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 
-        coin_management.burn(coin);
+        coin_management.burn(coin.into_balance());
     }
 
     // === Special Call Receiving
@@ -506,7 +495,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -556,7 +545,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -606,7 +595,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -657,7 +646,7 @@ module its::service {
         let data = b"some_data";
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -715,7 +704,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -768,7 +757,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -821,7 +810,7 @@ module its::service {
         let amount = 1234;
         let mut coin_management = its::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
-        coin_management.take_coin(coin, &clock);
+        coin_management.take_balance(coin.into_balance(), &clock);
 
         let token_id = register_coin(&mut its, coin_info, coin_management);
         let source_chain = ascii::string(b"Chain Name");
@@ -1497,7 +1486,7 @@ module its::service {
     }
 
     #[test]
-    fun test_send_payload_to_hub() {
+    fun test_prepare_message_to_hub() {
         let mut its = its::its::new_for_testing();
         let destination_chain = ascii::string(b"Destination Chain");
         let hub_address = ascii::string(b"Address");
@@ -1509,7 +1498,8 @@ module its::service {
 
         let message_ticket = prepare_message(&mut its, destination_chain, payload);
 
-
+        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME), 0);
+        assert!(message_ticket.destination_address() == hub_address, 1);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(message_ticket);

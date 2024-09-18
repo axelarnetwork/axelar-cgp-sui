@@ -9,11 +9,11 @@ module squid::discovery {
 
     use squid::squid::Squid;
     use squid::transfers;
-    use squid::deepbook_v2;
+    use squid::deepbook_v3;
 
     const EInvalidSwapType: u64 = 0;
 
-    const SWAP_TYPE_DEEPBOOK_V2: u8 = 1;
+    const SWAP_TYPE_DEEPBOOK_V3: u8 = 1;
     const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
     const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
 
@@ -71,8 +71,8 @@ module squid::discovery {
             let mut bcs = bcs::new(swap_data[i]);
             let swap_type = bcs.peel_u8();
 
-           if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
-                move_calls.push_back(deepbook_v2::get_estimate_move_call(package_id, bcs, swap_info_arg));
+           if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
+                move_calls.push_back(deepbook_v3::get_estimate_move_call(package_id, bcs, swap_info_arg));
             } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
                 move_calls.push_back(transfers::get_sui_estimate_move_call(package_id, bcs, swap_info_arg));
             } else {
@@ -88,8 +88,8 @@ module squid::discovery {
             let mut bcs = bcs::new(swap_data[i]);
             let swap_type = bcs.peel_u8();
 
-            if (swap_type == SWAP_TYPE_DEEPBOOK_V2) {
-                move_calls.push_back(deepbook_v2::get_swap_move_call(package_id, bcs, swap_info_arg, squid_arg));
+            if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
+                move_calls.push_back(deepbook_v3::get_swap_move_call(package_id, bcs, swap_info_arg, squid_arg));
             } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
                 move_calls.push_back(transfers::get_sui_transfer_move_call(package_id, bcs, swap_info_arg));
             } else {

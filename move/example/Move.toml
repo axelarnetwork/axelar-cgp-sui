@@ -7,6 +7,8 @@ edition = "2024.beta"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
 AxelarGateway = { local = "../axelar_gateway" }
 GasService = { local = "../gas_service" }
+Utils = { local = "../utils" }
+VersionControl = { local = "../version_control" }
 
 [addresses]
 example = "0xa9"

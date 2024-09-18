@@ -27,6 +27,8 @@ const SIGNATURE_LENGTH: u64 = 65;
 // ------
 /// Invalid length of the bytes
 const EInvalidLength: u64 = 0;
+const ELowSignaturesWeight: u64 = 1;
+const EMalformedSigners: u64 = 2;
 
 // ----------------
 // Public Functions
@@ -60,6 +62,61 @@ public(package) fun recover_pub_key(
     ecdsa::secp256k1_ecrecover(&self.bytes, message, 0)
 }
 
+/// Validates the signatures of a message against the signers.
+/// The total weight of the signatures must be greater than or equal to the threshold.
+/// Otherwise, the error `ELowSignaturesWeight` is raised.
+public(package) fun validate(self: &Proof, message: vector<u8>) {
+    let signers = &self.signers;
+    let signatures = &self.signatures;
+    assert!(signatures.length() != 0, ELowSignaturesWeight);
+
+    let threshold = signers.threshold();
+    let signatures_length = signatures.length();
+    let mut total_weight: u128 = 0;
+    let mut signer_index = 0;
+    let mut i = 0;
+
+    while (i < signatures_length) {
+        let pub_key = signatures[i].recover_pub_key(&message);
+
+        let (weight, index) = find_weight_by_pub_key_from(
+            signers,
+            signer_index,
+            &pub_key,
+        );
+
+        total_weight = total_weight + weight;
+
+        if (total_weight >= threshold) return;
+
+        i = i + 1;
+        signer_index = index + 1;
+    };
+
+    abort ELowSignaturesWeight
+}
+
+/// Finds the weight of a signer in the weighted signers by its public key.
+fun find_weight_by_pub_key_from(
+    signers: &WeightedSigners,
+    signer_index: u64,
+    pub_key: &vector<u8>,
+): (u128, u64) {
+    let signers = signers.signers();
+    let length = signers.length();
+    let mut index = signer_index;
+
+    // Find the first signer that satisfies the predicate
+    while (index < length && signers[index].pub_key() != pub_key) {
+        index = index + 1;
+    };
+
+    // If no signer satisfies the predicate, return an error
+    assert!(index < length, EMalformedSigners);
+
+    (signers[index].weight(), index)
+}
+
 public(package) fun peel_signature(bcs: &mut BCS): Signature {
     let bytes = bcs.peel_vec_u8();
 
@@ -68,20 +125,11 @@ public(package) fun peel_signature(bcs: &mut BCS): Signature {
 
 public(package) fun peel(bcs: &mut BCS): Proof {
     let signers = weighted_signers::peel(bcs);
-
-    let mut signatures = vector::empty<Signature>();
-
-    let mut length = bcs.peel_vec_length();
-
-    while (length > 0) {
-        signatures.push_back(peel_signature(bcs));
-
-        length = length - 1;
-    };
+    let length = bcs.peel_vec_length();
 
     Proof {
         signers,
-        signatures,
+        signatures: vector::tabulate!(length, |_| peel_signature(bcs)),
     }
 }
 
