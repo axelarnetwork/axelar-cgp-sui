@@ -1,8 +1,7 @@
 module axelar_gateway::auth;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::proof::{Proof, Signature};
-use axelar_gateway::weighted_signer;
+use axelar_gateway::proof::{Proof};
 use axelar_gateway::weighted_signers::WeightedSigners;
 use sui::bcs;
 use sui::clock::Clock;
@@ -12,15 +11,9 @@ use sui::table::{Self, Table};
 // ------
 // Errors
 // ------
-const EInvalidWeights: u64 = 0;
-const EInvalidThreshold: u64 = 1;
-/// For when operators have changed, and proof is no longer valid.
-const EInvalidOperators: u64 = 2;
-const EInsufficientRotationDelay: u64 = 3;
+const EInsufficientRotationDelay: u64 = 0;
 /// For when number of signatures for the call approvals is below the threshold.
-const ELowSignaturesWeight: u64 = 4;
-const EMalformedSigners: u64 = 5;
-const EInvalidEpoch: u64 = 6;
+const EInvalidEpoch: u64 = 1;
 
 // -----
 // Types
@@ -109,17 +102,11 @@ public(package) fun validate_proof(
         EInvalidEpoch,
     );
 
-    let message = MessageToSign {
+    proof.validate(bcs::to_bytes(&MessageToSign {
         domain_separator: self.domain_separator,
         signers_hash,
         data_hash,
-    };
-
-    validate_signatures(
-        bcs::to_bytes(&message),
-        signers,
-        proof.signatures(),
-    );
+    }));
 
     is_latest_signers
 }
@@ -130,7 +117,7 @@ public(package) fun rotate_signers(
     new_signers: WeightedSigners,
     enforce_rotation_delay: bool,
 ) {
-    validate_signers(&new_signers);
+    new_signers.validate();
 
     self.update_rotation_timestamp(clock, enforce_rotation_delay);
 
@@ -151,69 +138,6 @@ public(package) fun rotate_signers(
 // ------------------
 // Internal Functions
 // ------------------
-
-fun validate_signatures(
-    message: vector<u8>,
-    signers: &WeightedSigners,
-    signatures: &vector<Signature>,
-) {
-    let signers_length = signers.signers().length();
-    let signatures_length = signatures.length();
-    assert!(signatures_length != 0, ELowSignaturesWeight);
-
-    let threshold = signers.threshold();
-    let mut signer_index = 0;
-    let mut total_weight = 0;
-    let mut i = 0;
-
-    while (i < signatures_length) {
-        let pub_key = signatures[i].recover_pub_key(&message);
-
-        while (
-            signer_index < signers_length &&
-            signers.signers()[signer_index].pub_key() != pub_key
-        ) {
-            signer_index = signer_index + 1;
-        };
-
-        assert!(signer_index < signers_length, EMalformedSigners);
-
-        total_weight = total_weight + signers.signers()[signer_index].weight();
-
-        if (total_weight >= threshold) {
-            return
-        };
-
-        signer_index = signer_index + 1;
-        i = i + 1;
-    };
-
-    abort ELowSignaturesWeight
-}
-
-fun validate_signers(signers: &WeightedSigners) {
-    let signers_length = signers.signers().length();
-    assert!(signers_length != 0, EInvalidOperators);
-
-    let mut total_weight = 0;
-    let mut i = 0;
-    let mut previous_signer = weighted_signer::default();
-
-    while (i < signers_length) {
-        let current_signer = signers.signers()[i];
-        assert!(previous_signer.lt(&current_signer), EInvalidOperators);
-
-        let weight = current_signer.weight();
-        assert!(weight != 0, EInvalidWeights);
-
-        total_weight = total_weight + weight;
-        i = i + 1;
-        previous_signer = current_signer;
-    };
-
-    let threshold = signers.threshold();
-    assert!(threshold != 0 && total_weight >= threshold, EInvalidThreshold);
-}
 
 fun update_rotation_timestamp(
     self: &mut AxelarSigners,

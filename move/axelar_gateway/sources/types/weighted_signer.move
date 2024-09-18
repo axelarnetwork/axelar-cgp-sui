@@ -31,6 +31,7 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 const EInvalidPubKeyLength: u64 = 0;
+const EInvalidWeight: u64 = 1;
 
 // -----------------
 // Package Functions
@@ -60,6 +61,10 @@ public(package) fun peel(bcs: &mut BCS): WeightedSigner {
     new(pub_key, weight)
 }
 
+public(package) fun validate(self: &WeightedSigner) {
+    assert!(self.weight != 0, EInvalidWeight);
+}
+
 /// Check if self.signer is less than other.signer as bytes
 public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
     let mut i = 0;
@@ -82,7 +87,7 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 // -----
 
 #[test]
-fun test_default() {
+fun verify_default_signer() {
     let signer = default();
 
     assert!(signer.weight == 0, 0);
@@ -93,4 +98,31 @@ fun test_default() {
         assert!(signer.pub_key[i] == 0, 2);
         i = i + 1;
     }
+}
+
+#[test]
+fun compare_weight_signers() {
+    let signer1 = new(
+        x"000100000000000000000000000000000000000000000000000000000000000000",
+        1,
+    );
+    let signer2 = new(
+        x"000200000000000000000000000000000000000000000000000000000000000000",
+        2,
+    );
+    let signer3 = new(
+        x"000100000000000000000000000000000000000000000000000000000000000001",
+        3,
+    );
+
+    // Less than
+    assert!(signer1.lt(&signer2), 0);
+    assert!(signer1.lt(&signer3), 2);
+
+    // Not less than
+    assert!(!signer2.lt(&signer1), 1);
+    assert!(!signer3.lt(&signer1), 3);
+
+    // Equal
+    assert!(!signer1.lt(&signer1), 4); // !(signer1 < signer1)
 }

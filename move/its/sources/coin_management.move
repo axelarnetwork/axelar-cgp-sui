@@ -89,7 +89,7 @@ module its::coin_management {
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user. Returns the amount that the ITS is supposed to give on other chains.
-    public(package) fun take_coin<T>(self: &mut CoinManagement<T>, to_take: Coin<T>, clock: &Clock): u256 {
+    public (package) fun take_balance<T>(self: &mut CoinManagement<T>, to_take: Balance<T>, clock: &Clock): u256 {
         self.flow_limit.add_flow_out(to_take.value(), clock);
         let amount = (to_take.value() as u256) * self.scaling;
         if (has_capability(self)) {
@@ -97,13 +97,13 @@ module its::coin_management {
         } else {
             self.balance
                 .borrow_mut()
-                .join(to_take.into_balance());
+                .join(to_take);
         };
         amount
     }
 
     /// Withdraws or mints the given amount of coins. Any leftover amount from previous transfers is added to the coin here.
-    public(package) fun give_coin<T>(
+    public (package) fun give_coin<T>(
         self: &mut CoinManagement<T>, mut amount: u256, clock: &Clock, ctx: &mut TxContext
     ): Coin<T> {        
         amount  = amount + self.dust;
@@ -117,22 +117,23 @@ module its::coin_management {
         }
     }
 
-    public(package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
+    public (package) fun set_scaling<T>(self: &mut CoinManagement<T>, scaling: u256) {
         self.scaling = scaling;
     }
 
     // helper function to mint as a distributor.
-    public(package) fun mint<T>(self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
+    public (package) fun mint<T>(self: &mut CoinManagement<T>, amount: u64, ctx: &mut TxContext): Coin<T> {
         self.treasury_cap
             .borrow_mut()
             .mint(amount, ctx)
     }
 
     // helper function to burn as a distributor.
-    public(package) fun burn<T>(self: &mut CoinManagement<T>, coin: Coin<T>) {
+    public (package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
         self.treasury_cap
             .borrow_mut()
-            .burn(coin);
+            .supply_mut()
+            .decrease_supply(balance);
     }
     // === Views ===
 
@@ -163,7 +164,7 @@ module its::coin_management {
         )
     }
     #[test]
-    fun test_take_coin() {
+    fun test_take_balance() {
         let (mut cap, metadata) = create_currency();
         let ctx = &mut sui::tx_context::dummy();
         let amount1 = 10;
@@ -172,13 +173,13 @@ module its::coin_management {
         let mut coin = cap.mint(amount1, ctx);
         let mut management1 = new_locked<COIN_MANAGEMENT>();
         let clock = sui::clock::create_for_testing(ctx);
-        management1.take_coin(coin, &clock);
+        management1.take_balance(coin.into_balance(), &clock);
 
         assert!(management1.balance.borrow().value() == amount1, 0);
 
         coin = cap.mint(amount2, ctx);
         let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
-        management2.take_coin(coin, &clock);
+        management2.take_balance(coin.into_balance(), &clock);
 
         sui::test_utils::destroy(metadata);
         sui::test_utils::destroy(management1);
@@ -197,7 +198,7 @@ module its::coin_management {
         let mut management1 = new_locked<COIN_MANAGEMENT>();
         management1.scaling = 1;
         let clock = sui::clock::create_for_testing(ctx);
-        management1.take_coin(coin, &clock);
+        management1.take_balance(coin.into_balance(), &clock);
         coin = management1.give_coin((amount1 as u256), &clock, ctx);
 
         assert!(management1.balance.borrow().value() == 0, 0);

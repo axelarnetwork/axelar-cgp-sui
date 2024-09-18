@@ -23,7 +23,7 @@ module squid::squid {
         });
     }
 
-    public(package) fun borrow_channel(self: &Squid): &Channel {
+    public (package) fun borrow_channel(self: &Squid): &Channel {
         &self.channel
     }
 
@@ -45,7 +45,7 @@ module squid::squid {
         swap_info
     }
 
-    public(package) fun coin_bag(self: &mut Squid): &mut CoinBag{
+    public (package) fun coin_bag(self: &mut Squid): &mut CoinBag{
         &mut self.coin_bag
     }
 
@@ -82,6 +82,7 @@ module squid::squid {
 
         let token_id = its::service::register_coin(&mut its, coin_info, coin_management);
 
+        // This gives some coin to the service.
         let interchain_transfer_ticket = service::prepare_interchain_transfer(
             token_id,
             coin,
