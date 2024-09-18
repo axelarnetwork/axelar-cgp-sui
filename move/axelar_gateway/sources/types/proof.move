@@ -27,7 +27,7 @@ const SIGNATURE_LENGTH: u64 = 65;
 // ------
 /// Invalid length of the bytes
 #[error]
-const EInvalidLength: vector<u8> = b"invalid signature length: expected 65 bytes";
+const EInvalidSignatureLength: vector<u8> = b"invalid signature length: expected 65 bytes";
 
 #[error]    
 const ELowSignaturesWeight: vector<u8> = b"insufficient signatures weight";
@@ -52,7 +52,7 @@ public fun signatures(proof: &Proof): &vector<Signature> {
 // Package Functions
 // -----------------
 public(package) fun new_signature(bytes: vector<u8>): Signature {
-    assert!(bytes.length() == SIGNATURE_LENGTH, EInvalidLength);
+    assert!(bytes.length() == SIGNATURE_LENGTH, EInvalidSignatureLength);
 
     Signature {
         bytes: bytes,
