@@ -11,7 +11,9 @@ module squid::squid {
     use squid::coin_bag::{Self, CoinBag};
     use squid::swap_info::{Self, SwapInfo};
 
+    // -------
     // Version
+    // -------
     const VERSION: u64 = 0;
 
     public struct Squid has key, store{
