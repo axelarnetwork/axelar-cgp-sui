@@ -43,9 +43,6 @@ public struct GatewayDataV0 has store {
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
 }
-
-
-
 // -----------------
 // Package Functions
 // -----------------
