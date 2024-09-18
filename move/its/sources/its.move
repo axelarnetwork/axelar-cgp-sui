@@ -252,6 +252,7 @@ module its::its {
     fun new_version_control(): VersionControl {
         version_control::new(
             vector[
+                // Version 0
                 vector[
                     b"register_coin",
                     b"deploy_remote_interchain_token",
