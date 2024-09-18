@@ -286,7 +286,7 @@ public fun is_message_approved(
     );
     let command_id = message.command_id();
 
-    data!(self)[command_id] == message_status::approved(message.hash())
+    self.data!()[command_id] == message_status::approved(message.hash())
 }
 
 public fun is_message_executed(
