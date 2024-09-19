@@ -58,7 +58,7 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
     const moveJson = toml.parse(moveRaw) as any;
 
     // Update the published-at field under the package section e.g. published-at = "0x01"
-    moveJson.package.published_at = packageId;
+    moveJson.package['published-at'] = packageId;
 
     // Update the package address under the addresses section e.g. gas_service = "0x1"
     moveJson.addresses[packageName] = packageId;

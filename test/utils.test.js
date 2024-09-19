@@ -18,7 +18,7 @@ describe('UpdateMoveToml', () => {
 
         const moveToml = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.toml`, 'utf8'));
 
-        expect(moveToml.package.published_at).to.equal(testPackageId);
+        expect(moveToml.package['published-at']).to.equal(testPackageId);
         expect(moveToml.addresses[testPackageName]).to.equal(testPackageId);
     });
 
