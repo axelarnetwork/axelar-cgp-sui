@@ -42,9 +42,9 @@ use sui::table::{Self, Table};
 use version_control::version_control::{Self, VersionControl};
 use utils::utils;
 
-// ------
+// -------
 // Version
-// ------
+// -------
 const VERSION: u64 = 0;
 
 // ------
