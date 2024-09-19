@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
+import toml from '@iarna/toml';
 import { getFullnodeUrl } from '@mysten/sui/client';
 
 export function getModuleNameFromSymbol(symbol: string) {
@@ -41,40 +42,27 @@ export function getModuleNameFromSymbol(symbol: string) {
 }
 
 export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
+    // Path to the Move.toml file for the package
     const path = `${moveDir}/${packageName}/Move.toml`;
 
-    let toml = fs.readFileSync(path, 'utf8');
-
-    const lines = toml.split('\n');
-
-    const versionLineIndex = lines.findIndex((line: string) => line.slice(0, 7) === 'version');
-
-    if (!(lines[versionLineIndex + 1].slice(0, 12) === 'published-at')) {
-        lines.splice(versionLineIndex + 1, 0, '');
+    // Check if the Move.toml file exists
+    if (!fs.existsSync(path)) {
+        throw new Error(`Move.toml file not found for given path: ${path}`);
     }
 
-    lines[versionLineIndex + 1] = `published-at = "${packageId}"`;
+    // Read the Move.toml file
+    const moveRaw = fs.readFileSync(path, 'utf8');
 
-    const addressesIndex = lines.findIndex((line: string) => line.slice(0, 11) === '[addresses]');
+    // Parse the Move.toml file as JSON
+    const moveJson = toml.parse(moveRaw) as any;
 
-    for (let i = addressesIndex + 1; i < lines.length; i++) {
-        const line = lines[i];
-        const eqIndex = line.indexOf('=');
+    // Update the published-at field under the package section e.g. published-at = "0x01"
+    moveJson.package.published_at = packageId;
 
-        if (
-            eqIndex < 0 ||
-            line.slice(0, packageName.length) !== packageName ||
-            line.slice(packageName.length, eqIndex) !== Array(eqIndex - packageName.length + 1).join(' ')
-        ) {
-            continue;
-        }
+    // Update the package address under the addresses section e.g. gas_service = "0x1"
+    moveJson.addresses[packageName] = packageId;
 
-        lines[i] = line.slice(0, eqIndex + 1) + ` "${packageId}"`;
-    }
-
-    toml = lines.join('\n');
-
-    fs.writeFileSync(path, toml);
+    fs.writeFileSync(path, toml.stringify(moveJson));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
