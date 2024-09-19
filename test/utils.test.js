@@ -21,4 +21,8 @@ describe('UpdateMoveToml', () => {
         expect(moveToml.package.published_at).to.equal(testPackageId);
         expect(moveToml.addresses[testPackageName]).to.equal(testPackageId);
     });
+
+    after(async () => {
+        fs.rmSync(`${moveTestDir}`, { recursive: true, force: true });
+    });
 });
