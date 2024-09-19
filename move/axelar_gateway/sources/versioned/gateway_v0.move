@@ -1,4 +1,4 @@
-module axelar_gateway::gateway_data;
+module axelar_gateway::gateway_v0;
 
 use std::ascii::String;
 
@@ -40,7 +40,7 @@ const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
 // -----
 /// An object holding the state of the Axelar bridge.
 /// The central piece in managing call approval creation and signature verification.
-public struct GatewayDataV0 has store {
+public struct GatewayV0 has store {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
@@ -78,8 +78,8 @@ public (package) fun new(
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
-): GatewayDataV0 {
-    GatewayDataV0 {
+): GatewayV0 {
+    GatewayV0 {
         operator,
         messages,
         signers,
@@ -87,53 +87,53 @@ public (package) fun new(
     }
 }
 
-public (package) fun operator(self: &GatewayDataV0): &address {
+public (package) fun operator(self: &GatewayV0): &address {
     &self.operator
 }
 
-public (package) fun operator_mut(self: &mut GatewayDataV0): &mut address {
+public (package) fun operator_mut(self: &mut GatewayV0): &mut address {
     &mut self.operator
 }
 
-public (package) fun messages(self: &GatewayDataV0): &Table<Bytes32, MessageStatus> {
+public (package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
     &self.messages
 }
 
-public (package) fun messages_mut(self: &mut GatewayDataV0): &mut Table<Bytes32, MessageStatus> {
+public (package) fun messages_mut(self: &mut GatewayV0): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
 }
 
-public (package) fun signers(self: &GatewayDataV0): &AxelarSigners {
+public (package) fun signers(self: &GatewayV0): &AxelarSigners {
     &self.signers
 }
 
-public (package) fun signers_mut(self: &mut GatewayDataV0): &mut AxelarSigners {
+public (package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
     &mut self.signers
 }
 
-public (package) fun version_control(self: &GatewayDataV0): &VersionControl {
+public (package) fun version_control(self: &GatewayV0): &VersionControl {
     &self.version_control
 }
 
-public (package) fun version_control_mut(self: &mut GatewayDataV0): &mut VersionControl {
+public (package) fun version_control_mut(self: &mut GatewayV0): &mut VersionControl {
     &mut self.version_control
 }
 
 #[syntax(index)]
-public fun borrow(self: &GatewayDataV0, command_id: Bytes32): &MessageStatus {
+public fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
 }
 
 #[syntax(index)]
 public fun borrow_mut(
-    self: &mut GatewayDataV0,
+    self: &mut GatewayV0,
     command_id: Bytes32,
 ): &mut MessageStatus {
     table::borrow_mut(&mut self.messages, command_id)
 }
 
 public (package) fun approve_messages(
-    self: &mut GatewayDataV0,
+    self: &mut GatewayV0,
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
@@ -151,7 +151,7 @@ public (package) fun approve_messages(
 }
 
 public (package) fun rotate_signers(
-    self: &mut GatewayDataV0,
+    self: &mut GatewayV0,
     clock: &Clock,
     new_signers_data: vector<u8>,
     proof_data: vector<u8>,
@@ -180,7 +180,7 @@ public (package) fun rotate_signers(
 }
 
 public (package) fun is_message_approved(
-    self: &GatewayDataV0,
+    self: &GatewayV0,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -200,7 +200,7 @@ public (package) fun is_message_approved(
 }
 
 public (package) fun is_message_executed(
-    self: &GatewayDataV0,
+    self: &GatewayV0,
     source_chain: String,
     message_id: String,
 ): bool {
@@ -215,7 +215,7 @@ public (package) fun is_message_executed(
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
 public (package) fun take_approved_message(
-    self: &mut GatewayDataV0,
+    self: &mut GatewayV0,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -279,7 +279,7 @@ fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&typed_data))
 }
 
-fun approve_message(self: &mut GatewayDataV0, message: message::Message) {
+fun approve_message(self: &mut GatewayV0, message: message::Message) {
     let command_id = message.command_id();
 
     // If the message was already approved, ignore it.
@@ -300,13 +300,13 @@ fun approve_message(self: &mut GatewayDataV0, message: message::Message) {
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GatewayDataV0): (
+public fun destroy_for_testing(self: GatewayV0): (
     address,
     Table<Bytes32, MessageStatus>,
     AxelarSigners,
     VersionControl,
 ) {
-    let GatewayDataV0 {
+    let GatewayV0 {
         operator,
         messages,
         signers,
@@ -321,7 +321,7 @@ public fun destroy_for_testing(self: GatewayDataV0): (
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): GatewayDataV0 {
+public fun dummy(ctx: &mut TxContext): GatewayV0 {
     new(
         @0x0,
         sui::table::new(ctx),

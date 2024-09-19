@@ -25,7 +25,7 @@
 ///  - CallApproval is checked for uniqueness (for this channel)
 ///  - CallApproval is checked to match the `Channel`.id
 ///
-/// The Gateway object uses a versioned field to support upgradability. The current implementation uses GatewayDataV0.
+/// The Gateway object uses a versioned field to support upgradability. The current implementation uses GatewayV0.
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
@@ -33,7 +33,7 @@ use axelar_gateway::bytes32::Bytes32;
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
-use axelar_gateway::gateway_data::{Self, GatewayDataV0};
+use axelar_gateway::gateway_v0::{Self, GatewayV0};
 use std::ascii::String;
 use sui::address;
 use sui::clock::Clock;
@@ -110,7 +110,7 @@ public fun setup(
 
     let inner = versioned::create(
         VERSION,
-        gateway_data::new(
+        gateway_v0::new(
             operator,
             table::new(ctx),
             auth::setup(
@@ -139,14 +139,14 @@ public fun setup(
 // ------
 // Macros
 // ------
-macro fun data($self: &Gateway): &GatewayDataV0 {
+macro fun value($self: &Gateway): &GatewayV0 {
     let gateway = $self;
-    gateway.inner.load_value<GatewayDataV0>()
+    gateway.inner.load_value<GatewayV0>()
 }
 
-macro fun data_mut($self: &mut Gateway): &mut GatewayDataV0 {
+macro fun fields_mut($self: &mut Gateway): &mut GatewayV0 {
     let gateway = $self;
-    gateway.inner.load_value_mut<GatewayDataV0>()
+    gateway.inner.load_value_mut<GatewayV0>()
 }
 
 // -----------
@@ -161,7 +161,7 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    let data = self.data_mut!();
+    let data = self.fields_mut!();
     data.version_control().check(VERSION, b"approve_messages");
     data.approve_messages(message_data, proof_data);
 }
@@ -176,7 +176,7 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    let data = self.data_mut!();
+    let data = self.fields_mut!();
     data.version_control().check(VERSION, b"rotate_signers");
     data.rotate_signers(
         clock,
@@ -236,7 +236,7 @@ public fun is_message_approved(
     destination_id: address,
     payload_hash: Bytes32,
 ): bool {
-    let data = self.data!();
+    let data = self.value!();
     data.version_control().check(VERSION, b"is_message_approved");
     data.is_message_approved(
         source_chain,
@@ -252,7 +252,7 @@ public fun is_message_executed(
     source_chain: String,
     message_id: String,
 ): bool {
-    let data = self.data!();
+    let data = self.value!();
     data.version_control().check(VERSION, b"is_message_executed");
     data.is_message_executed(source_chain, message_id)
 }
@@ -267,7 +267,7 @@ public fun take_approved_message(
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
-    let data = self.data_mut!();
+    let data = self.fields_mut!();
     data.version_control().check(VERSION, b"take_approved_message");
     data.take_approved_message(
         source_chain,
@@ -312,7 +312,7 @@ public fun create_for_testing(
 ): Gateway {
     let inner = versioned::create(
         VERSION,
-        gateway_data::new(
+        gateway_v0::new(
             operator,
             table::new(ctx),
             auth::setup(
@@ -337,7 +337,7 @@ public fun create_for_testing(
 public fun dummy(ctx: &mut TxContext): Gateway {
     let inner = versioned::create(
         VERSION,
-        gateway_data::new(
+        gateway_v0::new(
             @0x0,
             table::new(ctx),
             auth::dummy(ctx),
@@ -359,7 +359,7 @@ public fun destroy_for_testing(self: Gateway) {
     } = self;
     id.delete();
 
-    let data = inner.destroy<GatewayDataV0>();
+    let data = inner.destroy<GatewayV0>();
     let (
         _,
         messages,
@@ -419,7 +419,7 @@ fun test_setup() {
         messages,
         signers,
         _,
-    ) = inner.destroy<GatewayDataV0>().destroy_for_testing();
+    ) = inner.destroy<GatewayV0>().destroy_for_testing();
 
     assert!(operator == operator_result, 1);
     messages.destroy_empty();
@@ -486,7 +486,7 @@ fun test_peel_proof_no_remaining_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = axelar_gateway::gateway_data::EMessageNotApproved)]
+#[expected_failure(abort_code = axelar_gateway::gateway_v0::EMessageNotApproved)]
 fun test_take_approved_message_message_not_approved() {
     let mut gateway = dummy(&mut sui::tx_context::dummy());
 
@@ -498,7 +498,7 @@ fun test_take_approved_message_message_not_approved() {
         axelar_gateway::bytes32::new(@0x2),
     );
 
-    data_mut!(&mut gateway)
+    fields_mut!(&mut gateway)
         .messages_mut()
         .add(
             message.command_id(),
@@ -514,7 +514,7 @@ fun test_take_approved_message_message_not_approved() {
         vector[0, 1, 2],
     );
 
-    data_mut!(&mut gateway).messages_mut().remove(message.command_id());
+    fields_mut!(&mut gateway).messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
     destroy_for_testing(gateway);
