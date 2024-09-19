@@ -10,14 +10,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: useblacksmith/setup-node@v5
-        with:
-          node-version: 18.x
-          cache: 'npm'
+      # Install Node.js and its dependencies
+      - name: Get NodeJS Version
+        shell: bash
+        run: |
+          NODEJS_VERSION=$(jq -r '.engines.node' "package.json")
+          echo "NODEJS_VERSION=$NODEJS_VERSION" >> $GITHUB_ENV
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Setup node.js and install dependencies
+        uses: ./.github/actions/nodejs-ci
+        with:
+          node-version: ${{ env.NODEJS_VERSION }}
 
       - name: Lint
         run: npm run lint

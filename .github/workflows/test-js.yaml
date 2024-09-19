@@ -18,13 +18,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Sui CLI
-        uses: ./.github/actions/install-sui-cli
-        with:
-          sui-version: $(jq -r '.SUI_VERSION' version.json)
+      # Install Sui dependencies
+      # This step ensures that the "LITERAL" value is given to the action, using `jq` sends it uninterepted to the action.
+      - name: Get SUI and NodeJS Versions
+        shell: bash
+        run: |
+          SUI_VERSION=$(jq -r '.SUI_VERSION' "version.json")
+          echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
 
-      - name: Setup Node Dependencies
-        uses: ./.github/actions/install-node-dependencies
+          NODEJS_VERSION=$(jq -r '.engines.node' "package.json")
+          echo "NODEJS_VERSION=$NODEJS_VERSION" >> $GITHUB_ENV
+
+      - name: Setup Sui CLI
+        uses: ./.github/actions/setup-sui
+        with:
+          sui-version: ${{ env.SUI_VERSION }}
+
+      # Install Node.js and its dependencies
+      - name: Setup node.js and install dependencies
+        uses: ./.github/actions/nodejs-ci
+        with:
+          node-version: ${{ env.NODEJS_VERSION }}
 
       - name: Build TS and Move Modules
         run: npm run build
