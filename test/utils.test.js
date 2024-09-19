@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const toml = require('@iarna/toml');
+const toml = require('smol-toml');
 const fs = require('fs');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 
