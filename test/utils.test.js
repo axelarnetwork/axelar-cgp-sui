@@ -4,7 +4,7 @@ const fs = require('fs');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 
 describe('UpdateMoveToml', () => {
-    const moveTestDir = `${__dirname}/../move-test`;
+    const moveTestDir = `${__dirname}/move`;
 
     it('should insert published-at and address fields correctly', () => {
         const testPackageName = 'governance';

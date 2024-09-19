@@ -77,4 +77,4 @@ move_compile/
 sui-binaries/
 
 # move test folder
-move-test/
+test/move
