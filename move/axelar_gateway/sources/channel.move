@@ -39,7 +39,8 @@ public struct ApprovedMessage {
 // ------
 
 /// If approved message is consumed by an invalid destination id
-const EInvalidDestination: u64 = 0;
+#[error]
+const EInvalidDestination: vector<u8> = b"invalid destination";
 
 // ------
 // Events
