@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import toml from 'smol-toml';
 
@@ -34,6 +35,28 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
     }
 
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
+}
+
+export function getLocalDependencies(packageName: string, moveDir: string = `${__dirname}/../move`) {
+    const movePath = `${moveDir}/${packageName}/Move.toml`;
+
+    if (!fs.existsSync(movePath)) {
+        throw new Error(`Move.toml file not found for given path: ${movePath}`);
+    }
+
+    const moveRaw = fs.readFileSync(movePath, 'utf8');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const moveJson = toml.parse(moveRaw) as any;
+
+    const { dependencies } = moveJson;
+
+    const localDependencies = Object.keys(dependencies).filter((key: string) => dependencies[key].local);
+
+    return localDependencies.map((key: string) => ({
+        name: key,
+        path: `${moveDir}/${path.resolve(path.dirname(movePath), dependencies[key].local)}`,
+    }));
 }
 
 export const getInstalledSuiVersion = () => {
