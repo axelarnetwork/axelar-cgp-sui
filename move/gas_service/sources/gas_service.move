@@ -11,6 +11,11 @@ use sui::versioned::{Self, Versioned};
 use gas_service::gas_service_v0::{Self, GasServiceV0};
 
 // Version
+use version_control::version_control::{Self, VersionControl};
+
+// -------
+// Version
+// -------
 const VERSION: u64 = 0;
 
 // -----
@@ -67,7 +72,9 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         inner: versioned::create(
             VERSION,
-            gas_service_v0::new(),
+            gas_service_v0::new(
+                version_control(),
+            ),
             ctx,
         ),
     });
@@ -105,6 +112,7 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
+    self.version_control.check(VERSION, b"pay_gas");
     let value = coin.value();
     coin::put(self.fields_mut!().balance_mut(), coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
@@ -129,6 +137,7 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
+    self.version_control.check(VERSION, b"add_gas");
     let value = coin.value();
     coin::put(self.fields_mut!().balance_mut(), coin);
 
@@ -147,6 +156,7 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
+    self.version_control.check(VERSION, b"collect_gas");
     transfer::public_transfer(
         coin::take(self.fields_mut!().balance_mut(), amount, ctx),
         receiver,
@@ -166,6 +176,7 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
+    self.version_control.check(VERSION, b"refund");
     transfer::public_transfer(
         coin::take(self.fields_mut!().balance_mut(), amount, ctx),
         receiver,
@@ -176,6 +187,21 @@ public fun refund(
         value: amount,
         refund_address: receiver,
     });
+}
+
+// -----------------
+// Private Functions
+// -----------------
+
+fun version_control(): VersionControl {
+    version_control::new(
+        vector [
+            // Version 0
+            vector [
+                b"pay_gas", b"add_gas", b"collect_gas", b"refund", 
+            ],
+        ]
+    )
 }
 
 // -----
@@ -193,7 +219,9 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
         id: object::new(ctx),
         inner: versioned::create(
             VERSION,
-            gas_service_v0::new(),
+            gas_service_v0::new(
+                version_control(),
+            ),
             ctx,
         ),
     };

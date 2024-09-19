@@ -2,13 +2,14 @@
 
 [move]
 version = 2
-manifest_digest = "980A92F6004E2BA06805FC94A718891A879535B74F11A218F3C7E1BA8C8C42DD"
-deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+manifest_digest = "636D642E7624565001401DAD3CAADDFA3B3EB14AE314FAC1B7E8F90CF04C9C5E"
+deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "Abi" },
   { name = "AxelarGateway" },
   { name = "Sui" },
   { name = "Utils" },
+  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -26,6 +27,7 @@ source = { local = "../axelar_gateway" }
 dependencies = [
   { name = "Sui" },
   { name = "Utils" },
+  { name = "VersionControl" },
 ]
 
 [[move.package]]
@@ -48,7 +50,15 @@ dependencies = [
   { name = "Sui" },
 ]
 
+[[move.package]]
+name = "VersionControl"
+source = { local = "../version_control" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
 [move.toolchain-version]
-compiler-version = "1.32.2"
+compiler-version = "1.32.0"
 edition = "2024.beta"
 flavor = "sui"

@@ -39,24 +39,28 @@ use sui::address;
 use sui::clock::Clock;
 use sui::hash;
 use sui::table::{Self, Table};
+use version_control::version_control::{Self, VersionControl};
 use utils::utils;
 
-// ------
+// -------
 // Version
-// ------
+// -------
 const VERSION: u64 = 0;
 
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 3;
-/// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 4;
+#[error]
+const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
+
+#[error]
+const EZeroMessages: vector<u8> = b"no mesages found";
+
+#[error]
+const ENotLatestSigners: vector<u8> = b"not latest signers";
+
+#[error]
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // -----
 // Types
@@ -71,6 +75,7 @@ public struct Gateway has key {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
+    version_control: VersionControl,
 }
 
 /// The Status of the message.
@@ -154,6 +159,7 @@ public fun setup(
             clock,
             ctx,
         ),
+        version_control: version_control(),
     };
 
     // Share the gateway object for anyone to use.
@@ -185,6 +191,7 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
+    self.version_control.check(VERSION, b"approve_messages");
     let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
     let messages = peel_messages(message_data);
 
@@ -208,6 +215,7 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
+    self.version_control.check(VERSION, b"rotate_signers");
     let weighted_signers = utils::peel!(
         new_signers_data,
         |bcs| weighted_signers::peel(bcs),
@@ -222,6 +230,7 @@ entry fun rotate_signers(
             data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
             proof,
         );
+
     assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
 
     // This will fail if signers are duplicated
@@ -280,6 +289,7 @@ public fun is_message_approved(
     destination_id: address,
     payload_hash: Bytes32,
 ): bool {
+    self.version_control.check(VERSION, b"is_message_approved");
     let message = message::new(
         source_chain,
         message_id,
@@ -297,6 +307,7 @@ public fun is_message_executed(
     source_chain: String,
     message_id: String,
 ): bool {
+    self.version_control.check(VERSION, b"is_message_executed");
     let command_id = message::message_to_command_id(
         source_chain,
         message_id,
@@ -315,6 +326,7 @@ public fun take_approved_message(
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
+    self.version_control.check(VERSION, b"take_approved_message");
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let message = message::new(
@@ -359,7 +371,7 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
                 bcs.peel_vec_length(),
                 |_| message::peel(bcs),
             );
-            assert!(messages.length() > 0, EInvalidLength);
+            assert!(messages.length() > 0, EZeroMessages);
             messages
         },
     )
@@ -392,6 +404,21 @@ fun approve_message(self: &mut Gateway, message: message::Message) {
     });
 }
 
+fun version_control(): VersionControl {
+    version_control::new(
+        vector [
+            // Version 0
+            vector [
+                b"approve_messages",
+                b"rotate_signers",
+                b"is_message_approved",
+                b"is_message_executed",
+                b"take_approved_message",
+            ]
+        ]
+    )
+}
+
 #[test_only]
 use sui::bcs;
 
@@ -417,6 +444,7 @@ public fun create_for_testing(
             clock,
             ctx,
         ),
+        version_control: version_control(),
     }
 }
 
@@ -427,6 +455,7 @@ public fun dummy(ctx: &mut TxContext): Gateway {
         operator: @0x0,
         messages: table::new(ctx),
         signers: auth::dummy(ctx),
+        version_control: version_control(),
     }
 }
 
@@ -437,6 +466,7 @@ public fun destroy_for_testing(gateway: Gateway) {
         operator: _,
         messages,
         signers,
+        version_control: _,
     } = gateway;
 
     id.delete();
@@ -487,6 +517,7 @@ fun test_setup() {
         operator: operator_result,
         messages,
         signers,
+        version_control: _,
     } = { gateway };
 
     id.delete();
@@ -641,7 +672,7 @@ fun test_peel_messages_no_remaining_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = EInvalidLength)]
+#[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {
     peel_messages(bcs::to_bytes(&vector<Message>[]));
 }
