@@ -112,10 +112,10 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let fields = self.fields_mut!();
-    fields.version_control().check(VERSION, b"pay_gas");
+    let value = self.fields_mut!();
+    value.version_control().check(VERSION, b"pay_gas");
     let value = coin.value();
-    coin::put(fields.balance_mut(), coin);
+    coin::put(value.balance_mut(), coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -138,10 +138,10 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let fields = self.fields_mut!();
-    fields.version_control().check(VERSION, b"add_gas");
+    let value = self.fields_mut!();
+    value.version_control().check(VERSION, b"add_gas");
     let value = coin.value();
-    coin::put(fields.balance_mut(), coin);
+    coin::put(value.balance_mut(), coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
@@ -158,10 +158,10 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let fields = self.fields_mut!();
-    fields.version_control().check(VERSION, b"collect_gas");
+    let value = self.fields_mut!();
+    value.version_control().check(VERSION, b"collect_gas");
     transfer::public_transfer(
-        coin::take(fields.balance_mut(), amount, ctx),
+        coin::take(value.balance_mut(), amount, ctx),
         receiver,
     );
 
@@ -179,10 +179,10 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let fields = self.fields_mut!();
-    fields.version_control().check(VERSION, b"refund");
+    let value = self.fields_mut!();
+    value.version_control().check(VERSION, b"refund");
     transfer::public_transfer(
-        coin::take(fields.balance_mut(), amount, ctx),
+        coin::take(value.balance_mut(), amount, ctx),
         receiver,
     );
 
@@ -212,7 +212,7 @@ fun version_control(): VersionControl {
 // Tests
 // -----
 #[test_only]
-macro fun fields($self: &GasService): &GasServiceV0 {
+macro fun value($self: &GasService): &GasServiceV0 {
     let gas_service = $self;
     gas_service.inner.load_value<GasServiceV0>()
 }
@@ -276,7 +276,7 @@ fun test_pay_gas() {
         vector[],
     );
 
-    assert!(service.fields!().balance().value() == value, 0);
+    assert!(service.value!().balance().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -298,7 +298,7 @@ fun test_add_gas() {
         vector[],
     );
 
-    assert!(service.fields!().balance().value() == value, 0);
+    assert!(service.value!().balance().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -327,7 +327,7 @@ fun test_collect_gas() {
         ctx,
     );
 
-    assert!(service.fields!().balance().value() == 0, 0);
+    assert!(service.value!().balance().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -357,7 +357,7 @@ fun test_refund() {
         ctx,
     );
 
-    assert!(service.fields!().balance().value() == 0, 0);
+    assert!(service.value!().balance().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
