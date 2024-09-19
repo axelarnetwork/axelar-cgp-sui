@@ -60,7 +60,7 @@ const EZeroMessages: vector<u8> = b"no mesages found";
 const ENotLatestSigners: vector<u8> = b"not latest signers";
 
 #[error]
-const ENewerMessage: vector<u8> = b"messageTickets created from newer versions cannot be sent here";
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // -----
 // Types

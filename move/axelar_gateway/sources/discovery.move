@@ -15,7 +15,7 @@ use sui::hex;
 use sui::table::{Self, Table};
 
 #[error]
-const EInvalidString: vector<u8> = b"typeArgument is not a valid string";
+const EInvalidString: vector<u8> = b"type argument is not a valid string";
 
 #[error]
 const EChannelNotFound: vector<u8> = b"channel not found";
