@@ -90,7 +90,7 @@ fun init(ctx: &mut TxContext) {
 // ------
 // Macros
 // ------
-macro fun data_mut($self: &GasService): &mut GasServiceV0 {
+macro fun fields_mut($self: &GasService): &mut GasServiceV0 {
     let gas_service = $self;
     gas_service.inner.load_value_mut<GasServiceV0>()
 }
@@ -112,9 +112,10 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"pay_gas");
+    let fields = self.fields_mut!();
+    fields.version_control().check(VERSION, b"pay_gas");
     let value = coin.value();
-    coin::put(self.fields_mut!().balance_mut(), coin);
+    coin::put(fields.balance_mut(), coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -137,9 +138,10 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"add_gas");
+    let fields = self.fields_mut!();
+    fields.version_control().check(VERSION, b"add_gas");
     let value = coin.value();
-    coin::put(self.fields_mut!().balance_mut(), coin);
+    coin::put(fields.balance_mut(), coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
@@ -156,9 +158,10 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"collect_gas");
+    let fields = self.fields_mut!();
+    fields.version_control().check(VERSION, b"collect_gas");
     transfer::public_transfer(
-        coin::take(self.fields_mut!().balance_mut(), amount, ctx),
+        coin::take(fields.balance_mut(), amount, ctx),
         receiver,
     );
 
@@ -176,9 +179,10 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"refund");
+    let fields = self.fields_mut!();
+    fields.version_control().check(VERSION, b"refund");
     transfer::public_transfer(
-        coin::take(self.fields_mut!().balance_mut(), amount, ctx),
+        coin::take(fields.balance_mut(), amount, ctx),
         receiver,
     );
 
