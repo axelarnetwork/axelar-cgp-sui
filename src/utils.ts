@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
-import toml from '@iarna/toml';
 import { getFullnodeUrl } from '@mysten/sui/client';
+import toml from 'smol-toml';
 
 export function getModuleNameFromSymbol(symbol: string) {
     function isNumber(char: string) {
@@ -43,15 +43,15 @@ export function getModuleNameFromSymbol(symbol: string) {
 
 export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
     // Path to the Move.toml file for the package
-    const path = `${moveDir}/${packageName}/Move.toml`;
+    const movePath = `${moveDir}/${packageName}/Move.toml`;
 
     // Check if the Move.toml file exists
-    if (!fs.existsSync(path)) {
-        throw new Error(`Move.toml file not found for given path: ${path}`);
+    if (!fs.existsSync(movePath)) {
+        throw new Error(`Move.toml file not found for given path: ${movePath}`);
     }
 
     // Read the Move.toml file
-    const moveRaw = fs.readFileSync(path, 'utf8');
+    const moveRaw = fs.readFileSync(movePath, 'utf8');
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +63,7 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
     // Update the package address under the addresses section e.g. gas_service = "0x1"
     moveJson.addresses[packageName] = packageId;
 
-    fs.writeFileSync(path, toml.stringify(moveJson));
+    fs.writeFileSync(movePath, toml.stringify(moveJson));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
