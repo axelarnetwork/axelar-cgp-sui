@@ -54,6 +54,7 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
     const moveRaw = fs.readFileSync(path, 'utf8');
 
     // Parse the Move.toml file as JSON
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const moveJson = toml.parse(moveRaw) as any;
 
     // Update the published-at field under the package section e.g. published-at = "0x01"
