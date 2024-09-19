@@ -11,9 +11,11 @@ use sui::table::{Self, Table};
 // ------
 // Errors
 // ------
-const EInsufficientRotationDelay: u64 = 0;
-/// For when number of signatures for the call approvals is below the threshold.
-const EInvalidEpoch: u64 = 1;
+#[error]
+const EInsufficientRotationDelay: vector<u8> = b"insufficient rotation delay";
+
+#[error]
+const EInvalidEpoch: vector<u8> = b"the difference between current_epoch and signers_epoch exceeds the allowed retention period";
 
 // -----
 // Types

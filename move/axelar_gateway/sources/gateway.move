@@ -42,22 +42,25 @@ use sui::table::{Self, Table};
 use version_control::version_control::{Self, VersionControl};
 use utils::utils;
 
-// ------
+// -------
 // Version
-// ------
+// -------
 const VERSION: u64 = 0;
 
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 2;
-/// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 3;
+#[error]
+const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
+
+#[error]
+const EZeroMessages: vector<u8> = b"no mesages found";
+
+#[error]
+const ENotLatestSigners: vector<u8> = b"not latest signers";
+
+#[error]
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // -----
 // Types
@@ -227,6 +230,7 @@ entry fun rotate_signers(
             data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
             proof,
         );
+
     assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
 
     // This will fail if signers are duplicated
@@ -367,7 +371,7 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
                 bcs.peel_vec_length(),
                 |_| message::peel(bcs),
             );
-            assert!(messages.length() > 0, EInvalidLength);
+            assert!(messages.length() > 0, EZeroMessages);
             messages
         },
     )
@@ -668,7 +672,7 @@ fun test_peel_messages_no_remaining_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = EInvalidLength)]
+#[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {
     peel_messages(bcs::to_bytes(&vector<Message>[]));
 }

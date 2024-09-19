@@ -14,12 +14,14 @@ public struct WeightedSigners has copy, drop, store {
 /// ------
 /// Errors
 /// ------
-/// Invalid length of the bytes
-const EInvalidLength: u64 = 0;
-const EInvalidThreshold: u64 = 1;
-/// Invalid signer weights or threshold
-const EInvalidSigners: u64 = 2;
-const EInvalidSignerOrder: u64 = 3;
+#[error]
+const EInvalidSignersLength: vector<u8> = b"invalid signers length: expected at least 1 signer";
+
+#[error]
+const EInvalidThreshold: vector<u8> = b"invalid threshold: expected non-zero value and less than or equal to the total weight of the signers";
+
+#[error]
+const EInvalidSignerOrder: vector<u8> = b"invalid signer order: signers must be in ascending order by their public key";
 
 /// -----------------
 /// Package Functions
@@ -28,7 +30,7 @@ const EInvalidSignerOrder: u64 = 3;
 /// Decode a `WeightedSigners` from the BCS encoded bytes.
 public(package) fun peel(bcs: &mut BCS): WeightedSigners {
     let len = bcs.peel_vec_length();
-    assert!(len > 0, EInvalidLength);
+    assert!(len > 0, EInvalidSignersLength);
 
     WeightedSigners {
         signers: vector::tabulate!(len, |_| weighted_signer::peel(bcs)),
@@ -68,9 +70,9 @@ public(package) fun nonce(self: &WeightedSigners): Bytes32 {
 
 /// Validates the order of the signers and the length of the signers.
 /// The signers must be in ascending order by their public key.
-/// Otherwise, the error `EInvalidSigners` is raised.
+/// Otherwise, the error `EInvalidSignersLength` is raised.
 fun validate_signers(self: &WeightedSigners) {
-    assert!(!self.signers.is_empty(), EInvalidSigners);
+    assert!(!self.signers.is_empty(), EInvalidSignersLength);
     let mut previous = &weighted_signer::default();
     self.signers.do_ref!(
         |signer| {
