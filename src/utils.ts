@@ -44,12 +44,8 @@ export function getLocalDependencies(packageName: string, moveDir: string = `${_
         throw new Error(`Move.toml file not found for given path: ${movePath}`);
     }
 
-    const moveRaw = fs.readFileSync(movePath, 'utf8');
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const moveJson = toml.parse(moveRaw) as any;
-
-    const { dependencies } = moveJson;
+    const { dependencies } = toml.parse(fs.readFileSync(movePath, 'utf8')) as any;
 
     const localDependencies = Object.keys(dependencies).filter((key: string) => dependencies[key].local);
 
