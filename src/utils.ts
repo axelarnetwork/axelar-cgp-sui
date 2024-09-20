@@ -43,7 +43,7 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
  * @param baseMoveDir The parent directory of the Move.toml file.
  * @returns An array of objects containing the name and path of the local dependencies.
  */
-export function getLocalDependencies(packageName: string, baseMoveDir: string = `${__dirname}/../move`) {
+export function getLocalDependencies(packageName: string, baseMoveDir: string) {
     const movePath = `${baseMoveDir}/${packageName}/Move.toml`;
 
     if (!fs.existsSync(movePath)) {
