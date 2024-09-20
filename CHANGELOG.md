@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
--   bc28614: chore: add get local dependencies helper function
+-   bc28614: chore: add a helper fucntion to get local dependencies
 -   0afa15c: refactor: simplified updateMoveToml
 -   323a0ce: refactor: update error codes to vector<u8>
 
