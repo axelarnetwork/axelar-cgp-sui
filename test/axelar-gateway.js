@@ -11,7 +11,7 @@ const {
     hashMessage,
     signMessage,
     approveAndExecuteMessage,
-} = require('./utils');
+} = require('./testutils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: {
