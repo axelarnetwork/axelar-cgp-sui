@@ -1,5 +1,13 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.6.4
+
+### Patch Changes
+
+-   bc28614: chore: add get local dependencies helper function
+-   0afa15c: refactor: simplified updateMoveToml
+-   323a0ce: refactor: update error codes to vector<u8>
+
 ## 0.6.3
 
 ### Patch Changes
