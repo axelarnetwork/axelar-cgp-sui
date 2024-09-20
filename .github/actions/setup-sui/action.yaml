@@ -10,10 +10,6 @@ runs:
   using: 'composite'
 
   steps:
-    - name: Get Sui Version
-      shell: bash
-      run: echo "sui-version=${{ inputs.sui-version }}"
-
     - name: Install Dependencies
       shell: bash
       run: |

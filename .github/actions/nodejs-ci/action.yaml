@@ -11,10 +11,6 @@ runs:
   using: 'composite'
 
   steps:
-    - name: Get node.js Version
-      shell: bash
-      run: echo "node-version=${{ inputs.node-version }}"
-
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
