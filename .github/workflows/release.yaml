@@ -1,4 +1,5 @@
-# This workflow concerns publishing of the NPM package. It's triggered once a PR with specific criteria get merged to `main` branch,
+# This workflow creates a github release using changeset, and publishes it as an npm package.
+# It's triggered once a release PR (created by the pre-release workflow) gets merged to the `main` branch.
 name: Release
 
 on:

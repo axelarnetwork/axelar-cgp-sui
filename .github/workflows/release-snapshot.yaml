@@ -1,3 +1,5 @@
+# This workflow publishes snapshot releases as an npm package. These releases aren't supposed to be reusable in `production` environments.
+# It's triggered manually in case a snapshot release would be needed for testing purposes.
 name: Release Snapshot
 
 on:
