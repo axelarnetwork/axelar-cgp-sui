@@ -49,8 +49,8 @@ jobs:
         uses: changesets/action@aba318e9165b45b7948c60273e0b72fce0a64eb9 #v1.4.7
         with:
           branch: 'main'
-          title: 'chore: [publish-release] - bump version and update changelog'
-          commit: 'chore: bump version and update changelog'
+          title: 'chore(release): bump version and update changelog'
+          commit: 'chore(release): bump version and update changelog'
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
 

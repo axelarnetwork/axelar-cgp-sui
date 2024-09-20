@@ -16,7 +16,7 @@ jobs:
     name: Release
     if: |
       ((github.event.pull_request.merged == true) &&
-      startsWith(github.event.pull_request.title, 'chore: [publish-release]'))
+      startsWith(github.event.pull_request.title, 'chore(release)'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
