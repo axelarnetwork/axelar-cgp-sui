@@ -37,8 +37,14 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
-export function getLocalDependencies(packageName: string, moveDir: string = `${__dirname}/../move`) {
-    const movePath = `${moveDir}/${packageName}/Move.toml`;
+/**
+ * Get the local dependencies of a package from the Move.toml file.
+ * @param packageName The name of the package.
+ * @param baseMoveDir The parent directory of the Move.toml file.
+ * @returns An array of objects containing the name and path of the local dependencies.
+ */
+export function getLocalDependencies(packageName: string, baseMoveDir: string = `${__dirname}/../move`) {
+    const movePath = `${baseMoveDir}/${packageName}/Move.toml`;
 
     if (!fs.existsSync(movePath)) {
         throw new Error(`Move.toml file not found for given path: ${movePath}`);
@@ -51,7 +57,7 @@ export function getLocalDependencies(packageName: string, moveDir: string = `${_
 
     return localDependencies.map((key: string) => ({
         name: key,
-        path: `${moveDir}/${path.resolve(path.dirname(movePath), dependencies[key].local)}`,
+        path: `${baseMoveDir}/${path.resolve(path.dirname(movePath), dependencies[key].local)}`,
     }));
 }
 
