@@ -32,7 +32,8 @@ describe('Utils', () => {
     describe('getLocalDependencies', () => {
         it('should return the correct dependencies', () => {
             const testPackageName = 'governance';
-            const dependencies = getLocalDependencies(testPackageName);
+            const baseMoveDir = `${__dirname}/../move`;
+            const dependencies = getLocalDependencies(testPackageName, baseMoveDir);
 
             expect(dependencies.length).to.greaterThan(0);
 
