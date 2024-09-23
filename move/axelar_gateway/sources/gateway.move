@@ -51,8 +51,8 @@ const VERSION: u64 = 0;
 // ------
 // Errors
 // ------
-/// MessageTickets created from newer versions cannot be sent here
-const ENewerMessage: u64 = 0;
+#[error]
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // -------
 // Structs

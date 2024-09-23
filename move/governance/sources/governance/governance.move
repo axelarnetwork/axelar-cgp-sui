@@ -9,10 +9,17 @@ use sui::hex;
 use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::{Self, Table};
 
-const EUntrustedAddress: u64 = 0;
-const EInvalidMessageType: u64 = 1;
-const ENotSelfUpgradeCap: u64 = 2;
-const ENotNewPackage: u64 = 3;
+#[error]
+const EUntrustedAddress: vector<u8> = b"upgrade authorization attempt from an untrusted address";
+
+#[error]
+const EInvalidMessageType: vector<u8> = b"invalid message type for upgrade authorization";
+
+#[error]
+const ENotSelfUpgradeCap: vector<u8> = b"governance initialization requires its own upgrade capability. The provided capability belongs to a different package";
+
+#[error]
+const ENotNewPackage: vector<u8> = b"Not new package.";
 
 public struct Governance has key, store {
     id: UID,
