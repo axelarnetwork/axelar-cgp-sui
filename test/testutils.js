@@ -1,6 +1,7 @@
 const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
+const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const chai = require('chai');
 const { expect } = chai;
 const {
@@ -24,6 +25,10 @@ async function publishPackage(client, keypair, packageName) {
 
     updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
+}
+
+function generateEd25519Keypairs(length) {
+    return Array.from({ length }, () => Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32())));
 }
 
 function getRandomBytes32() {
@@ -251,4 +256,5 @@ module.exports = {
     signMessage,
     approveMessage,
     approveAndExecuteMessage,
+    generateEd25519Keypairs,
 };
