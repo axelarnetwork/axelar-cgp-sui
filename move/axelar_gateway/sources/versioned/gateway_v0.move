@@ -1,5 +1,16 @@
 module axelar_gateway::gateway_v0;
 
+use std::ascii::String;
+
+use sui::clock::Clock;
+use sui::hash;
+use sui::table::{Self, Table};
+use sui::address;
+
+use utils::utils;
+
+use version_control::version_control::VersionControl;
+
 use axelar_gateway::auth::AxelarSigners;
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, ApprovedMessage};
@@ -7,12 +18,8 @@ use axelar_gateway::message::{Self, Message};
 use axelar_gateway::message_status::{Self, MessageStatus};
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
-use std::ascii::String;
-use sui::clock::Clock;
-use sui::hash;
-use sui::table::{Self, Table};
-use utils::utils;
-use version_control::version_control::VersionControl;
+use axelar_gateway::message_ticket::MessageTicket;
+use axelar_gateway::events;
 
 // ------
 // Errors
@@ -25,6 +32,9 @@ const EZeroMessages: vector<u8> = b"no mesages found";
 
 #[error]
 const ENotLatestSigners: vector<u8> = b"not latest signers";
+
+#[error]
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // ---------
 // CONSTANTS
@@ -42,28 +52,6 @@ public struct GatewayV0 has store {
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
-}
-
-// ------
-// Events
-// ------
-/// Emitted when a new message is sent from the SUI network.
-public struct ContractCall has copy, drop {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    payload_hash: address,
-}
-
-/// Emitted when a new message is approved by the gateway.
-public struct MessageApproved has copy, drop {
-    message: message::Message,
-}
-
-/// Emitted when a message is taken to be executed by a channel.
-public struct MessageExecuted has copy, drop {
-    message: message::Message,
 }
 
 // -----------------
@@ -209,9 +197,9 @@ public(package) fun take_approved_message(
     let message_status_ref = &mut self[command_id];
     *message_status_ref = message_status::executed();
 
-    sui::event::emit(MessageExecuted {
+    events::emit_message_executed(
         message,
-    });
+    );
 
     // Friend only.
     channel::create_approved_message(
@@ -221,6 +209,24 @@ public(package) fun take_approved_message(
         destination_id,
         payload,
     )
+}
+
+public(package) fun send_message(_self: &GatewayV0, message: MessageTicket, current_version: u64) {
+    let (
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    ) = message.destroy();
+    assert!(version <= current_version, ENewerMessage);
+    events::emit_contract_call(
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        address::from_bytes(hash::keccak256(&payload)),
+    );
 }
 
 // -----------------
@@ -263,9 +269,9 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
             message_status::approved(message.hash()),
         );
 
-    sui::event::emit(MessageApproved {
+    events::emit_message_approved(
         message,
-    });
+    );
 }
 
 /// ---------

@@ -6,7 +6,8 @@
 module axelar_gateway::channel;
 
 use std::ascii::String;
-use sui::event;
+
+use axelar_gateway::events;
 
 // -----
 // Types
@@ -42,18 +43,6 @@ public struct ApprovedMessage {
 #[error]
 const EInvalidDestination: vector<u8> = b"invalid destination";
 
-// ------
-// Events
-// ------
-
-public struct ChannelCreated has copy, drop {
-    id: address,
-}
-
-public struct ChannelDestroyed has copy, drop {
-    id: address,
-}
-
 // ----------------
 // Public Functions
 // ----------------
@@ -64,7 +53,7 @@ public struct ChannelDestroyed has copy, drop {
 public fun new(ctx: &mut TxContext): Channel {
     let id = object::new(ctx);
 
-    event::emit(ChannelCreated { id: id.uid_to_address() });
+    events::emit_channel_created( id.uid_to_address() );
 
     Channel {
         id,
@@ -75,7 +64,7 @@ public fun new(ctx: &mut TxContext): Channel {
 public fun destroy(self: Channel) {
     let Channel { id } = self;
 
-    event::emit(ChannelDestroyed { id: id.uid_to_address() });
+    events::emit_channel_destroyed( id.uid_to_address() );
 
     id.delete();
 }
