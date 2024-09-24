@@ -65,8 +65,8 @@ public fun push_back(self: &mut VersionControl, function_names: vector<vector<u8
 ///     // do the thing.
 /// }
 /// ```
-public fun check(self: &VersionControl, version: u64, function: vector<u8>) {
-    assert!(self.allowed_functions[version].contains(&function.to_ascii_string()), EFunctionNotSupported);
+public fun check(self: &VersionControl, version: u64, function: String) {
+    assert!(self.allowed_functions[version].contains(&function), EFunctionNotSupported);
 }
 
 #[test]
@@ -125,7 +125,7 @@ fun test_check() {
             ],
         ]
     );
-    version_control.check(0, b"function_name_1");
+    version_control.check(0, b"function_name_1".to_ascii_string());
 }
 
 #[test]
@@ -138,6 +138,6 @@ fun test_check_function_not_supported() {
             ],
         ]
     );
-    version_control.check(0, b"function_name_2");
+    version_control.check(0, b"function_name_2".to_ascii_string());
 }
 

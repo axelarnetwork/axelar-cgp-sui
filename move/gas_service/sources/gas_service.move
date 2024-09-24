@@ -94,7 +94,7 @@ fun init(ctx: &mut TxContext) {
 macro fun fields_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
     let gas_service = $self;
     let value = gas_service.inner.load_value_mut<GasServiceV0>();
-    value.version_control().check(VERSION, &ascii::string($function_name));
+    value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
