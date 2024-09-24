@@ -247,8 +247,13 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
     };
 }
 
+function findObjectId(tx, objectType, type = 'created') {
+    return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType))?.objectId;
+}
+
 module.exports = {
     publishPackage,
+    findObjectId,
     getRandomBytes32,
     expectRevert,
     expectEvent,
