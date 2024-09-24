@@ -1,23 +1,18 @@
 module axelar_gateway::gateway_v0;
 
-use std::ascii::String;
-
-use sui::table::{Self, Table};
-use sui::hash;
-use sui::clock::Clock;
-
-use version_control::version_control::VersionControl;
-
-use utils::utils;
-
 use axelar_gateway::auth::AxelarSigners;
-use axelar_gateway::message_status::MessageStatus;
-use axelar_gateway::proof;
-use axelar_gateway::message::{Self, Message};
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::message_status;
-use axelar_gateway::weighted_signers;
 use axelar_gateway::channel::{Self, ApprovedMessage};
+use axelar_gateway::message::{Self, Message};
+use axelar_gateway::message_status::{Self, MessageStatus};
+use axelar_gateway::proof;
+use axelar_gateway::weighted_signers;
+use std::ascii::String;
+use sui::clock::Clock;
+use sui::hash;
+use sui::table::{Self, Table};
+use utils::utils;
+use version_control::version_control::VersionControl;
 
 // ------
 // Errors
@@ -99,7 +94,9 @@ public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
     &self.messages
 }
 
-public(package) fun messages_mut(self: &mut GatewayV0): &mut Table<Bytes32, MessageStatus> {
+public(package) fun messages_mut(
+    self: &mut GatewayV0,
+): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
 }
 
@@ -115,7 +112,9 @@ public(package) fun version_control(self: &GatewayV0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun version_control_mut(self: &mut GatewayV0): &mut VersionControl {
+public(package) fun version_control_mut(
+    self: &mut GatewayV0,
+): &mut VersionControl {
     &mut self.version_control
 }
 
@@ -259,17 +258,14 @@ public(package) fun take_approved_message(
 // -----------------
 
 fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel!(
-        message_data,
-        |bcs| {
-            let messages = vector::tabulate!(
-                bcs.peel_vec_length(),
-                |_| message::peel(bcs),
-            );
-            assert!(messages.length() > 0, EInvalidLength);
-            messages
-        },
-    )
+    utils::peel!(message_data, |bcs| {
+        let messages = vector::tabulate!(
+            bcs.peel_vec_length(),
+            |_| message::peel(bcs),
+        );
+        assert!(messages.length() > 0, EInvalidLength);
+        messages
+    })
 }
 
 fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
@@ -300,24 +296,16 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GatewayV0): (
-    address,
-    Table<Bytes32, MessageStatus>,
-    AxelarSigners,
-    VersionControl,
-) {
+public fun destroy_for_testing(
+    self: GatewayV0,
+): (address, Table<Bytes32, MessageStatus>, AxelarSigners, VersionControl) {
     let GatewayV0 {
         operator,
         messages,
         signers,
         version_control,
     } = self;
-    (
-        operator,
-        messages,
-        signers,
-        version_control,
-    )
+    (operator, messages, signers, version_control)
 }
 
 #[test_only]
@@ -438,7 +426,6 @@ fun test_peel_messages() {
     assert!(messages[0] == message1, 1);
     assert!(messages[1] == message2, 2);
 }
-
 
 #[test]
 #[expected_failure]
