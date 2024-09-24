@@ -91,7 +91,7 @@ fun init(ctx: &mut TxContext) {
 // ------
 // Macros
 // ------
-macro fun fields_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
+macro fun value_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
     let gas_service = $self;
     let value = gas_service.inner.load_value_mut<GasServiceV0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -115,9 +115,8 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let value = self.fields_mut!(b"pay_gas");
     let coin_value = coin.value();
-    coin::put(value.balance_mut(), coin);
+    self.value_mut!(b"pay_gas").put(coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -140,9 +139,8 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let value = self.fields_mut!(b"add_gas");
     let coin_value = coin.value();
-    coin::put(value.balance_mut(), coin);
+    self.value_mut!(b"add_gas").put(coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
@@ -159,9 +157,8 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let value = self.fields_mut!(b"collect_gas");
     transfer::public_transfer(
-        coin::take(value.balance_mut(), amount, ctx),
+        self.value_mut!(b"collect_gas").take(amount, ctx),
         receiver,
     );
 
@@ -179,9 +176,8 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let value = self.fields_mut!(b"refund");
     transfer::public_transfer(
-        coin::take(value.balance_mut(), amount, ctx),
+        self.value_mut!(b"refund").take(amount, ctx),
         receiver,
     );
 
