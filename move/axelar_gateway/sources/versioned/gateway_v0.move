@@ -84,40 +84,8 @@ public(package) fun new(
     }
 }
 
-public(package) fun operator(self: &GatewayV0): &address {
-    &self.operator
-}
-
-public(package) fun operator_mut(self: &mut GatewayV0): &mut address {
-    &mut self.operator
-}
-
-public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
-    &self.messages
-}
-
-public(package) fun messages_mut(
-    self: &mut GatewayV0,
-): &mut Table<Bytes32, MessageStatus> {
-    &mut self.messages
-}
-
-public(package) fun signers(self: &GatewayV0): &AxelarSigners {
-    &self.signers
-}
-
-public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
-    &mut self.signers
-}
-
 public(package) fun version_control(self: &GatewayV0): &VersionControl {
     &self.version_control
-}
-
-public(package) fun version_control_mut(
-    self: &mut GatewayV0,
-): &mut VersionControl {
-    &mut self.version_control
 }
 
 #[syntax(index)]
@@ -300,7 +268,49 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
     });
 }
 
+/// ---------
+/// Test Only
+/// ---------
+
 #[test_only]
+public fun operator(self: &GatewayV0): &address {
+    &self.operator
+}
+
+#[test_only]
+public fun operator_mut(self: &mut GatewayV0): &mut address {
+    &mut self.operator
+}
+
+#[test_only]
+public fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
+    &self.messages
+}
+
+#[test_only]
+public fun messages_mut(
+    self: &mut GatewayV0,
+): &mut Table<Bytes32, MessageStatus> {
+    &mut self.messages
+}
+
+#[test_only]
+public fun signers(self: &GatewayV0): &AxelarSigners {
+    &self.signers
+}
+
+#[test_only]
+public fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
+    &mut self.signers
+}
+
+#[test_only]
+public fun version_control_mut(
+    self: &mut GatewayV0,
+): &mut VersionControl {
+    &mut self.version_control
+}
+
 public fun destroy_for_testing(
     self: GatewayV0,
 ): (address, Table<Bytes32, MessageStatus>, AxelarSigners, VersionControl) {
