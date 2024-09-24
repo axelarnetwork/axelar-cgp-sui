@@ -10,7 +10,6 @@ This is a short spec for what there is to be done. You can check https://github.
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const { publishPackage, generateEd25519Keypairs, findObjectId } = require('./testutils');
-const { bcs } = require('@mysten/sui/bcs');
 const { expect } = require('chai');
 const { TxBuilder } = require('../dist/tx-builder');
 
@@ -19,10 +18,13 @@ describe.only('ITS', () => {
     let client;
     let its;
     let gateway;
+    let gasService;
     let example;
     let itsObjectId;
+    let coinObjectId;
     let singletonObjectId;
     let relayerDiscoveryId;
+    let gasServiceObjectId;
     let tokenId;
     const clock = '0x6';
     const network = process.env.NETWORK || 'localnet';
@@ -45,6 +47,8 @@ describe.only('ITS', () => {
             const result = await publishPackage(client, deployer, packageName);
             if (packageName === 'axelar_gateway') {
                 gateway = result;
+            } else if (packageName === 'gas_service') {
+                gasService = result;
             }
         }
 
@@ -54,6 +58,20 @@ describe.only('ITS', () => {
         itsObjectId = findObjectId(its.publishTxn, 'ITS');
         singletonObjectId = findObjectId(example.publishTxn, 'its_example::Singleton');
         relayerDiscoveryId = findObjectId(gateway.publishTxn, 'RelayerDiscovery');
+        gasServiceObjectId = findObjectId(gasService.publishTxn, 'GasService');
+
+        console.log('minting coins');
+        const txBuilder = new TxBuilder(client);
+
+        // mint some coins
+        await txBuilder.moveCall({
+            target: `${example.packageId}::its_example::mint`,
+            arguments: [singletonObjectId, 1e18, deployer.toSuiAddress()],
+        });
+
+        const mintResult = await txBuilder.signAndExecute(deployer);
+        coinObjectId = findObjectId(mintResult, 'its_example::ITS_EXAMPLE');
+        console.log('coinObjectId', coinObjectId);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -87,27 +105,41 @@ describe.only('ITS', () => {
         expect(tokenId).to.be.not.null;
     });
 
-    it('should deploy remote interchain token successfully', async () => {
-        // call deploy remote interchain token
-        //const txBuilder = new TxBuilder(client);
-        //
-        //console.log('arguments', itsObjectId, tokenId, 'Ethereum');
-        //const tokenIdObject = await txBuilder.moveCall({
-        //    target: `${its.packageId}::token_id::from_u256`,
-        //    arguments: [tokenId],
-        //});
-        //
-        //await txBuilder.moveCall({
-        //    target: `${its.packageId}::service::deploy_remote_interchain_token`,
-        //    arguments: [itsObjectId, tokenIdObject, 'Ethereum'],
-        //    typeArguments: [`${example.packageId}::coin::COIN`],
-        //});
-        //
-        //let txResult = await txBuilder.signAndExecute(deployer, {
-        //    showEvents: true,
-        //});
-        //
-        //console.log(txResult);
-        //console.log(txResult.events[0].parsedJson);
+    it('should send interchain transfer successfully', async () => {
+        const txBuilder = new TxBuilder(client);
+
+        const tx = txBuilder.tx;
+
+        const coin = tx.splitCoins(coinObjectId, [1e9]);
+
+        const gas = tx.splitCoins(tx.gas, [1e8]);
+
+        const TokenId = await txBuilder.moveCall({
+            target: `${its.packageId}::token_id::from_u256`,
+            arguments: [tokenId],
+        });
+
+        await txBuilder.moveCall({
+            target: `${example.packageId}::its_example::send_interchain_transfer_call`,
+            arguments: [
+                singletonObjectId,
+                itsObjectId,
+                gasServiceObjectId,
+                TokenId,
+                coin,
+                'Ethereum',
+                '0x1234',
+                '0x',
+                deployer.toSuiAddress(),
+                gas,
+                '0x',
+                clock,
+            ],
+        });
+
+        // TODO: Fix trusted address error
+        const txResult = await txBuilder.signAndExecute(deployer);
+
+        console.log(txResult);
     });
 });
