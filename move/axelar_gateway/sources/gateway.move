@@ -29,12 +29,12 @@
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
-use axelar_gateway::bytes32::Bytes32;
+use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
 use axelar_gateway::gateway_v0::{Self, GatewayV0};
-use std::ascii::String;
+use std::ascii::{Self, String};
 use sui::address;
 use sui::clock::Clock;
 use sui::hash;
@@ -95,10 +95,10 @@ fun init(ctx: &mut TxContext) {
 }
 
 /// Setup the module by creating a new Gateway object.
-public fun setup(
+entry fun setup(
     cap: CreatorCap,
     operator: address,
-    domain_separator: Bytes32,
+    domain_separator: address,
     minimum_rotation_delay: u64,
     previous_signers_retention: u64,
     initial_signers: vector<u8>,
@@ -114,7 +114,7 @@ public fun setup(
             operator,
             table::new(ctx),
             auth::setup(
-                domain_separator,
+                bytes32::new(domain_separator),
                 minimum_rotation_delay,
                 previous_signers_retention,
                 utils::peel!(
@@ -143,7 +143,7 @@ public fun setup(
 macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
     let gateway = $self;
     let value = gateway.inner.load_value<GatewayV0>();
-    value.version_control().check(VERSION, $function_name);
+    value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
@@ -151,7 +151,7 @@ macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
 macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut GatewayV0 {
     let gateway = $self;
     let value = gateway.inner.load_value_mut<GatewayV0>();
-    value.version_control().check(VERSION, $function_name);
+    value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
@@ -377,7 +377,7 @@ public fun destroy_for_testing(self: Gateway) {
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
     let operator = @123456;
-    let domain_separator = axelar_gateway::bytes32::new(@789012);
+    let domain_separator = @789012;
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
@@ -439,7 +439,7 @@ fun test_setup() {
 
     assert!(epoch == 1, 2);
     assert!(signer_epoch == 1, 3);
-    assert!(domain_separator == domain_separator_result, 4);
+    assert!(bytes32::new(domain_separator) == domain_separator_result, 4);
     assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
     assert!(last_rotation_timestamp == timestamp, 6);
     assert!(previous_signers_retention == previous_signers_retention_result, 7);

@@ -96,7 +96,7 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"pay_gas");
+    self.version_control.check(VERSION, b"pay_gas".to_ascii_string());
     let value = coin.value();
     coin::put(&mut self.balance, coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
@@ -121,7 +121,7 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"add_gas");
+    self.version_control.check(VERSION, b"add_gas".to_ascii_string());
     let value = coin.value();
     coin::put(&mut self.balance, coin);
 
@@ -140,7 +140,7 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"collect_gas");
+    self.version_control.check(VERSION, b"collect_gas".to_ascii_string());
     transfer::public_transfer(
         coin::take(&mut self.balance, amount, ctx),
         receiver,
@@ -160,7 +160,7 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"refund");
+    self.version_control.check(VERSION, b"refund".to_ascii_string());
     transfer::public_transfer(
         coin::take(&mut self.balance, amount, ctx),
         receiver,

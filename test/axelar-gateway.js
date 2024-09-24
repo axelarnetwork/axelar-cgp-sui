@@ -97,17 +97,12 @@ describe('Axelar Gateway', () => {
         const encodedSigners = WeightedSigners.serialize(gatewayInfo.signers).toBytes();
         const builder = new TxBuilder(client);
 
-        const separator = await builder.moveCall({
-            target: `${packageId}::bytes32::new`,
-            arguments: [domainSeparator],
-        });
-
         await builder.moveCall({
             target: `${packageId}::gateway::setup`,
             arguments: [
                 creatorCap,
                 operator.toSuiAddress(),
-                separator,
+                domainSeparator,
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,

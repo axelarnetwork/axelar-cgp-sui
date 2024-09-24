@@ -17,12 +17,14 @@ use version_control::version_control::VersionControl;
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 2;
+#[error]
+const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
+
+#[error]
+const EZeroMessages: vector<u8> = b"no mesages found";
+
+#[error]
+const ENotLatestSigners: vector<u8> = b"not latest signers";
 
 // ---------
 // CONSTANTS
@@ -258,14 +260,17 @@ public(package) fun take_approved_message(
 // -----------------
 
 fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel!(message_data, |bcs| {
-        let messages = vector::tabulate!(
-            bcs.peel_vec_length(),
-            |_| message::peel(bcs),
-        );
-        assert!(messages.length() > 0, EInvalidLength);
-        messages
-    })
+    utils::peel!(
+        message_data,
+        |bcs| {
+            let messages = vector::tabulate!(
+                bcs.peel_vec_length(),
+                |_| message::peel(bcs),
+            );
+            assert!(messages.length() > 0, EZeroMessages);
+            messages
+        },
+    )
 }
 
 fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
@@ -319,7 +324,7 @@ public fun dummy(ctx: &mut TxContext): GatewayV0 {
 }
 
 #[test]
-#[expected_failure(abort_code = EInvalidLength)]
+#[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {
     peel_messages(sui::bcs::to_bytes(&vector<Message>[]));
 }
