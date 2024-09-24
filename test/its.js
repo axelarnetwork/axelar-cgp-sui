@@ -14,11 +14,14 @@ const { bcs } = require('@mysten/sui/bcs');
 const { expect } = require('chai');
 const { TxBuilder } = require('../dist/tx-builder');
 
+// TODOO: Remove `only` when finish testing
 describe.only('ITS', () => {
     let client;
     let its;
     let example;
-    let coin;
+    let itsObjectId;
+    let singletonObjectId;
+    let tokenId;
     const network = process.env.NETWORK || 'localnet';
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
 
@@ -41,35 +44,49 @@ describe.only('ITS', () => {
 
         its = await publishPackage(client, deployer, 'its');
         example = await publishPackage(client, deployer, 'example');
+
+        itsObjectId = findObjectId(its.publishTxn, 'ITS');
+        singletonObjectId = findObjectId(example.publishTxn, 'its_example::Singleton');
     });
 
     it('should register a coin successfully', async () => {
-        const itsObjectId = findObjectId(its.publishTxn, 'ITS');
-
         const txBuilder = new TxBuilder(client);
-
-        const coinInfo = await txBuilder.moveCall({
-            target: `${its.packageId}::coin_info::from_info`,
-            arguments: ['Coin', 'Symbol', 9, 9],
-            typeArguments: [`${example.packageId}::coin::COIN`],
-        });
-
-        const coinManagement = await txBuilder.moveCall({
-            target: `${its.packageId}::coin_management::new_locked`,
-            typeArguments: [`${example.packageId}::coin::COIN`],
-        });
-
         await txBuilder.moveCall({
-            target: `${its.packageId}::service::register_coin`,
-            arguments: [itsObjectId, coinInfo, coinManagement],
-            typeArguments: [`${example.packageId}::coin::COIN`],
+            target: `${example.packageId}::its_example::register_coin`,
+            arguments: [singletonObjectId, itsObjectId],
         });
 
         let txResult = await txBuilder.signAndExecute(deployer, {
             showEvents: true,
         });
 
+        tokenId = txResult.events[0].parsedJson.token_id.id;
+
         expect(txResult.events.length).to.equal(1);
-        expect(txResult.events[0].parsedJson.token_id).to.be.not.null;
+        expect(tokenId).to.be.not.null;
+    });
+
+    it('should deploy remote interchain token successfully', async () => {
+        // call deploy remote interchain token
+        //const txBuilder = new TxBuilder(client);
+        //
+        //console.log('arguments', itsObjectId, tokenId, 'Ethereum');
+        //const tokenIdObject = await txBuilder.moveCall({
+        //    target: `${its.packageId}::token_id::from_u256`,
+        //    arguments: [tokenId],
+        //});
+        //
+        //await txBuilder.moveCall({
+        //    target: `${its.packageId}::service::deploy_remote_interchain_token`,
+        //    arguments: [itsObjectId, tokenIdObject, 'Ethereum'],
+        //    typeArguments: [`${example.packageId}::coin::COIN`],
+        //});
+        //
+        //let txResult = await txBuilder.signAndExecute(deployer, {
+        //    showEvents: true,
+        //});
+        //
+        //console.log(txResult);
+        //console.log(txResult.events[0].parsedJson);
     });
 });
