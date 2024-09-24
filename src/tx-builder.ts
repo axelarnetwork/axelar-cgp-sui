@@ -229,7 +229,7 @@ export class TxBuilder {
         const moveFn = await this.client.getNormalizedMoveFunction(target);
 
         let length = moveFn.parameters.length;
-        if (isTxContext(moveFn.parameters[length - 1])) length = length - 1;
+        if (length && isTxContext(moveFn.parameters[length - 1])) length = length - 1;
         if (!moveCallInfo.arguments) moveCallInfo.arguments = [];
         if (length !== moveCallInfo.arguments.length)
             throw new Error(
