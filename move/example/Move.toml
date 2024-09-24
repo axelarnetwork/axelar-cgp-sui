@@ -9,6 +9,7 @@ AxelarGateway = { local = "../axelar_gateway" }
 GasService = { local = "../gas_service" }
 Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
+ITS = { local = "../its" }
 
 [addresses]
 example = "0xa9"
