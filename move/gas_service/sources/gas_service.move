@@ -1,6 +1,7 @@
 module gas_service::gas_service;
 
-use std::ascii::String;
+use std::ascii::{Self, String};
+
 use sui::address;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -90,9 +91,11 @@ fun init(ctx: &mut TxContext) {
 // ------
 // Macros
 // ------
-macro fun fields_mut($self: &GasService): &mut GasServiceV0 {
+macro fun fields_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
     let gas_service = $self;
-    gas_service.inner.load_value_mut<GasServiceV0>()
+    let value = gas_service.inner.load_value_mut<GasServiceV0>();
+    value.version_control().check(VERSION, &ascii::string($function_name));
+    value
 }
 
 // ----------------
@@ -112,9 +115,8 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let value = self.fields_mut!();
-    value.version_control().check(VERSION, b"pay_gas");
-    let value = coin.value();
+    let value = self.fields_mut!(b"pay_gas");
+    let coin_value = coin.value();
     coin::put(value.balance_mut(), coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
@@ -123,7 +125,7 @@ public fun pay_gas(
         destination_chain,
         destination_address,
         payload_hash,
-        value,
+        value: coin_value,
         refund_address,
         params,
     })
@@ -138,14 +140,13 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let value = self.fields_mut!();
-    value.version_control().check(VERSION, b"add_gas");
-    let value = coin.value();
+    let value = self.fields_mut!(b"add_gas");
+    let coin_value = coin.value();
     coin::put(value.balance_mut(), coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
-        value,
+        value: coin_value,
         refund_address,
         params,
     });
@@ -158,8 +159,7 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let value = self.fields_mut!();
-    value.version_control().check(VERSION, b"collect_gas");
+    let value = self.fields_mut!(b"collect_gas");
     transfer::public_transfer(
         coin::take(value.balance_mut(), amount, ctx),
         receiver,
@@ -179,8 +179,7 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    let value = self.fields_mut!();
-    value.version_control().check(VERSION, b"refund");
+    let value = self.fields_mut!(b"refund");
     transfer::public_transfer(
         coin::take(value.balance_mut(), amount, ctx),
         receiver,
