@@ -90,6 +90,30 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 // -----
 
 #[test]
+#[expected_failure(abort_code = EInvalidPubKeyLength)]
+fun test_new_incorrect_pubkey() {
+    new(vector[], 123u128);
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidWeight)]
+fun test_validate_invalid_weight() {
+    validate(&WeightedSigner {
+        pub_key: vector[],
+        weight: 0,
+    })
+}
+
+#[test]
+fun test_pub_key() {
+    let pub_key = vector[1u8, 2u8, 3u8];
+    assert!(&WeightedSigner {
+        pub_key,
+        weight: 0,
+    }.pub_key() == &pub_key);
+}
+
+#[test]
 fun verify_default_signer() {
     let signer = default();
 

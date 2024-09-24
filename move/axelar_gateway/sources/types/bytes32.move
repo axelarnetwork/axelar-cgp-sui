@@ -60,3 +60,11 @@ public fun test_new() {
 
     assert!(actual.to_bytes() == @0x1.to_bytes(), 0);
 }
+
+#[test]
+public fun test_default() {
+    let default = default();
+
+    assert!(default.bytes == @0x0, 0);
+}
+

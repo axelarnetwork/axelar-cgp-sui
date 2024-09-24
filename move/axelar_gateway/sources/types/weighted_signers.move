@@ -157,3 +157,35 @@ public fun dummy(): WeightedSigners {
         nonce,
     }
 }
+
+
+#[test]
+fun tent_nonce() {
+    let weighted_signers = dummy();
+    assert!(weighted_signers.nonce() == bytes32::new(@3456), 0);
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidSignersLength)]
+fun test_peel_invalid_signers_length() {
+    let mut bcs = bcs::new(
+        bcs::to_bytes(
+            &WeightedSigners {
+                signers: vector[],
+                threshold: 0,
+                nonce: bytes32::new(@0x0),
+            }
+        )
+    );
+    peel(&mut bcs);
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidSignersLength)]
+fun test_validate_signers_invalid_signers_length() {
+    WeightedSigners {
+        signers: vector[],
+        threshold: 0,
+        nonce: bytes32::new(@0x0),
+    }.validate_signers();
+}
