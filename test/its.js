@@ -14,14 +14,17 @@ const { bcs } = require('@mysten/sui/bcs');
 const { expect } = require('chai');
 const { TxBuilder } = require('../dist/tx-builder');
 
-// TODOO: Remove `only` when finish testing
+// TODO: Remove `only` when finish testing
 describe.only('ITS', () => {
     let client;
     let its;
+    let gateway;
     let example;
     let itsObjectId;
     let singletonObjectId;
+    let relayerDiscoveryId;
     let tokenId;
+    const clock = '0x6';
     const network = process.env.NETWORK || 'localnet';
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
 
@@ -39,7 +42,10 @@ describe.only('ITS', () => {
 
         const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance'];
         for (const packageName of dependencies) {
-            await publishPackage(client, deployer, packageName);
+            const result = await publishPackage(client, deployer, packageName);
+            if (packageName === 'axelar_gateway') {
+                gateway = result;
+            }
         }
 
         its = await publishPackage(client, deployer, 'its');
@@ -47,6 +53,21 @@ describe.only('ITS', () => {
 
         itsObjectId = findObjectId(its.publishTxn, 'ITS');
         singletonObjectId = findObjectId(example.publishTxn, 'its_example::Singleton');
+        relayerDiscoveryId = findObjectId(gateway.publishTxn, 'RelayerDiscovery');
+    });
+
+    it('should call register_transaction successfully', async () => {
+        const txBuilder = new TxBuilder(client);
+
+        await txBuilder.moveCall({
+            target: `${example.packageId}::its_example::register_transaction`,
+            arguments: [relayerDiscoveryId, singletonObjectId, itsObjectId, clock],
+        });
+
+        let txResult = await txBuilder.signAndExecute(deployer);
+
+        const discoveryTx = findObjectId(txResult, 'discovery::Transaction');
+        expect(discoveryTx).to.be.not.null;
     });
 
     it('should register a coin successfully', async () => {
