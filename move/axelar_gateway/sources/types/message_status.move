@@ -21,6 +21,6 @@ public(package) fun approved(hash: Bytes32): MessageStatus {
     MessageStatus::Approved(hash)
 }
 
-public (package) fun executed(): MessageStatus {
+public(package) fun executed(): MessageStatus {
     MessageStatus::Executed
 }

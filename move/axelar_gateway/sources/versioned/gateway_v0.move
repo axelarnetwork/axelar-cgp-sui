@@ -73,7 +73,7 @@ public struct MessageExecuted has copy, drop {
 // Package Functions
 // -----------------
 /// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
-public (package) fun new(
+public(package) fun new(
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
@@ -87,35 +87,35 @@ public (package) fun new(
     }
 }
 
-public (package) fun operator(self: &GatewayV0): &address {
+public(package) fun operator(self: &GatewayV0): &address {
     &self.operator
 }
 
-public (package) fun operator_mut(self: &mut GatewayV0): &mut address {
+public(package) fun operator_mut(self: &mut GatewayV0): &mut address {
     &mut self.operator
 }
 
-public (package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
+public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
     &self.messages
 }
 
-public (package) fun messages_mut(self: &mut GatewayV0): &mut Table<Bytes32, MessageStatus> {
+public(package) fun messages_mut(self: &mut GatewayV0): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
 }
 
-public (package) fun signers(self: &GatewayV0): &AxelarSigners {
+public(package) fun signers(self: &GatewayV0): &AxelarSigners {
     &self.signers
 }
 
-public (package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
+public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
     &mut self.signers
 }
 
-public (package) fun version_control(self: &GatewayV0): &VersionControl {
+public(package) fun version_control(self: &GatewayV0): &VersionControl {
     &self.version_control
 }
 
-public (package) fun version_control_mut(self: &mut GatewayV0): &mut VersionControl {
+public(package) fun version_control_mut(self: &mut GatewayV0): &mut VersionControl {
     &mut self.version_control
 }
 
@@ -132,7 +132,7 @@ public fun borrow_mut(
     table::borrow_mut(&mut self.messages, command_id)
 }
 
-public (package) fun approve_messages(
+public(package) fun approve_messages(
     self: &mut GatewayV0,
     message_data: vector<u8>,
     proof_data: vector<u8>,
@@ -147,10 +147,10 @@ public (package) fun approve_messages(
             proof,
         );
 
-    messages.do!(|message| approve_message(self, message));
+    messages.do!(|message| self.approve_message(message));
 }
 
-public (package) fun rotate_signers(
+public(package) fun rotate_signers(
     self: &mut GatewayV0,
     clock: &Clock,
     new_signers_data: vector<u8>,
@@ -179,7 +179,7 @@ public (package) fun rotate_signers(
         .rotate_signers(clock, weighted_signers, enforce_rotation_delay);
 }
 
-public (package) fun is_message_approved(
+public(package) fun is_message_approved(
     self: &GatewayV0,
     source_chain: String,
     message_id: String,
@@ -199,7 +199,7 @@ public (package) fun is_message_approved(
     self[command_id] == message_status::approved(message.hash())
 }
 
-public (package) fun is_message_executed(
+public(package) fun is_message_executed(
     self: &GatewayV0,
     source_chain: String,
     message_id: String,
@@ -214,7 +214,7 @@ public (package) fun is_message_executed(
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
-public (package) fun take_approved_message(
+public(package) fun take_approved_message(
     self: &mut GatewayV0,
     source_chain: String,
     message_id: String,
