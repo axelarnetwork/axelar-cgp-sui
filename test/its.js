@@ -16,14 +16,8 @@ const { TxBuilder } = require('../dist/tx-builder');
 // TODO: Remove `only` when finish testing
 describe.only('ITS', () => {
     let client;
-    let its;
-    let gateway;
-    let gasService;
-    let example;
     const deployments = {};
     let objectIds = {};
-    let coinObjectId;
-    let tokenId;
     const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance', 'its', 'example'];
     const network = process.env.NETWORK || 'localnet';
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
