@@ -5,7 +5,7 @@ module squid::transfers {
     use sui::bcs::{Self, BCS};
     use sui::coin;
 
-    use axelar_gateway::discovery::{Self, MoveCall};
+    use axelar_gateway::transaction::{Self, MoveCall};
 
     use its::interchain_transfer_ticket::InterchainTransferTicket;
     use its::service::{Self};
@@ -140,8 +140,8 @@ module squid::transfers {
 
     public (package) fun get_sui_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"transfers"),
                 ascii::string(b"sui_estimate"),
@@ -155,8 +155,8 @@ module squid::transfers {
 
     public (package) fun get_its_estimate_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"transfers"),
                 ascii::string(b"its_estimate"),
@@ -170,8 +170,8 @@ module squid::transfers {
 
     public (package) fun get_sui_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"transfers"),
                 ascii::string(b"sui_transfer"),
@@ -185,8 +185,8 @@ module squid::transfers {
 
     public (package) fun get_its_transfer_move_call(package_id: address, mut bcs: BCS, swap_info_arg: vector<u8>, squid_arg: vector<u8>, its_arg: vector<u8>): MoveCall {
         let type_arg = ascii::string(bcs.peel_vec_u8());
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"transfers"),
                 ascii::string(b"its_transfer"),

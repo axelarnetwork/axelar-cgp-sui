@@ -16,12 +16,6 @@ use axelar_gateway::channel::Channel;
 use axelar_gateway::transaction::Transaction;
 use axelar_gateway::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
 
-#[error]
-const EInvalidString: vector<u8> = b"type argument is not a valid string";
-
-#[error]
-const EChannelNotFound: vector<u8> = b"channel not found";
-
 /// -------
 /// Version
 /// -------
@@ -92,16 +86,25 @@ public fun register_transaction(
 ) {
     let value = self.value_mut!(b"register_transaction");
     let channel_id = channel.id();
+    value.set_transaction(channel_id, tx);
+}
+
+public fun remove_transaction(
+    self: &mut RelayerDiscovery,
+    channel: &Channel,
+) {
+    let value = self.value_mut!(b"remove_transaction");
+    let channel_id = channel.id();
+    value.remove_transaction(channel_id);
 }
 
 /// Get a transaction for a specific channel by the channel `ID`.
 public fun get_transaction(
-    self: &mut RelayerDiscovery,
+    self: &RelayerDiscovery,
     channel_id: ID,
 ): Transaction {
     let value = self.value!(b"register_transaction");
-    assert!(value.configurations().contains(channel_id), EChannelNotFound);
-    value.configurations()[channel_id]
+    value.get_transaction(channel_id)
 }
 
 /// -----------------
@@ -111,8 +114,11 @@ fun version_control(): VersionControl {
     version_control::new(
         vector[
             // version 0
-            vector[b"register_transaction"],
-            vector[b"get_transaction"],
+            vector[
+                b"register_transaction",
+                b"remove_transaction",
+                b"get_transaction",
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     )
 }

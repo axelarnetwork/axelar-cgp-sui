@@ -1,16 +1,20 @@
 module example::gmp;
 
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::discovery::{Self, RelayerDiscovery};
-use axelar_gateway::gateway::{Self, Gateway};
-use gas_service::gas_service::{Self, GasService};
 use std::ascii::{Self, String};
 use std::type_name;
+
 use sui::address;
 use sui::coin::Coin;
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
+
+use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::discovery::RelayerDiscovery;
+use axelar_gateway::gateway::{Self, Gateway};
+use axelar_gateway::transaction;
+
+use gas_service::gas_service::{Self, GasService};
 
 public struct Singleton has key {
     id: UID,
@@ -40,11 +44,11 @@ public fun register_transaction(
     arg = vector::singleton<u8>(0);
     arg.append(object::id_address(singleton).to_bytes());
     arguments.push_back(arg);
-    let transaction = discovery::new_transaction(
+    let transaction = transaction::new_transaction(
         true,
         vector[
-            discovery::new_move_call(
-                discovery::new_function(
+            transaction::new_move_call(
+                transaction::new_function(
                     address::from_bytes(
                         hex::decode(
                             *ascii::as_bytes(
@@ -62,7 +66,7 @@ public fun register_transaction(
             ),
         ],
     );
-    discovery::register_transaction(discovery, &singleton.channel, transaction);
+    discovery.register_transaction(&singleton.channel, transaction);
 }
 
 public fun send_call(
