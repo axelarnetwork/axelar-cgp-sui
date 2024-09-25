@@ -68,7 +68,7 @@ module squid::squid {
                 // Version 0
                 vector[
                     b"start_swap",
-                ],
+                ].map!(|function_name| function_name.to_ascii_string()),
             ]
         )
     }

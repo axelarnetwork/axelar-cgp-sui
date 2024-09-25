@@ -262,7 +262,7 @@ fun version_control(): VersionControl {
                 b"is_message_executed",
                 b"take_approved_message",
                 b"send_message",
-            ]
+            ].map!(|function_name| function_name.to_ascii_string())
         ]
     )
 }
@@ -322,7 +322,7 @@ public fun dummy(ctx: &mut TxContext): Gateway {
                         b"take_approved_message",
                         b"send_message",
                         b"",
-                    ]
+                    ].map!(|function_name| function_name.to_ascii_string())
                 ]
             )
         ),

@@ -53,7 +53,7 @@ const EInvalidDestination: vector<u8> = b"invalid destination";
 public fun new(ctx: &mut TxContext): Channel {
     let id = object::new(ctx);
 
-    events::emit_channel_created( id.uid_to_address() );
+    events::channel_created( id.uid_to_address() );
 
     Channel {
         id,
@@ -64,7 +64,7 @@ public fun new(ctx: &mut TxContext): Channel {
 public fun destroy(self: Channel) {
     let Channel { id } = self;
 
-    events::emit_channel_destroyed( id.uid_to_address() );
+    events::channel_destroyed( id.uid_to_address() );
 
     id.delete();
 }

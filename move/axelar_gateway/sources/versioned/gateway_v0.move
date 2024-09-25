@@ -77,12 +77,12 @@ public(package) fun version_control(self: &GatewayV0): &VersionControl {
 }
 
 #[syntax(index)]
-public fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
+public(package) fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
 }
 
 #[syntax(index)]
-public fun borrow_mut(
+public(package) fun borrow_mut(
     self: &mut GatewayV0,
     command_id: Bytes32,
 ): &mut MessageStatus {
@@ -197,7 +197,7 @@ public(package) fun take_approved_message(
     let message_status_ref = &mut self[command_id];
     *message_status_ref = message_status::executed();
 
-    events::emit_message_executed(
+    events::message_executed(
         message,
     );
 
@@ -219,8 +219,10 @@ public(package) fun send_message(_self: &GatewayV0, message: MessageTicket, curr
         payload,
         version,
     ) = message.destroy();
+
     assert!(version <= current_version, ENewerMessage);
-    events::emit_contract_call(
+
+    events::contract_call(
         source_id,
         destination_chain,
         destination_address,
@@ -269,7 +271,7 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
             message_status::approved(message.hash()),
         );
 
-    events::emit_message_approved(
+    events::message_approved(
         message,
     );
 }
@@ -277,47 +279,47 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
 /// ---------
 /// Test Only
 /// ---------
-
 #[test_only]
-public fun operator(self: &GatewayV0): &address {
+public(package) fun operator(self: &GatewayV0): &address {
     &self.operator
 }
 
 #[test_only]
-public fun operator_mut(self: &mut GatewayV0): &mut address {
+public(package) fun operator_mut(self: &mut GatewayV0): &mut address {
     &mut self.operator
 }
 
 #[test_only]
-public fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
+public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
     &self.messages
 }
 
 #[test_only]
-public fun messages_mut(
+public(package) fun messages_mut(
     self: &mut GatewayV0,
 ): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
 }
 
 #[test_only]
-public fun signers(self: &GatewayV0): &AxelarSigners {
+public(package) fun signers(self: &GatewayV0): &AxelarSigners {
     &self.signers
 }
 
 #[test_only]
-public fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
+public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
     &mut self.signers
 }
 
 #[test_only]
-public fun version_control_mut(
+public(package) fun version_control_mut(
     self: &mut GatewayV0,
 ): &mut VersionControl {
     &mut self.version_control
 }
 
-public fun destroy_for_testing(
+#[test_only]
+public(package) fun destroy_for_testing(
     self: GatewayV0,
 ): (address, Table<Bytes32, MessageStatus>, AxelarSigners, VersionControl) {
     let GatewayV0 {
@@ -330,7 +332,7 @@ public fun destroy_for_testing(
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): GatewayV0 {
+public(package) fun dummy(ctx: &mut TxContext): GatewayV0 {
     new(
         @0x0,
         sui::table::new(ctx),
@@ -339,6 +341,9 @@ public fun dummy(ctx: &mut TxContext): GatewayV0 {
     )
 }
 
+/// -----
+/// Tests
+/// -----
 #[test]
 #[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {

@@ -9,7 +9,6 @@ use axelar_gateway::proof::{Proof};
 use axelar_gateway::weighted_signers::WeightedSigners;
 use axelar_gateway::events;
 
-
 // ------
 // Errors
 // ------
@@ -122,7 +121,7 @@ public(package) fun rotate_signers(
     self.epoch_by_signers_hash.add(new_signers_hash, epoch);
     self.epoch = epoch;
 
-    events::emit_signers_rotated(
+    events::signers_rotated(
         epoch,
         new_signers_hash,
         new_signers,
