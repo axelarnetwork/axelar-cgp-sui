@@ -13,7 +13,7 @@ const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
-
+const clock = '0x6';
 async function publishPackage(client, keypair, packageName) {
     const compileDir = `${__dirname}/../move_compile`;
     copyMovePackage(packageName, null, compileDir);
@@ -252,6 +252,7 @@ function findObjectId(tx, objectType, type = 'created') {
 }
 
 module.exports = {
+    clock,
     publishPackage,
     findObjectId,
     getRandomBytes32,

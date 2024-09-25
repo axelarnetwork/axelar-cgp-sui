@@ -9,7 +9,7 @@ This is a short spec for what there is to be done. You can check https://github.
 */
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const { publishPackage, generateEd25519Keypairs, findObjectId } = require('./testutils');
+const { publishPackage, clock, generateEd25519Keypairs, findObjectId } = require('./testutils');
 const { expect } = require('chai');
 const { TxBuilder } = require('../dist/tx-builder');
 
@@ -20,19 +20,18 @@ describe.only('ITS', () => {
     let gateway;
     let gasService;
     let example;
-    let itsObjectId;
+    const deployments = {};
+    let objectIds = {};
     let coinObjectId;
-    let singletonObjectId;
-    let relayerDiscoveryId;
-    let gasServiceObjectId;
     let tokenId;
-    const clock = '0x6';
+    const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance', 'its', 'example'];
     const network = process.env.NETWORK || 'localnet';
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
 
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
 
+        // Request funds from faucet
         await Promise.all(
             [operator, deployer, keypair].map((keypair) =>
                 requestSuiFromFaucetV0({
@@ -42,44 +41,37 @@ describe.only('ITS', () => {
             ),
         );
 
-        const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance'];
+        // Publish all packages
         for (const packageName of dependencies) {
             const result = await publishPackage(client, deployer, packageName);
-            if (packageName === 'axelar_gateway') {
-                gateway = result;
-            } else if (packageName === 'gas_service') {
-                gasService = result;
-            }
+            deployments[packageName] = result;
         }
 
-        its = await publishPackage(client, deployer, 'its');
-        example = await publishPackage(client, deployer, 'example');
+        objectIds = {
+            its: findObjectId(deployments.its.publishTxn, 'ITS'),
+            singleton: findObjectId(deployments.example.publishTxn, 'its_example::Singleton'),
+            relayerDiscovery: findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery'),
+            gasService: findObjectId(deployments.gas_service.publishTxn, 'GasService'),
+        };
 
-        itsObjectId = findObjectId(its.publishTxn, 'ITS');
-        singletonObjectId = findObjectId(example.publishTxn, 'its_example::Singleton');
-        relayerDiscoveryId = findObjectId(gateway.publishTxn, 'RelayerDiscovery');
-        gasServiceObjectId = findObjectId(gasService.publishTxn, 'GasService');
-
-        console.log('minting coins');
         const txBuilder = new TxBuilder(client);
 
         // mint some coins
         await txBuilder.moveCall({
-            target: `${example.packageId}::its_example::mint`,
-            arguments: [singletonObjectId, 1e18, deployer.toSuiAddress()],
+            target: `${deployments.example.packageId}::its_example::mint`,
+            arguments: [objectIds.singleton, 1e18, deployer.toSuiAddress()],
         });
 
         const mintResult = await txBuilder.signAndExecute(deployer);
-        coinObjectId = findObjectId(mintResult, 'its_example::ITS_EXAMPLE');
-        console.log('coinObjectId', coinObjectId);
+        objectIds.coin = findObjectId(mintResult, 'its_example::ITS_EXAMPLE');
     });
 
     it('should call register_transaction successfully', async () => {
         const txBuilder = new TxBuilder(client);
 
         await txBuilder.moveCall({
-            target: `${example.packageId}::its_example::register_transaction`,
-            arguments: [relayerDiscoveryId, singletonObjectId, itsObjectId, clock],
+            target: `${deployments.example.packageId}::its_example::register_transaction`,
+            arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, clock],
         });
 
         let txResult = await txBuilder.signAndExecute(deployer);
@@ -91,18 +83,18 @@ describe.only('ITS', () => {
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
         await txBuilder.moveCall({
-            target: `${example.packageId}::its_example::register_coin`,
-            arguments: [singletonObjectId, itsObjectId],
+            target: `${deployments.example.packageId}::its_example::register_coin`,
+            arguments: [objectIds.singleton, objectIds.its],
         });
 
         let txResult = await txBuilder.signAndExecute(deployer, {
             showEvents: true,
         });
 
-        tokenId = txResult.events[0].parsedJson.token_id.id;
+        objectIds.tokenId = txResult.events[0].parsedJson.token_id.id;
 
         expect(txResult.events.length).to.equal(1);
-        expect(tokenId).to.be.not.null;
+        expect(objectIds.tokenId).to.be.not.null;
     });
 
     it('should send interchain transfer successfully', async () => {
@@ -110,31 +102,21 @@ describe.only('ITS', () => {
 
         const tx = txBuilder.tx;
 
-        const coin = tx.splitCoins(coinObjectId, [1e9]);
-
+        const coin = tx.splitCoins(objectIds.coin, [1e9]);
         const gas = tx.splitCoins(tx.gas, [1e8]);
 
         const TokenId = await txBuilder.moveCall({
-            target: `${its.packageId}::token_id::from_u256`,
-            arguments: [tokenId],
+            target: `${deployments.its.packageId}::token_id::from_u256`,
+            arguments: [objectIds.tokenId],
         });
 
+        const { singleton, its, gasService } = objectIds;
+
+        console.log([singleton, its, gasService, TokenId, coin, 'Ethereum', '0x1234', '0x', deployer.toSuiAddress(), gas, '0x', clock]);
+
         await txBuilder.moveCall({
-            target: `${example.packageId}::its_example::send_interchain_transfer_call`,
-            arguments: [
-                singletonObjectId,
-                itsObjectId,
-                gasServiceObjectId,
-                TokenId,
-                coin,
-                'Ethereum',
-                '0x1234',
-                '0x',
-                deployer.toSuiAddress(),
-                gas,
-                '0x',
-                clock,
-            ],
+            target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
+            arguments: [singleton, its, gasService, TokenId, coin, 'Ethereum', '0x1234', '0x', deployer.toSuiAddress(), gas, '0x', clock],
         });
 
         // TODO: Fix trusted address error
