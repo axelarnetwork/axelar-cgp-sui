@@ -11,7 +11,7 @@ const {
     hashMessage,
     signMessage,
     approveAndExecuteMessage,
-} = require('./utils');
+} = require('./testutils');
 const { TxBuilder } = require('../dist/tx-builder');
 const {
     bcsStructs: {
@@ -97,17 +97,12 @@ describe('Axelar Gateway', () => {
         const encodedSigners = WeightedSigners.serialize(gatewayInfo.signers).toBytes();
         const builder = new TxBuilder(client);
 
-        const separator = await builder.moveCall({
-            target: `${packageId}::bytes32::new`,
-            arguments: [domainSeparator],
-        });
-
         await builder.moveCall({
             target: `${packageId}::gateway::setup`,
             arguments: [
                 creatorCap,
                 operator.toSuiAddress(),
-                separator,
+                domainSeparator,
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
@@ -231,12 +226,12 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::send_message`,
-                arguments: [messageTicket],
+                arguments: [gateway, messageTicket],
                 typeArguments: [],
             });
 
             await expectEvent(builder, keypair, {
-                type: `${packageId}::gateway::ContractCall`,
+                type: `${packageId}::events::ContractCall`,
                 arguments: {
                     destination_address: destinationAddress,
                     destination_chain: destinationChain,

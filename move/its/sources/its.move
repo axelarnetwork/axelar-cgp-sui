@@ -265,7 +265,7 @@ module its::its {
                     b"mint_to_as_distributor",
                     b"burn_as_distributor",
                     b"set_trusted_addresses",
-                ]
+                ].map!(|function_name| function_name.to_ascii_string())
             ]
         )
     }

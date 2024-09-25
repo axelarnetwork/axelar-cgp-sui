@@ -2,32 +2,39 @@ module axelar_gateway::gateway_v0;
 
 use std::ascii::String;
 
-use sui::table::{Self, Table};
-use sui::hash;
 use sui::clock::Clock;
-
-use version_control::version_control::VersionControl;
+use sui::hash;
+use sui::table::{Self, Table};
+use sui::address;
 
 use utils::utils;
 
+use version_control::version_control::VersionControl;
+
 use axelar_gateway::auth::AxelarSigners;
-use axelar_gateway::message_status::MessageStatus;
-use axelar_gateway::proof;
-use axelar_gateway::message::{Self, Message};
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::message_status;
-use axelar_gateway::weighted_signers;
 use axelar_gateway::channel::{Self, ApprovedMessage};
+use axelar_gateway::message::{Self, Message};
+use axelar_gateway::message_status::{Self, MessageStatus};
+use axelar_gateway::proof;
+use axelar_gateway::weighted_signers;
+use axelar_gateway::message_ticket::MessageTicket;
+use axelar_gateway::events;
 
 // ------
 // Errors
 // ------
-/// Trying to `take_approved_message` for a message that is not approved.
-const EMessageNotApproved: u64 = 0;
-/// Invalid length of vector
-const EInvalidLength: u64 = 1;
-/// Not latest signers
-const ENotLatestSigners: u64 = 2;
+#[error]
+const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
+
+#[error]
+const EZeroMessages: vector<u8> = b"no mesages found";
+
+#[error]
+const ENotLatestSigners: vector<u8> = b"not latest signers";
+
+#[error]
+const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // ---------
 // CONSTANTS
@@ -47,33 +54,11 @@ public struct GatewayV0 has store {
     version_control: VersionControl,
 }
 
-// ------
-// Events
-// ------
-/// Emitted when a new message is sent from the SUI network.
-public struct ContractCall has copy, drop {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    payload_hash: address,
-}
-
-/// Emitted when a new message is approved by the gateway.
-public struct MessageApproved has copy, drop {
-    message: message::Message,
-}
-
-/// Emitted when a message is taken to be executed by a channel.
-public struct MessageExecuted has copy, drop {
-    message: message::Message,
-}
-
 // -----------------
 // Package Functions
 // -----------------
 /// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
-public (package) fun new(
+public(package) fun new(
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
@@ -87,52 +72,24 @@ public (package) fun new(
     }
 }
 
-public (package) fun operator(self: &GatewayV0): &address {
-    &self.operator
-}
-
-public (package) fun operator_mut(self: &mut GatewayV0): &mut address {
-    &mut self.operator
-}
-
-public (package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
-    &self.messages
-}
-
-public (package) fun messages_mut(self: &mut GatewayV0): &mut Table<Bytes32, MessageStatus> {
-    &mut self.messages
-}
-
-public (package) fun signers(self: &GatewayV0): &AxelarSigners {
-    &self.signers
-}
-
-public (package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
-    &mut self.signers
-}
-
-public (package) fun version_control(self: &GatewayV0): &VersionControl {
+public(package) fun version_control(self: &GatewayV0): &VersionControl {
     &self.version_control
 }
 
-public (package) fun version_control_mut(self: &mut GatewayV0): &mut VersionControl {
-    &mut self.version_control
-}
-
 #[syntax(index)]
-public fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
+public(package) fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
 }
 
 #[syntax(index)]
-public fun borrow_mut(
+public(package) fun borrow_mut(
     self: &mut GatewayV0,
     command_id: Bytes32,
 ): &mut MessageStatus {
     table::borrow_mut(&mut self.messages, command_id)
 }
 
-public (package) fun approve_messages(
+public(package) fun approve_messages(
     self: &mut GatewayV0,
     message_data: vector<u8>,
     proof_data: vector<u8>,
@@ -147,10 +104,10 @@ public (package) fun approve_messages(
             proof,
         );
 
-    messages.do!(|message| approve_message(self, message));
+    messages.do!(|message| self.approve_message(message));
 }
 
-public (package) fun rotate_signers(
+public(package) fun rotate_signers(
     self: &mut GatewayV0,
     clock: &Clock,
     new_signers_data: vector<u8>,
@@ -179,7 +136,7 @@ public (package) fun rotate_signers(
         .rotate_signers(clock, weighted_signers, enforce_rotation_delay);
 }
 
-public (package) fun is_message_approved(
+public(package) fun is_message_approved(
     self: &GatewayV0,
     source_chain: String,
     message_id: String,
@@ -199,7 +156,7 @@ public (package) fun is_message_approved(
     self[command_id] == message_status::approved(message.hash())
 }
 
-public (package) fun is_message_executed(
+public(package) fun is_message_executed(
     self: &GatewayV0,
     source_chain: String,
     message_id: String,
@@ -214,7 +171,7 @@ public (package) fun is_message_executed(
 
 /// To execute a message, the relayer will call `take_approved_message`
 /// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
-public (package) fun take_approved_message(
+public(package) fun take_approved_message(
     self: &mut GatewayV0,
     source_chain: String,
     message_id: String,
@@ -240,9 +197,9 @@ public (package) fun take_approved_message(
     let message_status_ref = &mut self[command_id];
     *message_status_ref = message_status::executed();
 
-    sui::event::emit(MessageExecuted {
+    events::message_executed(
         message,
-    });
+    );
 
     // Friend only.
     channel::create_approved_message(
@@ -252,6 +209,26 @@ public (package) fun take_approved_message(
         destination_id,
         payload,
     )
+}
+
+public(package) fun send_message(_self: &GatewayV0, message: MessageTicket, current_version: u64) {
+    let (
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    ) = message.destroy();
+
+    assert!(version <= current_version, ENewerMessage);
+
+    events::contract_call(
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        address::from_bytes(hash::keccak256(&payload)),
+    );
 }
 
 // -----------------
@@ -266,7 +243,7 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
                 bcs.peel_vec_length(),
                 |_| message::peel(bcs),
             );
-            assert!(messages.length() > 0, EInvalidLength);
+            assert!(messages.length() > 0, EZeroMessages);
             messages
         },
     )
@@ -294,34 +271,68 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
             message_status::approved(message.hash()),
         );
 
-    sui::event::emit(MessageApproved {
+    events::message_approved(
         message,
-    });
+    );
+}
+
+/// ---------
+/// Test Only
+/// ---------
+#[test_only]
+public(package) fun operator(self: &GatewayV0): &address {
+    &self.operator
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GatewayV0): (
-    address,
-    Table<Bytes32, MessageStatus>,
-    AxelarSigners,
-    VersionControl,
-) {
+public(package) fun operator_mut(self: &mut GatewayV0): &mut address {
+    &mut self.operator
+}
+
+#[test_only]
+public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
+    &self.messages
+}
+
+#[test_only]
+public(package) fun messages_mut(
+    self: &mut GatewayV0,
+): &mut Table<Bytes32, MessageStatus> {
+    &mut self.messages
+}
+
+#[test_only]
+public(package) fun signers(self: &GatewayV0): &AxelarSigners {
+    &self.signers
+}
+
+#[test_only]
+public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
+    &mut self.signers
+}
+
+#[test_only]
+public(package) fun version_control_mut(
+    self: &mut GatewayV0,
+): &mut VersionControl {
+    &mut self.version_control
+}
+
+#[test_only]
+public(package) fun destroy_for_testing(
+    self: GatewayV0,
+): (address, Table<Bytes32, MessageStatus>, AxelarSigners, VersionControl) {
     let GatewayV0 {
         operator,
         messages,
         signers,
         version_control,
     } = self;
-    (
-        operator,
-        messages,
-        signers,
-        version_control,
-    )
+    (operator, messages, signers, version_control)
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): GatewayV0 {
+public(package) fun dummy(ctx: &mut TxContext): GatewayV0 {
     new(
         @0x0,
         sui::table::new(ctx),
@@ -330,8 +341,11 @@ public fun dummy(ctx: &mut TxContext): GatewayV0 {
     )
 }
 
+/// -----
+/// Tests
+/// -----
 #[test]
-#[expected_failure(abort_code = EInvalidLength)]
+#[expected_failure(abort_code = EZeroMessages)]
 fun test_peel_messages_no_zero_messages() {
     peel_messages(sui::bcs::to_bytes(&vector<Message>[]));
 }
@@ -438,7 +452,6 @@ fun test_peel_messages() {
     assert!(messages[0] == message1, 1);
     assert!(messages[1] == message2, 2);
 }
-
 
 #[test]
 #[expected_failure]

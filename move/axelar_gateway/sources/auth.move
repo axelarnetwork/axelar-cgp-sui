@@ -1,19 +1,22 @@
 module axelar_gateway::auth;
 
+use sui::bcs;
+use sui::clock::Clock;
+use sui::table::{Self, Table};
+
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::proof::{Proof};
 use axelar_gateway::weighted_signers::WeightedSigners;
-use sui::bcs;
-use sui::clock::Clock;
-use sui::event;
-use sui::table::{Self, Table};
+use axelar_gateway::events;
 
 // ------
 // Errors
 // ------
-const EInsufficientRotationDelay: u64 = 0;
-/// For when number of signatures for the call approvals is below the threshold.
-const EInvalidEpoch: u64 = 1;
+#[error]
+const EInsufficientRotationDelay: vector<u8> = b"insufficient rotation delay";
+
+#[error]
+const EInvalidEpoch: vector<u8> = b"the difference between current_epoch and signers_epoch exceeds the allowed retention period";
 
 // -----
 // Types
@@ -37,16 +40,6 @@ public struct MessageToSign has copy, drop, store {
     domain_separator: Bytes32,
     signers_hash: Bytes32,
     data_hash: Bytes32,
-}
-
-// ------
-// Events
-// ------
-/// Emitted when signers are rotated.
-public struct SignersRotated has copy, drop {
-    epoch: u64,
-    signers_hash: Bytes32,
-    signers: WeightedSigners,
 }
 
 // -----------------
@@ -128,11 +121,11 @@ public(package) fun rotate_signers(
     self.epoch_by_signers_hash.add(new_signers_hash, epoch);
     self.epoch = epoch;
 
-    event::emit(SignersRotated {
+    events::signers_rotated(
         epoch,
-        signers_hash: new_signers_hash,
-        signers: new_signers,
-    })
+        new_signers_hash,
+        new_signers,
+    );
 }
 
 // ------------------

@@ -6,6 +6,8 @@
 /// proper discovery / execution mechanism in place.
 module axelar_gateway::discovery;
 
+use std::ascii;
+
 use sui::versioned::{Self, Versioned};
 
 use version_control::version_control::{Self, VersionControl};
@@ -14,8 +16,11 @@ use axelar_gateway::channel::Channel;
 use axelar_gateway::transaction::Transaction;
 use axelar_gateway::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
 
-/// Channel not found.
-const EChannelNotFound: u64 = 0;
+#[error]
+const EInvalidString: vector<u8> = b"type argument is not a valid string";
+
+#[error]
+const EChannelNotFound: vector<u8> = b"channel not found";
 
 /// -------
 /// Version
@@ -51,14 +56,18 @@ fun init(ctx: &mut TxContext) {
 /// ------
 /// macros
 /// ------
-macro fun value($self: &RelayerDiscovery): &RelayerDiscoveryV0 {
+macro fun value($self: &RelayerDiscovery, $function_name: vector<u8>): &RelayerDiscoveryV0 {
     let relayer_discovery = $self;
-    relayer_discovery.inner.load_value<RelayerDiscoveryV0>()
+    let value = relayer_discovery.inner.load_value<RelayerDiscoveryV0>();
+    value.version_control().check(VERSION, ascii::string($function_name));
+    value
 }
 
-macro fun value_mut($self: &mut RelayerDiscovery): &mut RelayerDiscoveryV0 {
+macro fun value_mut($self: &mut RelayerDiscovery, $function_name: vector<u8>): &mut RelayerDiscoveryV0 {
     let relayer_discovery = $self;
-    relayer_discovery.inner.load_value_mut<RelayerDiscoveryV0>()
+    let value = relayer_discovery.inner.load_value_mut<RelayerDiscoveryV0>();
+    value.version_control().check(VERSION, ascii::string($function_name));
+    value
 }
 
 /// During the creation of the object, the UID should be passed here to
@@ -81,13 +90,8 @@ public fun register_transaction(
     channel: &Channel,
     tx: Transaction,
 ) {
-    let value = self.value_mut!();
-    value.version_control().check(VERSION, b"register_transaction");
+    let value = self.value_mut!(b"register_transaction");
     let channel_id = channel.id();
-    if (value.configurations().contains(channel_id)) {
-        value.configurations_mut().remove(channel_id);
-    };
-    value.configurations_mut().add(channel_id, tx);
 }
 
 /// Get a transaction for a specific channel by the channel `ID`.
@@ -95,8 +99,7 @@ public fun get_transaction(
     self: &mut RelayerDiscovery,
     channel_id: ID,
 ): Transaction {
-    let value = self.value!();
-    value.version_control().check(VERSION, b"register_transaction");
+    let value = self.value!(b"register_transaction");
     assert!(value.configurations().contains(channel_id), EChannelNotFound);
     value.configurations()[channel_id]
 }
