@@ -198,7 +198,7 @@ fun version_control(): VersionControl {
             // Version 0
             vector [
                 b"pay_gas", b"add_gas", b"collect_gas", b"refund", 
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     )
 }

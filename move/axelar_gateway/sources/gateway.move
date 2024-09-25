@@ -35,9 +35,7 @@ use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
 use axelar_gateway::gateway_v0::{Self, GatewayV0};
 use std::ascii::{Self, String};
-use sui::address;
 use sui::clock::Clock;
-use sui::hash;
 use sui::table::{Self};
 use sui::versioned::{Self, Versioned};
 use version_control::version_control::{Self, VersionControl};
@@ -47,12 +45,6 @@ use utils::utils;
 // Version
 // -------
 const VERSION: u64 = 0;
-
-// ------
-// Errors
-// ------
-#[error]
-const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
 
 // -------
 // Structs
@@ -67,18 +59,6 @@ public struct Gateway has key {
 // ------------
 public struct CreatorCap has key, store {
     id: UID,
-}
-
-// ------
-// Events
-// ------
-/// Emitted when a new message is sent from the SUI network.
-public struct ContractCall has copy, drop {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    payload_hash: address,
 }
 
 // -----
@@ -213,23 +193,11 @@ public fun prepare_message(
 /// Submit the MessageTicket which causes a contract call by sending an event from an
 /// authorized Channel.
 public fun send_message(
+    self: &Gateway,
     message: MessageTicket,
 ) {
-    let (
-        source_id,
-        destination_chain,
-        destination_address,
-        payload,
-        version,
-    ) = message.destroy();
-    assert!(version <= VERSION, ENewerMessage);
-    sui::event::emit(ContractCall {
-        source_id,
-        destination_chain,
-        destination_address,
-        payload,
-        payload_hash: address::from_bytes(hash::keccak256(&payload)),
-    });
+    let value = self.value!(b"send_message");
+    value.send_message(message, VERSION);
 }
 
 public fun is_message_approved(
@@ -293,7 +261,8 @@ fun version_control(): VersionControl {
                 b"is_message_approved",
                 b"is_message_executed",
                 b"take_approved_message",
-            ]
+                b"send_message",
+            ].map!(|function_name| function_name.to_ascii_string())
         ]
     )
 }
@@ -342,7 +311,20 @@ public fun dummy(ctx: &mut TxContext): Gateway {
             @0x0,
             table::new(ctx),
             auth::dummy(ctx),
-            version_control(),
+            version_control::new(
+                vector [
+                    // Version 0
+                    vector [
+                        b"approve_messages",
+                        b"rotate_signers",
+                        b"is_message_approved",
+                        b"is_message_executed",
+                        b"take_approved_message",
+                        b"send_message",
+                        b"",
+                    ].map!(|function_name| function_name.to_ascii_string())
+                ]
+            )
         ),
         ctx,
     );
@@ -499,7 +481,7 @@ fun test_take_approved_message_message_not_approved() {
         axelar_gateway::bytes32::new(@0x2),
     );
 
-    gateway.inner.load_value_mut<GatewayV0>()
+    gateway.value_mut!(b"")
         .messages_mut()
         .add(
             message.command_id(),
@@ -515,7 +497,8 @@ fun test_take_approved_message_message_not_approved() {
         vector[0, 1, 2],
     );
     
-    gateway.inner.load_value_mut<GatewayV0>().messages_mut().remove(message.command_id());
+    
+    gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
     destroy_for_testing(gateway);
