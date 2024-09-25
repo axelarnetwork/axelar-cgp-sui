@@ -3,7 +3,7 @@ module gas_service::gas_service;
 use std::ascii::{Self, String};
 
 use sui::address;
-use sui::coin::{Self, Coin};
+use sui::coin::Coin;
 use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
@@ -206,6 +206,9 @@ fun version_control(): VersionControl {
 // -----
 // Tests
 // -----
+#[test_only]
+use sui::coin;
+
 #[test_only]
 macro fun value($self: &GasService): &GasServiceV0 {
     let gas_service = $self;

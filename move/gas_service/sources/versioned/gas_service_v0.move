@@ -49,6 +49,7 @@ public fun balance_mut(self: &mut GasServiceV0): &mut Balance<SUI> {
     &mut self.balance
 }
 
+#[test_only]
 public fun destroy_for_testing(self: GasServiceV0) {
     let GasServiceV0 { balance, version_control: _ } = self;
     balance.destroy_for_testing();
