@@ -11,16 +11,10 @@ jobs:
         uses: actions/checkout@v4
 
       # Install Node.js and its dependencies
-      - name: Get NodeJS Version
-        shell: bash
-        run: |
-          NODEJS_VERSION=$(jq -r '.engines.node' "package.json")
-          echo "NODEJS_VERSION=$NODEJS_VERSION" >> $GITHUB_ENV
-
       - name: Setup node.js and install dependencies
-        uses: ./.github/actions/nodejs-ci
+        uses: ./.github/actions/setup-tools
         with:
-          node-version: ${{ env.NODEJS_VERSION }}
+          install-nodejs: 'true'
 
       - name: Lint
         run: npm run lint

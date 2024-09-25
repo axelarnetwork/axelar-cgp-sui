@@ -14,26 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # This step ensures that the "LITERAL" value is given to the actions.
-      # Using `jq` sends it uninterepted to the action which is sort of "hackish" and doesn't ensure the separation of concerns.
-      - name: Get SUI and NodeJS Versions
-        shell: bash
-        run: |
-          SUI_VERSION=$(jq -r '.SUI_VERSION' "version.json")
-          echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
-
-          NODEJS_VERSION=$(jq -r '.engines.node' "package.json")
-          echo "NODEJS_VERSION=$NODEJS_VERSION" >> $GITHUB_ENV
-
-      - name: Setup Sui CLI and install dependencies
-        uses: ./.github/actions/setup-sui
+      - name: Setup the required tools (Sui and nodejs)
+        uses: ./.github/actions/setup-tools
         with:
-          sui-version: ${{ env.SUI_VERSION }}
-
-      - name: Setup node.js and install dependencies
-        uses: ./.github/actions/nodejs-ci
-        with:
-          node-version: ${{ env.NODEJS_VERSION }}
+          install-sui: 'true'
+          install-nodejs: 'true'
 
       - name: Coverage
         run: npm run coverage

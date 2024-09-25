@@ -25,26 +25,11 @@ jobs:
         with:
           persist-credentials: false
 
-      # Install Sui dependencies
-      - name: Get SUI and NodeJS Versions
-        shell: bash
-        run: |
-          SUI_VERSION=$(jq -r '.SUI_VERSION' "version.json")
-          echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
-
-          NODEJS_VERSION=$(jq -r '.engines.node' "package.json")
-          echo "NODEJS_VERSION=$NODEJS_VERSION" >> $GITHUB_ENV
-
-      - name: Setup Sui CLI
-        uses: ./.github/actions/setup-sui
+      - name: Setup the required tools (sui, nodejs)
+        uses: ./.github/actions/setup-tools
         with:
-          sui-version: ${{ env.SUI_VERSION }}
-
-      # Needed for the changeset releases
-      - name: Setup node.js and install dependencies
-        uses: ./.github/actions/nodejs-ci
-        with:
-          node-version: ${{ env.NODEJS_VERSION }}
+          install-sui: 'true'
+          install-nodejs: 'true'
 
       # Publishes a release in case the release isn't published
       - name: Publish release
