@@ -19,10 +19,9 @@ use version_control::version_control::{Self, VersionControl};
 // -------
 const VERSION: u64 = 0;
 
-// -----
-// Types
-// -----
-
+// -------
+// Structs
+// -------
 public struct GasService has key, store {
     id: UID,
     inner: Versioned,
@@ -35,7 +34,6 @@ public struct GasCollectorCap has key, store {
 // ------
 // Events
 // ------
-
 public struct GasPaid<phantom T> has copy, drop {
     sender: address,
     destination_chain: String,
@@ -67,7 +65,6 @@ public struct GasCollected<phantom T> has copy, drop {
 // -----
 // Setup
 // -----
-
 fun init(ctx: &mut TxContext) {
     transfer::share_object(GasService {
         id: object::new(ctx),
@@ -101,7 +98,6 @@ macro fun value_mut($self: &GasService, $function_name: vector<u8>): &mut GasSer
 // ----------------
 // Public Functions
 // ----------------
-
 /// Pay gas for a contract call.
 /// This function is called by the channel that wants to pay gas for a contract call.
 /// It can also be called by the user to pay gas for a contract call, while setting the sender as the channel ID.
@@ -191,7 +187,6 @@ public fun refund(
 // -----------------
 // Private Functions
 // -----------------
-
 fun version_control(): VersionControl {
     version_control::new(
         vector [
@@ -249,6 +244,9 @@ fun destroy_cap(self: GasCollectorCap) {
     id.delete();
 }
 
+/// -----
+/// Tests
+/// -----
 #[test]
 fun test_init() {
     let ctx = &mut sui::tx_context::dummy();

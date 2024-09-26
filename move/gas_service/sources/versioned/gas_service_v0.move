@@ -6,14 +6,17 @@ use sui::coin::{Self, Coin};
 
 use version_control::version_control::VersionControl;
 
-// -----
-// Types
-// -----
+// -------
+// Structs
+// -------
 public struct GasServiceV0 has store {
     balance: Balance<SUI>,
     version_control: VersionControl,
 }
 
+// -----------------
+// Package Functions
+// -----------------
 public(package) fun new(version_control: VersionControl): GasServiceV0 {
     GasServiceV0 {
         balance: balance::zero<SUI>(),
@@ -33,6 +36,9 @@ public(package) fun take(self: &mut GasServiceV0, amount: u64, ctx: &mut TxConte
     coin::take(&mut self.balance, amount, ctx)
 }
 
+// ---------
+// Test Only
+// ---------
 #[test_only]
 public fun version_control_mut(self: &mut GasServiceV0): &mut VersionControl {
     &mut self.version_control
