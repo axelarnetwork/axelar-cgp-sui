@@ -304,7 +304,7 @@ public fun create_for_testing(
 }
 
 #[test_only]
-public fun dummy(ctx: &mut TxContext): Gateway {
+fun dummy(ctx: &mut TxContext): Gateway {
     let inner = versioned::create(
         VERSION,
         gateway_v0::new(
