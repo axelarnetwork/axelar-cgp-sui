@@ -116,7 +116,7 @@ public fun new_transaction_from_bcs(bcs: &mut BCS): Transaction {
     }
 }
 
-/// Helper function which returns the package id of from a type.
+/// Helper function which returns the package id of a type.
 public fun package_id<T>(): address {
     address::from_bytes(
         hex::decode(
