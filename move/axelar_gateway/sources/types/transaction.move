@@ -20,7 +20,7 @@ public struct Function has store, copy, drop {
 }
 
 /// Arguments are prefixed with:
-/// - 0 for objects followed by exactly 32 bytes that cointain the object id
+/// - 0 for objects followed by exactly 32 bytes that contain the object id
 /// - 1 for pures followed by the bcs encoded form of the pure
 /// - 2 for the call contract object, followed by nothing (to be passed into the target function)
 /// - 3 for the payload of the contract call (to be passed into the intermediate function)
