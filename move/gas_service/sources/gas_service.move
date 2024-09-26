@@ -234,7 +234,7 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
 fun destroy(self: GasService) {
     let GasService { id, inner } = self;
     id.delete();
-    let (data) = inner.destroy<GasServiceV0>();
+    let data = inner.destroy<GasServiceV0>();
     data.destroy_for_testing();
 }
 
