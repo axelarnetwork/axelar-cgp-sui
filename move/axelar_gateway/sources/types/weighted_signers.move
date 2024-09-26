@@ -189,3 +189,43 @@ fun test_validate_signers_invalid_signers_length() {
         nonce: bytes32::new(@0x0),
     }.validate_signers();
 }
+
+#[test]
+#[expected_failure(abort_code = EInvalidSignerOrder)]
+fun test_validate_signers_invalid_signer_order() {
+    let mut pub_key = @0x0.to_bytes();
+    pub_key.push_back(2);
+    let signer1 = axelar_gateway::weighted_signer::new(pub_key, 1);
+    pub_key = @0x0.to_bytes();
+    pub_key.push_back(1);
+    let signer2 = axelar_gateway::weighted_signer::new(pub_key, 2);
+    WeightedSigners {
+        signers: vector[signer1, signer2],
+        threshold: 1,
+        nonce: bytes32::new(@0x0),
+    }.validate_signers();
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidThreshold)]
+fun test_validate_threshold_invalid_threshold1() {
+    WeightedSigners {
+        signers: vector[],
+        threshold: 0,
+        nonce: bytes32::new(@0x0),
+    }.validate_threshold();
+}
+
+
+#[test]
+#[expected_failure(abort_code = EInvalidThreshold)]
+fun test_validate_threshold_invalid_threshold2() {
+    let mut pub_key = @0x0.to_bytes();
+    pub_key.push_back(2);
+    let signer = axelar_gateway::weighted_signer::new(pub_key, 1);
+    WeightedSigners {
+        signers: vector[signer],
+        threshold: 2,
+        nonce: bytes32::new(@0x0),
+    }.validate_threshold();
+}

@@ -131,7 +131,6 @@ public(package) fun rotate_signers(
 // ------------------
 // Internal Functions
 // ------------------
-
 fun update_rotation_timestamp(
     self: &mut AxelarSigners,
     clock: &Clock,
@@ -150,6 +149,9 @@ fun update_rotation_timestamp(
     self.last_rotation_timestamp = current_timestamp;
 }
 
+// ---------
+// Test Only
+// ---------
 #[test_only]
 public fun dummy(ctx: &mut TxContext): AxelarSigners {
     AxelarSigners {
@@ -159,6 +161,19 @@ public fun dummy(ctx: &mut TxContext): AxelarSigners {
         minimum_rotation_delay: 1,
         last_rotation_timestamp: 0,
         previous_signers_retention: 3,
+    }
+}
+
+#[test_only]
+public(package) fun new_message_to_sign(
+    domain_separator: Bytes32,
+    signers_hash: Bytes32,
+    data_hash: Bytes32,
+): MessageToSign {
+    MessageToSign {
+        domain_separator,
+        signers_hash,
+        data_hash,
     }
 }
 

@@ -309,6 +309,11 @@ fun dummy(ctx: &mut TxContext): GatewayV0 {
     )
 }
 
+#[test_only]
+public(package) fun approve_messages_data_hash(message_data: vector<u8>): Bytes32 {
+    data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data)
+}
+
 /// -----
 /// Tests
 /// -----

@@ -267,6 +267,9 @@ fun version_control(): VersionControl {
     )
 }
 
+// ---------
+// Test Only
+// ---------
 #[test_only]
 use sui::bcs;
 
@@ -355,6 +358,9 @@ public fun destroy_for_testing(self: Gateway) {
     messages.destroy_empty();
 }
 
+// ----
+// Test
+// ----
 #[test]
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
@@ -501,5 +507,65 @@ fun test_take_approved_message_message_not_approved() {
     gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
-    destroy_for_testing(gateway);
+    gateway.destroy_for_testing();
+}
+
+#[test]
+fun test_approve_messages() {
+    let ctx = &mut sui::tx_context::dummy();
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let weighted_signers = weighted_signers::create_for_testing(
+        vector[
+            axelar_gateway::weighted_signer::new(
+                *keypair.public_key(),
+                1,
+            )
+        ],
+        1,
+        bytes32::new(@0x0),
+    );
+    let operator = @0x1;
+    let domain_separator = bytes32::new(@0x2);
+    let minimum_rotation_delay = 1;
+    let previous_signers_retention = 10;
+    let initial_signers = weighted_signers;
+    let clock = sui::clock::create_for_testing(ctx);
+    let mut self = create_for_testing(
+        operator,
+        domain_separator,
+        minimum_rotation_delay,
+        previous_signers_retention,
+        initial_signers,
+        &clock,
+        ctx,
+    );
+    let source_chain = ascii::string(b"Source Chain");
+    let source_address = ascii::string(b"Source Address");
+    let message_id = ascii::string(b"Message Id");
+    let destination_id = @0x4;
+    let payload_hash = bytes32::new(@0x5);
+    let message_data = bcs::to_bytes(&vector<axelar_gateway::message::Message>[
+        axelar_gateway::message::new(
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            payload_hash,
+        )
+    ]);
+    let data_hash = gateway_v0::approve_messages_data_hash(message_data);
+    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
+        domain_separator,
+        weighted_signers.hash(),
+        data_hash,
+    ));
+    let signature = axelar_gateway::proof::new_signature(
+        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
+    );
+    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+
+    self.approve_messages(message_data, bcs::to_bytes(&proof));
+    
+    clock.destroy_for_testing();
+    sui::test_utils::destroy(self)
 }

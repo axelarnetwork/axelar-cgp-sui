@@ -44,21 +44,13 @@ public(package) fun set_transaction(self: &mut RelayerDiscoveryV0, id: ID, trans
 }
 
 public(package) fun remove_transaction(self: &mut RelayerDiscoveryV0, id: ID): Transaction {
-    assert!(self.configurations().contains(id), EChannelNotFound);
+    assert!(self.configurations.contains(id), EChannelNotFound);
     self.configurations.remove(id)
 }
 
 public(package) fun get_transaction(self: &RelayerDiscoveryV0, id: ID): Transaction {
-    assert!(self.configurations().contains(id), EChannelNotFound);
+    assert!(self.configurations.contains(id), EChannelNotFound);
     self.configurations[id]
-}
-
-public(package) fun configurations(self: &RelayerDiscoveryV0): &Table<ID, Transaction> {
-    &self.configurations
-}
-
-public(package) fun configurations_mut(self: &mut RelayerDiscoveryV0): &mut Table<ID, Transaction> {
-    &mut self.configurations
 }
 
 public(package) fun version_control(self: &RelayerDiscoveryV0): &VersionControl {
@@ -72,3 +64,47 @@ public(package) fun version_control(self: &RelayerDiscoveryV0): &VersionControl 
 public(package) fun destroy_for_testing(self: RelayerDiscoveryV0) {
     sui::test_utils::destroy(self);
 }
+
+#[test_only]
+fun dummy(ctx: &mut TxContext): RelayerDiscoveryV0 {
+    RelayerDiscoveryV0 {
+        configurations: table::new<ID, Transaction>(ctx),
+        version_control: version_control::version_control::new(vector[]),
+    }
+}
+
+// ----
+// Test
+// ----
+#[test]
+fun test_set_transaction_channel_not_found() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = dummy(ctx);
+    let id = object::id_from_address(@0x1);
+    let transaction = axelar_gateway::transaction::new_transaction(
+        true,
+        vector[],
+    );
+    self.set_transaction(id, transaction);
+    self.set_transaction(id, transaction);
+    self.destroy_for_testing();
+}
+
+#[test]
+#[expected_failure(abort_code = EChannelNotFound)]
+fun test_get_transaction_channel_not_found() {
+    let ctx = &mut sui::tx_context::dummy();
+    let self = dummy(ctx);
+    self.get_transaction(object::id_from_address(@0x1));
+    self.destroy_for_testing();
+}
+
+#[test]
+#[expected_failure(abort_code = EChannelNotFound)]
+fun test_remove_transaction_channel_not_found() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = dummy(ctx);
+    self.remove_transaction(object::id_from_address(@0x1));
+    self.destroy_for_testing();
+}
+
