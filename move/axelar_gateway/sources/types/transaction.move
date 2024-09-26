@@ -13,9 +13,9 @@ use sui::hex;
 #[error]
 const EInvalidString: vector<u8> = b"Type argument was not a valid string";
 
-/// -----
-/// Types
-/// -----
+/// -------
+/// Structs
+/// -------
 public struct Function has store, copy, drop {
     package_id: address,
     module_name: String,

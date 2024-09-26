@@ -6,6 +6,9 @@ use version_control::version_control::VersionControl;
 
 use axelar_gateway::transaction::Transaction;
 
+// -------
+// Structs
+// -------
 /// A central shared object that stores discovery configuration for the
 /// Relayer. The Relayer will use this object to discover and execute the
 /// transactions when a message is targeted at specific channel.
@@ -23,7 +26,10 @@ public struct RelayerDiscoveryV0 has store {
 #[error]
 const EChannelNotFound: vector<u8> = b"channel not found";
 
-public (package) fun new(version_control: VersionControl, ctx: &mut TxContext): RelayerDiscoveryV0 {
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): RelayerDiscoveryV0 {
     RelayerDiscoveryV0 {
         configurations: table::new<ID, Transaction>(ctx),
         version_control,
@@ -47,19 +53,22 @@ public(package) fun get_transaction(self: &RelayerDiscoveryV0, id: ID): Transact
     self.configurations[id]
 }
 
-public (package) fun configurations(self: &RelayerDiscoveryV0): &Table<ID, Transaction> {
+public(package) fun configurations(self: &RelayerDiscoveryV0): &Table<ID, Transaction> {
     &self.configurations
 }
 
-public (package) fun configurations_mut(self: &mut RelayerDiscoveryV0): &mut Table<ID, Transaction> {
+public(package) fun configurations_mut(self: &mut RelayerDiscoveryV0): &mut Table<ID, Transaction> {
     &mut self.configurations
 }
 
-public (package) fun version_control(self: &RelayerDiscoveryV0): &VersionControl {
+public(package) fun version_control(self: &RelayerDiscoveryV0): &VersionControl {
     &self.version_control
 }
 
+// ---------
+// Test Only
+// ---------
 #[test_only]
-public fun destroy_for_testing(self: RelayerDiscoveryV0) {
+public(package) fun destroy_for_testing(self: RelayerDiscoveryV0) {
     sui::test_utils::destroy(self);
 }

@@ -48,7 +48,7 @@ fun init(ctx: &mut TxContext) {
 }
 
 /// ------
-/// macros
+/// Macros
 /// ------
 macro fun value($self: &RelayerDiscovery, $function_name: vector<u8>): &RelayerDiscoveryV0 {
     let relayer_discovery = $self;
