@@ -21,7 +21,6 @@ public(package) fun new(version_control: VersionControl): GasServiceV0 {
     }
 }
 
-
 public(package) fun version_control(self: &GasServiceV0): &VersionControl {
     &self.version_control
 }
