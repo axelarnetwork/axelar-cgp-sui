@@ -13,6 +13,9 @@ use sui::hex;
 #[error]
 const EInvalidString: vector<u8> = b"Type argument was not a valid string";
 
+/// -----
+/// Types
+/// -----
 public struct Function has store, copy, drop {
     package_id: address,
     module_name: String,
@@ -22,9 +25,19 @@ public struct Function has store, copy, drop {
 /// Arguments are prefixed with:
 /// - 0 for objects followed by exactly 32 bytes that contain the object id
 /// - 1 for pure types followed by the bcs encoded form of the pure value
-/// - 2 for the call contract object, followed by nothing (to be passed into the target function)
+/// - 2 for the ApprovedMessage object, followed by nothing (to be passed into the target function)
 /// - 3 for the payload of the contract call (to be passed into the intermediate function)
 /// - 4 for an argument returned from a previous move call, followed by a u8 specified which call to get the return of (0 for the first transaction AFTER the one that gets ApprovedMessage out), and then another u8 specifying which argument to input.
+/// Following are some example arguments:
+/// ```
+/// 0x06: &mut Clock = 0x0006,
+/// 0x810a8b960cf54ceb7ce5b796d25fc2207017785bbc952562d1e4d10f2a4b8836: &mut Singleton = 0x00810a8b960cf54ceb7ce5b796d25fc2207017785bbc952562d1e4d10f2a4b8836,
+/// 30: u64 = 0x011e00000000000000,
+/// "Name": ascii::String = 0x01044e616d65,
+/// approved_call: ApprovedMessage = 0x02,
+/// payload: vector<u8> = 0x03
+/// previous_return: Return (returned as the second argument of the first call) = 0x40001,
+/// ```
 public struct MoveCall has store, copy, drop {
     function: Function,
     arguments: vector<vector<u8>>,
@@ -36,8 +49,10 @@ public struct Transaction has store, copy, drop {
     move_calls: vector<MoveCall>,
 }
 
-// === Tx Building ===
 
+/// ----------------
+/// Public Functions
+/// ----------------
 public fun new_function(
     package_id: address,
     module_name: String,
@@ -118,6 +133,10 @@ fun peel_type(bcs: &mut BCS): ascii::String {
     type_argument.extract()
 }
 
+
+/// ---------
+/// Test Only
+/// ---------
 #[test_only]
 public fun package_id_from_function(self: &Function): address {
     self.package_id
@@ -158,8 +177,9 @@ public fun move_calls(self: &Transaction): vector<MoveCall> {
     self.move_calls
 }
 
-
-
+/// -----
+/// Tests
+/// -----
 #[test]
 fun tx_builder() {
     let function = new_function(
