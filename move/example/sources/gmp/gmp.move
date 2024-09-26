@@ -14,7 +14,7 @@ use axelar_gateway::discovery::RelayerDiscovery;
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::transaction;
 
-use gas_service::gas_service::{Self, GasService};
+use gas_service::gas_service::GasService;
 
 public struct Singleton has key {
     id: UID,
@@ -80,8 +80,7 @@ public fun send_call(
     coin: Coin<SUI>,
     params: vector<u8>,
 ) {
-    gas_service::pay_gas(
-        gas_service,
+    gas_service.pay_gas(
         coin,
         sui::object::id_address(&singleton.channel),
         destination_chain,
