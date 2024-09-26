@@ -1,12 +1,17 @@
 module gas_service::gas_service;
 
-use std::ascii::String;
+use std::ascii::{Self, String};
+
 use sui::address;
-use sui::balance::{Self, Balance};
-use sui::coin::{Self, Coin};
+use sui::coin::Coin;
 use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
+use sui::versioned::{Self, Versioned};
+
+use gas_service::gas_service_v0::{Self, GasServiceV0};
+
+// Version
 use version_control::version_control::{Self, VersionControl};
 
 // -------
@@ -14,14 +19,12 @@ use version_control::version_control::{Self, VersionControl};
 // -------
 const VERSION: u64 = 0;
 
-// -----
-// Types
-// -----
-
+// -------
+// Structs
+// -------
 public struct GasService has key, store {
     id: UID,
-    balance: Balance<SUI>,
-    version_control: VersionControl,
+    inner: Versioned,
 }
 
 public struct GasCollectorCap has key, store {
@@ -31,7 +34,6 @@ public struct GasCollectorCap has key, store {
 // ------
 // Events
 // ------
-
 public struct GasPaid<phantom T> has copy, drop {
     sender: address,
     destination_chain: String,
@@ -63,12 +65,16 @@ public struct GasCollected<phantom T> has copy, drop {
 // -----
 // Setup
 // -----
-
 fun init(ctx: &mut TxContext) {
     transfer::share_object(GasService {
         id: object::new(ctx),
-        balance: balance::zero<SUI>(),
-        version_control: version_control(),
+        inner: versioned::create(
+            VERSION,
+            gas_service_v0::new(
+                version_control(),
+            ),
+            ctx,
+        ),
     });
 
     transfer::public_transfer(
@@ -79,10 +85,19 @@ fun init(ctx: &mut TxContext) {
     );
 }
 
+// ------
+// Macros
+// ------
+macro fun value_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
+    let gas_service = $self;
+    let value = gas_service.inner.load_value_mut<GasServiceV0>();
+    value.version_control().check(VERSION, ascii::string($function_name));
+    value
+}
+
 // ----------------
 // Public Functions
 // ----------------
-
 /// Pay gas for a contract call.
 /// This function is called by the channel that wants to pay gas for a contract call.
 /// It can also be called by the user to pay gas for a contract call, while setting the sender as the channel ID.
@@ -96,9 +111,8 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"pay_gas".to_ascii_string());
-    let value = coin.value();
-    coin::put(&mut self.balance, coin);
+    let coin_value = coin.value();
+    self.value_mut!(b"pay_gas").put(coin);
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -106,7 +120,7 @@ public fun pay_gas(
         destination_chain,
         destination_address,
         payload_hash,
-        value,
+        value: coin_value,
         refund_address,
         params,
     })
@@ -121,13 +135,12 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"add_gas".to_ascii_string());
-    let value = coin.value();
-    coin::put(&mut self.balance, coin);
+    let coin_value = coin.value();
+    self.value_mut!(b"add_gas").put(coin);
 
     event::emit(GasAdded<SUI> {
         message_id,
-        value,
+        value: coin_value,
         refund_address,
         params,
     });
@@ -140,9 +153,8 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"collect_gas".to_ascii_string());
     transfer::public_transfer(
-        coin::take(&mut self.balance, amount, ctx),
+        self.value_mut!(b"collect_gas").take(amount, ctx),
         receiver,
     );
 
@@ -160,9 +172,8 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    self.version_control.check(VERSION, b"refund".to_ascii_string());
     transfer::public_transfer(
-        coin::take(&mut self.balance, amount, ctx),
+        self.value_mut!(b"refund").take(amount, ctx),
         receiver,
     );
 
@@ -176,7 +187,6 @@ public fun refund(
 // -----------------
 // Private Functions
 // -----------------
-
 fun version_control(): VersionControl {
     version_control::new(
         vector [
@@ -191,13 +201,26 @@ fun version_control(): VersionControl {
 // -----
 // Tests
 // -----
+#[test_only]
+use sui::coin;
+
+#[test_only]
+macro fun value($self: &GasService): &GasServiceV0 {
+    let gas_service = $self;
+    gas_service.inner.load_value<GasServiceV0>()
+}
 
 #[test_only]
 fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
     let service = GasService {
         id: object::new(ctx),
-        balance: balance::zero<SUI>(),
-        version_control: version_control(),
+        inner: versioned::create(
+            VERSION,
+            gas_service_v0::new(
+                version_control(),
+            ),
+            ctx,
+        ),
     };
 
     let cap = GasCollectorCap {
@@ -209,9 +232,10 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
 
 #[test_only]
 fun destroy(self: GasService) {
-    let GasService { id, balance, version_control: _ } = self;
+    let GasService { id, inner } = self;
     id.delete();
-    balance.destroy_for_testing();
+    let data = inner.destroy<GasServiceV0>();
+    data.destroy_for_testing();
 }
 
 #[test_only]
@@ -220,6 +244,9 @@ fun destroy_cap(self: GasCollectorCap) {
     id.delete();
 }
 
+/// -----
+/// Tests
+/// -----
 #[test]
 fun test_init() {
     let ctx = &mut sui::tx_context::dummy();
@@ -245,7 +272,7 @@ fun test_pay_gas() {
         vector[],
     );
 
-    assert!(service.balance.value() == value, 0);
+    assert!(service.value!().balance().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -267,7 +294,7 @@ fun test_add_gas() {
         vector[],
     );
 
-    assert!(service.balance.value() == value, 0);
+    assert!(service.value!().balance().value() == value, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -296,7 +323,7 @@ fun test_collect_gas() {
         ctx,
     );
 
-    assert!(service.balance.value() == 0, 0);
+    assert!(service.value!().balance().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -326,7 +353,7 @@ fun test_refund() {
         ctx,
     );
 
-    assert!(service.balance.value() == 0, 0);
+    assert!(service.value!().balance().value() == 0, 0);
 
     cap.destroy_cap();
     service.destroy();
