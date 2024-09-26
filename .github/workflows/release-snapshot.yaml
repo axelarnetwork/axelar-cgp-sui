@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup the required tools (sui, nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-sui: 'true'

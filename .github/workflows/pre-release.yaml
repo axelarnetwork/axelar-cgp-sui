@@ -27,7 +27,7 @@ jobs:
 
       # Install Node.js and its dependencies
       # Needed for the changeset releases
-      - name: Setup the required tools (nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-nodejs: 'true'

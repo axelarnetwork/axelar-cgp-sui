@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup the required tools (Sui and nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-sui: 'true'

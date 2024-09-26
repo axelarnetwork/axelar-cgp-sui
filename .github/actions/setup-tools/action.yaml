@@ -1,13 +1,13 @@
-name: Setup SUI CLI
-description: 'Setup Sui CLI'
+name: Setup tools
+description: 'Setup tools for repo workflows'
 
 inputs:
   install-sui:
-    description: "The flag to trigger the action to install SUI's dependency"
+    description: "Install the Sui CLI"
     required: false
     default: 'false'
   install-nodejs:
-    description: "The flag to trigger the action to install nodejs dependency"
+    description: "Install nodejs and setup repo's npm package"
     required: false
     default: 'false'
 
@@ -17,7 +17,7 @@ runs:
 
     # This step ensures that the "LITERAL" value is given to the actions.
     # Using `jq` sends it uninterepted to the action which is sort of "hackish" and doesn't ensure the separation of concerns.
-    - name: Get SUI Version
+    - name: Get Sui Version
       shell: bash
       if: inputs.install-sui == 'true'
       run: |
