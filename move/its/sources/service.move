@@ -70,7 +70,7 @@ module its::service {
     public fun register_coin<T>(
         self: &mut ITS, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>
     ): TokenId {
-        self.version_control().check(VERSION, b"register_coin");
+        self.version_control().check(VERSION, b"register_coin".to_ascii_string());
         let token_id = token_id::from_coin_data(&coin_info, &coin_management);
 
         self.add_registered_coin(token_id, coin_management, coin_info);
@@ -85,7 +85,7 @@ module its::service {
     public fun deploy_remote_interchain_token<T>(
         self: &mut ITS, token_id: TokenId, destination_chain: String
     ): MessageTicket {
-        self.version_control().check(VERSION, b"deploy_remote_interchain_token");
+        self.version_control().check(VERSION, b"deploy_remote_interchain_token".to_ascii_string());
         let coin_info = self.get_coin_info<T>(token_id);
         let name = coin_info.name();
         let symbol = coin_info.symbol();
@@ -154,7 +154,7 @@ module its::service {
     }
 
     public fun receive_interchain_transfer<T>(self: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext) {
-        self.version_control().check(VERSION, b"receive_interchain_transfer");
+        self.version_control().check(VERSION, b"receive_interchain_transfer".to_ascii_string());
         let (_, payload) = decode_approved_message(self, approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
@@ -181,7 +181,7 @@ module its::service {
         clock: &Clock,
         ctx: &mut TxContext,
     ): (String, vector<u8>, vector<u8>, Coin<T>) {
-        self.version_control().check(VERSION, b"receive_interchain_transfer_with_data");
+        self.version_control().check(VERSION, b"receive_interchain_transfer_with_data".to_ascii_string());
         let (source_chain, payload) = decode_approved_message(self, approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
@@ -209,7 +209,7 @@ module its::service {
     }
 
     public fun receive_deploy_interchain_token<T>(self: &mut ITS, approved_message: ApprovedMessage) {
-        self.version_control().check(VERSION, b"receive_deploy_interchain_token");
+        self.version_control().check(VERSION, b"receive_deploy_interchain_token".to_ascii_string());
         let (_, payload) = decode_approved_message(self, approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
@@ -242,7 +242,7 @@ module its::service {
     public fun give_unregistered_coin<T>(
         self: &mut ITS, treasury_cap: TreasuryCap<T>, mut coin_metadata: CoinMetadata<T>
     ) {
-        self.version_control().check(VERSION, b"give_unregistered_coin");
+        self.version_control().check(VERSION, b"give_unregistered_coin".to_ascii_string());
         assert!(treasury_cap.total_supply() == 0, ENonZeroTotalSupply);
         assert!(coin::get_icon_url(&coin_metadata).is_none(), EUnregisteredCoinHasUrl);
 
@@ -266,7 +266,7 @@ module its::service {
         amount: u64,
         ctx: &mut TxContext
     ): Coin<T> {
-        self.version_control().check(VERSION, b"mint_as_distributor");
+        self.version_control().check(VERSION, b"mint_as_distributor".to_ascii_string());
         let coin_management = self.coin_management_mut<T>(token_id);
         let distributor = channel.to_address();
 
@@ -283,7 +283,7 @@ module its::service {
         amount: u64,
         ctx: &mut TxContext
     ) {
-        self.version_control().check(VERSION, b"mint_to_as_distributor");
+        self.version_control().check(VERSION, b"mint_to_as_distributor".to_ascii_string());
         let coin = mint_as_distributor<T>(self, channel, token_id, amount, ctx);
         transfer::public_transfer(coin, to);
     }
@@ -294,7 +294,7 @@ module its::service {
         token_id: TokenId,
         coin: Coin<T>
     ) {
-        self.version_control().check(VERSION, b"burn_as_distributor");
+        self.version_control().check(VERSION, b"burn_as_distributor".to_ascii_string());
         let coin_management = self.coin_management_mut<T>(token_id);
         let distributor = channel.to_address();
 
@@ -305,7 +305,7 @@ module its::service {
 
     // === Special Call Receiving
     public fun set_trusted_addresses(self: &mut ITS, governance: &Governance, approved_message: ApprovedMessage) {
-        self.version_control().check(VERSION, b"set_trusted_addresses");
+        self.version_control().check(VERSION, b"set_trusted_addresses".to_ascii_string());
         let (source_chain, _, source_address, payload) = channel::consume_approved_message(
             self.channel_mut(), approved_message
         );

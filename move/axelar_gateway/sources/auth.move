@@ -1,12 +1,13 @@
 module axelar_gateway::auth;
 
+use sui::bcs;
+use sui::clock::Clock;
+use sui::table::{Self, Table};
+
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::proof::{Proof};
 use axelar_gateway::weighted_signers::WeightedSigners;
-use sui::bcs;
-use sui::clock::Clock;
-use sui::event;
-use sui::table::{Self, Table};
+use axelar_gateway::events;
 
 // ------
 // Errors
@@ -39,16 +40,6 @@ public struct MessageToSign has copy, drop, store {
     domain_separator: Bytes32,
     signers_hash: Bytes32,
     data_hash: Bytes32,
-}
-
-// ------
-// Events
-// ------
-/// Emitted when signers are rotated.
-public struct SignersRotated has copy, drop {
-    epoch: u64,
-    signers_hash: Bytes32,
-    signers: WeightedSigners,
 }
 
 // -----------------
@@ -130,11 +121,11 @@ public(package) fun rotate_signers(
     self.epoch_by_signers_hash.add(new_signers_hash, epoch);
     self.epoch = epoch;
 
-    event::emit(SignersRotated {
+    events::signers_rotated(
         epoch,
-        signers_hash: new_signers_hash,
-        signers: new_signers,
-    })
+        new_signers_hash,
+        new_signers,
+    );
 }
 
 // ------------------

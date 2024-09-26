@@ -6,7 +6,7 @@
 /// - To support cross-chain messaging, a Channel object has to be created;
 /// - Channel can be either owned or shared but not frozen;
 /// - Module developer on the Sui side will have to implement a system to support messaging;
-/// - Checks for uniqueness of approvals should be done through `Channel`s to avoid big data storage;
+/// - Checks for uniqueness of approvals should be done through `Channel`s to avoid big value storage;
 ///
 /// I. Sending call approvals
 ///
@@ -25,20 +25,19 @@
 ///  - CallApproval is checked for uniqueness (for this channel)
 ///  - CallApproval is checked to match the `Channel`.id
 ///
+/// The Gateway object uses a versioned field to support upgradability. The current implementation uses GatewayV0.
 module axelar_gateway::gateway;
 
-use axelar_gateway::auth::{Self, AxelarSigners, validate_proof};
+use axelar_gateway::auth::{Self, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::message::{Self, Message};
-use axelar_gateway::proof;
+use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
-use std::ascii::String;
-use sui::address;
+use axelar_gateway::gateway_v0::{Self, GatewayV0};
+use std::ascii::{Self, String};
 use sui::clock::Clock;
-use sui::hash;
-use sui::table::{Self, Table};
+use sui::table::{Self};
+use sui::versioned::{Self, Versioned};
 use version_control::version_control::{Self, VersionControl};
 use utils::utils;
 
@@ -47,44 +46,12 @@ use utils::utils;
 // -------
 const VERSION: u64 = 0;
 
-// ------
-// Errors
-// ------
-#[error]
-const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
-
-#[error]
-const EZeroMessages: vector<u8> = b"no mesages found";
-
-#[error]
-const ENotLatestSigners: vector<u8> = b"not latest signers";
-
-#[error]
-const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
-
-// -----
-// Types
-// -----
-const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
-const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
-
-/// An object holding the state of the Axelar bridge.
-/// The central piece in managing call approval creation and signature verification.
+// -------
+// Structs
+// -------
 public struct Gateway has key {
     id: UID,
-    operator: address,
-    messages: Table<Bytes32, MessageStatus>,
-    signers: AxelarSigners,
-    version_control: VersionControl,
-}
-
-/// The Status of the message.
-/// Can be either one of two statuses:
-/// - Approved: Set to the hash of the message
-/// - Executed: Message was already executed
-public enum MessageStatus has copy, drop, store {
-    Approved(Bytes32),
-    Executed,
+    inner: Versioned,
 }
 
 // ------------
@@ -92,29 +59,6 @@ public enum MessageStatus has copy, drop, store {
 // ------------
 public struct CreatorCap has key, store {
     id: UID,
-}
-
-// ------
-// Events
-// ------
-
-/// Emitted when a new message is sent from the SUI network.
-public struct ContractCall has copy, drop {
-    source_id: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    payload_hash: address,
-}
-
-/// Emitted when a new message is approved by the gateway.
-public struct MessageApproved has copy, drop {
-    message: message::Message,
-}
-
-/// Emitted when a message is taken to be executed by a channel.
-public struct MessageExecuted has copy, drop {
-    message: message::Message,
 }
 
 // -----
@@ -131,10 +75,10 @@ fun init(ctx: &mut TxContext) {
 }
 
 /// Setup the module by creating a new Gateway object.
-public fun setup(
+entry fun setup(
     cap: CreatorCap,
     operator: address,
-    domain_separator: Bytes32,
+    domain_separator: address,
     minimum_rotation_delay: u64,
     previous_signers_retention: u64,
     initial_signers: vector<u8>,
@@ -144,39 +88,51 @@ public fun setup(
     let CreatorCap { id } = cap;
     id.delete();
 
-    let gateway = Gateway {
-        id: object::new(ctx),
-        operator,
-        messages: table::new(ctx),
-        signers: auth::setup(
-            domain_separator,
-            minimum_rotation_delay,
-            previous_signers_retention,
-            utils::peel!(
-                initial_signers,
-                |bcs| weighted_signers::peel(bcs),
+    let inner = versioned::create(
+        VERSION,
+        gateway_v0::new(
+            operator,
+            table::new(ctx),
+            auth::setup(
+                bytes32::new(domain_separator),
+                minimum_rotation_delay,
+                previous_signers_retention,
+                utils::peel!(
+                    initial_signers,
+                    |bcs| weighted_signers::peel(bcs),
+                ),
+                clock,
+                ctx,
             ),
-            clock,
-            ctx,
+            version_control(),
         ),
-        version_control: version_control(),
-    };
+        ctx,
+    );
 
     // Share the gateway object for anyone to use.
-    transfer::share_object(gateway);
+    transfer::share_object(Gateway {
+        id: object::new(ctx),
+        inner,
+    });
 }
 
-#[syntax(index)]
-public fun borrow(self: &Gateway, command_id: Bytes32): &MessageStatus {
-    table::borrow(&self.messages, command_id)
+// ------
+// Macros
+// ------
+/// This macro also uses version control to sinplify things a bit.
+macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
+    let gateway = $self;
+    let value = gateway.inner.load_value<GatewayV0>();
+    value.version_control().check(VERSION, ascii::string($function_name));
+    value
 }
 
-#[syntax(index)]
-public fun borrow_mut(
-    self: &mut Gateway,
-    command_id: Bytes32,
-): &mut MessageStatus {
-    table::borrow_mut(&mut self.messages, command_id)
+/// This macro also uses version control to sinplify things a bit.
+macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut GatewayV0 {
+    let gateway = $self;
+    let value = gateway.inner.load_value_mut<GatewayV0>();
+    value.version_control().check(VERSION, ascii::string($function_name));
+    value
 }
 
 // -----------
@@ -191,18 +147,8 @@ entry fun approve_messages(
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
-    self.version_control.check(VERSION, b"approve_messages");
-    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
-    let messages = peel_messages(message_data);
-
-    let _ = self
-        .signers
-        .validate_proof(
-            data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data),
-            proof,
-        );
-
-    messages.do!(|message| self.approve_message(message));
+    let value = self.value_mut!(b"approve_messages");
+    value.approve_messages(message_data, proof_data);
 }
 
 /// The main entrypoint for rotating Axelar signers.
@@ -215,28 +161,13 @@ entry fun rotate_signers(
     proof_data: vector<u8>,
     ctx: &TxContext,
 ) {
-    self.version_control.check(VERSION, b"rotate_signers");
-    let weighted_signers = utils::peel!(
+    let value = self.value_mut!(b"rotate_signers");
+    value.rotate_signers(
+        clock,
         new_signers_data,
-        |bcs| weighted_signers::peel(bcs),
-    );
-    let proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
-
-    let enforce_rotation_delay = ctx.sender() != self.operator;
-
-    let is_latest_signers = self
-        .signers
-        .validate_proof(
-            data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
-            proof,
-        );
-
-    assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
-
-    // This will fail if signers are duplicated
-    self
-        .signers
-        .rotate_signers(clock, weighted_signers, enforce_rotation_delay);
+        proof_data,
+        ctx,
+    )
 }
 
 // ----------------
@@ -262,23 +193,11 @@ public fun prepare_message(
 /// Submit the MessageTicket which causes a contract call by sending an event from an
 /// authorized Channel.
 public fun send_message(
+    self: &Gateway,
     message: MessageTicket,
 ) {
-    let (
-        source_id,
-        destination_chain,
-        destination_address,
-        payload,
-        version,
-    ) = message.destroy();
-    assert!(version <= VERSION, ENewerMessage);
-    sui::event::emit(ContractCall {
-        source_id,
-        destination_chain,
-        destination_address,
-        payload,
-        payload_hash: address::from_bytes(hash::keccak256(&payload)),
-    });
+    let value = self.value!(b"send_message");
+    value.send_message(message, VERSION);
 }
 
 public fun is_message_approved(
@@ -289,17 +208,14 @@ public fun is_message_approved(
     destination_id: address,
     payload_hash: Bytes32,
 ): bool {
-    self.version_control.check(VERSION, b"is_message_approved");
-    let message = message::new(
+    let value = self.value!(b"is_message_approved");
+    value.is_message_approved(
         source_chain,
         message_id,
         source_address,
         destination_id,
         payload_hash,
-    );
-    let command_id = message.command_id();
-
-    self[command_id] == MessageStatus::Approved(message.hash())
+    )
 }
 
 public fun is_message_executed(
@@ -307,13 +223,8 @@ public fun is_message_executed(
     source_chain: String,
     message_id: String,
 ): bool {
-    self.version_control.check(VERSION, b"is_message_executed");
-    let command_id = message::message_to_command_id(
-        source_chain,
-        message_id,
-    );
-
-    self[command_id] == MessageStatus::Executed
+    let value = self.value!(b"is_message_executed");
+    value.is_message_executed(source_chain, message_id)
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
@@ -326,31 +237,8 @@ public fun take_approved_message(
     destination_id: address,
     payload: vector<u8>,
 ): ApprovedMessage {
-    self.version_control.check(VERSION, b"take_approved_message");
-    let command_id = message::message_to_command_id(source_chain, message_id);
-
-    let message = message::new(
-        source_chain,
-        message_id,
-        source_address,
-        destination_id,
-        bytes32::from_bytes(hash::keccak256(&payload)),
-    );
-
-    assert!(
-        self[command_id] == MessageStatus::Approved(message.hash()),
-        EMessageNotApproved,
-    );
-
-    let message_status_ref = &mut self[command_id];
-    *message_status_ref = MessageStatus::Executed;
-
-    sui::event::emit(MessageExecuted {
-        message,
-    });
-
-    // Friend only.
-    channel::create_approved_message(
+    let value = self.value_mut!(b"take_approved_message");
+    value.take_approved_message(
         source_chain,
         message_id,
         source_address,
@@ -363,47 +251,6 @@ public fun take_approved_message(
 // Private Functions
 // -----------------
 
-fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel!(
-        message_data,
-        |bcs| {
-            let messages = vector::tabulate!(
-                bcs.peel_vec_length(),
-                |_| message::peel(bcs),
-            );
-            assert!(messages.length() > 0, EZeroMessages);
-            messages
-        },
-    )
-}
-
-fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
-    let mut typed_data = vector::singleton(command_type);
-    typed_data.append(data);
-
-    bytes32::from_bytes(hash::keccak256(&typed_data))
-}
-
-fun approve_message(self: &mut Gateway, message: message::Message) {
-    let command_id = message.command_id();
-
-    // If the message was already approved, ignore it.
-    if (self.messages.contains(command_id)) {
-        return
-    };
-
-    self
-        .messages
-        .add(
-            command_id,
-            MessageStatus::Approved(message.hash()),
-        );
-
-    sui::event::emit(MessageApproved {
-        message,
-    });
-}
-
 fun version_control(): VersionControl {
     version_control::new(
         vector [
@@ -414,7 +261,8 @@ fun version_control(): VersionControl {
                 b"is_message_approved",
                 b"is_message_executed",
                 b"take_approved_message",
-            ]
+                b"send_message",
+            ].map!(|function_name| function_name.to_ascii_string())
         ]
     )
 }
@@ -432,44 +280,76 @@ public fun create_for_testing(
     clock: &Clock,
     ctx: &mut TxContext,
 ): Gateway {
-    Gateway {
-        id: object::new(ctx),
-        operator,
-        messages: table::new(ctx),
-        signers: auth::setup(
-            domain_separator,
-            minimum_rotation_delay,
-            previous_signers_retention,
-            initial_signers,
-            clock,
-            ctx,
+    let inner = versioned::create(
+        VERSION,
+        gateway_v0::new(
+            operator,
+            table::new(ctx),
+            auth::setup(
+                domain_separator,
+                minimum_rotation_delay,
+                previous_signers_retention,
+                initial_signers,
+                clock,
+                ctx,
+            ),
+            version_control(),
         ),
-        version_control: version_control(),
-    }
-}
-
-#[test_only]
-public fun dummy(ctx: &mut TxContext): Gateway {
+        ctx,
+    );
     Gateway {
         id: object::new(ctx),
-        operator: @0x0,
-        messages: table::new(ctx),
-        signers: auth::dummy(ctx),
-        version_control: version_control(),
+        inner,
     }
 }
 
 #[test_only]
-public fun destroy_for_testing(gateway: Gateway) {
+fun dummy(ctx: &mut TxContext): Gateway {
+    let inner = versioned::create(
+        VERSION,
+        gateway_v0::new(
+            @0x0,
+            table::new(ctx),
+            auth::dummy(ctx),
+            version_control::new(
+                vector [
+                    // Version 0
+                    vector [
+                        b"approve_messages",
+                        b"rotate_signers",
+                        b"is_message_approved",
+                        b"is_message_executed",
+                        b"take_approved_message",
+                        b"send_message",
+                        b"",
+                    ].map!(|function_name| function_name.to_ascii_string())
+                ]
+            )
+        ),
+        ctx,
+    );
+    Gateway {
+        id: object::new(ctx),
+        inner,
+    }
+}
+
+#[test_only]
+public fun destroy_for_testing(self: Gateway) {
     let Gateway {
-        id,
-        operator: _,
+        id, 
+        inner,
+    } = self;
+    id.delete();
+
+    let value = inner.destroy<GatewayV0>();
+    let (
+        _,
         messages,
         signers,
-        version_control: _,
-    } = gateway;
+        _,
+    ) = value.destroy_for_testing();
 
-    id.delete();
     let (_, table, _, _, _, _) = signers.destroy_for_testing();
     table.destroy_empty();
     messages.destroy_empty();
@@ -479,7 +359,7 @@ public fun destroy_for_testing(gateway: Gateway) {
 fun test_setup() {
     let ctx = &mut sui::tx_context::dummy();
     let operator = @123456;
-    let domain_separator = bytes32::new(@789012);
+    let domain_separator = @789012;
     let minimum_rotation_delay = 765;
     let previous_signers_retention = 650;
     let initial_signers = axelar_gateway::weighted_signers::dummy();
@@ -511,16 +391,19 @@ fun test_setup() {
 
     let gateway_id = shared[0];
     let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
-
     let Gateway {
         id,
-        operator: operator_result,
+        inner,
+    } = gateway;
+    id.delete();
+
+    let (
+        operator_result,
         messages,
         signers,
-        version_control: _,
-    } = { gateway };
+        _,
+    ) = inner.destroy<GatewayV0>().destroy_for_testing();
 
-    id.delete();
     assert!(operator == operator_result, 1);
     messages.destroy_empty();
 
@@ -538,143 +421,13 @@ fun test_setup() {
 
     assert!(epoch == 1, 2);
     assert!(signer_epoch == 1, 3);
-    assert!(domain_separator == domain_separator_result, 4);
+    assert!(bytes32::new(domain_separator) == domain_separator_result, 4);
     assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
     assert!(last_rotation_timestamp == timestamp, 6);
     assert!(previous_signers_retention == previous_signers_retention_result, 7);
 
     clock.destroy_for_testing();
     scenario.end();
-}
-
-#[test]
-fun test_approve_message() {
-    let ctx = &mut sui::tx_context::dummy();
-
-    let message_id = std::ascii::string(b"Message Id");
-    let channel = axelar_gateway::channel::new(ctx);
-    let source_chain = std::ascii::string(b"Source Chain");
-    let source_address = std::ascii::string(b"Destination Address");
-    let payload = vector[0, 1, 2, 3];
-    let payload_hash = axelar_gateway::bytes32::new(
-        address::from_bytes(hash::keccak256(&payload)),
-    );
-
-    let message = message::new(
-        source_chain,
-        message_id,
-        source_address,
-        channel.to_address(),
-        payload_hash,
-    );
-
-    let mut gateway = dummy(ctx);
-
-    approve_message(&mut gateway, message);
-    // The second approve message should do nothing.
-    approve_message(&mut gateway, message);
-
-    assert!(
-        is_message_approved(
-            &gateway,
-            source_chain,
-            message_id,
-            source_address,
-            channel.to_address(),
-            payload_hash,
-        ) ==
-        true,
-        0,
-    );
-
-    let approved_message = take_approved_message(
-        &mut gateway,
-        source_chain,
-        message_id,
-        source_address,
-        channel.to_address(),
-        payload,
-    );
-
-    channel.consume_approved_message(approved_message);
-
-    assert!(
-        is_message_approved(
-            &gateway,
-            source_chain,
-            message_id,
-            source_address,
-            channel.to_address(),
-            payload_hash,
-        ) ==
-        false,
-        1,
-    );
-
-    assert!(
-        is_message_executed(
-            &gateway,
-            source_chain,
-            message_id,
-        ) ==
-        true,
-        2,
-    );
-
-    gateway.messages.remove(message.command_id());
-
-    gateway.destroy_for_testing();
-    channel.destroy();
-}
-
-#[test]
-fun test_peel_messages() {
-    let message1 = message::new(
-        std::ascii::string(b"Source Chain 1"),
-        std::ascii::string(b"Message Id 1"),
-        std::ascii::string(b"Source Address 1"),
-        @0x1,
-        axelar_gateway::bytes32::new(@0x2),
-    );
-
-    let message2 = message::new(
-        std::ascii::string(b"Source Chain 2"),
-        std::ascii::string(b"Message Id 2"),
-        std::ascii::string(b"Source Address 2"),
-        @0x3,
-        axelar_gateway::bytes32::new(@0x4),
-    );
-
-    let bytes = bcs::to_bytes(&vector[message1, message2]);
-
-    let messages = peel_messages(bytes);
-
-    assert!(messages.length() == 2, 0);
-    assert!(messages[0] == message1, 1);
-    assert!(messages[1] == message2, 2);
-}
-
-#[test]
-#[expected_failure]
-fun test_peel_messages_no_remaining_data() {
-    let message1 = message::new(
-        std::ascii::string(b"Source Chain 1"),
-        std::ascii::string(b"Message Id 1"),
-        std::ascii::string(b"Source Address 1"),
-        @0x1,
-        axelar_gateway::bytes32::new(@0x2),
-    );
-
-    let mut bytes = bcs::to_bytes(&vector[message1]);
-    bytes.push_back(0);
-
-    peel_messages(bytes);
-}
-
-#[test]
-#[expected_failure(abort_code = EZeroMessages)]
-fun test_peel_messages_no_zero_messages() {
-    peel_messages(bcs::to_bytes(&vector<Message>[]));
 }
 
 #[test]
@@ -700,7 +453,7 @@ fun test_peel_weighted_signers_no_remaining_data() {
 fun test_peel_proof() {
     let proof = axelar_gateway::proof::dummy();
     let bytes = bcs::to_bytes(&proof);
-    let result = utils::peel!(bytes, |bcs| proof::peel(bcs));
+    let result = utils::peel!(bytes, |bcs| axelar_gateway::proof::peel(bcs));
 
     assert!(result == proof, 0);
 }
@@ -712,15 +465,15 @@ fun test_peel_proof_no_remaining_data() {
     let mut bytes = bcs::to_bytes(&proof);
     bytes.push_back(0);
 
-    utils::peel!(bytes, |bcs| proof::peel(bcs));
+    utils::peel!(bytes, |bcs| axelar_gateway::proof::peel(bcs));
 }
 
 #[test]
-#[expected_failure(abort_code = EMessageNotApproved)]
+#[expected_failure(abort_code = axelar_gateway::gateway_v0::EMessageNotApproved)]
 fun test_take_approved_message_message_not_approved() {
     let mut gateway = dummy(&mut sui::tx_context::dummy());
 
-    let message = message::new(
+    let message = axelar_gateway::message::new(
         std::ascii::string(b"Source Chain"),
         std::ascii::string(b"Message Id"),
         std::ascii::string(b"Source Address"),
@@ -728,11 +481,11 @@ fun test_take_approved_message_message_not_approved() {
         axelar_gateway::bytes32::new(@0x2),
     );
 
-    gateway
-        .messages
+    gateway.value_mut!(b"")
+        .messages_mut()
         .add(
             message.command_id(),
-            MessageStatus::Approved(axelar_gateway::bytes32::new(@0x3)),
+            axelar_gateway::message_status::approved(axelar_gateway::bytes32::new(@0x3)),
         );
 
     let approved_message = take_approved_message(
@@ -743,23 +496,10 @@ fun test_take_approved_message_message_not_approved() {
         @0x12,
         vector[0, 1, 2],
     );
-
-    gateway.messages.remove(message.command_id());
+    
+    
+    gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
-    gateway.destroy_for_testing();
-}
-
-#[test]
-fun test_data_hash() {
-    let command_type = 5;
-    let data = vector[0, 1, 2, 3];
-    let mut typed_data = vector::singleton(command_type);
-    typed_data.append(data);
-
-    assert!(
-        data_hash(command_type, data) ==
-        bytes32::from_bytes(hash::keccak256(&typed_data)),
-        0,
-    );
+    destroy_for_testing(gateway);
 }

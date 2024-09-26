@@ -37,7 +37,7 @@ module squid::squid {
     }
 
     public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext): SwapInfo {
-        self.version_control.check(VERSION, b"start_swap");
+        self.version_control.check(VERSION, b"start_swap".to_ascii_string());
         let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
             its,
             approved_message,
@@ -68,7 +68,7 @@ module squid::squid {
                 // Version 0
                 vector[
                     b"start_swap",
-                ],
+                ].map!(|function_name| function_name.to_ascii_string()),
             ]
         )
     }
