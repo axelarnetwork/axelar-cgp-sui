@@ -77,12 +77,12 @@ public(package) fun version_control(self: &GatewayV0): &VersionControl {
 }
 
 #[syntax(index)]
-public(package) fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
+fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
     table::borrow(&self.messages, command_id)
 }
 
 #[syntax(index)]
-public(package) fun borrow_mut(
+fun borrow_mut(
     self: &mut GatewayV0,
     command_id: Bytes32,
 ): &mut MessageStatus {
@@ -280,42 +280,10 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
 /// Test Only
 /// ---------
 #[test_only]
-public(package) fun operator(self: &GatewayV0): &address {
-    &self.operator
-}
-
-#[test_only]
-public(package) fun operator_mut(self: &mut GatewayV0): &mut address {
-    &mut self.operator
-}
-
-#[test_only]
-public(package) fun messages(self: &GatewayV0): &Table<Bytes32, MessageStatus> {
-    &self.messages
-}
-
-#[test_only]
 public(package) fun messages_mut(
     self: &mut GatewayV0,
 ): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
-}
-
-#[test_only]
-public(package) fun signers(self: &GatewayV0): &AxelarSigners {
-    &self.signers
-}
-
-#[test_only]
-public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
-    &mut self.signers
-}
-
-#[test_only]
-public(package) fun version_control_mut(
-    self: &mut GatewayV0,
-): &mut VersionControl {
-    &mut self.version_control
 }
 
 #[test_only]
@@ -332,7 +300,7 @@ public(package) fun destroy_for_testing(
 }
 
 #[test_only]
-public(package) fun dummy(ctx: &mut TxContext): GatewayV0 {
+fun dummy(ctx: &mut TxContext): GatewayV0 {
     new(
         @0x0,
         sui::table::new(ctx),
