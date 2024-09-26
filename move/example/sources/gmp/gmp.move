@@ -2,8 +2,8 @@ module example::gmp;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::discovery::{Self, RelayerDiscovery};
-use axelar_gateway::gateway;
-use gas_service::gas_service::{Self, GasService};
+use axelar_gateway::gateway::{Self, Gateway};
+use gas_service::gas_service::GasService;
 use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
@@ -67,6 +67,7 @@ public fun register_transaction(
 
 public fun send_call(
     singleton: &Singleton,
+    gateway: &Gateway,
     gas_service: &mut GasService,
     destination_chain: String,
     destination_address: String,
@@ -75,8 +76,7 @@ public fun send_call(
     coin: Coin<SUI>,
     params: vector<u8>,
 ) {
-    gas_service::pay_gas(
-        gas_service,
+    gas_service.pay_gas(
         coin,
         sui::object::id_address(&singleton.channel),
         destination_chain,
@@ -92,7 +92,7 @@ public fun send_call(
         payload,
     );
 
-    gateway::send_message(message_ticket);
+    gateway.send_message(message_ticket);
 }
 
 public fun execute(call: ApprovedMessage, singleton: &mut Singleton) {

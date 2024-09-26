@@ -33,11 +33,11 @@ public struct VersionControl has store, copy, drop {
 /// ```
 /// Would allow only `v0_function` to be called on version == 0, and both `v0_function` and `v1_function` to be called on version == 1.
 /// This is done to simplify the instantiation syntax of VersionControl.
-public fun new(allowed_functions: vector<vector<vector<u8>>>): VersionControl {
+public fun new(allowed_functions: vector<vector<String>>): VersionControl {
     VersionControl {
         allowed_functions: allowed_functions.map!(
             |function_names| vec_set::from_keys(
-                function_names.map!(|function_name| function_name.to_ascii_string())
+                function_names
             )
         )
     }
@@ -50,10 +50,10 @@ public fun allowed_functions(self: &mut VersionControl): &mut vector<VecSet<Stri
 }
 
 /// If a new version does not need to deprecate any old functions, you can use this to add the newly supported functions.
-public fun push_back(self: &mut VersionControl, function_names: vector<vector<u8>>) {
+public fun push_back(self: &mut VersionControl, function_names: vector<String>) {
     self.allowed_functions.push_back(
         vec_set::from_keys(
-            function_names.map!(|function_name| function_name.to_ascii_string())
+            function_names
         )
     );
 }
@@ -75,7 +75,7 @@ fun test_new() {
         vector[
             vector[
                 b"function_name_1",
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
     assert!(version_control.allowed_functions.length() == 1, 0);
@@ -89,7 +89,7 @@ fun test_allowed_functions() {
         vector[
             vector[
                 b"function_name_1",
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
     assert!(version_control.allowed_functions == version_control.allowed_functions(), 0);
@@ -101,13 +101,13 @@ fun test_push_back() {
         vector[
             vector[
                 b"function_name_1",
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
     version_control.push_back(
         vector[
             b"function_name_1", b"function_name_2",
-        ]
+        ].map!(|function_name| function_name.to_ascii_string())
     );
     assert!(version_control.allowed_functions.length() == 2, 0);
     assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()), 1);
@@ -122,7 +122,7 @@ fun test_check() {
         vector[
             vector[
                 b"function_name_1",
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
     version_control.check(0, b"function_name_1".to_ascii_string());
@@ -135,7 +135,7 @@ fun test_check_function_not_supported() {
         vector[
             vector[
                 b"function_name_1",
-            ],
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
     version_control.check(0, b"function_name_2".to_ascii_string());

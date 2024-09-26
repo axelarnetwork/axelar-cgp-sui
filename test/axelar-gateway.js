@@ -226,12 +226,12 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::send_message`,
-                arguments: [messageTicket],
+                arguments: [gateway, messageTicket],
                 typeArguments: [],
             });
 
             await expectEvent(builder, keypair, {
-                type: `${packageId}::gateway::ContractCall`,
+                type: `${packageId}::events::ContractCall`,
                 arguments: {
                     destination_address: destinationAddress,
                     destination_chain: destinationChain,
