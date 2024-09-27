@@ -1,3 +1,5 @@
+# This workflow publishes snapshot releases as an npm package. These releases aren't supposed to be reusable in `production` environments.
+# It's triggered manually in case a snapshot release would be needed for testing purposes.
 name: Release Snapshot
 
 on:
@@ -13,13 +15,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup Sui CLI
-        uses: ./.github/actions/install-sui-cli
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
         with:
-          sui-version: $(jq -r '.SUI_VERSION' version.json)
-
-      - name: Setup Node Dependencies
-        uses: ./.github/actions/install-node-dependencies
+          install-sui: 'true'
+          install-nodejs: 'true'
 
       - name: Build TS and SUI modules
         run: npm run build

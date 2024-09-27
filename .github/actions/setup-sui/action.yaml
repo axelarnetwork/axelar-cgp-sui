@@ -1,9 +1,9 @@
-name: Install Sui CLI
-description: 'Install Sui CLI'
+name: Setup SUI CLI
+description: 'Setup Sui CLI'
 
 inputs:
   sui-version:
-    description: 'Sui Version'
+    description: 'The version of Sui CLI to install'
     required: true
 
 runs:
@@ -27,8 +27,8 @@ runs:
       shell: bash
       if: steps.cache-sui.outputs.cache-hit != 'true'
       run: |
-        mkdir -p sui-binaries
         curl -L -o sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz https://github.com/MystenLabs/sui/releases/download/${{ inputs.sui-version }}/sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz
+        mkdir -p sui-binaries
         tar -xvf sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz -C sui-binaries
         rm -rf sui-${{ inputs.sui-version }}-ubuntu-x86_64.tgz
 

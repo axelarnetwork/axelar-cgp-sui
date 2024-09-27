@@ -28,17 +28,34 @@ git commit -m "chore: update changeset"
 git push
 ```
 
-### 3. Trigger the Create Release Pull Request Workflow
+### 3. Trigger the release workflow:
 
-Trigger the [Create Release Pull Request](https://github.com/axelarnetwork/axelar-cgp-sui/actions/workflows/create-release-pr.yaml) workflow when you want to publish the package. The release PR will be created. This PR will:
+#### Overview:
 
--   Update the `CHANGELOG.md` file with the changes made in the release.
--   Bump the version number of the package.
+These GitHub action workflows manage releases based on `changesets` we defined earlier, ensuring that every new release includes tracked changes and proper version updates. The process starts when the `pre-release` workflow is triggered. If the PR includes changesets, the workflow generates a new "PR version", which needs to be reviewed and eventually merged in order to trigger the `release` workflow that publishes the new packages.
 
-After this PR is merged, the [Publish to NPM](https://github.com/axelarnetwork/axelar-cgp-sui/actions/workflows/publish-to-npm.yaml) workflow will be triggered and the following things will happen:
+#### Pre-Release Workflow:
 
--   The package will be published to npm.
--   Create a new GitHub release with the changes made in the release.
+- This `pre-release` workflow kicks in after it gets triggered manually by one of the authorized team members, It does the following:
+
+  - Generates a new version based on the `changesets`.
+  - Updates the package version.
+  - Update the `CHANGELOG.md` file with the changes made in the release.
+  - Creates a new release PR with the updated version changes.
+
+#### Release Workflow:
+
+- Once the `release` PR is reviewed, approved and merged, if the PR title contains certain criteria, the `release` workflow is triggered in order to publish the new release:
+
+  - Installs any necessary dependencies needed for the package publishing (e.g., `sui`, `node.js`).
+  - Publishes the release.
+  - Pushes release tags to the repository.
+
+#### Important Considerations:
+
+If no changesets are provided, the release will lack a changelog, and versioning won’t be updated.
+
+Best practice requires every release to include changes tracked by changesets to maintain proper version history and changelogs.
 
 ## Release Snapshot Versions
 
