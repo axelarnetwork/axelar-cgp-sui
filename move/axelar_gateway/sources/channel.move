@@ -123,10 +123,9 @@ public(package) fun create_approved_message(
     }
 }
 
-// -----
-// Tests
-// -----
-
+// ---------
+// Test Only
+// ---------
 #[test_only]
 public fun new_approved_message(
     source_chain: String,
@@ -155,6 +154,33 @@ public fun destroy_for_testing(approved_message: ApprovedMessage) {
     } = approved_message;
 }
 
+#[test_only]
+public(package) fun approved_message_source_chain(self: &ApprovedMessage): String {
+    self.source_chain
+}
+
+#[test_only]
+public(package) fun approved_message_message_id(self: &ApprovedMessage): String {
+    self.message_id
+}
+
+#[test_only]
+public(package) fun approved_message_source_address(self: &ApprovedMessage): String {
+    self.source_address
+}
+
+#[test_only]
+public(package) fun approved_message_destination_id(self: &ApprovedMessage): address {
+    self.destination_id
+}
+
+#[test_only]
+public(package) fun approved_message_payload(self: &ApprovedMessage): vector<u8> {
+    self.payload
+}
+// -----
+// Tests
+// -----
 #[test]
 fun test_new_and_destroy() {
     let ctx = &mut sui::tx_context::dummy();

@@ -198,3 +198,8 @@ public fun destroy_for_testing(
         previous_signers_retention,
     )
 }
+
+#[test_only]
+public(package) fun epoch_mut(self: &mut AxelarSigners): &mut u64 {
+    &mut self.epoch
+}
