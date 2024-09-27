@@ -8,7 +8,7 @@ module squid::deepbook_v3 {
     use deepbook::pool::Pool;
     use token::deep::DEEP;
 
-    use axelar_gateway::discovery::{Self, MoveCall};
+    use axelar_gateway::transaction::{Self, MoveCall};
 
     use squid::swap_info::SwapInfo;
     use squid::squid::Squid;
@@ -185,8 +185,8 @@ module squid::deepbook_v3 {
         let type_base = ascii::string(bcs.peel_vec_u8());
         let type_quote = ascii::string(bcs.peel_vec_u8());
 
-        discovery::new_move_call(
-                discovery::new_function(
+        transaction::new_move_call(
+                transaction::new_function(
                     package_id,
                     ascii::string(b"deepbook_v3"),
                     ascii::string(b"estimate"),
@@ -210,8 +210,8 @@ module squid::deepbook_v3 {
         let type_base = ascii::string(bcs.peel_vec_u8());
         let type_quote = ascii::string(bcs.peel_vec_u8());
 
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"deepbook_v3"),
                 ascii::string(b"swap"),

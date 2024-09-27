@@ -8,7 +8,8 @@ module its::discovery {
 
     use abi::abi::{Self, AbiReader};
 
-    use axelar_gateway::discovery::{Self, RelayerDiscovery, Transaction, package_id};
+    use axelar_gateway::discovery::RelayerDiscovery;
+    use axelar_gateway::transaction::{Self, Transaction, package_id};
 
     use its::its::ITS;
     use its::token_id::{Self, TokenId};
@@ -50,19 +51,19 @@ module its::discovery {
             vector[3]
         ];
 
-        let function = discovery::new_function(
+        let function = transaction::new_function(
             package_id<ITS>(),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
 
-        let move_call = discovery::new_move_call(
+        let move_call = transaction::new_move_call(
             function,
             arguments,
             vector[],
         );
 
-        discovery.register_transaction(self.channel(), discovery::new_transaction(
+        discovery.register_transaction(self.channel(), transaction::new_transaction(
             false,
             vector[move_call],
         ));
@@ -107,10 +108,10 @@ module its::discovery {
             ];
 
 
-            discovery::new_transaction(
+            transaction::new_transaction(
                 true,
-                vector[discovery::new_move_call(
-                    discovery::new_function(
+                vector[transaction::new_move_call(
+                    transaction::new_function(
                         package_id<ITS>(),
                         ascii::string(b"service"),
                         ascii::string(b"receive_interchain_transfer")
@@ -126,10 +127,10 @@ module its::discovery {
             let mut channel_id_arg = vector[1];
             channel_id_arg.append(destination_address.to_bytes());
 
-            discovery::new_transaction(
+            transaction::new_transaction(
                 false,
-                vector[discovery::new_move_call(
-                    discovery::new_function(
+                vector[transaction::new_move_call(
+                    transaction::new_function(
                         package_id<RelayerDiscovery>(),
                         ascii::string(b"discovery"),
                         ascii::string(b"get_transaction")
@@ -162,8 +163,8 @@ module its::discovery {
 
         let type_name = self.get_unregistered_coin_type(&symbol, decimals);
 
-        let move_call = discovery::new_move_call(
-            discovery::new_function(
+        let move_call = transaction::new_move_call(
+            transaction::new_function(
                 package_id<ITS>(),
                 ascii::string(b"service"),
                 ascii::string(b"receive_deploy_interchain_token")
@@ -172,7 +173,7 @@ module its::discovery {
             vector[ type_name::into_string(*type_name) ],
         );
 
-        discovery::new_transaction(
+        transaction::new_transaction(
             true,
             vector[ move_call ],
         )
@@ -189,19 +190,19 @@ module its::discovery {
             vector[3]
         ];
 
-        let function = discovery::new_function(
-            discovery::package_id<ITS>(),
+        let function = transaction::new_function(
+            package_id<ITS>(),
             ascii::string(b"discovery"),
             ascii::string(b"get_call_info")
         );
 
-        let move_call = discovery::new_move_call(
+        let move_call = transaction::new_move_call(
             function,
             arguments,
             vector[],
         );
 
-        discovery::new_transaction(
+        transaction::new_transaction(
             false,
             vector[move_call],
         )

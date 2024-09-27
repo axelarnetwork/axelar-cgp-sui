@@ -3,7 +3,8 @@ module squid::discovery {
 
     use sui::bcs;
 
-    use axelar_gateway::discovery::{Self, RelayerDiscovery, MoveCall, Transaction};
+    use axelar_gateway::discovery::RelayerDiscovery;
+    use axelar_gateway::transaction::{Self, MoveCall, Transaction};
 
     use its::its::ITS;
 
@@ -25,11 +26,11 @@ module squid::discovery {
         let mut its_arg = vector[0];
         its_arg.append(object::id(its).id_to_bytes());
 
-        let transaction = discovery::new_transaction(
+        let transaction = transaction::new_transaction(
             false,
-            vector[discovery::new_move_call(
-                discovery::new_function(
-                    discovery::package_id<Squid>(),
+            vector[transaction::new_move_call(
+                transaction::new_function(
+                    transaction::package_id<Squid>(),
                     ascii::string(b"discovery"),
                     ascii::string(b"get_transaction"),
                 ),
@@ -51,7 +52,7 @@ module squid::discovery {
     public fun get_transaction(squid: &Squid, its: &ITS, payload: vector<u8>): Transaction {
         let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(payload);
         let type_in = (*its.get_registered_coin_type(token_id)).into_string();
-        let package_id = discovery::package_id<Squid>();
+        let package_id = transaction::package_id<Squid>();
         let swap_data = bcs::new(data).peel_vec_vec_u8();
 
 
@@ -102,15 +103,15 @@ module squid::discovery {
 
         move_calls.push_back(finalize(package_id, swap_info_arg));
 
-        discovery::new_transaction(
+        transaction::new_transaction(
             true,
             move_calls,
         )
     }
 
     fun start_swap(package_id: address, squid_arg: vector<u8>, its_arg: vector<u8>, type_in: String): MoveCall {
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"squid"),
                 ascii::string(b"start_swap"),
@@ -126,8 +127,8 @@ module squid::discovery {
     }
 
     fun finalize(package_id: address, swap_info_arg: vector<u8>): MoveCall {
-        discovery::new_move_call(
-            discovery::new_function(
+        transaction::new_move_call(
+            transaction::new_function(
                 package_id,
                 ascii::string(b"swap_info"),
                 ascii::string(b"finalize"),
