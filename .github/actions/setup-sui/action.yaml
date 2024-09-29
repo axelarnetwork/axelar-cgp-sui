@@ -10,18 +10,19 @@ runs:
   using: 'composite'
 
   steps:
-    - name: Install Dependencies
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libpq-dev
-
     - name: Cache Sui binaries
       id: cache-sui
       uses: actions/cache@v4
       with:
         path: sui-binaries/
         key: sui-${{ inputs.sui-version }}
+
+    - name: Install Dependencies
+      shell: bash
+      if: steps.cache-sui.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev
 
     - name: Download and Install Sui
       shell: bash
