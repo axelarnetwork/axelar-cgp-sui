@@ -9,7 +9,10 @@ echo "# Axelar Sui Move Packages" > docs/index.md
 echo "" >> docs/index.md
 
 for dir in move/*/; do
-if [ -d "$dir" ]; then
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+
     pkg_name=$(basename "$dir")
     cp -r "$dir"/build/*/docs docs/"$pkg_name"
 
@@ -19,13 +22,15 @@ if [ -d "$dir" ]; then
 
     # Link each module docs in the index.md
     for module in docs/"${pkg_name}"/*.md; do
-    if [ -f "$module" ]; then
         module_name=$(basename "$module")
         module_name=${module_name%.md}
+
+        if [ ! -f "$module" ] || [ "$module_name" == "index" ]; then
+            continue
+        fi
+
         echo "- [$module_name]($module_name.md)" >> docs/"$pkg_name"/index.md
-    fi
     done
 
     echo "- [$pkg_name]($pkg_name/index.md)" >> docs/index.md
-fi
 done
