@@ -39,6 +39,10 @@ jobs:
         run: |
           find docs -name '*.md' -exec sed -i '1s/^/---\nlayout: default\n---\n/' {} +
 
+      - name: Update Links in Markdown Files
+        run: |
+          find docs -name '*.md' -exec sed -i 's/href="\([^"]*\)\.md\(#[^"]*\)\?"/href="\1.html\2"/g' {} +
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
