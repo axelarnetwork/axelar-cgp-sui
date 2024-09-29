@@ -37,7 +37,7 @@ jobs:
 
       - name: Add YAML front matter
         run: |
-          find site -name '*.md' -exec sed -i '1s/^/---\nlayout: default\n---\n/' {} +
+          find docs -name '*.md' -exec sed -i '1s/^/---\nlayout: default\n---\n/' {} +
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
