@@ -1,0 +1,48 @@
+{
+  "structs": {
+    "Message": {
+      "name": "Message",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "source_chain",
+          "type": "String,"
+        },
+        {
+          "name": "message_id",
+          "type": "String,"
+        },
+        {
+          "name": "source_address",
+          "type": "String,"
+        },
+        {
+          "name": "destination_id",
+          "type": "address,"
+        },
+        {
+          "name": "payload_hash",
+          "type": "Bytes32"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new": {
+      "name": "new",
+      "visibility": "public",
+      "params": {
+        "source_chain#0#0": "String",
+        "message_id#0#0": "String",
+        "source_address#0#0": "String",
+        "destination_id#0#0": "address",
+        "payload_hash#0#0": "Bytes32"
+      },
+      "returnType": "Message"
+    }
+  }
+}

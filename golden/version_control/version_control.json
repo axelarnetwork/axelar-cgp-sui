@@ -1,0 +1,36 @@
+{
+  "structs": {
+    "VersionControl": {
+      "name": "VersionControl",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "allowed_functions",
+          "type": "vector<VecSet<String>>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new": {
+      "name": "new",
+      "visibility": "public",
+      "params": {
+        "allowed_functions#0#0": "vector<vector<String>>"
+      },
+      "returnType": "VersionControl"
+    },
+    "allowed_functions": {
+      "name": "allowed_functions",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut VersionControl"
+      },
+      "returnType": "&mut vector<VecSet<String>>"
+    }
+  }
+}

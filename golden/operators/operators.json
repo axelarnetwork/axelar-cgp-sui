@@ -1,0 +1,133 @@
+{
+  "structs": {
+    "OwnerCap": {
+      "name": "OwnerCap",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    },
+    "OperatorCap": {
+      "name": "OperatorCap",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    },
+    "Operators": {
+      "name": "Operators",
+      "abilities": [
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID,"
+        },
+        {
+          "name": "operators",
+          "type": "VecSet<address>,"
+        },
+        {
+          "name": "caps",
+          "type": "Bag"
+        }
+      ]
+    },
+    "OperatorAdded": {
+      "name": "OperatorAdded",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "operator",
+          "type": "address"
+        }
+      ]
+    },
+    "OperatorRemoved": {
+      "name": "OperatorRemoved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "operator",
+          "type": "address"
+        }
+      ]
+    },
+    "CapabilityStored": {
+      "name": "CapabilityStored",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "cap_id",
+          "type": "ID,"
+        },
+        {
+          "name": "cap_name",
+          "type": "String"
+        }
+      ]
+    },
+    "CapabilityRemoved": {
+      "name": "CapabilityRemoved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "cap_id",
+          "type": "ID,"
+        },
+        {
+          "name": "cap_name",
+          "type": "String"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "loan_cap<T: store + key>": {
+      "name": "loan_cap<T: store + key>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut Operators",
+        "_operator_cap#0#0": "&OperatorCap",
+        "cap_id#0#0": "ID",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "T * Borrow"
+    },
+    "remove_cap<T: store + key>": {
+      "name": "remove_cap<T: store + key>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut Operators",
+        "_#0#0": "&OwnerCap",
+        "cap_id#0#0": "ID"
+      },
+      "returnType": "T"
+    }
+  }
+}

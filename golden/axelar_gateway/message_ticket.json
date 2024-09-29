@@ -1,0 +1,45 @@
+{
+  "structs": {},
+  "publicFunctions": {
+    "source_id": {
+      "name": "source_id",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MessageTicket"
+      },
+      "returnType": "address"
+    },
+    "destination_chain": {
+      "name": "destination_chain",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MessageTicket"
+      },
+      "returnType": "String"
+    },
+    "destination_address": {
+      "name": "destination_address",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MessageTicket"
+      },
+      "returnType": "String"
+    },
+    "payload": {
+      "name": "payload",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MessageTicket"
+      },
+      "returnType": "vector<u8>"
+    },
+    "version": {
+      "name": "version",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MessageTicket"
+      },
+      "returnType": "u64"
+    }
+  }
+}

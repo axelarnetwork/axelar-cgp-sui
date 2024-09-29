@@ -1,0 +1,158 @@
+{
+  "structs": {
+    "ITS": {
+      "name": "ITS",
+      "abilities": [
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID,"
+        },
+        {
+          "name": "channel",
+          "type": "Channel,"
+        },
+        {
+          "name": "address_tracker",
+          "type": "InterchainAddressTracker,"
+        },
+        {
+          "name": "unregistered_coin_types",
+          "type": "Table<UnregisteredTokenId, TypeName>,"
+        },
+        {
+          "name": "unregistered_coin_info",
+          "type": "Bag,"
+        },
+        {
+          "name": "registered_coin_types",
+          "type": "Table<TokenId, TypeName>,"
+        },
+        {
+          "name": "registered_coins",
+          "type": "Bag,"
+        },
+        {
+          "name": "relayer_discovery_id",
+          "type": "ID,"
+        },
+        {
+          "name": "version_control",
+          "type": "VersionControl"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "get_unregistered_coin_type": {
+      "name": "get_unregistered_coin_type",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "symbol#0#0": "&String",
+        "decimals#0#0": "u8"
+      },
+      "returnType": "&TypeName"
+    },
+    "get_registered_coin_type": {
+      "name": "get_registered_coin_type",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "&TypeName"
+    },
+    "get_coin_data<T>": {
+      "name": "get_coin_data<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "&CoinData<T>"
+    },
+    "get_coin_info<T>": {
+      "name": "get_coin_info<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "&CoinInfo<T>"
+    },
+    "token_name<T>": {
+      "name": "token_name<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "String"
+    },
+    "token_symbol<T>": {
+      "name": "token_symbol<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "String"
+    },
+    "token_decimals<T>": {
+      "name": "token_decimals<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "u8"
+    },
+    "token_remote_decimals<T>": {
+      "name": "token_remote_decimals<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "u8"
+    },
+    "get_trusted_address": {
+      "name": "get_trusted_address",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "chain_name#0#0": "String"
+      },
+      "returnType": "String"
+    },
+    "is_trusted_address": {
+      "name": "is_trusted_address",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS",
+        "source_chain#0#0": "String",
+        "source_address#0#0": "String"
+      },
+      "returnType": "bool"
+    },
+    "channel_id": {
+      "name": "channel_id",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS"
+      },
+      "returnType": "ID"
+    },
+    "channel_address": {
+      "name": "channel_address",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&ITS"
+      },
+      "returnType": "address"
+    }
+  }
+}

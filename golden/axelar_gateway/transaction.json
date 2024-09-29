@@ -1,0 +1,127 @@
+{
+  "structs": {
+    "Function": {
+      "name": "Function",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "package_id",
+          "type": "address,"
+        },
+        {
+          "name": "module_name",
+          "type": "String,"
+        },
+        {
+          "name": "name",
+          "type": "String"
+        }
+      ]
+    },
+    "MoveCall": {
+      "name": "MoveCall",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "function",
+          "type": "Function,"
+        },
+        {
+          "name": "arguments",
+          "type": "vector<vector<u8>>,"
+        },
+        {
+          "name": "type_arguments",
+          "type": "vector<String>"
+        }
+      ]
+    },
+    "Transaction": {
+      "name": "Transaction",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "is_final",
+          "type": "bool,"
+        },
+        {
+          "name": "move_calls",
+          "type": "vector<MoveCall>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new_function": {
+      "name": "new_function",
+      "visibility": "public",
+      "params": {
+        "package_id#0#0": "address",
+        "module_name#0#0": "String",
+        "name#0#0": "String"
+      },
+      "returnType": "Function"
+    },
+    "new_function_from_bcs": {
+      "name": "new_function_from_bcs",
+      "visibility": "public",
+      "params": {
+        "bcs#0#0": "&mut BCS"
+      },
+      "returnType": "Function"
+    },
+    "new_move_call": {
+      "name": "new_move_call",
+      "visibility": "public",
+      "params": {
+        "function#0#0": "Function",
+        "arguments#0#0": "vector<vector<u8>>",
+        "type_arguments#0#0": "vector<String>"
+      },
+      "returnType": "MoveCall"
+    },
+    "new_move_call_from_bcs": {
+      "name": "new_move_call_from_bcs",
+      "visibility": "public",
+      "params": {
+        "bcs#0#0": "&mut BCS"
+      },
+      "returnType": "MoveCall"
+    },
+    "new_transaction": {
+      "name": "new_transaction",
+      "visibility": "public",
+      "params": {
+        "is_final#0#0": "bool",
+        "move_calls#0#0": "vector<MoveCall>"
+      },
+      "returnType": "Transaction"
+    },
+    "new_transaction_from_bcs": {
+      "name": "new_transaction_from_bcs",
+      "visibility": "public",
+      "params": {
+        "bcs#0#0": "&mut BCS"
+      },
+      "returnType": "Transaction"
+    },
+    "package_id<T>": {
+      "name": "package_id<T>",
+      "visibility": "public",
+      "params": {},
+      "returnType": "address"
+    }
+  }
+}

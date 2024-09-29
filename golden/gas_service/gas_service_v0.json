@@ -1,0 +1,21 @@
+{
+  "structs": {
+    "GasServiceV0": {
+      "name": "GasServiceV0",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "balance",
+          "type": "Balance<SUI>,"
+        },
+        {
+          "name": "version_control",
+          "type": "VersionControl"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

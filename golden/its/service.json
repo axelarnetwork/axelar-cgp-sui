@@ -1,0 +1,72 @@
+{
+  "structs": {},
+  "publicFunctions": {
+    "register_coin<T>": {
+      "name": "register_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut ITS",
+        "coin_info#0#0": "CoinInfo<T>",
+        "coin_management#0#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
+    "deploy_remote_interchain_token<T>": {
+      "name": "deploy_remote_interchain_token<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut ITS",
+        "token_id#0#0": "TokenId",
+        "destination_chain#0#0": "String"
+      },
+      "returnType": "MessageTicket"
+    },
+    "prepare_interchain_transfer<T>": {
+      "name": "prepare_interchain_transfer<T>",
+      "visibility": "public",
+      "params": {
+        "token_id#0#0": "TokenId",
+        "coin#0#0": "Coin<T>",
+        "destination_chain#0#0": "String",
+        "destination_address#0#0": "vector<u8>",
+        "metadata#0#0": "vector<u8>",
+        "source_channel#0#0": "&Channel"
+      },
+      "returnType": "InterchainTransferTicket<T>"
+    },
+    "send_interchain_transfer<T>": {
+      "name": "send_interchain_transfer<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut ITS",
+        "ticket#0#0": "InterchainTransferTicket<T>",
+        "clock#0#0": "&Clock"
+      },
+      "returnType": "MessageTicket"
+    },
+    "receive_interchain_transfer_with_data<T>": {
+      "name": "receive_interchain_transfer_with_data<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut ITS",
+        "approved_message#0#0": "ApprovedMessage",
+        "channel#0#0": "&Channel",
+        "clock#0#0": "&Clock",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "String * vector<u8> * vector<u8> * Coin<T>"
+    },
+    "mint_as_distributor<T>": {
+      "name": "mint_as_distributor<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut ITS",
+        "channel#0#0": "&Channel",
+        "token_id#0#0": "TokenId",
+        "amount#0#0": "u64",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "Coin<T>"
+    }
+  }
+}

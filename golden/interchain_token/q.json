@@ -1,0 +1,17 @@
+{
+  "structs": {
+    "Q": {
+      "name": "Q",
+      "abilities": [
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "dummy_field",
+          "type": "bool"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
