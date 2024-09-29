@@ -54,7 +54,7 @@ Official Sui deployment and operations scripts can be found [here](https://githu
 
 ## Release Process
 
-Please check the [release process](./docs/release.md) for more details.
+Please check the [release process](./RELEASE.md) for more details.
 
 ## Gateway
 
@@ -150,4 +150,3 @@ This module is responsible for managing all of the storage needs of the ITS
 This is the module that anyone would directly interract with. It needs to be able to do the following
 
 - `register_coin<T>`: This function takes the `ITS` object and mutates it by adding a coin with the specified `CoinManagement<T>` and `CoinInfo<T>`.
-  

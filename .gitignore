@@ -5,6 +5,7 @@
 ### Move ###
 
 move/**/build
+/docs
 
 # Local sui build
 /sui
