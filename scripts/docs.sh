@@ -22,10 +22,10 @@ if [ -d "$dir" ]; then
     if [ -f "$module" ]; then
         module_name=$(basename "$module")
         module_name=${module_name%.md}
-        echo "- [$module_name]($pkg_name/$module_name/index.html)" >> docs/"$pkg_name"/index.md
+        echo "- [$module_name]($module_name.md)" >> docs/"$pkg_name"/index.md
     fi
     done
 
-    echo "- [$pkg_name]($pkg_name/index.html)" >> docs/index.md
+    echo "- [$pkg_name]($pkg_name/index.md)" >> docs/index.md
 fi
 done

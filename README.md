@@ -2,6 +2,8 @@
 
 An implementation of the Axelar cross-chain contracts in Move for the Sui blockchain.
 
+Generated docs can be found [here](https://axelarnetwork.github.io/axelar-cgp-sui/).
+
 ## Installation
 
 Install Sui as shown [here](https://docs.sui.io/guides/developer/getting-started/sui-install)
