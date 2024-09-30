@@ -121,10 +121,17 @@ function goldenTest(data, name) {
         if (encodedData !== expectedData) {
             const diff = diffJson(JSON.parse(expectedData), JSON.parse(encodedData));
 
+            console.log(`Diff with ${goldenFilePath}:`);
+
             diff.forEach((part) => {
-                const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-                process.stdout.write(chalk[color](part.value));
+                const color = part.added ? 'green' : part.removed ? 'red' : '';
+
+                if (color) {
+                    process.stdout.write(chalk[color](part.value));
+                }
             });
+
+            console.log();
 
             expect(false).to.be.true;
         }
