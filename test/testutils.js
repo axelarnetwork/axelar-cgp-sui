@@ -2,6 +2,7 @@ const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/ut
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
+const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const chai = require('chai');
 const { expect } = chai;
 const {
@@ -112,6 +113,30 @@ function signMessage(privKeys, messageToSign) {
     }
 
     return signatures;
+}
+
+function calculateNextSigners(gatewayInfo, nonce) {
+    const signerKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
+    const pubKeys = signerKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
+    const keys = signerKeys.map((key, index) => {
+        return { privKey: key, pubKey: pubKeys[index] };
+    });
+    keys.sort((key1, key2) => {
+        for (let i = 0; i < 33; i++) {
+            if (key1.pubKey[i] < key2.pubKey[i]) return -1;
+            if (key1.pubKey[i] > key2.pubKey[i]) return 1;
+        }
+
+        return 0;
+    });
+    gatewayInfo.signerKeys = keys.map((key) => key.privKey);
+    gatewayInfo.signers = {
+        signers: keys.map((key) => {
+            return { pub_key: key.pubKey, weight: 1 };
+        }),
+        threshold: 2,
+        nonce: hexlify([++nonce]),
+    };
 }
 
 async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
@@ -263,4 +288,5 @@ module.exports = {
     approveMessage,
     approveAndExecuteMessage,
     generateEd25519Keypairs,
+    calculateNextSigners,
 };

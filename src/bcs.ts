@@ -187,10 +187,20 @@ function getSquidStructs() {
 }
 
 function getITSStructs() {
-    const { Table, Bag, Channel } = getCommonStructs();
+    const { Bytes32, Table, Bag, Channel } = getCommonStructs();
 
     const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
         trusted_addresses: Table,
+    });
+
+    const TrustedAddresses = bcs.struct('TrustedAddresses', {
+        trusted_chains: bcs.vector(bcs.string()),
+        trusted_addresses: bcs.vector(bcs.vector(bcs.u8())),
+    });
+
+    const MessageSetTrustedAddresses = bcs.struct('MessageTrustedAddresses', {
+        message_type: bcs.u256(),
+        trusted_addresses: TrustedAddresses,
     });
 
     const ITS = bcs.struct('ITS', {
@@ -205,7 +215,9 @@ function getITSStructs() {
 
     return {
         InterchainAddressTracker,
+        MessageSetTrustedAddresses,
         ITS,
+        TrustedAddresses,
     };
 }
 
