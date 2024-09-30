@@ -1,3 +1,5 @@
+'use strict';
+
 const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
@@ -10,6 +12,10 @@ const {
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
+const chalk = require('chalk');
+const { diffJson } = require('diff');
+const fs = require('fs');
+const path = require('path');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
@@ -87,6 +93,42 @@ async function expectEvent(builder, keypair, eventData = {}) {
 
     for (const key of Object.keys(eventData.arguments)) {
         compare(event.parsedJson[key], eventData.arguments[key]);
+    }
+}
+
+/**
+ *
+ * @param {object} data Arbitrary data to be either written to a golden file
+ *  or compared to an existing golden file, depending on whether `GOLDEN_TESTS` env var is set or not.
+ */
+function goldenTest(data, name) {
+    const goldenDir = path.resolve(__dirname, 'testdata');
+    const goldenFilePath = path.join(goldenDir, `${name}.json`);
+    const encodedData = JSON.stringify(data, null, 2) + '\n';
+
+    if (process.env.GOLDEN_TESTS) {
+        // Write the extracted info to the golden file
+        fs.mkdirSync(path.dirname(goldenFilePath), { recursive: true });
+        fs.writeFileSync(goldenFilePath, encodedData);
+    } else {
+        // Read the golden file and compare
+        if (!fs.existsSync(goldenFilePath)) {
+            throw new Error(`Golden file not found: ${goldenFilePath}`);
+        }
+
+        const expectedData = fs.readFileSync(goldenFilePath, 'utf8');
+
+        if (encodedData !== expectedData) {
+            const diff = diffJson(JSON.parse(expectedData), JSON.parse(encodedData));
+
+            diff.forEach((part) => {
+                const color = part.added ? 'green' :
+                    part.removed ? 'red' : 'grey';
+                process.stdout.write(chalk[color](part.value));
+            })
+
+            expect(false).to.be.true;
+        }
     }
 }
 
@@ -251,4 +293,5 @@ module.exports = {
     signMessage,
     approveMessage,
     approveAndExecuteMessage,
+    goldenTest,
 };

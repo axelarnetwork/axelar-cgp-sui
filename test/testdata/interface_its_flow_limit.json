@@ -1,0 +1,31 @@
+{
+  "structs": {
+    "FlowLimit": {
+      "name": "FlowLimit",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "flow_limit",
+          "type": "u64,"
+        },
+        {
+          "name": "flow_in",
+          "type": "u64,"
+        },
+        {
+          "name": "flow_out",
+          "type": "u64,"
+        },
+        {
+          "name": "current_epoch",
+          "type": "u64"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

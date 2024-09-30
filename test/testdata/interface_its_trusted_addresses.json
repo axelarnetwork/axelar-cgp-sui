@@ -1,0 +1,39 @@
+{
+  "structs": {
+    "TrustedAddresses": {
+      "name": "TrustedAddresses",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "trusted_chains",
+          "type": "vector<vector<u8>>,"
+        },
+        {
+          "name": "trusted_addresses",
+          "type": "vector<vector<u8>>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "peel": {
+      "name": "peel",
+      "visibility": "public",
+      "params": {
+        "bcs#0#0": "&mut BCS"
+      },
+      "returnType": "TrustedAddresses"
+    },
+    "destroy": {
+      "name": "destroy",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "TrustedAddresses"
+      },
+      "returnType": "vector<vector<u8>> * vector<vector<u8>>"
+    }
+  }
+}

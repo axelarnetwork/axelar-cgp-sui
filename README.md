@@ -4,7 +4,7 @@ An implementation of the Axelar cross-chain contracts in Move for the Sui blockc
 
 ## Installation
 
-Install Sui as shown [here](https://docs.sui.io/guides/developer/getting-started/sui-install)
+Install Sui as shown [here](https://docs.sui.io/guides/developer/getting-started/sui-install). We recommend using the pre-built binaries from the [Sui releases](https://github.com/MystenLabs/sui/releases) page. The version of Sui that should be used can be found [here](./version.json).
 
 Install node.js 18+
 
@@ -24,9 +24,15 @@ Run tests for all Move packages
 npm run test
 ```
 
+If golden test data needs to be updated (such as if public interfaces have changed), then run
+
+```sh
+GOLDEN_TESTS=true npm run test
+```
+
 ### Coverage
 
-To run code coverage, Sui debug binary needs to be built locally. You can also see coverage reports from the GH actions.
+To run code coverage, a Sui debug binary needs to be built locally. You can also see coverage reports from the GH actions.
 
 ```sh
 brew install libpq
@@ -150,4 +156,3 @@ This module is responsible for managing all of the storage needs of the ITS
 This is the module that anyone would directly interract with. It needs to be able to do the following
 
 - `register_coin<T>`: This function takes the `ITS` object and mutates it by adding a coin with the specified `CoinManagement<T>` and `CoinInfo<T>`.
-  
