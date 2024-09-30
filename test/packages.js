@@ -1,4 +1,3 @@
-const { expect } = require('chai');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -35,6 +34,7 @@ describe('Packages', () => {
 
                     // Disassemble the compiled Move files to get the public interface
                     let disassembledOutput;
+
                     try {
                         disassembledOutput = execSync(`sui move disassemble ${mvFilePath}`).toString();
                     } catch (error) {
@@ -68,6 +68,7 @@ function parseDisassembledOutput(disassembledOutput) {
         // Check for struct definitions
         if (line.startsWith('struct')) {
             const structMatch = line.match(structRegex);
+
             if (structMatch) {
                 currentStruct = {
                     name: structMatch[1],
@@ -87,6 +88,7 @@ function parseDisassembledOutput(disassembledOutput) {
             } else {
                 // Parse field
                 const fieldMatch = line.match(structFieldRegex);
+
                 if (fieldMatch) {
                     currentStruct.fields.push({
                         name: fieldMatch[1],
@@ -99,6 +101,7 @@ function parseDisassembledOutput(disassembledOutput) {
         // Check for public function definitions
         if (line.startsWith('public')) {
             const functionMatch = line.match(publicFunctionRegex);
+
             if (functionMatch) {
                 const params = Object.fromEntries(
                     functionMatch[2]
