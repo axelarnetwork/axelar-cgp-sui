@@ -1,11 +1,11 @@
-name: Install Node Dependencies
-description: 'Install Node Dependencies'
+name: Install node.js dependencues
+description: 'Setup node.js and install dependencies'
 
 inputs:
   node-version:
-    description: 'Node Version'
-    required: false
-    default: 18
+    description: 'The version of node.js CLI to install'
+    required: true
+    default: '18'
 
 runs:
   using: 'composite'
@@ -14,7 +14,7 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: "${{ inputs.node-version }}"
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
 

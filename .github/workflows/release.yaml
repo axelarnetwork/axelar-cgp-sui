@@ -1,0 +1,43 @@
+# This workflow creates a github release using changeset, and publishes it as an npm package.
+# It's triggered once a release PR (created by the pre-release workflow) gets merged to the `main` branch.
+name: Release
+
+on:
+  # Once the PR gets merged to `main`
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  # Enable release process either with workflow dispatch or the automated PR process
+  release:
+    name: Release
+    if: |
+      ((github.event.pull_request.merged == true) &&
+      startsWith(github.event.pull_request.title, 'chore(release)'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup the required tools (sui, nodejs)
+        uses: ./.github/actions/setup-tools
+        with:
+          install-sui: 'true'
+          install-nodejs: 'true'
+
+      # Publishes a release in case the release isn't published
+      - name: Publish release
+        uses: changesets/action@v1
+        with:
+          publish: npm run release
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
