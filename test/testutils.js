@@ -122,10 +122,9 @@ function goldenTest(data, name) {
             const diff = diffJson(JSON.parse(expectedData), JSON.parse(encodedData));
 
             diff.forEach((part) => {
-                const color = part.added ? 'green' :
-                    part.removed ? 'red' : 'grey';
+                const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
                 process.stdout.write(chalk[color](part.value));
-            })
+            });
 
             expect(false).to.be.true;
         }

@@ -50,7 +50,6 @@ describe('Packages', () => {
     });
 });
 
-
 const structRegex = /^struct (\w+) has (.*) {$/;
 const structFieldRegex = /^(\w+): (.*?),?$/;
 const publicFunctionRegex = /^public (.+?)\((.*)\): (.*?) {$/;
