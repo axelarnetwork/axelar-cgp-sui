@@ -8,7 +8,7 @@ module squid::deepbook_v3 {
     use deepbook::pool::Pool;
     use token::deep::DEEP;
 
-    use axelar_gateway::transaction::{Self, MoveCall};
+    use relayer_discovery::transaction::{Self, MoveCall};
 
     use squid::swap_info::SwapInfo;
     use squid::squid::Squid;
