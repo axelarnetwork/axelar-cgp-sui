@@ -10,11 +10,11 @@
       "fields": [
         {
           "name": "signers",
-          "type": "vector<WeightedSigner>,"
+          "type": "vector<WeightedSigner>"
         },
         {
           "name": "threshold",
-          "type": "u128,"
+          "type": "u128"
         },
         {
           "name": "nonce",

@@ -8,7 +8,7 @@
       "fields": [
         {
           "name": "balance",
-          "type": "Balance<SUI>,"
+          "type": "Balance<SUI>"
         },
         {
           "name": "version_control",

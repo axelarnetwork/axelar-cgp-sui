@@ -8,35 +8,35 @@
       "fields": [
         {
           "name": "id",
-          "type": "UID,"
+          "type": "UID"
         },
         {
           "name": "channel",
-          "type": "Channel,"
+          "type": "Channel"
         },
         {
           "name": "address_tracker",
-          "type": "InterchainAddressTracker,"
+          "type": "InterchainAddressTracker"
         },
         {
           "name": "unregistered_coin_types",
-          "type": "Table<UnregisteredTokenId, TypeName>,"
+          "type": "Table<UnregisteredTokenId, TypeName>"
         },
         {
           "name": "unregistered_coin_info",
-          "type": "Bag,"
+          "type": "Bag"
         },
         {
           "name": "registered_coin_types",
-          "type": "Table<TokenId, TypeName>,"
+          "type": "Table<TokenId, TypeName>"
         },
         {
           "name": "registered_coins",
-          "type": "Bag,"
+          "type": "Bag"
         },
         {
           "name": "relayer_discovery_id",
-          "type": "ID,"
+          "type": "ID"
         },
         {
           "name": "version_control",

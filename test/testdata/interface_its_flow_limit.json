@@ -10,15 +10,15 @@
       "fields": [
         {
           "name": "flow_limit",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "flow_in",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "flow_out",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "current_epoch",

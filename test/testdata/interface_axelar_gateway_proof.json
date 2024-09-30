@@ -24,7 +24,7 @@
       "fields": [
         {
           "name": "signers",
-          "type": "WeightedSigners,"
+          "type": "WeightedSigners"
         },
         {
           "name": "signatures",

@@ -10,11 +10,11 @@
       "fields": [
         {
           "name": "package_id",
-          "type": "address,"
+          "type": "address"
         },
         {
           "name": "module_name",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "name",
@@ -32,11 +32,11 @@
       "fields": [
         {
           "name": "function",
-          "type": "Function,"
+          "type": "Function"
         },
         {
           "name": "arguments",
-          "type": "vector<vector<u8>>,"
+          "type": "vector<vector<u8>>"
         },
         {
           "name": "type_arguments",
@@ -54,7 +54,7 @@
       "fields": [
         {
           "name": "is_final",
-          "type": "bool,"
+          "type": "bool"
         },
         {
           "name": "move_calls",

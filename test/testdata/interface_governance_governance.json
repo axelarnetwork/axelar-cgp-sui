@@ -9,23 +9,23 @@
       "fields": [
         {
           "name": "id",
-          "type": "UID,"
+          "type": "UID"
         },
         {
           "name": "trusted_source_chain",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "trusted_source_address",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "message_type",
-          "type": "u256,"
+          "type": "u256"
         },
         {
           "name": "channel",
-          "type": "Channel,"
+          "type": "Channel"
         },
         {
           "name": "caps",

@@ -8,15 +8,15 @@
       "fields": [
         {
           "name": "operator",
-          "type": "address,"
+          "type": "address"
         },
         {
           "name": "messages",
-          "type": "Table<Bytes32, MessageStatus>,"
+          "type": "Table<Bytes32, MessageStatus>"
         },
         {
           "name": "signers",
-          "type": "AxelarSigners,"
+          "type": "AxelarSigners"
         },
         {
           "name": "version_control",

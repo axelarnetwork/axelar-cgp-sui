@@ -8,7 +8,7 @@
       "fields": [
         {
           "name": "configurations",
-          "type": "Table<ID, Transaction>,"
+          "type": "Table<ID, Transaction>"
         },
         {
           "name": "version_control",

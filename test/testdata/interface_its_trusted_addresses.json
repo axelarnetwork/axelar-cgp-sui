@@ -9,7 +9,7 @@
       "fields": [
         {
           "name": "trusted_chains",
-          "type": "vector<vector<u8>>,"
+          "type": "vector<vector<u8>>"
         },
         {
           "name": "trusted_addresses",

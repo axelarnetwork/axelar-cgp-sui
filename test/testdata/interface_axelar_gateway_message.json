@@ -10,19 +10,19 @@
       "fields": [
         {
           "name": "source_chain",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "message_id",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "source_address",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "destination_id",
-          "type": "address,"
+          "type": "address"
         },
         {
           "name": "payload_hash",

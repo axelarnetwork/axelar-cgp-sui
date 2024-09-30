@@ -8,11 +8,11 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8,"
+          "type": "u8"
         },
         {
           "name": "coin_type",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "recipient",
@@ -28,23 +28,23 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8,"
+          "type": "u8"
         },
         {
           "name": "coin_type",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "token_id",
-          "type": "TokenId,"
+          "type": "TokenId"
         },
         {
           "name": "destination_chain",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "destination_address",
-          "type": "vector<u8>,"
+          "type": "vector<u8>"
         },
         {
           "name": "metadata",

@@ -52,7 +52,7 @@ describe.only('Packages', () => {
 
 
 const structRegex = /^struct (\w+) has (.*) {$/;
-const structFieldRegex = /^(\w+): (.*),?$/;
+const structFieldRegex = /^(\w+): (.*?),?$/;
 const publicFunctionRegex = /^public (.+?)\((.*)\): (.*?) {$/;
 
 // Function to parse the disassembled output and extract structs and public functions

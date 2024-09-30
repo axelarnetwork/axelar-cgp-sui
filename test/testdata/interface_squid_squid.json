@@ -9,15 +9,15 @@
       "fields": [
         {
           "name": "id",
-          "type": "UID,"
+          "type": "UID"
         },
         {
           "name": "channel",
-          "type": "Channel,"
+          "type": "Channel"
         },
         {
           "name": "coin_bag",
-          "type": "CoinBag,"
+          "type": "CoinBag"
         },
         {
           "name": "version_control",

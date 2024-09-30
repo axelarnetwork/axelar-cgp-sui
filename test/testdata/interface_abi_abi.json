@@ -9,11 +9,11 @@
       "fields": [
         {
           "name": "bytes",
-          "type": "vector<u8>,"
+          "type": "vector<u8>"
         },
         {
           "name": "head",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "pos",
@@ -30,7 +30,7 @@
       "fields": [
         {
           "name": "bytes",
-          "type": "vector<u8>,"
+          "type": "vector<u8>"
         },
         {
           "name": "pos",

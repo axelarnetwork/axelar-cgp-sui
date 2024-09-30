@@ -9,7 +9,7 @@
       "fields": [
         {
           "name": "id",
-          "type": "UID,"
+          "type": "UID"
         },
         {
           "name": "inner",

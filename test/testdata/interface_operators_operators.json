@@ -34,11 +34,11 @@
       "fields": [
         {
           "name": "id",
-          "type": "UID,"
+          "type": "UID"
         },
         {
           "name": "operators",
-          "type": "VecSet<address>,"
+          "type": "VecSet<address>"
         },
         {
           "name": "caps",
@@ -81,7 +81,7 @@
       "fields": [
         {
           "name": "cap_id",
-          "type": "ID,"
+          "type": "ID"
         },
         {
           "name": "cap_name",
@@ -98,7 +98,7 @@
       "fields": [
         {
           "name": "cap_id",
-          "type": "ID,"
+          "type": "ID"
         },
         {
           "name": "cap_name",

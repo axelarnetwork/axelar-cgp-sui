@@ -8,31 +8,31 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8,"
+          "type": "u8"
         },
         {
           "name": "pool_id",
-          "type": "address,"
+          "type": "address"
         },
         {
           "name": "has_base",
-          "type": "bool,"
+          "type": "bool"
         },
         {
           "name": "min_output",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "base_type",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "quote_type",
-          "type": "String,"
+          "type": "String"
         },
         {
           "name": "lot_size",
-          "type": "u64,"
+          "type": "u64"
         },
         {
           "name": "should_sweep",
