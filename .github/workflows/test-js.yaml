@@ -40,4 +40,4 @@ jobs:
         shell: bash
 
       - name: Test
-        run: npx mocha --parallel
+        run: npm run test
