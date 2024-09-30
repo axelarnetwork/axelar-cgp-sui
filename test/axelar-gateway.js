@@ -89,7 +89,7 @@ describe('Axelar Gateway', () => {
             (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
         ).objectId;
         result = await publishPackage(client, deployer, 'relayer_discovery');
-        const discoveryPackageId = result.packageId
+        const discoveryPackageId = result.packageId;
         discovery = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${discoveryPackageId}::discovery::RelayerDiscovery`,
         ).objectId;
