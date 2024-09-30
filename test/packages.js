@@ -4,7 +4,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { goldenTest } = require('./testutils');
 
-describe.only('Packages', () => {
+describe('Packages', () => {
     const moveDir = path.resolve(__dirname, '../move');
 
     const packages = fs.readdirSync(moveDir).filter((file) => {
