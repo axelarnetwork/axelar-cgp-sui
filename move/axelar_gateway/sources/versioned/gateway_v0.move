@@ -504,7 +504,6 @@ fun test_take_approved_message_message_not_approved() {
     let source_address = std::ascii::string(b"Source Address");
     let message_id = std::ascii::string(b"Message Id");
     let payload = b"payload";
-    let version = 1;
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let ctx = &mut sui::tx_context::dummy();
