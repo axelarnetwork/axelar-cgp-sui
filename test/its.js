@@ -40,6 +40,11 @@ describe.only('ITS', () => {
     const minimumRotationDelay = 1000;
     const previousSignersRetention = 15;
     let nonce = 0;
+    let governanceInfo = {
+        trustedSourceChain: 'Axelar',
+        trustedSourceAddress: 'Governance Source Address',
+        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
+    };
 
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
@@ -112,19 +117,28 @@ describe.only('ITS', () => {
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
 
         // Setup Governance
-        const message = {
-            source_chain: 'Ethereum',
-            source_address: '0x',
-        };
-        const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
 
         const setupGovernanceTxBuilder = new TxBuilder(client);
         await setupGovernanceTxBuilder.moveCall({
             target: `${deployments.governance.packageId}::governance::new`,
-            arguments: [message.source_chain, message.source_address, messageType, objectIds.upgradeCap],
+            arguments: [
+                governanceInfo.trustedSourceChain,
+                governanceInfo.trustedSourceAddress,
+                governanceInfo.messageType,
+                objectIds.upgradeCap,
+            ],
         });
         const receipt = await setupGovernanceTxBuilder.signAndExecute(deployer);
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
+
+        // The lines below find the ITS channelId, which is where all the remote contract calls directed to ITS should go.
+        const fullItsObject = await client.getObject({
+            id: objectIds.its,
+            options: {
+                showContent: true,
+            },
+        });
+        objectIds.itsChannel = fullItsObject.data.content.fields.channel.fields.id.id;
     });
 
     it('should call register_transaction successfully', async () => {
@@ -161,20 +175,22 @@ describe.only('ITS', () => {
     it('should send interchain transfer successfully', async () => {
         // Approve the message to set trusted addresses
         const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
-
-        const payload = bcsStructs.its.MessageSetTrustedAddresses.serialize({
-            message_type: messageType,
-            trusted_addresses: {
-                trusted_chains: ['Ethereum'],
-                trusted_addresses: [arrayify('0x1234')],
-            },
+        // The payload is abi encoded, the trusted address data is bcs encoded.
+        const trustedAddressesData = bcsStructs.its.TrustedAddresses.serialize({
+            trusted_chains: ['Ethereum'],
+            trusted_addresses: [arrayify('0x1234')],
         }).toBytes();
+        const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [
+            messageType,
+            trustedAddressesData,
+        ]);
 
+        // This has to come from the trusted address of governance, and go to the its channel.
         const message = {
-            source_chain: 'Ethereum',
+            source_chain: governanceInfo.trustedSourceChain,
             message_id: '0x1234',
-            source_address: '0x1234',
-            destination_id: objectIds.gateway,
+            source_address: governanceInfo.trustedSourceAddress,
+            destination_id: objectIds.itsChannel,
             payload_hash: keccak256(payload),
         };
 
@@ -183,7 +199,7 @@ describe.only('ITS', () => {
         // Set trusted addresses
         const trustedAddressTxBuilder = new TxBuilder(client);
 
-        const approvedMessage = trustedAddressTxBuilder.moveCall({
+        const approvedMessage = await trustedAddressTxBuilder.moveCall({
             target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
             arguments: [
                 objectIds.gateway,
@@ -194,7 +210,7 @@ describe.only('ITS', () => {
                 hexlify(payload),
             ],
         });
-        trustedAddressTxBuilder.moveCall({
+        await trustedAddressTxBuilder.moveCall({
             target: `${deployments.its.packageId}::service::set_trusted_addresses`,
             arguments: [objectIds.its, objectIds.governance, approvedMessage],
         });
