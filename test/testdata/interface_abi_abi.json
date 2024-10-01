@@ -1,0 +1,161 @@
+{
+  "structs": {
+    "AbiReader": {
+      "name": "AbiReader",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "bytes",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "head",
+          "type": "u64"
+        },
+        {
+          "name": "pos",
+          "type": "u64"
+        }
+      ]
+    },
+    "AbiWriter": {
+      "name": "AbiWriter",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "bytes",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "pos",
+          "type": "u64"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new_reader": {
+      "name": "new_reader",
+      "visibility": "public",
+      "params": {
+        "bytes#0#0": "vector<u8>"
+      },
+      "returnType": "AbiReader"
+    },
+    "new_writer": {
+      "name": "new_writer",
+      "visibility": "public",
+      "params": {
+        "length#0#0": "u64"
+      },
+      "returnType": "AbiWriter"
+    },
+    "into_bytes": {
+      "name": "into_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "AbiWriter"
+      },
+      "returnType": "vector<u8>"
+    },
+    "into_remaining_bytes": {
+      "name": "into_remaining_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "AbiReader"
+      },
+      "returnType": "vector<u8>"
+    },
+    "read_u256": {
+      "name": "read_u256",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiReader"
+      },
+      "returnType": "u256"
+    },
+    "read_u8": {
+      "name": "read_u8",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiReader"
+      },
+      "returnType": "u8"
+    },
+    "read_bytes": {
+      "name": "read_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiReader"
+      },
+      "returnType": "vector<u8>"
+    },
+    "read_vector_u256": {
+      "name": "read_vector_u256",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiReader"
+      },
+      "returnType": "vector<u256>"
+    },
+    "read_vector_bytes": {
+      "name": "read_vector_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiReader"
+      },
+      "returnType": "vector<vector<u8>>"
+    },
+    "write_u256": {
+      "name": "write_u256",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiWriter",
+        "var#0#0": "u256"
+      },
+      "returnType": "&mut AbiWriter"
+    },
+    "write_u8": {
+      "name": "write_u8",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiWriter",
+        "var#0#0": "u8"
+      },
+      "returnType": "&mut AbiWriter"
+    },
+    "write_bytes": {
+      "name": "write_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiWriter",
+        "var#0#0": "vector<u8>"
+      },
+      "returnType": "&mut AbiWriter"
+    },
+    "write_vector_u256": {
+      "name": "write_vector_u256",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiWriter",
+        "var#0#0": "vector<u256>"
+      },
+      "returnType": "&mut AbiWriter"
+    },
+    "write_vector_bytes": {
+      "name": "write_vector_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut AbiWriter",
+        "var#0#0": "vector<vector<u8>>"
+      },
+      "returnType": "&mut AbiWriter"
+    }
+  }
+}

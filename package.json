@@ -24,7 +24,8 @@
     "release": "npm run build && changeset publish",
     "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/*.ts' './test/*.js'"
+    "prettier": "prettier --write './src/*.ts' './test/*.js'",
+    "docs": "./scripts/docs.sh"
   },
   "keywords": [
     "axelar",
@@ -53,6 +54,8 @@
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "chai": "^4.3.7",
+    "chalk": "^4.1.2",
+    "diff": "^7.0.0",
     "dotenv": "^16.3.1",
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",
