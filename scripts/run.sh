@@ -1,14 +1,14 @@
 #!/bin/bash
 
-if [[ ${#} -ne 1 || ( "$1" != "build" && "$1" != "test" ) ]]; then
-    echo "Usage: $0 [build|test]"
+if [[ ${#} -lt 1 || ( "$1" != "build" && "$1" != "test" ) ]]; then
+    echo "Usage: $0 [build|test] [args...]"
     exit 1
 fi
 
 exit_code=0
 
 for module in ./move/*/; do
-    if ! sui move "$1" --lint --warnings-are-errors --path "$module"; then
+    if ! sui move "$1" "${@:2}" --lint --warnings-are-errors --path "$module"; then
         exit_code=1
     fi
 done

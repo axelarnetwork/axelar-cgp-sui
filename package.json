@@ -24,7 +24,8 @@
     "release": "npm run build && changeset publish",
     "cs": "changeset",
     "lint": "eslint --fix './src/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/*.ts' './test/*.js'"
+    "prettier": "prettier --write './src/*.ts' './test/*.js'",
+    "docs": "./scripts/docs.sh"
   },
   "keywords": [
     "axelar",
