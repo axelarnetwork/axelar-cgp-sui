@@ -10,9 +10,9 @@ use sui::hex;
 use sui::sui::SUI;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::discovery::RelayerDiscovery;
+use relayer_discovery::discovery::RelayerDiscovery;
 use axelar_gateway::gateway::{Self, Gateway};
-use axelar_gateway::transaction;
+use relayer_discovery::transaction;
 
 use gas_service::gas_service::GasService;
 

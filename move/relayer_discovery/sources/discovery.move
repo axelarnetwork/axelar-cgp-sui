@@ -4,7 +4,7 @@
 /// Warning: this solution does allow for any transaction to be executed and
 /// should be treated as a reference and a temporary solution until there's a
 /// proper discovery / execution mechanism in place.
-module axelar_gateway::discovery;
+module relayer_discovery::discovery;
 
 use std::ascii;
 
@@ -13,8 +13,9 @@ use sui::versioned::{Self, Versioned};
 use version_control::version_control::{Self, VersionControl};
 
 use axelar_gateway::channel::Channel;
-use axelar_gateway::transaction::Transaction;
-use axelar_gateway::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
+
+use relayer_discovery::transaction::Transaction;
+use relayer_discovery::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
 
 /// -------
 /// Version
@@ -124,7 +125,7 @@ fun version_control(): VersionControl {
 }
 
 #[test_only]
-use axelar_gateway::transaction;
+use relayer_discovery::transaction;
 
 #[test_only]
 public fun new(ctx: &mut TxContext): RelayerDiscovery {

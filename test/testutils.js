@@ -207,6 +207,7 @@ async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
 
 async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInfo, executeOptions) {
     const axelarPackageId = gatewayInfo.packageId;
+    const discoveryPackageId = gatewayInfo.discoveryPackageId;
     const gateway = gatewayInfo.gateway;
     const discovery = gatewayInfo.discovery;
 
@@ -219,7 +220,7 @@ async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInf
     let moveCalls = [
         {
             function: {
-                package_id: axelarPackageId,
+                package_id: discoveryPackageId,
                 module_name: 'discovery',
                 name: 'get_transaction',
             },
