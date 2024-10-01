@@ -70,7 +70,6 @@ public fun test_default() {
     assert!(default.length() == LENGTH, 1);
 }
 
-
 #[test]
 public fun test_from_address() {
     let addr = @0x1234;
