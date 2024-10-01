@@ -1,0 +1,27 @@
+{
+  "structs": {
+    "WeightedSigners": {
+      "name": "WeightedSigners",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "signers",
+          "type": "vector<WeightedSigner>"
+        },
+        {
+          "name": "threshold",
+          "type": "u128"
+        },
+        {
+          "name": "nonce",
+          "type": "Bytes32"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
