@@ -976,7 +976,6 @@ fun test_is_message_approved() {
         message_id,
     ), 1);
 
-
     sui::test_utils::destroy(gateway);
 }
 
