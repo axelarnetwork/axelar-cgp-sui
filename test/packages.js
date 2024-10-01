@@ -4,6 +4,7 @@ const chai = require('chai');
 const { expect } = chai;
 const { execSync } = require('child_process');
 const { goldenTest } = require('./testutils');
+const toml = require('smol-toml');
 
 describe('Packages', () => {
     const moveDir = path.resolve(__dirname, '../move');
@@ -15,7 +16,7 @@ describe('Packages', () => {
     packages.forEach((packageName) => {
         describe(`${packageName}`, () => {
             const packageDir = path.join(moveDir, packageName);
-            const moveJson = toml.parse(fs.readFileSync(`${packageDir}/Move.toml`, 'utf8'));
+            const moveJson = toml.parse(fs.readFileSync(path.join(packageDir, 'Move.toml'), 'utf8'));
             const buildDir = path.join(packageDir, 'build', moveJson.package.name, 'bytecode_modules');
 
             if (!fs.existsSync(buildDir)) {
