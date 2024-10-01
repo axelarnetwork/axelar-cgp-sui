@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const chai = require('chai');
+const { expect } = chai;
 const { execSync } = require('child_process');
 const { goldenTest } = require('./testutils');
 
@@ -13,8 +15,12 @@ describe('Packages', () => {
     packages.forEach((packageName) => {
         describe(`${packageName}`, () => {
             const packageDir = path.join(moveDir, packageName);
+            const movePackageName = packageName
+                .split('_')
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join('');
 
-            const buildDir = path.join(packageDir, 'build', packageName.replace('_', ''), 'bytecode_modules');
+            const buildDir = path.join(packageDir, 'build', movePackageName, 'bytecode_modules');
 
             if (!fs.existsSync(buildDir)) {
                 // Build directory does not exist, perhaps package has not been built
@@ -24,6 +30,8 @@ describe('Packages', () => {
             const mvFiles = fs.readdirSync(buildDir).filter((file) => {
                 return path.extname(file) === '.mv';
             });
+
+            expect(mvFiles.length).to.be.greaterThan(0);
 
             mvFiles.forEach((mvFile) => {
                 const moduleName = path.basename(mvFile, '.mv');
