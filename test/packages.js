@@ -15,16 +15,12 @@ describe('Packages', () => {
     packages.forEach((packageName) => {
         describe(`${packageName}`, () => {
             const packageDir = path.join(moveDir, packageName);
-            const movePackageName = packageName
-                .split('_')
-                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join('');
-
-            const buildDir = path.join(packageDir, 'build', movePackageName, 'bytecode_modules');
+            const moveJson = toml.parse(fs.readFileSync(`${packageDir}/Move.toml`, 'utf8'));
+            const buildDir = path.join(packageDir, 'build', moveJson.package.name, 'bytecode_modules');
 
             if (!fs.existsSync(buildDir)) {
                 // Build directory does not exist, perhaps package has not been built
-                throw new Error(`Build directory not found for package ${packageName}`);
+                throw new Error(`Build directory ${buildDir} not found for package ${packageName}`);
             }
 
             const mvFiles = fs.readdirSync(buildDir).filter((file) => {
