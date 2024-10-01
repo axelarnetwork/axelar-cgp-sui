@@ -18,8 +18,7 @@ describe('Packages', () => {
 
             if (!fs.existsSync(buildDir)) {
                 // Build directory does not exist, perhaps package has not been built
-                console.warn(`Build directory not found for package ${packageName}, skipping`);
-                return;
+                throw new Error(`Build directory not found for package ${packageName}`);
             }
 
             const mvFiles = fs.readdirSync(buildDir).filter((file) => {

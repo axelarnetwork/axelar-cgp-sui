@@ -18,16 +18,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Sui dependencies
-      # This step ensures that the "LITERAL" value is given to the action, using `jq` sends it uninterepted to the action.
-      - name: Setup the required tools (sui, nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-sui: 'true'
           install-nodejs: 'true'
 
       - name: Build TS and Move Modules
-        run: npm run build
+        run: npm run build && ls ./move/*/build/*/bytecode_modules
 
       - name: Initialize Sui Config
         run: echo -e "y\n\n1" | sui client envs
