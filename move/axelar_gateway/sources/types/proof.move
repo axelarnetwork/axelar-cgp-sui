@@ -163,6 +163,7 @@ public(package) fun dummy(): Proof {
     }
 }
 
+#[test_only]
 public(package) fun generate_proof(weighted_signers: WeightedSigners, message_to_sign: &vector<u8>, keypairs: &vector<ecdsa::KeyPair>): Proof {
     let signatures = keypairs.map_ref!(|keypair| new_signature(
         ecdsa::secp256k1_sign(keypair.private_key(), message_to_sign, 0, true)
