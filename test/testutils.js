@@ -100,6 +100,7 @@ async function expectEvent(builder, keypair, eventData = {}) {
  *
  * @param {object} data Arbitrary data to be either written to a golden file
  *  or compared to an existing golden file, depending on whether `GOLDEN_TESTS` env var is set or not.
+ * @param {string} name Name of the test. The golden file will be stored at `testdata/${name}.json`
  */
 function goldenTest(data, name) {
     const goldenDir = path.resolve(__dirname, 'testdata');
@@ -133,7 +134,7 @@ function goldenTest(data, name) {
 
             console.log();
 
-            expect(false).to.be.true;
+            expect(false).to.be.true(`Public interface for ${name} does not match golden file`);
         }
     }
 }
