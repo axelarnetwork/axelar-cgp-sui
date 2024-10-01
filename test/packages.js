@@ -31,7 +31,7 @@ describe('Packages', () => {
                 return path.extname(file) === '.mv';
             });
 
-            expect(mvFiles.length).to.be.greaterThan(0);
+            expect(mvFiles.length).to.be.gt(0);
 
             mvFiles.forEach((mvFile) => {
                 const moduleName = path.basename(mvFile, '.mv');
