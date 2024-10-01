@@ -216,7 +216,6 @@ fun test_validate_threshold_invalid_threshold1() {
     }.validate_threshold();
 }
 
-
 #[test]
 #[expected_failure(abort_code = EInvalidThreshold)]
 fun test_validate_threshold_invalid_threshold2() {
