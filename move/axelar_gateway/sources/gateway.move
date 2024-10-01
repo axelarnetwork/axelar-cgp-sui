@@ -652,10 +652,7 @@ fun test_approve_messages() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
 
     self.approve_messages(message_data, bcs::to_bytes(&proof));
     
@@ -702,10 +699,7 @@ fun test_approve_messages_remaining_data() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
     self.approve_messages(message_data, proof_data);
@@ -762,10 +756,7 @@ fun test_rotate_signers() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
     self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
@@ -776,7 +767,7 @@ fun test_rotate_signers() {
 
 #[test]
 #[expected_failure]
-fun test_rotate_signers_remaining_data_1() {
+fun test_rotate_signers_remaining_data_message_data() {
     let ctx = &mut sui::tx_context::dummy();
     let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
     let weighted_signers = weighted_signers::create_for_testing(
@@ -824,10 +815,7 @@ fun test_rotate_signers_remaining_data_1() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
     self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
@@ -838,7 +826,7 @@ fun test_rotate_signers_remaining_data_1() {
 
 #[test]
 #[expected_failure]
-fun test_rotate_signers_remaining_data_2() {
+fun test_rotate_signers_remaining_data_proof_data() {
     let ctx = &mut sui::tx_context::dummy();
     let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
     let weighted_signers = weighted_signers::create_for_testing(
@@ -885,10 +873,7 @@ fun test_rotate_signers_remaining_data_2() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
 
@@ -951,10 +936,7 @@ fun test_rotate_signers_not_latest_signers() {
         weighted_signers.hash(),
         data_hash,
     ));
-    let signature = axelar_gateway::proof::new_signature(
-        sui::ecdsa_k1::secp256k1_sign(keypair.private_key(), &message_to_sign, 0, true)
-    );
-    let proof = axelar_gateway::proof::create_for_testing(weighted_signers, vector[signature]);
+    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
     self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);

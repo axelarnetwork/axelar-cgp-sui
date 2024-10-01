@@ -138,8 +138,11 @@ public(package) fun peel(bcs: &mut BCS): Proof {
     }
 }
 
+// ---------
+// Test Only
+// ---------
 #[test_only]
-public fun create_for_testing(
+public(package) fun create_for_testing(
     signers: WeightedSigners,
     signatures: vector<Signature>,
 ): Proof {
@@ -150,7 +153,7 @@ public fun create_for_testing(
 }
 
 #[test_only]
-public fun dummy(): Proof {
+public(package) fun dummy(): Proof {
     let mut signature = sui::address::to_bytes(@0x01);
     signature.append(sui::address::to_bytes(@0x23));
     signature.push_back(2);
@@ -160,6 +163,16 @@ public fun dummy(): Proof {
     }
 }
 
+public(package) fun generate_proof(weighted_signers: WeightedSigners, message_to_sign: &vector<u8>, keypairs: &vector<ecdsa::KeyPair>): Proof {
+    let signatures = keypairs.map_ref!(|keypair| new_signature(
+        ecdsa::secp256k1_sign(keypair.private_key(), message_to_sign, 0, true)
+    ));
+    create_for_testing(weighted_signers, signatures)
+}
+
+// -----
+// Tests
+// -----
 #[test]
 fun test_getters() {
     let proof = dummy();
@@ -190,7 +203,7 @@ fun test_recover_pub_key() {
 
 #[test]
 fun test_validate() {
-    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
+    let mut keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
     let weights = vector[123, 234, 456];
     let message = @0x5678.to_bytes();
@@ -201,10 +214,8 @@ fun test_validate() {
         weights[0] + weights[2],
         nonce,
     );
-    let signatures = keypairs.map!(|keypair| new_signature(
-        ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true)
-    ));
-    let proof = create_for_testing(weighted_signers, vector[signatures[0], signatures[2]]);
+    keypairs.remove(1);
+    let proof = generate_proof(weighted_signers, &message, &keypairs);
     proof.validate(message);
 }
 
