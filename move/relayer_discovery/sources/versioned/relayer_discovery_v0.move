@@ -107,4 +107,3 @@ fun test_remove_transaction_channel_not_found() {
     self.remove_transaction(object::id_from_address(@0x1));
     self.destroy_for_testing();
 }
-
