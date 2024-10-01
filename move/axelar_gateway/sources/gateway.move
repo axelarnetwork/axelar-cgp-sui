@@ -597,16 +597,20 @@ fun test_take_approved_message() {
         destination_id,
         payload,
     );
-    assert!(approved_message.approved_message_source_chain() == source_chain, 0);
-    assert!(approved_message.approved_message_message_id() == message_id, 1);
-    assert!(approved_message.approved_message_source_address() == source_address, 2);
-    assert!(approved_message.approved_message_destination_id() == destination_id, 3);
-    assert!(approved_message.approved_message_payload() == payload, 4);
+    let expected_approved_message = axelar_gateway::channel::create_approved_message(
+        source_chain,
+        message_id,
+        source_address,
+        destination_id,
+        payload,
+    );
+    assert!(&approved_message == &expected_approved_message, 0);
     
     
     gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
+    expected_approved_message.destroy_for_testing();
     gateway.destroy_for_testing();
 }
 
@@ -639,19 +643,8 @@ fun test_approve_messages() {
         &clock,
         ctx,
     );
-    let source_chain = ascii::string(b"Source Chain");
-    let source_address = ascii::string(b"Source Address");
-    let message_id = ascii::string(b"Message Id");
-    let destination_id = @0x4;
-    let payload_hash = bytes32::new(@0x5);
     let message_data = bcs::to_bytes(&vector<axelar_gateway::message::Message>[
-        axelar_gateway::message::new(
-            source_chain,
-            message_id,
-            source_address,
-            destination_id,
-            payload_hash,
-        )
+        axelar_gateway::message::dummy()
     ]);
     let data_hash = gateway_v0::approve_messages_data_hash(message_data);
     let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
@@ -700,19 +693,8 @@ fun test_approve_messages_remaining_data() {
         &clock,
         ctx,
     );
-    let source_chain = ascii::string(b"Source Chain");
-    let source_address = ascii::string(b"Source Address");
-    let message_id = ascii::string(b"Message Id");
-    let destination_id = @0x4;
-    let payload_hash = bytes32::new(@0x5);
-    let message_data = bcs::to_bytes(&vector<axelar_gateway::message::Message>[
-        axelar_gateway::message::new(
-            source_chain,
-            message_id,
-            source_address,
-            destination_id,
-            payload_hash,
-        )
+    let message_data = bcs::to_bytes(&vector[
+        axelar_gateway::message::dummy()
     ]);
     let data_hash = gateway_v0::approve_messages_data_hash(message_data);
     let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(

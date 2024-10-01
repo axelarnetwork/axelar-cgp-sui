@@ -74,3 +74,22 @@ public(package) fun command_id(self: &Message): Bytes32 {
 public(package) fun hash(self: &Message): Bytes32 {
     bytes32::from_bytes(hash::keccak256(&bcs::to_bytes(self)))
 }
+
+// ---------
+// Test Only
+// ---------
+#[test_only]
+public(package) fun dummy(): Message {
+    let source_chain = std::ascii::string(b"Source Chain");
+    let source_address = std::ascii::string(b"Source Address");
+    let message_id = std::ascii::string(b"Message Id");
+    let destination_id = @0x4;
+    let payload_hash = bytes32::new(@0x5);
+    Message {
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            payload_hash,
+    }
+}
