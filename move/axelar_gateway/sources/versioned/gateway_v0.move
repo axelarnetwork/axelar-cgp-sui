@@ -293,7 +293,6 @@ public(package) fun signers_mut(
     &mut self.signers
 }
 
-
 #[test_only]
 public(package) fun destroy_for_testing(
     self: GatewayV0,
