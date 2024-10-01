@@ -77,7 +77,3 @@ public fun test_from_address() {
     assert!(bytes32.bytes == addr, 0);
     assert!(bytes32.length() == LENGTH, 1);
 }
-
-
-
-
