@@ -3,11 +3,13 @@ const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
+const { fromB64 } = require('@mysten/bcs')
 const chai = require('chai');
 const { expect } = chai;
 const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
+        gmp: { Singleton },
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
@@ -15,6 +17,7 @@ const secp256k1 = require('secp256k1');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 const clock = '0x6';
+
 async function publishPackage(client, keypair, packageName) {
     const compileDir = `${__dirname}/../move_compile`;
     copyMovePackage(packageName, null, compileDir);
@@ -269,12 +272,29 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
         target: decodeDescription(moveCallInfo.function),
         arguments: decodeArgs(moveCallInfo.arguments, tx),
         typeArguments: moveCallInfo.type_arguments,
-    };
+        getSingletonChannelId};
 }
 
 function findObjectId(tx, objectType, type = 'created') {
     return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType))?.objectId;
 }
+
+const getBcsBytesByObjectId = async (client, objectId) => {
+  const response = await client.getObject({
+      id: objectId,
+      options: {
+          showBcs: true,
+      },
+  });
+
+  return fromB64(response.data.bcs.bcsBytes);
+};
+
+const getSingletonChannelId = async (client, singletonObjectId) => {
+  const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
+  const data = Singleton.parse(bcsBytes);
+  return '0x' + data.channel.id;
+};
 
 module.exports = {
     clock,
@@ -289,4 +309,6 @@ module.exports = {
     approveAndExecuteMessage,
     generateEd25519Keypairs,
     calculateNextSigners,
+    getBcsBytesByObjectId,
+    getSingletonChannelId,
 };
