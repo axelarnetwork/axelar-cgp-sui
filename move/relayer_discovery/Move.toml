@@ -1,15 +1,13 @@
 [package]
-name = "Example"
+name = "RelayerDiscovery"
 version = "0.1.0"
 edition = "2024.beta"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.32.2" }
-AxelarGateway = { local = "../axelar_gateway" }
-GasService = { local = "../gas_service" }
-Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
-RelayerDiscovery = { local = "../relayer_discovery" }
+AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-example = "0xa9"
+relayer_discovery = "0xa2"
+clock = "0x6"

@@ -3,8 +3,8 @@ module squid::discovery {
 
     use sui::bcs;
 
-    use axelar_gateway::discovery::RelayerDiscovery;
-    use axelar_gateway::transaction::{Self, MoveCall, Transaction};
+    use relayer_discovery::discovery::RelayerDiscovery;
+    use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 
     use its::its::ITS;
 

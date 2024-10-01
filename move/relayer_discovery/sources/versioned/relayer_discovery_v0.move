@@ -1,10 +1,10 @@
-module axelar_gateway::relayer_discovery_v0;
+module relayer_discovery::relayer_discovery_v0;
 
 use sui::table::{Self, Table};
 
 use version_control::version_control::VersionControl;
 
-use axelar_gateway::transaction::Transaction;
+use relayer_discovery::transaction::Transaction;
 
 // -------
 // Structs

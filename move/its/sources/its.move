@@ -12,7 +12,7 @@ module its::its {
     use version_control::version_control::{Self, VersionControl};
 
     use axelar_gateway::channel::Channel;
-    use axelar_gateway::discovery::RelayerDiscovery;
+    use relayer_discovery::discovery::RelayerDiscovery;
 
     use its::token_id::{Self, TokenId, UnregisteredTokenId};
     use its::address_tracker::{Self, InterchainAddressTracker};

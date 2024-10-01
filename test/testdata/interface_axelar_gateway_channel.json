@@ -1,0 +1,52 @@
+{
+  "structs": {
+    "Channel": {
+      "name": "Channel",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new": {
+      "name": "new",
+      "visibility": "public",
+      "params": {
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "Channel"
+    },
+    "id": {
+      "name": "id",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&Channel"
+      },
+      "returnType": "ID"
+    },
+    "to_address": {
+      "name": "to_address",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&Channel"
+      },
+      "returnType": "address"
+    },
+    "consume_approved_message": {
+      "name": "consume_approved_message",
+      "visibility": "public",
+      "params": {
+        "channel#0#0": "&Channel",
+        "approved_message#0#0": "ApprovedMessage"
+      },
+      "returnType": "String * String * String * vector<u8>"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-module axelar_gateway::transaction;
+module relayer_discovery::transaction;
 
 use std::ascii::{Self, String};
 use std::type_name;
