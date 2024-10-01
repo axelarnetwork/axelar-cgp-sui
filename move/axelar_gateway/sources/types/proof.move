@@ -190,34 +190,21 @@ fun test_recover_pub_key() {
 
 #[test]
 fun test_validate() {
-    let keypair1 = ecdsa::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
-    let keypair2 = ecdsa::secp256k1_keypair_from_seed(&@0x5678.to_bytes());
-    let keypair3 = ecdsa::secp256k1_keypair_from_seed(&@0x9abc.to_bytes());
-    let pub_key1 = *keypair1.public_key();
-    let pub_key2 = *keypair2.public_key();
-    let pub_key3 = *keypair3.public_key();
+    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
+    let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
+    let weights = vector[123, 234, 456];
     let message = @0x5678.to_bytes();
-    let weight1 = 123;
-    let weight2 = 234;
-    let weight3 = 345;
     let nonce = axelar_gateway::bytes32::new(@0x0123);
 
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
-        vector[
-            axelar_gateway::weighted_signer::new(pub_key1, weight1),
-            axelar_gateway::weighted_signer::new(pub_key2, weight2),
-            axelar_gateway::weighted_signer::new(pub_key3, weight3),
-        ],
-        weight1 + weight3,
+        vector[0, 1, 2].map!(|index| axelar_gateway::weighted_signer::new(pub_keys[index], weights[index])),
+        weights[0] + weights[2],
         nonce,
     );
-    let signature1 = new_signature(
-        ecdsa::secp256k1_sign(keypair1.private_key(), &message, 0, true)
-    );
-    let signature3 = new_signature(
-        ecdsa::secp256k1_sign(keypair3.private_key(), &message, 0, true)
-    );
-    let proof = create_for_testing(weighted_signers, vector[signature1, signature3]);
+    let signatures = keypairs.map!(|keypair| new_signature(
+        ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true)
+    ));
+    let proof = create_for_testing(weighted_signers, vector[signatures[0], signatures[2]]);
     proof.validate(message);
 }
 
@@ -239,52 +226,41 @@ fun test_validate_low_signature_weight_1() {
 #[test]
 #[expected_failure(abort_code = ELowSignaturesWeight)]
 fun test_validate_low_signature_weight_2() {
-    let keypair1 = ecdsa::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
-    let keypair2 = ecdsa::secp256k1_keypair_from_seed(&@0x5678.to_bytes());
-    let pub_key1 = *keypair1.public_key();
-    let pub_key2 = *keypair2.public_key();
+    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
+    let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
+    let weights = vector[123, 234, 456];
     let message = @0x5678.to_bytes();
-    let weight1 = 123;
-    let weight2 = 123;
     let nonce = axelar_gateway::bytes32::new(@0x0123);
-    let signature1 = new_signature(
-        ecdsa::secp256k1_sign(keypair1.private_key(), &message, 0, true)
-    );
-    let signature2 = new_signature(
-        ecdsa::secp256k1_sign(keypair2.private_key(), &message, 0, true)
-    );
+
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
-        vector[
-            axelar_gateway::weighted_signer::new(pub_key1, weight1),
-            axelar_gateway::weighted_signer::new(pub_key2, weight2),
-        ],
-        weight1 + weight2 + 1,
+        vector[0, 1, 2].map!(|index| axelar_gateway::weighted_signer::new(pub_keys[index], weights[index])),
+        weights[0] + weights[2] + 1,
         nonce,
     );
-    let proof = create_for_testing(weighted_signers, vector[signature1, signature2]);
+    let signatures = keypairs.map!(|keypair| new_signature(
+        ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true)
+    ));
+    let proof = create_for_testing(weighted_signers, vector[signatures[0], signatures[2]]);
     proof.validate(message);
 }
 
 #[test]
 #[expected_failure(abort_code = ESignerNotFound)]
 fun test_validate_signer_not_found() {
-    let keypair1 = ecdsa::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
-    let keypair2 = ecdsa::secp256k1_keypair_from_seed(&@0x5678.to_bytes());
-    let pub_key1 = *keypair1.public_key();
+    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
+    let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
+    let weights = vector[123, 234, 456];
     let message = @0x5678.to_bytes();
-    let weight1 = 123;
     let nonce = axelar_gateway::bytes32::new(@0x0123);
 
-    let signature2 = new_signature(
-        ecdsa::secp256k1_sign(keypair2.private_key(), &message, 0, true)
-    );
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
-        vector[
-            axelar_gateway::weighted_signer::new(pub_key1, weight1),
-        ],
-        weight1,
+        vector[0, 2].map!(|index| axelar_gateway::weighted_signer::new(pub_keys[index], weights[index])),
+        weights[0] + weights[2],
         nonce,
     );
-    let proof = create_for_testing(weighted_signers, vector[signature2]);
+    let signatures = keypairs.map!(|keypair| new_signature(
+        ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true)
+    ));
+    let proof = create_for_testing(weighted_signers, vector[signatures[1]]);
     proof.validate(message);
 }
