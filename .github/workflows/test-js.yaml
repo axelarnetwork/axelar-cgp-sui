@@ -25,7 +25,7 @@ jobs:
           install-nodejs: 'true'
 
       - name: Build TS and Move Modules
-        run: npm run build && ls ./move/*/build/*/bytecode_modules
+        run: npm run build
 
       - name: Initialize Sui Config
         run: echo -e "y\n\n1" | sui client envs
