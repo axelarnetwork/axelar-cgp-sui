@@ -438,9 +438,9 @@ fun test_peel_messages() {
 
     let messages = peel_messages(bytes);
 
-    assert!(messages.length() == 2, 0);
-    assert!(messages[0] == message1, 1);
-    assert!(messages[1] == message2, 2);
+    assert!(messages.length() == 2);
+    assert!(messages[0] == message1);
+    assert!(messages[1] == message2);
 }
 
 #[test]

@@ -162,7 +162,7 @@ public fun dummy(): WeightedSigners {
 #[test]
 fun tent_nonce() {
     let weighted_signers = dummy();
-    assert!(weighted_signers.nonce() == bytes32::new(@3456), 0);
+    assert!(weighted_signers.nonce() == bytes32::new(@3456));
 }
 
 #[test]
@@ -198,7 +198,7 @@ fun test_validate_signers_invalid_signer_order() {
     let signer1 = axelar_gateway::weighted_signer::new(pub_key, 1);
     pub_key = @0x0.to_bytes();
     pub_key.push_back(1);
-    let signer2 = axelar_gateway::weighted_signer::new(pub_key, 2);
+    let signer2 = axelar_gateway::weighted_signer::new(pub_key, 1);
     WeightedSigners {
         signers: vector[signer1, signer2],
         threshold: 1,
@@ -221,7 +221,7 @@ fun test_validate_zero_threshold() {
 fun test_validate_threshold_above_weight_sum() {
     let mut pub_key = @0x0.to_bytes();
     pub_key.push_back(2);
-    let signer = axelar_gateway::weighted_signer::new(pub_key, 1);
+    let signer = axelar_gateway::weighted_signer::new(pub_key, 0);
     WeightedSigners {
         signers: vector[signer],
         threshold: 2,

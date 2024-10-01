@@ -201,9 +201,9 @@ fun test_new_function_from_bcs() {
     let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
 
     let function = new_function_from_bcs(&mut bcs::new(input));
-    assert!(function.package_id == package_id, 0);
-    assert!(function.module_name == module_name, 1);
-    assert!(function.name == name, 2);
+    assert!(function.package_id == package_id);
+    assert!(function.module_name == module_name);
+    assert!(function.name == name);
 }
 
 #[test]
@@ -219,11 +219,11 @@ fun test_new_move_call_from_bcs() {
     let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
 
     let transaction = new_move_call_from_bcs(&mut bcs::new(input));
-    assert!(transaction.function.package_id == package_id, 0);
-    assert!(transaction.function.module_name == module_name, 1);
-    assert!(transaction.function.name == name, 2);
-    assert!(transaction.arguments == arguments, 3);
-    assert!(transaction.type_arguments == type_arguments, 4);
+    assert!(transaction.function.package_id == package_id);
+    assert!(transaction.function.module_name == module_name);
+    assert!(transaction.function.name == name);
+    assert!(transaction.arguments == arguments);
+    assert!(transaction.type_arguments == type_arguments);
 }
 
 #[test]

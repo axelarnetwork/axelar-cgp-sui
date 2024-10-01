@@ -92,12 +92,12 @@ module its::coin_info {
 
         let coin_info = from_metadata(metadata, remote_decimals);
 
-        assert!(coin_info.name() == name, 0);
-        assert!(coin_info.symbol() == symbol, 1);
-        assert!(coin_info.decimals() == decimals, 2);
-        assert!(coin_info.remote_decimals() == remote_decimals, 3);
-        assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes, 4);
-        assert!(coin_info.scaling() == utils::pow(10, remote_decimals - decimals), 5);
+        assert!(coin_info.name() == name);
+        assert!(coin_info.symbol() == symbol);
+        assert!(coin_info.decimals() == decimals);
+        assert!(coin_info.remote_decimals() == remote_decimals);
+        assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes);
+        assert!(coin_info.scaling() == utils::pow(10, remote_decimals - decimals));
 
         sui::test_utils::destroy(coin_info);
     }

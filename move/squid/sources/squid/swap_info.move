@@ -116,10 +116,10 @@ module squid::swap_info {
 
         let mut swap_info = new(data, ctx);
 
-        assert!(swap_info.get_data_estimating() == swap1, 0);
-        assert!(swap_info.get_data_estimating() == swap2, 0);
-        assert!(swap_info.get_data_swapping() == swap1, 0);
-        assert!(swap_info.get_data_swapping() == swap2, 0);
+        assert!(swap_info.get_data_estimating() == swap1);
+        assert!(swap_info.get_data_estimating() == swap2);
+        assert!(swap_info.get_data_swapping() == swap1);
+        assert!(swap_info.get_data_swapping() == swap2);
 
         swap_info.finalize();
     }

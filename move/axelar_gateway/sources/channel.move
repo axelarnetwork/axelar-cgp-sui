@@ -193,7 +193,7 @@ fun test_new_and_destroy() {
 fun test_id() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    assert!(channel.id() == object::id(&channel), 0);
+    assert!(channel.id() == object::id(&channel));
     channel.destroy()
 }
 
@@ -201,7 +201,7 @@ fun test_id() {
 fun test_to_address() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    assert!(channel.to_address() == object::id_address(&channel), 0);
+    assert!(channel.to_address() == object::id_address(&channel));
     channel.destroy()
 }
 
@@ -227,11 +227,11 @@ fun test_create_approved_message() {
         destination_id,
         payload,
     } = approved_message;
-    assert!(source_chain == input_source_chain, 0);
-    assert!(message_id == input_message_id, 1);
-    assert!(source_address == input_source_address, 2);
-    assert!(destination_id == input_destination_id, 3);
-    assert!(payload == input_payload, 4);
+    assert!(source_chain == input_source_chain);
+    assert!(message_id == input_message_id);
+    assert!(source_address == input_source_address);
+    assert!(destination_id == input_destination_id);
+    assert!(payload == input_payload);
 }
 
 #[test]
@@ -259,10 +259,10 @@ fun test_consume_approved_message() {
         payload,
     ) = channel.consume_approved_message(approved_message);
 
-    assert!(source_chain == input_source_chain, 1);
-    assert!(message_id == input_message_id, 2);
-    assert!(source_address == input_source_address, 3);
-    assert!(payload == input_payload, 4);
+    assert!(source_chain == input_source_chain);
+    assert!(message_id == input_message_id);
+    assert!(source_address == input_source_address);
+    assert!(payload == input_payload);
 
     channel.destroy();
 }

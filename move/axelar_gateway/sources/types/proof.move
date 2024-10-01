@@ -178,12 +178,12 @@ public(package) fun generate_proof(weighted_signers: WeightedSigners, message_to
 fun test_getters() {
     let proof = dummy();
     
-    assert!(proof.signers() == axelar_gateway::weighted_signers::dummy(), 0);
+    assert!(proof.signers() == axelar_gateway::weighted_signers::dummy());
 
     let mut signature = sui::address::to_bytes(@0x01);
     signature.append(sui::address::to_bytes(@0x23));
     signature.push_back(2);
-    assert!(proof.signatures() == vector[Signature { bytes: signature }], 1);
+    assert!(proof.signatures() == vector[Signature { bytes: signature }]);
 }
 
 #[test]
@@ -199,7 +199,7 @@ fun test_recover_pub_key() {
     let signature = new_signature(
         ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true)
     );
-    assert!(signature.recover_pub_key(&message) == keypair.public_key(), 0);
+    assert!(signature.recover_pub_key(&message) == keypair.public_key());
 }
 
 #[test]

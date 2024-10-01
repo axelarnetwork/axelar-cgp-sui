@@ -78,9 +78,9 @@ fun test_new() {
             ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
-    assert!(version_control.allowed_functions.length() == 1, 0);
-    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()), 1);
-    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()), 2);
+    assert!(version_control.allowed_functions.length() == 1);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()));
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()));
 }
 
 #[test]
@@ -92,7 +92,7 @@ fun test_allowed_functions() {
             ].map!(|function_name| function_name.to_ascii_string()),
         ]
     );
-    assert!(version_control.allowed_functions == version_control.allowed_functions(), 0);
+    assert!(version_control.allowed_functions == version_control.allowed_functions());
 }
 
 #[test]
@@ -109,11 +109,11 @@ fun test_push_back() {
             b"function_name_1", b"function_name_2",
         ].map!(|function_name| function_name.to_ascii_string())
     );
-    assert!(version_control.allowed_functions.length() == 2, 0);
-    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()), 1);
-    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()), 2);
-    assert!(version_control.allowed_functions[1].contains(&b"function_name_1".to_ascii_string()), 1);
-    assert!(version_control.allowed_functions[1].contains(&b"function_name_2".to_ascii_string()), 2);
+    assert!(version_control.allowed_functions.length() == 2);
+    assert!(version_control.allowed_functions[0].contains(&b"function_name_1".to_ascii_string()));
+    assert!(!version_control.allowed_functions[0].contains(&b"function_name_2".to_ascii_string()));
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_1".to_ascii_string()));
+    assert!(version_control.allowed_functions[1].contains(&b"function_name_2".to_ascii_string()));
 }
 
 #[test]

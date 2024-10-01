@@ -117,12 +117,12 @@ fun test_pub_key() {
 fun verify_default_signer() {
     let signer = default();
 
-    assert!(signer.weight == 0, 0);
-    assert!(signer.pub_key.length() == PUB_KEY_LENGTH, 1);
+    assert!(signer.weight == 0);
+    assert!(signer.pub_key.length() == PUB_KEY_LENGTH);
 
     let mut i = 0;
     while (i < PUB_KEY_LENGTH) {
-        assert!(signer.pub_key[i] == 0, 2);
+        assert!(signer.pub_key[i] == 0);
         i = i + 1;
     }
 }
@@ -143,13 +143,13 @@ fun compare_weight_signers() {
     );
 
     // Less than
-    assert!(signer1.lt(&signer2), 0);
-    assert!(signer1.lt(&signer3), 2);
+    assert!(signer1.lt(&signer2));
+    assert!(signer1.lt(&signer3));
 
     // Not less than
-    assert!(!signer2.lt(&signer1), 1);
-    assert!(!signer3.lt(&signer1), 3);
+    assert!(!signer2.lt(&signer1));
+    assert!(!signer3.lt(&signer1));
 
     // Equal
-    assert!(!signer1.lt(&signer1), 4); // !(signer1 < signer1)
+    assert!(!signer1.lt(&signer1)); // !(signer1 < signer1)
 }

@@ -81,7 +81,7 @@ fun test_set_transaction_channel_not_found() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = dummy(ctx);
     let id = object::id_from_address(@0x1);
-    let transaction = axelar_gateway::transaction::new_transaction(
+    let transaction = relayer_discovery::transaction::new_transaction(
         true,
         vector[],
     );

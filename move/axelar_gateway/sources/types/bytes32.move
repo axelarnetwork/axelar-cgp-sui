@@ -58,22 +58,22 @@ public(package) fun peel(bcs: &mut BCS): Bytes32 {
 public fun test_new() {
     let actual = new(@0x1);
 
-    assert!(actual.to_bytes() == @0x1.to_bytes(), 0);
-    assert!(actual.length() == LENGTH, 1);
+    assert!(actual.to_bytes() == @0x1.to_bytes());
+    assert!(actual.length() == LENGTH);
 }
 
 #[test]
 public fun test_default() {
     let default = default();
 
-    assert!(default.bytes == @0x0, 0);
-    assert!(default.length() == LENGTH, 1);
+    assert!(default.bytes == @0x0);
+    assert!(default.length() == LENGTH);
 }
 
 #[test]
 public fun test_from_address() {
     let addr = @0x1234;
     let bytes32 = from_address(addr);
-    assert!(bytes32.bytes == addr, 0);
-    assert!(bytes32.length() == LENGTH, 1);
+    assert!(bytes32.bytes == addr);
+    assert!(bytes32.length() == LENGTH);
 }

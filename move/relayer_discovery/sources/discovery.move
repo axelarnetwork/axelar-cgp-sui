@@ -162,7 +162,7 @@ fun test_register_and_get() {
     self.register_transaction(&channel, input_transaction);
 
     let transaction = self.get_transaction(channel.id());
-    assert!(transaction == input_transaction, 0);
+    assert!(transaction == input_transaction);
 
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(channel);

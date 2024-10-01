@@ -405,7 +405,7 @@ fun test_setup() {
     let tx_effects = scenario.next_tx(@0x1);
     let shared = tx_effects.shared();
 
-    assert!(shared.length() == 1, 0);
+    assert!(shared.length() == 1);
 
     let gateway_id = shared[0];
     let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
@@ -422,7 +422,7 @@ fun test_setup() {
         _,
     ) = inner.destroy<GatewayV0>().destroy_for_testing();
 
-    assert!(operator == operator_result, 1);
+    assert!(operator == operator_result);
     messages.destroy_empty();
 
     let (
@@ -437,12 +437,12 @@ fun test_setup() {
     let signer_epoch = epoch_by_signers_hash.remove(initial_signers.hash());
     epoch_by_signers_hash.destroy_empty();
 
-    assert!(epoch == 1, 2);
-    assert!(signer_epoch == 1, 3);
-    assert!(bytes32::new(domain_separator) == domain_separator_result, 4);
-    assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
-    assert!(last_rotation_timestamp == timestamp, 6);
-    assert!(previous_signers_retention == previous_signers_retention_result, 7);
+    assert!(epoch == 1);
+    assert!(signer_epoch == 1);
+    assert!(bytes32::new(domain_separator) == domain_separator_result);
+    assert!(minimum_rotation_delay == minimum_rotation_delay_result);
+    assert!(last_rotation_timestamp == timestamp);
+    assert!(previous_signers_retention == previous_signers_retention_result);
 
     clock.destroy_for_testing();
     scenario.end();
@@ -482,7 +482,7 @@ fun test_setup_remaining_bytes() {
     let tx_effects = scenario.next_tx(@0x1);
     let shared = tx_effects.shared();
 
-    assert!(shared.length() == 1, 0);
+    assert!(shared.length() == 1);
 
     let gateway_id = shared[0];
     let gateway = scenario.take_shared_by_id<Gateway>(gateway_id);
@@ -499,7 +499,7 @@ fun test_setup_remaining_bytes() {
         _,
     ) = inner.destroy<GatewayV0>().destroy_for_testing();
 
-    assert!(operator == operator_result, 1);
+    assert!(operator == operator_result);
     messages.destroy_empty();
 
     let (
@@ -514,12 +514,12 @@ fun test_setup_remaining_bytes() {
     let signer_epoch = epoch_by_signers_hash.remove(initial_signers.hash());
     epoch_by_signers_hash.destroy_empty();
 
-    assert!(epoch == 1, 2);
-    assert!(signer_epoch == 1, 3);
-    assert!(bytes32::new(domain_separator) == domain_separator_result, 4);
-    assert!(minimum_rotation_delay == minimum_rotation_delay_result, 5);
-    assert!(last_rotation_timestamp == timestamp, 6);
-    assert!(previous_signers_retention == previous_signers_retention_result, 7);
+    assert!(epoch == 1);
+    assert!(signer_epoch == 1);
+    assert!(bytes32::new(domain_separator) == domain_separator_result);
+    assert!(minimum_rotation_delay == minimum_rotation_delay_result);
+    assert!(last_rotation_timestamp == timestamp);
+    assert!(previous_signers_retention == previous_signers_retention_result);
 
     clock.destroy_for_testing();
     scenario.end();
@@ -531,7 +531,7 @@ fun test_peel_weighted_signers() {
     let bytes = bcs::to_bytes(&signers);
     let result = utils::peel!(bytes, |bcs| weighted_signers::peel(bcs));
 
-    assert!(result == signers, 0);
+    assert!(result == signers);
 }
 
 #[test]
@@ -550,7 +550,7 @@ fun test_peel_proof() {
     let bytes = bcs::to_bytes(&proof);
     let result = utils::peel!(bytes, |bcs| axelar_gateway::proof::peel(bcs));
 
-    assert!(result == proof, 0);
+    assert!(result == proof);
 }
 
 #[test]
@@ -604,7 +604,7 @@ fun test_take_approved_message() {
         destination_id,
         payload,
     );
-    assert!(&approved_message == &expected_approved_message, 0);
+    assert!(&approved_message == &expected_approved_message);
     
     
     gateway.value_mut!(b"").messages_mut().remove(message.command_id());
@@ -970,11 +970,11 @@ fun test_is_message_approved() {
         source_address,
         destination_id,
         payload_hash,
-    ), 0);
+    ));
         assert!(!gateway.is_message_executed(
         source_chain,
         message_id,
-    ), 1);
+    ));
 
     sui::test_utils::destroy(gateway);
 }

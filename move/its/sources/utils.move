@@ -95,19 +95,19 @@ module its::utils {
     #[test]
     fun test_decode_metadata() {
         let (version, metadata) = decode_metadata(x"");
-        assert!(version == 0, 0);
-        assert!(metadata == x"", 1);
+        assert!(version == 0);
+        assert!(metadata == x"");
 
         let (version, metadata) = decode_metadata(x"012345");
-        assert!(version == 0, 3);
-        assert!(metadata == x"", 4);
+        assert!(version == 0);
+        assert!(metadata == x"");
 
         let (version, metadata) = decode_metadata(x"00000004");
-        assert!(version == 4, 5);
-        assert!(metadata == x"", 6);
+        assert!(version == 4);
+        assert!(metadata == x"");
 
         let (version, metadata) = decode_metadata(x"000000071ab768cf");
-        assert!(version == 7, 7);
-        assert!(metadata == x"1ab768cf", 8);
+        assert!(version == 7);
+        assert!(metadata == x"1ab768cf");
     }
 }
