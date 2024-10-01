@@ -67,6 +67,7 @@ describe.only('ITS', () => {
 
         objectIds = {
             its: findObjectId(deployments.its.publishTxn, 'ITS'),
+            itsChannel: findObjectId(deployments.its.publishTxn, 'Channel'),
             singleton: findObjectId(deployments.example.publishTxn, 'its_example::Singleton'),
             relayerDiscovery: findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery'),
             gasService: findObjectId(deployments.gas_service.publishTxn, 'GasService'),
@@ -172,27 +173,131 @@ describe.only('ITS', () => {
         expect(objectIds.tokenId).to.be.not.null;
     });
 
-    it('should send interchain transfer successfully', async () => {
-        // Approve the message to set trusted addresses
-        const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
-        // The payload is abi encoded, the trusted address data is bcs encoded.
-        const trustedAddressesData = bcsStructs.its.TrustedAddresses.serialize({
-            trusted_chains: ['Ethereum'],
-            trusted_addresses: [arrayify('0x1234')],
-        }).toBytes();
-        const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [
-            messageType,
-            trustedAddressesData,
-        ]);
-
-        // This has to come from the trusted address of governance, and go to the its channel.
+    it.skip('should send interchain transfer successfully', async () => {
+        const trustedSourceChain = 'Ethereum';
+        const trustedSourceAddress = '0x1234';
         const message = {
             source_chain: governanceInfo.trustedSourceChain,
             message_id: '0x1234',
             source_address: governanceInfo.trustedSourceAddress,
             destination_id: objectIds.itsChannel,
+        };
+        await setupTrustedAddresses(message, [trustedSourceAddress], [trustedSourceChain]);
+
+        // Send interchain transfer
+        const txBuilder = new TxBuilder(client);
+
+        const tx = txBuilder.tx;
+
+        const coin = tx.splitCoins(objectIds.coin, [1e9]);
+        const gas = tx.splitCoins(tx.gas, [1e8]);
+
+        const TokenId = await txBuilder.moveCall({
+            target: `${deployments.its.packageId}::token_id::from_u256`,
+            arguments: [objectIds.tokenId],
+        });
+
+        const { singleton, its, gasService } = objectIds;
+
+        await txBuilder.moveCall({
+            target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
+            arguments: [
+                singleton,
+                its,
+                gasService,
+                TokenId,
+                coin,
+                trustedSourceChain,
+                trustedSourceAddress,
+                '0x', // its token metadata
+                deployer.toSuiAddress(),
+                gas,
+                '0x', // gas params
+                clock,
+            ],
+        });
+
+        await txBuilder.signAndExecute(deployer);
+
+        // TODO: Add some validations?
+
+        //console.log(txResult);
+    });
+
+    it('should receive interchain transfer successfully', async () => {
+        const trustedSourceChain = 'Ethereum';
+        const trustedSourceAddress = '0x4567';
+        const trustedAddressMessage = {
+            source_chain: governanceInfo.trustedSourceChain,
+            message_id: '0x5678',
+            source_address: governanceInfo.trustedSourceAddress,
+            destination_id: objectIds.itsChannel,
+        };
+        await setupTrustedAddresses(trustedAddressMessage, [trustedSourceAddress], [trustedSourceChain]);
+
+        const messageType = 0;
+        const tokenId = objectIds.tokenId;
+        const sourceAddress = trustedSourceAddress;
+        const destinationAddress = objectIds.itsChannel;
+        const amount = 1e9;
+        const data = '0x1234';
+
+        // ITS transfer payload from Ethereum to Sui
+        const payload = defaultAbiCoder.encode(
+            ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+            [messageType, tokenId, sourceAddress, destinationAddress, amount, data],
+        );
+
+        const message = {
+            source_chain: trustedSourceChain,
+            message_id: '0x2345',
+            source_address: trustedSourceAddress,
+            destination_id: destinationAddress,
             payload_hash: keccak256(payload),
         };
+
+        await approveMessage(client, keypair, gatewayInfo, message);
+
+        console.log('approved', message);
+
+        const receiveTransferTxBuilder = new TxBuilder(client);
+
+        const approvedMessage = await receiveTransferTxBuilder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+            arguments: [
+                objectIds.gateway,
+                message.source_chain,
+                message.message_id,
+                message.source_address,
+                message.destination_id,
+                payload,
+            ],
+        });
+        await receiveTransferTxBuilder.moveCall({
+            target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
+            arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
+        });
+        const result = await receiveTransferTxBuilder.signAndExecute(deployer, {
+            showRawEffects: true,
+            showRawEvents: true,
+            showRawInput: true,
+        });
+        console.log(result);
+    });
+
+    async function setupTrustedAddresses(message, trustedAddresses, trustedChains = ['Ethereum']) {
+        // Approve the message to set trusted addresses
+        const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
+
+        //The payload is abi encoded, the trusted address data is bcs encoded.
+        const trustedAddressesData = bcsStructs.its.TrustedAddresses.serialize({
+            trusted_chains: trustedChains,
+            trusted_addresses: trustedAddresses.map((address) => arrayify(address)),
+        }).toBytes();
+
+        const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [messageType, trustedAddressesData]);
+
+        message.payload_hash = keccak256(payload);
 
         await approveMessage(client, keypair, gatewayInfo, message);
 
@@ -215,31 +320,7 @@ describe.only('ITS', () => {
             arguments: [objectIds.its, objectIds.governance, approvedMessage],
         });
         const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(deployer);
-        console.log(trustedAddressResult);
-
-        // Send interchain transfer
-        //const txBuilder = new TxBuilder(client);
-        //
-        //const tx = txBuilder.tx;
-        //
-        //const coin = tx.splitCoins(objectIds.coin, [1e9]);
-        //const gas = tx.splitCoins(tx.gas, [1e8]);
-        //
-        //const TokenId = await txBuilder.moveCall({
-        //    target: `${deployments.its.packageId}::token_id::from_u256`,
-        //    arguments: [objectIds.tokenId],
-        //});
-        //
-        //const { singleton, its, gasService } = objectIds;
-        //
-        //await txBuilder.moveCall({
-        //    target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
-        //    arguments: [singleton, its, gasService, TokenId, coin, 'Ethereum', '0x1234', '0x', deployer.toSuiAddress(), gas, '0x', clock],
-        //});
-        //
-        //// TODO: Fix trusted address error
-        //const txResult = await txBuilder.signAndExecute(deployer);
-        //
-        //console.log(txResult);
-    });
+        console.log('Set Trusted Addresses', trustedAddressResult);
+        //console.log(trustedAddressResult);
+    }
 });
