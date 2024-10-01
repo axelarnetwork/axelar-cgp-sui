@@ -178,6 +178,7 @@ public(package) fun approved_message_destination_id(self: &ApprovedMessage): add
 public(package) fun approved_message_payload(self: &ApprovedMessage): vector<u8> {
     self.payload
 }
+
 // -----
 // Tests
 // -----
