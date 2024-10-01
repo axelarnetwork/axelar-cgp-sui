@@ -195,7 +195,7 @@ function getITSStructs() {
 
     const TrustedAddresses = bcs.struct('TrustedAddresses', {
         trusted_chains: bcs.vector(bcs.string()),
-        trusted_addresses: bcs.vector(bcs.vector(bcs.u8())),
+        trusted_addresses: bcs.vector(bcs.string()),
     });
 
     const MessageSetTrustedAddresses = bcs.struct('MessageTrustedAddresses', {

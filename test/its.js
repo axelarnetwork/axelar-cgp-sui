@@ -9,7 +9,6 @@ This is a short spec for what there is to be done. You can check https://github.
 */
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const { bcs } = require('@mysten/sui/bcs');
 const {
     publishPackage,
     clock,
@@ -17,15 +16,13 @@ const {
     findObjectId,
     getRandomBytes32,
     calculateNextSigners,
-    hashMessage,
-    signMessage,
     approveMessage,
-    approveAndExecuteMessage,
+    getSingletonChannelId,
 } = require('./testutils');
 const { expect } = require('chai');
 const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
-const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, arrayify, hexlify, randomBytes } = require('ethers/lib/utils');
 
 // TODO: Remove `only` when finish testing
 describe.only('ITS', () => {
@@ -39,8 +36,8 @@ describe.only('ITS', () => {
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
     const minimumRotationDelay = 1000;
     const previousSignersRetention = 15;
-    let nonce = 0;
-    let governanceInfo = {
+    const nonce = 0;
+    const governanceInfo = {
         trustedSourceChain: 'Axelar',
         trustedSourceAddress: 'Governance Source Address',
         messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
@@ -63,17 +60,21 @@ describe.only('ITS', () => {
         for (const packageName of dependencies) {
             const result = await publishPackage(client, deployer, packageName);
             deployments[packageName] = result;
+
+            if (packageName === 'example') {
+                console.log('example digest', result.publishTxn.digest);
+            }
         }
 
         objectIds = {
             its: findObjectId(deployments.its.publishTxn, 'ITS'),
-            itsChannel: findObjectId(deployments.its.publishTxn, 'Channel'),
             singleton: findObjectId(deployments.example.publishTxn, 'its_example::Singleton'),
             relayerDiscovery: findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery'),
             gasService: findObjectId(deployments.gas_service.publishTxn, 'GasService'),
             upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
         };
+        console.log("singleton", objectIds.singleton);
 
         const txBuilder = new TxBuilder(client);
 
@@ -132,14 +133,7 @@ describe.only('ITS', () => {
         const receipt = await setupGovernanceTxBuilder.signAndExecute(deployer);
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
 
-        // The lines below find the ITS channelId, which is where all the remote contract calls directed to ITS should go.
-        const fullItsObject = await client.getObject({
-            id: objectIds.its,
-            options: {
-                showContent: true,
-            },
-        });
-        objectIds.itsChannel = fullItsObject.data.content.fields.channel.fields.id.id;
+        objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -150,7 +144,7 @@ describe.only('ITS', () => {
             arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, clock],
         });
 
-        let txResult = await txBuilder.signAndExecute(deployer);
+        const txResult = await txBuilder.signAndExecute(deployer);
 
         const discoveryTx = findObjectId(txResult, 'discovery::Transaction');
         expect(discoveryTx).to.be.not.null;
@@ -163,7 +157,7 @@ describe.only('ITS', () => {
             arguments: [objectIds.singleton, objectIds.its],
         });
 
-        let txResult = await txBuilder.signAndExecute(deployer, {
+        const txResult = await txBuilder.signAndExecute(deployer, {
             showEvents: true,
         });
 
@@ -174,12 +168,11 @@ describe.only('ITS', () => {
     });
 
     it.skip('should send interchain transfer successfully', async () => {
+        // Setup trusted addresses
         const trustedSourceChain = 'Ethereum';
-        const trustedSourceAddress = '0x1234';
+        const trustedSourceAddress = hexlify(randomBytes(20));
         const message = {
-            source_chain: governanceInfo.trustedSourceChain,
-            message_id: '0x1234',
-            source_address: governanceInfo.trustedSourceAddress,
+            message_id: hexlify(randomBytes(32)),
             destination_id: objectIds.itsChannel,
         };
         await setupTrustedAddresses(message, [trustedSourceAddress], [trustedSourceChain]);
@@ -221,44 +214,45 @@ describe.only('ITS', () => {
 
         // TODO: Add some validations?
 
-        //console.log(txResult);
+        // console.log(txResult);
     });
 
     it('should receive interchain transfer successfully', async () => {
-        const trustedSourceChain = 'Ethereum';
-        const trustedSourceAddress = '0x4567';
+        // Setup trusted addresses
+        const trustedSourceChain = 'Avalanche';
+        const trustedSourceAddress = hexlify(randomBytes(20));
         const trustedAddressMessage = {
-            source_chain: governanceInfo.trustedSourceChain,
-            message_id: '0x5678',
-            source_address: governanceInfo.trustedSourceAddress,
+            message_id: hexlify(randomBytes(32)),
             destination_id: objectIds.itsChannel,
         };
         await setupTrustedAddresses(trustedAddressMessage, [trustedSourceAddress], [trustedSourceChain]);
 
-        const messageType = 0;
-        const tokenId = objectIds.tokenId;
-        const sourceAddress = trustedSourceAddress;
-        const destinationAddress = objectIds.itsChannel;
-        const amount = 1e9;
-        const data = '0x1234';
+        // Approve ITS transfer message
+        const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
+        const tokenId = objectIds.tokenId; // The token ID to transfer
+        const sourceAddress = trustedSourceAddress; // Previously set as trusted address
+        const destinationAddress = objectIds.itsChannel // The ITS Channel ID. All ITS messages are sent to this channel
+        const amount = 1e9; // An amount to transfer
+        const data = '0x1234'; // Random data
+
+        // Channel ID for the ITS example. This will be encoded in the payload
+        const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
 
         // ITS transfer payload from Ethereum to Sui
         const payload = defaultAbiCoder.encode(
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
-            [messageType, tokenId, sourceAddress, destinationAddress, amount, data],
+            [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
         );
 
         const message = {
             source_chain: trustedSourceChain,
-            message_id: '0x2345',
+            message_id: hexlify(randomBytes(32)),
             source_address: trustedSourceAddress,
             destination_id: destinationAddress,
             payload_hash: keccak256(payload),
         };
 
         await approveMessage(client, keypair, gatewayInfo, message);
-
-        console.log('approved', message);
 
         const receiveTransferTxBuilder = new TxBuilder(client);
 
@@ -277,11 +271,8 @@ describe.only('ITS', () => {
             target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
             arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
         });
-        const result = await receiveTransferTxBuilder.signAndExecute(deployer, {
-            showRawEffects: true,
-            showRawEvents: true,
-            showRawInput: true,
-        });
+
+        const result = await receiveTransferTxBuilder.signAndExecute(deployer);
         console.log(result);
     });
 
@@ -289,14 +280,16 @@ describe.only('ITS', () => {
         // Approve the message to set trusted addresses
         const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
 
-        //The payload is abi encoded, the trusted address data is bcs encoded.
+        // The payload is abi encoded, the trusted address data is bcs encoded.
         const trustedAddressesData = bcsStructs.its.TrustedAddresses.serialize({
             trusted_chains: trustedChains,
-            trusted_addresses: trustedAddresses.map((address) => arrayify(address)),
+            trusted_addresses: trustedAddresses,
         }).toBytes();
 
         const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [messageType, trustedAddressesData]);
 
+        message.source_chain = governanceInfo.trustedSourceChain;
+        message.source_address = governanceInfo.trustedSourceAddress;
         message.payload_hash = keccak256(payload);
 
         await approveMessage(client, keypair, gatewayInfo, message);
@@ -320,7 +313,6 @@ describe.only('ITS', () => {
             arguments: [objectIds.its, objectIds.governance, approvedMessage],
         });
         const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(deployer);
-        console.log('Set Trusted Addresses', trustedAddressResult);
-        //console.log(trustedAddressResult);
+        return trustedAddressResult;
     }
 });
