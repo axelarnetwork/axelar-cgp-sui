@@ -210,7 +210,7 @@ fun test_validate() {
 
 #[test]
 #[expected_failure(abort_code = ELowSignaturesWeight)]
-fun test_validate_low_signature_weight_1() {
+fun test_validate_empty_signers() {
     let message = @0x5678.to_bytes();
     let nonce = axelar_gateway::bytes32::new(@0x0123);
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
