@@ -525,4 +525,3 @@ fun test_take_approved_message_message_not_approved() {
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(approved_message);
 }
-
