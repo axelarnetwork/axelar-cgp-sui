@@ -225,7 +225,7 @@ fun test_validate_empty_signers() {
 
 #[test]
 #[expected_failure(abort_code = ELowSignaturesWeight)]
-fun test_validate_low_signature_weight_2() {
+fun test_validate_low_signature_weight() {
     let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(|seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()));
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
     let weights = vector[123, 234, 456];
