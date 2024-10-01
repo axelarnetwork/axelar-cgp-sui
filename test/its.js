@@ -74,7 +74,7 @@ describe.only('ITS', () => {
             upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
         };
-        console.log("singleton", objectIds.singleton);
+        console.log('singleton', objectIds.singleton);
 
         const txBuilder = new TxBuilder(client);
 
@@ -132,7 +132,6 @@ describe.only('ITS', () => {
         });
         const receipt = await setupGovernanceTxBuilder.signAndExecute(deployer);
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
-
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
     });
 
@@ -167,7 +166,7 @@ describe.only('ITS', () => {
         expect(objectIds.tokenId).to.be.not.null;
     });
 
-    it.skip('should send interchain transfer successfully', async () => {
+    it('should send interchain transfer successfully', async () => {
         // Setup trusted addresses
         const trustedSourceChain = 'Ethereum';
         const trustedSourceAddress = hexlify(randomBytes(20));
@@ -175,6 +174,7 @@ describe.only('ITS', () => {
             message_id: hexlify(randomBytes(32)),
             destination_id: objectIds.itsChannel,
         };
+
         await setupTrustedAddresses(message, [trustedSourceAddress], [trustedSourceChain]);
 
         // Send interchain transfer
@@ -211,7 +211,6 @@ describe.only('ITS', () => {
         });
 
         await txBuilder.signAndExecute(deployer);
-
         // TODO: Add some validations?
 
         // console.log(txResult);
@@ -231,7 +230,7 @@ describe.only('ITS', () => {
         const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
         const tokenId = objectIds.tokenId; // The token ID to transfer
         const sourceAddress = trustedSourceAddress; // Previously set as trusted address
-        const destinationAddress = objectIds.itsChannel // The ITS Channel ID. All ITS messages are sent to this channel
+        const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
         const amount = 1e9; // An amount to transfer
         const data = '0x1234'; // Random data
 
@@ -273,7 +272,7 @@ describe.only('ITS', () => {
         });
 
         const result = await receiveTransferTxBuilder.signAndExecute(deployer);
-        console.log(result);
+        // TODO: check for events
     });
 
     async function setupTrustedAddresses(message, trustedAddresses, trustedChains = ['Ethereum']) {
