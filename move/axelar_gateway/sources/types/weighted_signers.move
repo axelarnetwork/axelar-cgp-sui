@@ -208,7 +208,7 @@ fun test_validate_signers_invalid_signer_order() {
 
 #[test]
 #[expected_failure(abort_code = EInvalidThreshold)]
-fun test_validate_threshold_invalid_threshold1() {
+fun test_validate_zero_threshold() {
     WeightedSigners {
         signers: vector[],
         threshold: 0,
