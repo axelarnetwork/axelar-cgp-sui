@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const chai = require('chai');
+const { expect } = chai;
 const { execSync } = require('child_process');
 const { goldenTest } = require('./testutils');
+const toml = require('smol-toml');
 
 describe('Packages', () => {
     const moveDir = path.resolve(__dirname, '../move');
@@ -13,18 +16,19 @@ describe('Packages', () => {
     packages.forEach((packageName) => {
         describe(`${packageName}`, () => {
             const packageDir = path.join(moveDir, packageName);
-
-            const buildDir = path.join(packageDir, 'build', packageName.replace('_', ''), 'bytecode_modules');
+            const moveJson = toml.parse(fs.readFileSync(path.join(packageDir, 'Move.toml'), 'utf8'));
+            const buildDir = path.join(packageDir, 'build', moveJson.package.name, 'bytecode_modules');
 
             if (!fs.existsSync(buildDir)) {
                 // Build directory does not exist, perhaps package has not been built
-                console.warn(`Build directory not found for package ${packageName}, skipping`);
-                return;
+                throw new Error(`Build directory ${buildDir} not found for package ${packageName}`);
             }
 
             const mvFiles = fs.readdirSync(buildDir).filter((file) => {
                 return path.extname(file) === '.mv';
             });
+
+            expect(mvFiles.length).to.be.gt(0);
 
             mvFiles.forEach((mvFile) => {
                 const moduleName = path.basename(mvFile, '.mv');

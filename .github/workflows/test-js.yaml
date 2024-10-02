@@ -2,10 +2,6 @@ name: Javascript Tests
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - releases/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,9 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Sui dependencies
-      # This step ensures that the "LITERAL" value is given to the action, using `jq` sends it uninterepted to the action.
-      - name: Setup the required tools (sui, nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-sui: 'true'
