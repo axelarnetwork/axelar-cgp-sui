@@ -11,11 +11,13 @@ use sui::sui::SUI;
 use sui::clock::Clock;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::discovery::{Self, RelayerDiscovery};
-use axelar_gateway::gateway;
+use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
 
 use gas_service::gas_service::GasService;
+
+use relayer_discovery::discovery::{Self, RelayerDiscovery};
+use relayer_discovery::transaction::{Self};
 
 use its::its::ITS;
 use its::service;
@@ -78,11 +80,11 @@ public fun register_transaction(
     arg = vector::singleton<u8>(0);
     arg.append(object::id_address(clock).to_bytes());
     arguments.push_back(arg);
-    let transaction = discovery::new_transaction(
+    let transaction = transaction::new_transaction(
         true,
         vector[
-            discovery::new_move_call(
-                discovery::new_function(
+            transaction::new_move_call(
+                transaction::new_function(
                     address::from_bytes(
                         hex::decode(
                             type_name::get<Singleton>().get_address().into_bytes(),
@@ -94,8 +96,8 @@ public fun register_transaction(
                 arguments,
                 vector[type_name::get<Singleton>().into_string()],
             ),
-			discovery::new_move_call(
-                discovery::new_function(
+			transaction::new_move_call(
+                transaction::new_function(
                     address::from_bytes(
                         hex::decode(
                             type_name::get<Singleton>().get_address().into_bytes(),
@@ -133,6 +135,7 @@ public fun register_coin(
 
 public fun deploy_remote_interchain_token(
 	its: &mut ITS,
+	gateway: &mut Gateway,
 	gas_service: &mut GasService,
 	destination_chain: String,
 	token_id: TokenId,
@@ -147,6 +150,7 @@ public fun deploy_remote_interchain_token(
     );
 
 	pay_gas_and_send_message(
+		gateway,
 		gas_service,
 		gas,
 		message_ticket,
@@ -159,6 +163,7 @@ public fun deploy_remote_interchain_token(
 public fun send_interchain_transfer_call(
     singleton: &Singleton,
     its: &mut ITS,
+	gateway: &mut Gateway,
     gas_service: &mut GasService,
     token_id: TokenId,
     coin: Coin<ITS_EXAMPLE>,
@@ -170,7 +175,7 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let interchain_transfer_ticket = service::prepare_interchain_transfer(
+    let interchain_transfer_ticket = service::prepare_interchain_transfer<ITS_EXAMPLE>(
         token_id,
         coin,
         destination_chain,
@@ -179,13 +184,14 @@ public fun send_interchain_transfer_call(
         &singleton.channel,
     );
 
-    let message_ticket = service::send_interchain_transfer(
+    let message_ticket = service::send_interchain_transfer<ITS_EXAMPLE>(
         its,
         interchain_transfer_ticket,
         clock,
     );
 
 	pay_gas_and_send_message(
+		gateway,
 		gas_service,
 		gas,
 		message_ticket,
@@ -237,6 +243,7 @@ public fun mint(singleton: &mut Singleton, amount: u64, to: address, ctx: &mut T
 }
 
 fun pay_gas_and_send_message(
+	gateway: &Gateway,
     gas_service: &mut GasService,
     gas: Coin<SUI>,
     message_ticket: MessageTicket,
@@ -253,5 +260,5 @@ fun pay_gas_and_send_message(
         gas_params,
     );
 
-    gateway::send_message(message_ticket);
+    gateway::send_message(gateway, message_ticket);
 }

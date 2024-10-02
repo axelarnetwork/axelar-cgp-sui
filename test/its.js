@@ -25,7 +25,7 @@ const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -37,7 +37,17 @@ describe('ITS', () => {
     const objectIds = {};
 
     // A list of contracts to publish
-    const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance', 'its', 'example'];
+    const dependencies = [
+        'utils',
+        'version_control',
+        'gas_service',
+        'abi',
+        'axelar_gateway',
+        'relayer_discovery',
+        'governance',
+        'its',
+        'example',
+    ];
 
     // Parameters for Gateway Setup
     const gatewayInfo = {};
@@ -51,10 +61,21 @@ describe('ITS', () => {
     const trustedSourceChain = 'Avalanche';
     const trustedSourceAddress = hexlify(randomBytes(20));
 
-    // Parameters for Governance Setup
-    const governanceSourceChain = 'Axelar';
-    const governanceSourceAddress = 'Governance Source Address';
-    const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
+    async function setupGovernance() {
+        // Parameters for Governance Setup
+        const governanceSourceChain = 'Axelar';
+        const governanceSourceAddress = 'Governance Source Address';
+        const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
+
+        const governanceSetupTxBuilder = new TxBuilder(client);
+        await governanceSetupTxBuilder.moveCall({
+            target: `${deployments.governance.packageId}::governance::new`,
+            arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
+        });
+        const receipt = await governanceSetupTxBuilder.signAndExecute(deployer);
+
+        objectIds.governance = findObjectId(receipt, 'governance::Governance');
+    }
 
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
@@ -79,7 +100,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
         objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
-        objectIds.relayerDiscovery = findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery');
+        objectIds.relayerDiscovery = findObjectId(deployments.relayer_discovery.publishTxn, 'RelayerDiscovery');
         objectIds.gasService = findObjectId(deployments.gas_service.publishTxn, 'GasService');
         objectIds.upgradeCap = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
         objectIds.creatorCap = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
@@ -103,17 +124,12 @@ describe('ITS', () => {
 
         const gatewaySetupTxBuilder = new TxBuilder(client);
 
-        const separator = await gatewaySetupTxBuilder.moveCall({
-            target: `${deployments.axelar_gateway.packageId}::bytes32::new`,
-            arguments: [domainSeparator],
-        });
-
         await gatewaySetupTxBuilder.moveCall({
             target: `${deployments.axelar_gateway.packageId}::gateway::setup`,
             arguments: [
                 objectIds.creatorCap,
                 operator.toSuiAddress(),
-                separator,
+                domainSeparator,
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
@@ -129,14 +145,8 @@ describe('ITS', () => {
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
 
         // Setup Governance
-        const governanceSetupTxBuilder = new TxBuilder(client);
-        await governanceSetupTxBuilder.moveCall({
-            target: `${deployments.governance.packageId}::governance::new`,
-            arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
-        });
-        const receipt = await governanceSetupTxBuilder.signAndExecute(deployer);
+        await setupGovernance();
 
-        objectIds.governance = findObjectId(receipt, 'governance::Governance');
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
 
         // Setup Trusted Addresses
@@ -189,14 +199,13 @@ describe('ITS', () => {
                 arguments: [objectIds.tokenId],
             });
 
-            const { singleton, its, gasService } = objectIds;
-
             await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
                 arguments: [
-                    singleton,
-                    its,
-                    gasService,
+                    objectIds.singleton,
+                    objectIds.its,
+                    objectIds.gateway,
+                    objectIds.gasService,
                     TokenId,
                     coin,
                     trustedSourceChain,
@@ -278,7 +287,16 @@ describe('ITS', () => {
 
             await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
-                arguments: [objectIds.its, objectIds.gasService, trustedSourceChain, TokenId, gas, '0x', deployer.toSuiAddress()],
+                arguments: [
+                    objectIds.its,
+                    objectIds.gateway,
+                    objectIds.gasService,
+                    trustedSourceChain,
+                    TokenId,
+                    gas,
+                    '0x',
+                    deployer.toSuiAddress(),
+                ],
             });
 
             await txb.signAndExecute(deployer);
