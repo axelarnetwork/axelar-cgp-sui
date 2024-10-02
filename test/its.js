@@ -25,7 +25,7 @@ const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe.only('ITS', () => {
+describe('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -77,6 +77,34 @@ describe.only('ITS', () => {
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
     }
 
+    async function setupGateway() {
+        calculateNextSigners(gatewayInfo, nonce);
+        const encodedSigners = bcsStructs.gateway.WeightedSigners.serialize(gatewayInfo.signers).toBytes();
+
+        const gatewaySetupTxBuilder = new TxBuilder(client);
+
+        await gatewaySetupTxBuilder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::gateway::setup`,
+            arguments: [
+                objectIds.creatorCap,
+                operator.toSuiAddress(),
+                domainSeparator,
+                minimumRotationDelay,
+                previousSignersRetention,
+                encodedSigners,
+                clock,
+            ],
+        });
+
+        const gatewaySetupReceipt = await gatewaySetupTxBuilder.signAndExecute(deployer);
+
+        objectIds.gateway = findObjectId(gatewaySetupReceipt, 'gateway::Gateway');
+
+        gatewayInfo.gateway = objectIds.gateway;
+        gatewayInfo.domainSeparator = domainSeparator;
+        gatewayInfo.packageId = deployments.axelar_gateway.packageId;
+    }
+
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
 
@@ -118,33 +146,8 @@ describe.only('ITS', () => {
         // Find the coin object id
         objectIds.coin = findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE');
 
-        // Setup Gateway
-        calculateNextSigners(gatewayInfo, nonce);
-        const encodedSigners = bcsStructs.gateway.WeightedSigners.serialize(gatewayInfo.signers).toBytes();
+        await setupGateway();
 
-        const gatewaySetupTxBuilder = new TxBuilder(client);
-
-        await gatewaySetupTxBuilder.moveCall({
-            target: `${deployments.axelar_gateway.packageId}::gateway::setup`,
-            arguments: [
-                objectIds.creatorCap,
-                operator.toSuiAddress(),
-                domainSeparator,
-                minimumRotationDelay,
-                previousSignersRetention,
-                encodedSigners,
-                clock,
-            ],
-        });
-
-        const gatewaySetupReceipt = await gatewaySetupTxBuilder.signAndExecute(deployer);
-        objectIds.gateway = findObjectId(gatewaySetupReceipt, 'gateway::Gateway');
-
-        gatewayInfo.gateway = objectIds.gateway;
-        gatewayInfo.domainSeparator = domainSeparator;
-        gatewayInfo.packageId = deployments.axelar_gateway.packageId;
-
-        // Setup Governance
         await setupGovernance();
 
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
@@ -274,7 +277,7 @@ describe.only('ITS', () => {
     });
 
     describe('Deploy Interchain Token', () => {
-        it('should deploy remote interchain token to other chain', async () => {
+        it('should deploy remote interchain token to other chain successfully', async () => {
             const txb = new TxBuilder(client);
 
             const tx = txb.tx;
@@ -302,7 +305,7 @@ describe.only('ITS', () => {
             await txb.signAndExecute(deployer);
         });
 
-        it('should receive interchain token deployment from other chain', async () => {
+        it('should receive interchain token deployment from other chain successfully', async () => {
             // Deploy the interchain token and store object ids for treasury cap and metadata
             const publishReceipt = await publishPackage(client, deployer, 'interchain_token');
             const treasuryCap = findObjectId(publishReceipt.publishTxn, 'TreasuryCap');
