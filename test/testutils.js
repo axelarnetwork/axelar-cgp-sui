@@ -105,7 +105,7 @@ async function expectEvent(builder, keypair, eventData = {}) {
 function goldenTest(data, name) {
     const goldenDir = path.resolve(__dirname, 'testdata');
     const goldenFilePath = path.join(goldenDir, `${name}.json`);
-    const encodedData = JSON.stringify(data, null) + '\n';
+    const encodedData = JSON.stringify(data, null, 2) + '\n';
 
     if (process.env.GOLDEN_TESTS) {
         // Write the extracted info to the golden file
@@ -142,7 +142,7 @@ function goldenTest(data, name) {
 function hashMessage(data, commandType) {
     const toHash = new Uint8Array(data.length + 1);
     toHash[0] = commandType;
-    toHash.set(data);
+    toHash.set(data, 1);
 
     return keccak256(toHash);
 }
