@@ -25,8 +25,7 @@ const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-// TODO: Remove `only` when finish testing
-describe.only('ITS', () => {
+describe('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
