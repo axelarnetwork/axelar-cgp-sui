@@ -27,18 +27,32 @@ const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = requir
 
 // TODO: Remove `only` when finish testing
 describe.only('ITS', () => {
+    // Sui Client
     let client;
+    const network = process.env.NETWORK || 'localnet';
+
+    // Store the deployed packages info
     const deployments = {};
-    let objectIds = {};
+
+    // Store the object ids from move transactions
+    const objectIds = {};
+
+    // A list of contracts to publish
+    const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance', 'its', 'example'];
+
+    // Parameters for Gateway Setup
     const gatewayInfo = {};
     const domainSeparator = getRandomBytes32();
-    const dependencies = ['utils', 'version_control', 'gas_service', 'abi', 'axelar_gateway', 'governance', 'its', 'example'];
-    const network = process.env.NETWORK || 'localnet';
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
     const minimumRotationDelay = 1000;
     const previousSignersRetention = 15;
     const nonce = 0;
 
+    // Parameters for Trusted Addresses
+    const trustedSourceChain = 'Avalanche';
+    const trustedSourceAddress = hexlify(randomBytes(20));
+
+    // Parameters for Governance Setup
     const governanceSourceChain = 'Axelar';
     const governanceSourceAddress = 'Governance Source Address';
     const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
@@ -63,25 +77,26 @@ describe.only('ITS', () => {
             deployments[packageName] = result;
         }
 
-        objectIds = {
-            its: findObjectId(deployments.its.publishTxn, 'ITS'),
-            singleton: findObjectId(deployments.example.publishTxn, 'its_example::Singleton'),
-            relayerDiscovery: findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery'),
-            gasService: findObjectId(deployments.gas_service.publishTxn, 'GasService'),
-            upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
-            creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
-        };
+        // Find the object ids from the publish transactions
+        objectIds['its'] = findObjectId(deployments.its.publishTxn, 'ITS');
+        objectIds['singleton'] = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
+        objectIds['relayerDiscovery'] = findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery');
+        objectIds['gasService'] = findObjectId(deployments.gas_service.publishTxn, 'GasService');
+        objectIds['upgradeCap'] = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
+        objectIds['creatorCap'] = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
 
+        // Mint some coins for tests
         const txBuilder = new TxBuilder(client);
 
-        // mint some coins
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its_example::mint`,
             arguments: [objectIds.singleton, 1e18, deployer.toSuiAddress()],
         });
 
-        const mintResult = await txBuilder.signAndExecute(deployer);
-        objectIds.coin = findObjectId(mintResult, 'its_example::ITS_EXAMPLE');
+        const mintReceipt = await txBuilder.signAndExecute(deployer);
+
+        // Find the coin object id
+        objectIds.coin = findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE');
 
         // Setup Gateway
         calculateNextSigners(gatewayInfo, nonce);
@@ -115,7 +130,6 @@ describe.only('ITS', () => {
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
 
         // Setup Governance
-
         const setupGovernanceTxBuilder = new TxBuilder(client);
         await setupGovernanceTxBuilder.moveCall({
             target: `${deployments.governance.packageId}::governance::new`,
@@ -159,10 +173,6 @@ describe.only('ITS', () => {
 
     describe('Interchain Transfer', () => {
         it('should send interchain transfer successfully', async () => {
-            // Setup trusted addresses
-            const trustedSourceChain = 'Ethereum';
-            const trustedSourceAddress = hexlify(randomBytes(20));
-
             await setupITSTrustedAddresses(
                 client,
                 keypair,
@@ -214,9 +224,6 @@ describe.only('ITS', () => {
 
         // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
         it('should receive interchain transfer successfully', async () => {
-            // Setup trusted addresses
-            const trustedSourceChain = 'Avalanche';
-            const trustedSourceAddress = hexlify(randomBytes(20));
             await setupITSTrustedAddresses(
                 client,
                 keypair,
@@ -279,8 +286,6 @@ describe.only('ITS', () => {
 
     describe('Deploy Interchain Token', () => {
         it('should deploy remote interchain token to other chain', async () => {
-            const trustedSourceChain = 'Avalanche';
-            const trustedSourceAddress = hexlify(randomBytes(20));
             await setupITSTrustedAddresses(
                 client,
                 keypair,
@@ -312,9 +317,6 @@ describe.only('ITS', () => {
         });
 
         it('should receive interchain token deployment from other chain', async () => {
-            // Setup trusted addresses
-            const trustedSourceChain = 'Avalanche';
-            const trustedSourceAddress = hexlify(randomBytes(20));
             await setupITSTrustedAddresses(
                 client,
                 keypair,
