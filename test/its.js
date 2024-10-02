@@ -18,7 +18,7 @@ const {
     calculateNextSigners,
     approveMessage,
     getSingletonChannelId,
-    setupITSTrustedAddresses,
+    setupTrustedAddress,
 } = require('./testutils');
 const { expect } = require('chai');
 const { bcsStructs } = require('../dist/bcs');
@@ -132,6 +132,7 @@ describe('ITS', () => {
         objectIds.gasService = findObjectId(deployments.gas_service.publishTxn, 'GasService');
         objectIds.upgradeCap = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
         objectIds.creatorCap = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
+        objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
 
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
@@ -150,10 +151,7 @@ describe('ITS', () => {
 
         await setupGovernance();
 
-        objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
-
-        // Setup Trusted Addresses
-        await setupITSTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await setupTrustedAddress(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
     });
 
     it('should call register_transaction successfully', async () => {

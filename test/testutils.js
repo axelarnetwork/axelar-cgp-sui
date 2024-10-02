@@ -348,15 +348,7 @@ const getSingletonChannelId = async (client, singletonObjectId) => {
     return '0x' + data.channel.id;
 };
 
-async function setupITSTrustedAddresses(
-    client,
-    keypair,
-    gatewayInfo,
-    objectIds,
-    deployments,
-    trustedAddresses,
-    trustedChains = ['Ethereum'],
-) {
+async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
     const governanceInfo = {
         trustedSourceChain: 'Axelar',
         trustedSourceAddress: 'Governance Source Address',
@@ -421,6 +413,6 @@ module.exports = {
     calculateNextSigners,
     getBcsBytesByObjectId,
     getSingletonChannelId,
-    setupITSTrustedAddresses,
+    setupTrustedAddresses,
     goldenTest,
 };
