@@ -2,9 +2,8 @@ module relayer_discovery::transaction;
 
 use std::ascii::{Self, String};
 use std::type_name;
-
-use sui::bcs::{Self, BCS};
 use sui::address;
+use sui::bcs::{Self, BCS};
 use sui::hex;
 
 /// ------
@@ -132,7 +131,6 @@ fun peel_type(bcs: &mut BCS): ascii::String {
     type_argument.extract()
 }
 
-
 /// ---------
 /// Test Only
 /// ---------
@@ -195,10 +193,12 @@ fun tx_builder() {
 
 #[test]
 fun test_new_function_from_bcs() {
-    let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+    let package_id =
+        @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
     let module_name = std::ascii::string(b"module");
     let name = std::ascii::string(b"function");
-    let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
+    let input =
+        x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
 
     let function = new_function_from_bcs(&mut bcs::new(input));
     assert!(function.package_id == package_id);
@@ -208,7 +208,8 @@ fun test_new_function_from_bcs() {
 
 #[test]
 fun test_new_move_call_from_bcs() {
-    let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+    let package_id =
+        @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
     let module_name = std::ascii::string(b"module");
     let name = std::ascii::string(b"function");
     let arguments = vector[x"1234", x"5678"];
@@ -216,7 +217,8 @@ fun test_new_move_call_from_bcs() {
         ascii::string(b"type1"),
         ascii::string(b"type2"),
     ];
-    let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
+    let input =
+        x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
 
     let transaction = new_move_call_from_bcs(&mut bcs::new(input));
     assert!(transaction.function.package_id == package_id);
@@ -228,7 +230,8 @@ fun test_new_move_call_from_bcs() {
 
 #[test]
 fun test_new_transaction_from_bcs() {
-    let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+    let package_id =
+        @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
     let module_name = std::ascii::string(b"module");
     let name = std::ascii::string(b"function");
     let arguments = vector[x"1234", x"5678"];
@@ -258,21 +261,25 @@ fun test_new_transaction_from_bcs() {
                 arguments,
                 type_arguments,
             },
-        ]
+        ],
     };
 
-    assert!(transaction == new_transaction_from_bcs(&mut bcs::new(bcs::to_bytes(&transaction))));
+    assert!(
+        transaction == new_transaction_from_bcs(&mut bcs::new(bcs::to_bytes(&transaction))),
+    );
 }
 
 #[test]
 fun test_package_id() {
-    assert!(package_id<Transaction>() == address::from_bytes(
+    assert!(
+        package_id<Transaction>() == address::from_bytes(
         hex::decode(
             *ascii::as_bytes(
                 &type_name::get_address(&type_name::get<Transaction>()),
             ),
         ),
-    ));
+    ),
+    );
 }
 
 #[test]

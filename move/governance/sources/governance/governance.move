@@ -10,13 +10,16 @@ use sui::package::{Self, UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::table::{Self, Table};
 
 #[error]
-const EUntrustedAddress: vector<u8> = b"upgrade authorization attempt from an untrusted address";
+const EUntrustedAddress: vector<u8> =
+    b"upgrade authorization attempt from an untrusted address";
 
 #[error]
-const EInvalidMessageType: vector<u8> = b"invalid message type for upgrade authorization";
+const EInvalidMessageType: vector<u8> =
+    b"invalid message type for upgrade authorization";
 
 #[error]
-const ENotSelfUpgradeCap: vector<u8> = b"governance initialization requires its own upgrade capability. The provided capability belongs to a different package";
+const ENotSelfUpgradeCap: vector<u8> =
+    b"governance initialization requires its own upgrade capability. The provided capability belongs to a different package";
 
 #[error]
 const ENotNewPackage: vector<u8> = b"Not new package.";
@@ -154,26 +157,30 @@ fun test_new() {
     let message_type = 2;
     let mut ctx = tx_context::dummy();
     let package_id = object::id_from_bytes(
-        hex::decode(
-            type_name::get<Governance>().get_address().into_bytes()
-        )
+        hex::decode(type_name::get<Governance>().get_address().into_bytes()),
     );
     let upgrade_cap = package::test_publish(package_id, &mut ctx);
     let initial_owner = @0x1;
     let mut scenario = test_scenario::begin(initial_owner);
-    {   
+    {
         test_scenario::sender(&scenario);
-        new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+        new(
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            upgrade_cap,
+            &mut ctx,
+        );
     };
 
     test_scenario::next_tx(&mut scenario, initial_owner);
-    {   
+    {
         let governance = test_scenario::take_shared<Governance>(&scenario);
         test_scenario::return_shared(governance);
     };
 
     test_scenario::end(scenario);
-}   
+}
 
 #[test]
 #[expected_failure(abort_code = test_scenario::EEmptyInventory)]
@@ -183,20 +190,24 @@ fun test_new_immutable_upgrade() {
     let message_type = 2;
     let mut ctx = tx_context::dummy();
     let package_id = object::id_from_bytes(
-        hex::decode(
-            type_name::get<Governance>().get_address().into_bytes()
-        )
+        hex::decode(type_name::get<Governance>().get_address().into_bytes()),
     );
     let upgrade_cap = package::test_publish(package_id, &mut ctx);
     let initial_owner = @0x1;
     let mut scenario = test_scenario::begin(initial_owner);
-    {   
+    {
         test_scenario::sender(&scenario);
-        new(trusted_source_chain, trusted_source_address, message_type, upgrade_cap, &mut ctx);
+        new(
+            trusted_source_chain,
+            trusted_source_address,
+            message_type,
+            upgrade_cap,
+            &mut ctx,
+        );
     };
 
     test_scenario::next_tx(&mut scenario, initial_owner);
-    {   
+    {
         let upgrade_cap = test_scenario::take_shared<UpgradeCap>(&scenario);
         test_scenario::return_shared(upgrade_cap);
     };
@@ -390,7 +401,8 @@ fun test_authorize_upgrade() {
     let trusted_source_chain = ascii::string(b"Axelar");
     let trusted_source_address = ascii::string(b"0x0");
     let channale_object = channel::new(&mut ctx);
-    let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000000000";
+    let payload =
+        x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000010200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000000000";
     let mut abi = abi::new_reader(payload);
     let message_type = abi.read_u256();
     let uid = object::new(&mut ctx);
@@ -442,7 +454,8 @@ fun test_authorize_upgrade_invalid_message_type() {
     let trusted_source_chain = ascii::string(b"Axelar");
     let trusted_source_address = ascii::string(b"0x0");
     let channale_object = channel::new(&mut ctx);
-    let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
+    let payload =
+        x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
     let approved_message = channel::new_approved_message(
         trusted_source_chain,
         ascii::string(b"1"),
@@ -470,7 +483,8 @@ fun test_authorize_upgrade_trusted_address() {
     let trusted_source_chain = ascii::string(b"Axelar");
     let trusted_source_address = ascii::string(b"0x0");
     let channale_object = channel::new(&mut ctx);
-    let payload = x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
+    let payload =
+        x"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0";
     let approved_message = channel::new_approved_message(
         ascii::string(b"sui"),
         ascii::string(b"1"),

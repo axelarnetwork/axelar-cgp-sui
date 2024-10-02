@@ -1,13 +1,12 @@
 module axelar_gateway::auth;
 
+use axelar_gateway::bytes32::{Self, Bytes32};
+use axelar_gateway::events;
+use axelar_gateway::proof::Proof;
+use axelar_gateway::weighted_signers::WeightedSigners;
 use sui::bcs;
 use sui::clock::Clock;
 use sui::table::{Self, Table};
-
-use axelar_gateway::bytes32::{Self, Bytes32};
-use axelar_gateway::proof::{Proof};
-use axelar_gateway::weighted_signers::WeightedSigners;
-use axelar_gateway::events;
 
 // ------
 // Errors
@@ -16,7 +15,8 @@ use axelar_gateway::events;
 const EInsufficientRotationDelay: vector<u8> = b"insufficient rotation delay";
 
 #[error]
-const EInvalidEpoch: vector<u8> = b"the difference between current_epoch and signers_epoch exceeds the allowed retention period";
+const EInvalidEpoch: vector<u8> =
+    b"the difference between current_epoch and signers_epoch exceeds the allowed retention period";
 
 // -----
 // Types
@@ -95,11 +95,15 @@ public(package) fun validate_proof(
         EInvalidEpoch,
     );
 
-    proof.validate(bcs::to_bytes(&MessageToSign {
-        domain_separator: self.domain_separator,
-        signers_hash,
-        data_hash,
-    }));
+    proof.validate(
+        bcs::to_bytes(
+            &MessageToSign {
+                domain_separator: self.domain_separator,
+                signers_hash,
+                data_hash,
+            },
+        ),
+    );
 
     is_latest_signers
 }
@@ -210,12 +214,19 @@ public(package) fun epoch_mut(self: &mut AxelarSigners): &mut u64 {
 }
 
 #[test_only]
-public(package) fun generate_proof(data_hash: Bytes32, domain_separator: Bytes32, weighted_signers: WeightedSigners, keypairs: &vector<ecdsa_k1::KeyPair>): Proof {
-    let message_to_sign = bcs::to_bytes(&MessageToSign {
-        domain_separator,
-        signers_hash: weighted_signers.hash(),
-        data_hash,
-    });
+public(package) fun generate_proof(
+    data_hash: Bytes32,
+    domain_separator: Bytes32,
+    weighted_signers: WeightedSigners,
+    keypairs: &vector<ecdsa_k1::KeyPair>,
+): Proof {
+    let message_to_sign = bcs::to_bytes(
+        &MessageToSign {
+            domain_separator,
+            signers_hash: weighted_signers.hash(),
+            data_hash,
+        },
+    );
 
     proof::generate(weighted_signers, &message_to_sign, keypairs)
 }
@@ -269,7 +280,7 @@ fun test_validate_proof_invalid_epoch() {
 
     self.validate_proof(
         bytes32::new(@0x0),
-        proof
+        proof,
     );
 
     sui::test_utils::destroy(self);

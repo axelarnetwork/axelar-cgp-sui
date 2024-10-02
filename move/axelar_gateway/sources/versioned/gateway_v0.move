@@ -1,31 +1,28 @@
 module axelar_gateway::gateway_v0;
 
-use std::ascii::String;
-
-use sui::clock::Clock;
-use sui::hash;
-use sui::table::{Self, Table};
-use sui::address;
-
-use utils::utils;
-
-use version_control::version_control::VersionControl;
-
 use axelar_gateway::auth::AxelarSigners;
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Self, ApprovedMessage};
+use axelar_gateway::events;
 use axelar_gateway::message::{Self, Message};
 use axelar_gateway::message_status::{Self, MessageStatus};
+use axelar_gateway::message_ticket::MessageTicket;
 use axelar_gateway::proof;
 use axelar_gateway::weighted_signers;
-use axelar_gateway::message_ticket::MessageTicket;
-use axelar_gateway::events;
+use std::ascii::String;
+use sui::address;
+use sui::clock::Clock;
+use sui::hash;
+use sui::table::{Self, Table};
+use utils::utils;
+use version_control::version_control::VersionControl;
 
 // ------
 // Errors
 // ------
 #[error]
-const EMessageNotApproved: vector<u8> = b"trying to `take_approved_message` for a message that is not approved";
+const EMessageNotApproved: vector<u8> =
+    b"trying to `take_approved_message` for a message that is not approved";
 
 #[error]
 const EZeroMessages: vector<u8> = b"no mesages found";
@@ -34,7 +31,8 @@ const EZeroMessages: vector<u8> = b"no mesages found";
 const ENotLatestSigners: vector<u8> = b"not latest signers";
 
 #[error]
-const ENewerMessage: vector<u8> = b"message ticket created from newer versions cannot be sent here";
+const ENewerMessage: vector<u8> =
+    b"message ticket created from newer versions cannot be sent here";
 
 // ---------
 // CONSTANTS
@@ -82,10 +80,7 @@ fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
 }
 
 #[syntax(index)]
-fun borrow_mut(
-    self: &mut GatewayV0,
-    command_id: Bytes32,
-): &mut MessageStatus {
+fun borrow_mut(self: &mut GatewayV0, command_id: Bytes32): &mut MessageStatus {
     table::borrow_mut(&mut self.messages, command_id)
 }
 
@@ -211,7 +206,11 @@ public(package) fun take_approved_message(
     )
 }
 
-public(package) fun send_message(_self: &GatewayV0, message: MessageTicket, current_version: u64) {
+public(package) fun send_message(
+    _self: &GatewayV0,
+    message: MessageTicket,
+    current_version: u64,
+) {
     let (
         source_id,
         destination_chain,
@@ -236,17 +235,14 @@ public(package) fun send_message(_self: &GatewayV0, message: MessageTicket, curr
 // -----------------
 
 fun peel_messages(message_data: vector<u8>): vector<Message> {
-    utils::peel!(
-        message_data,
-        |bcs| {
-            let messages = vector::tabulate!(
-                bcs.peel_vec_length(),
-                |_| message::peel(bcs),
-            );
-            assert!(messages.length() > 0, EZeroMessages);
-            messages
-        },
-    )
+    utils::peel!(message_data, |bcs| {
+        let messages = vector::tabulate!(
+            bcs.peel_vec_length(),
+            |_| message::peel(bcs),
+        );
+        assert!(messages.length() > 0, EZeroMessages);
+        messages
+    })
 }
 
 fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
@@ -292,9 +288,7 @@ public(package) fun messages_mut(
 }
 
 #[test_only]
-public(package) fun signers_mut(
-    self: &mut GatewayV0,
-): &mut AxelarSigners {
+public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
     &mut self.signers
 }
 
@@ -322,17 +316,24 @@ fun dummy(ctx: &mut TxContext): GatewayV0 {
 }
 
 #[test_only]
-public(package) fun approve_messages_data_hash(messages: vector<Message>): Bytes32 {
+public(package) fun approve_messages_data_hash(
+    messages: vector<Message>,
+): Bytes32 {
     data_hash(COMMAND_TYPE_APPROVE_MESSAGES, bcs::to_bytes(&messages))
 }
 
 #[test_only]
-public(package) fun rotate_signers_data_hash(weighted_signers: WeightedSigners): Bytes32 {
+public(package) fun rotate_signers_data_hash(
+    weighted_signers: WeightedSigners,
+): Bytes32 {
     data_hash(COMMAND_TYPE_ROTATE_SIGNERS, bcs::to_bytes(&weighted_signers))
 }
 
 #[test_only]
-public(package) fun approve_message_for_testing(self: &mut GatewayV0, message: Message) {
+public(package) fun approve_message_for_testing(
+    self: &mut GatewayV0,
+    message: Message,
+) {
     self.approve_message(message);
 }
 
@@ -514,11 +515,11 @@ fun test_take_approved_message_message_not_approved() {
     let mut self = dummy(ctx);
 
     self
-    .messages
-    .add(
-        command_id,
-        message_status::executed(),
-    );
+        .messages
+        .add(
+            command_id,
+            message_status::executed(),
+        );
 
     let approved_message = self.take_approved_message(
         source_chain,

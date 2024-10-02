@@ -1,10 +1,8 @@
 module relayer_discovery::relayer_discovery_v0;
 
-use sui::table::{Self, Table};
-
-use version_control::version_control::VersionControl;
-
 use relayer_discovery::transaction::Transaction;
+use sui::table::{Self, Table};
+use version_control::version_control::VersionControl;
 
 // -------
 // Structs
@@ -29,31 +27,46 @@ const EChannelNotFound: vector<u8> = b"channel not found";
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): RelayerDiscoveryV0 {
+public(package) fun new(
+    version_control: VersionControl,
+    ctx: &mut TxContext,
+): RelayerDiscoveryV0 {
     RelayerDiscoveryV0 {
         configurations: table::new<ID, Transaction>(ctx),
         version_control,
     }
 }
 
-public(package) fun set_transaction(self: &mut RelayerDiscoveryV0, id: ID, transaction: Transaction) {
+public(package) fun set_transaction(
+    self: &mut RelayerDiscoveryV0,
+    id: ID,
+    transaction: Transaction,
+) {
     if (self.configurations.contains(id)) {
         self.configurations.remove(id);
     };
     self.configurations.add(id, transaction);
 }
 
-public(package) fun remove_transaction(self: &mut RelayerDiscoveryV0, id: ID): Transaction {
+public(package) fun remove_transaction(
+    self: &mut RelayerDiscoveryV0,
+    id: ID,
+): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
     self.configurations.remove(id)
 }
 
-public(package) fun get_transaction(self: &RelayerDiscoveryV0, id: ID): Transaction {
+public(package) fun get_transaction(
+    self: &RelayerDiscoveryV0,
+    id: ID,
+): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
     self.configurations[id]
 }
 
-public(package) fun version_control(self: &RelayerDiscoveryV0): &VersionControl {
+public(package) fun version_control(
+    self: &RelayerDiscoveryV0,
+): &VersionControl {
     &self.version_control
 }
 

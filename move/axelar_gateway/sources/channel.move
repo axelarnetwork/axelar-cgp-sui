@@ -5,9 +5,8 @@
 /// Apps can create a channel and hold on to it for cross-chain messaging.
 module axelar_gateway::channel;
 
-use std::ascii::String;
-
 use axelar_gateway::events;
+use std::ascii::String;
 
 // -----
 // Types
@@ -53,7 +52,7 @@ const EInvalidDestination: vector<u8> = b"invalid destination";
 public fun new(ctx: &mut TxContext): Channel {
     let id = object::new(ctx);
 
-    events::channel_created( id.uid_to_address() );
+    events::channel_created(id.uid_to_address());
 
     Channel {
         id,
@@ -64,7 +63,7 @@ public fun new(ctx: &mut TxContext): Channel {
 public fun destroy(self: Channel) {
     let Channel { id } = self;
 
-    events::channel_destroyed( id.uid_to_address() );
+    events::channel_destroyed(id.uid_to_address());
 
     id.delete();
 }
@@ -93,12 +92,7 @@ public fun consume_approved_message(
     // Check if the message is sent to the correct destination.
     assert!(destination_id == object::id_address(channel), EInvalidDestination);
 
-    (
-        source_chain,
-        message_id,
-        source_address,
-        payload,
-    )
+    (source_chain, message_id, source_address, payload)
 }
 
 // -----------------
@@ -155,27 +149,37 @@ public fun destroy_for_testing(approved_message: ApprovedMessage) {
 }
 
 #[test_only]
-public(package) fun approved_message_source_chain(self: &ApprovedMessage): String {
+public(package) fun approved_message_source_chain(
+    self: &ApprovedMessage,
+): String {
     self.source_chain
 }
 
 #[test_only]
-public(package) fun approved_message_message_id(self: &ApprovedMessage): String {
+public(package) fun approved_message_message_id(
+    self: &ApprovedMessage,
+): String {
     self.message_id
 }
 
 #[test_only]
-public(package) fun approved_message_source_address(self: &ApprovedMessage): String {
+public(package) fun approved_message_source_address(
+    self: &ApprovedMessage,
+): String {
     self.source_address
 }
 
 #[test_only]
-public(package) fun approved_message_destination_id(self: &ApprovedMessage): address {
+public(package) fun approved_message_destination_id(
+    self: &ApprovedMessage,
+): address {
     self.destination_id
 }
 
 #[test_only]
-public(package) fun approved_message_payload(self: &ApprovedMessage): vector<u8> {
+public(package) fun approved_message_payload(
+    self: &ApprovedMessage,
+): vector<u8> {
     self.payload
 }
 

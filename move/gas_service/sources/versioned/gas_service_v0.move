@@ -1,9 +1,8 @@
 module gas_service::gas_service_v0;
 
 use sui::balance::{Self, Balance};
-use sui::sui::SUI;
 use sui::coin::{Self, Coin};
-
+use sui::sui::SUI;
 use version_control::version_control::VersionControl;
 
 // -------
@@ -32,7 +31,11 @@ public(package) fun put(self: &mut GasServiceV0, coin: Coin<SUI>) {
     coin::put(&mut self.balance, coin);
 }
 
-public(package) fun take(self: &mut GasServiceV0, amount: u64, ctx: &mut TxContext): Coin<SUI> {
+public(package) fun take(
+    self: &mut GasServiceV0,
+    amount: u64,
+    ctx: &mut TxContext,
+): Coin<SUI> {
     coin::take(&mut self.balance, amount, ctx)
 }
 
