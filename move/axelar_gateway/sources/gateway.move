@@ -272,6 +272,8 @@ fun version_control(): VersionControl {
 // ---------
 #[test_only]
 use sui::bcs;
+#[test_only]
+use axelar_gateway::auth::generate_proof;
 
 #[test_only]
 public fun create_for_testing(
@@ -340,7 +342,7 @@ fun dummy(ctx: &mut TxContext): Gateway {
 #[test_only]
 public fun destroy_for_testing(self: Gateway) {
     let Gateway {
-        id, 
+        id,
         inner,
     } = self;
     id.delete();
@@ -605,8 +607,8 @@ fun test_take_approved_message() {
         payload,
     );
     assert!(&approved_message == &expected_approved_message);
-    
-    
+
+
     gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
@@ -643,19 +645,14 @@ fun test_approve_messages() {
         &clock,
         ctx,
     );
-    let message_data = bcs::to_bytes(&vector<axelar_gateway::message::Message>[
+    let messages = vector<axelar_gateway::message::Message>[
         axelar_gateway::message::dummy()
-    ]);
-    let data_hash = gateway_v0::approve_messages_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+    ];
+    let data_hash = gateway_v0::approve_messages_data_hash(messages);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
 
-    self.approve_messages(message_data, bcs::to_bytes(&proof));
-    
+    self.approve_messages(bcs::to_bytes(&messages), bcs::to_bytes(&proof));
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self)
 }
@@ -690,20 +687,16 @@ fun test_approve_messages_remaining_data() {
         &clock,
         ctx,
     );
-    let message_data = bcs::to_bytes(&vector[
+    let messages = vector[
         axelar_gateway::message::dummy()
-    ]);
-    let data_hash = gateway_v0::approve_messages_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+    ];
+    let data_hash = gateway_v0::approve_messages_data_hash(messages);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
-    self.approve_messages(message_data, proof_data);
-    
+
+    self.approve_messages(bcs::to_bytes(&messages), proof_data);
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self)
 }
@@ -749,18 +742,12 @@ fun test_rotate_signers() {
         ctx,
     );
 
-    let message_data = bcs::to_bytes(&next_weighted_signers);
-    let data_hash = gateway_v0::rotate_signers_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
-    
+    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), bcs::to_bytes(&proof), ctx);
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
 }
@@ -809,17 +796,13 @@ fun test_rotate_signers_remaining_data_message_data() {
 
     let mut message_data = bcs::to_bytes(&next_weighted_signers);
     message_data.push_back(0);
-    let data_hash = gateway_v0::rotate_signers_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+
+    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
     self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
-    
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
 }
@@ -866,20 +849,14 @@ fun test_rotate_signers_remaining_data_proof_data() {
         ctx,
     );
 
-    let message_data = bcs::to_bytes(&next_weighted_signers);
-    let data_hash = gateway_v0::rotate_signers_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, message_data, proof_data, ctx);
-    
+    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), proof_data, ctx);
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
 }
@@ -929,24 +906,18 @@ fun test_rotate_signers_not_latest_signers() {
     let epoch = self.value_mut!(b"rotate_signers").signers_mut().epoch_mut();
     *epoch = *epoch + 1;
 
-    let message_data = bcs::to_bytes(&next_weighted_signers);
-    let data_hash = gateway_v0::rotate_signers_data_hash(message_data);
-    let message_to_sign = bcs::to_bytes(&auth::new_message_to_sign(
-        domain_separator,
-        weighted_signers.hash(),
-        data_hash,
-    ));
-    let proof = axelar_gateway::proof::generate_proof(weighted_signers, &message_to_sign, &vector[keypair]);
+    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
-    
+    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), bcs::to_bytes(&proof), ctx);
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
 }
 
 #[test]
-fun test_is_message_approved() {    
+fun test_is_message_approved() {
     let ctx = &mut sui::tx_context::dummy();
 
     let source_chain = ascii::string(b"Source Chain");

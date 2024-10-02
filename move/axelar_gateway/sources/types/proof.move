@@ -29,7 +29,7 @@ const SIGNATURE_LENGTH: u64 = 65;
 #[error]
 const EInvalidSignatureLength: vector<u8> = b"invalid signature length: expected 65 bytes";
 
-#[error]    
+#[error]
 const ELowSignaturesWeight: vector<u8> = b"insufficient signatures weight";
 
 #[error]
@@ -164,7 +164,7 @@ public(package) fun dummy(): Proof {
 }
 
 #[test_only]
-public(package) fun generate_proof(weighted_signers: WeightedSigners, message_to_sign: &vector<u8>, keypairs: &vector<ecdsa::KeyPair>): Proof {
+public(package) fun generate(weighted_signers: WeightedSigners, message_to_sign: &vector<u8>, keypairs: &vector<ecdsa::KeyPair>): Proof {
     let signatures = keypairs.map_ref!(|keypair| new_signature(
         ecdsa::secp256k1_sign(keypair.private_key(), message_to_sign, 0, true)
     ));
@@ -177,7 +177,7 @@ public(package) fun generate_proof(weighted_signers: WeightedSigners, message_to
 #[test]
 fun test_getters() {
     let proof = dummy();
-    
+
     assert!(proof.signers() == axelar_gateway::weighted_signers::dummy());
 
     let mut signature = sui::address::to_bytes(@0x01);
@@ -216,7 +216,7 @@ fun test_validate() {
         nonce,
     );
     keypairs.remove(1);
-    let proof = generate_proof(weighted_signers, &message, &keypairs);
+    let proof = generate(weighted_signers, &message, &keypairs);
     proof.validate(message);
 }
 

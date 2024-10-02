@@ -280,6 +280,11 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
 /// Test Only
 /// ---------
 #[test_only]
+use axelar_gateway::weighted_signers::WeightedSigners;
+#[test_only]
+use sui::bcs;
+
+#[test_only]
 public(package) fun messages_mut(
     self: &mut GatewayV0,
 ): &mut Table<Bytes32, MessageStatus> {
@@ -317,13 +322,13 @@ fun dummy(ctx: &mut TxContext): GatewayV0 {
 }
 
 #[test_only]
-public(package) fun approve_messages_data_hash(message_data: vector<u8>): Bytes32 {
-    data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data)
+public(package) fun approve_messages_data_hash(messages: vector<Message>): Bytes32 {
+    data_hash(COMMAND_TYPE_APPROVE_MESSAGES, bcs::to_bytes(&messages))
 }
 
 #[test_only]
-public(package) fun rotate_signers_data_hash(message_data: vector<u8>): Bytes32 {
-    data_hash(COMMAND_TYPE_ROTATE_SIGNERS, message_data)
+public(package) fun rotate_signers_data_hash(weighted_signers: WeightedSigners): Bytes32 {
+    data_hash(COMMAND_TYPE_ROTATE_SIGNERS, bcs::to_bytes(&weighted_signers))
 }
 
 #[test_only]
@@ -514,7 +519,7 @@ fun test_take_approved_message_message_not_approved() {
         command_id,
         message_status::executed(),
     );
-    
+
     let approved_message = self.take_approved_message(
         source_chain,
         message_id,

@@ -153,6 +153,11 @@ fun update_rotation_timestamp(
 // Test Only
 // ---------
 #[test_only]
+use sui::ecdsa_k1;
+#[test_only]
+use axelar_gateway::proof;
+
+#[test_only]
 public fun dummy(ctx: &mut TxContext): AxelarSigners {
     AxelarSigners {
         epoch: 0,
@@ -204,6 +209,17 @@ public(package) fun epoch_mut(self: &mut AxelarSigners): &mut u64 {
     &mut self.epoch
 }
 
+#[test_only]
+public(package) fun generate_proof(data_hash: Bytes32, domain_separator: Bytes32, weighted_signers: WeightedSigners, keypairs: &vector<ecdsa_k1::KeyPair>): Proof {
+    let message_to_sign = bcs::to_bytes(&MessageToSign {
+        domain_separator,
+        signers_hash: weighted_signers.hash(),
+        data_hash,
+    });
+
+    proof::generate(weighted_signers, &message_to_sign, keypairs)
+}
+
 // -----
 // Tests
 // -----
@@ -221,7 +237,7 @@ fun test_update_rotation_timestamp_insufficient_rotation_delay() {
     let mut self = new(ctx);
 
     let clock = sui::clock::create_for_testing(ctx);
-    
+
     self.last_rotation_timestamp = 1;
 
     self.update_rotation_timestamp(&clock, true);
@@ -232,7 +248,7 @@ fun test_update_rotation_timestamp_insufficient_rotation_delay() {
 
 #[test]
 #[expected_failure(abort_code = EInvalidEpoch)]
-fun test_validate_proof_invalid_epoch() {    
+fun test_validate_proof_invalid_epoch() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
     let proof = axelar_gateway::proof::create_for_testing(
