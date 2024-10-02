@@ -13,6 +13,7 @@ use sui::clock::Clock;
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::discovery::{Self, RelayerDiscovery};
 use axelar_gateway::gateway;
+use axelar_gateway::message_ticket::MessageTicket;
 
 use gas_service::gas_service::GasService;
 
@@ -119,6 +120,30 @@ public fun register_coin(
     );
 }
 
+public fun deploy_remote_interchain_token(
+	its: &mut ITS,
+	gas_service: &mut GasService,
+	destination_chain: String,
+	token_id: TokenId,
+	gas: Coin<SUI>,
+	gas_params: vector<u8>,
+	refund_address: address
+) {
+    let message_ticket = service::deploy_remote_interchain_token<ITS_EXAMPLE>(
+        its,
+        token_id,
+		destination_chain,
+    );
+
+	pay_gas_and_send_message(
+		gas_service,
+		gas,
+		message_ticket,
+		refund_address,
+		gas_params
+	);
+}
+
 /// This should trigger an interchain trasnfer.
 public fun send_interchain_transfer_call(
     singleton: &Singleton,
@@ -149,16 +174,23 @@ public fun send_interchain_transfer_call(
         clock,
     );
 
-    gas_service.pay_gas(
-        gas,
-        message_ticket.source_id(),
-        message_ticket.destination_chain(),
-        message_ticket.destination_address(),
-        message_ticket.payload(),
-        refund_address,
-        gas_params,
-    );
-    gateway::send_message(message_ticket);
+    // gas_service.pay_gas(
+    //     gas,
+    //     message_ticket.source_id(),
+    //     message_ticket.destination_chain(),
+    //     message_ticket.destination_address(),
+    //     message_ticket.payload(),
+    //     refund_address,
+    //     gas_params,
+    // );
+    // gateway::send_message(message_ticket);
+	pay_gas_and_send_message(
+		gas_service,
+		gas,
+		message_ticket,
+		refund_address,
+		gas_params
+	);
 }
 
 /// This should receive some coins, give them to the executor, and emit and event with all the relevant info.
@@ -194,4 +226,24 @@ public fun receive_interchain_transfer(
 /// Call this to obtain some coins for testing.
 public fun mint(singleton: &mut Singleton, amount: u64, to: address, ctx: &mut TxContext) {
     singleton.treasury_cap.mint_and_transfer(amount, to, ctx);
+}
+
+fun pay_gas_and_send_message(
+    gas_service: &mut GasService,
+    gas: Coin<SUI>,
+    message_ticket: MessageTicket,
+    refund_address: address,
+    gas_params: vector<u8>,
+) {
+    gas_service.pay_gas(
+        gas,
+        message_ticket.source_id(),
+        message_ticket.destination_chain(),
+        message_ticket.destination_address(),
+        message_ticket.payload(),
+        refund_address,
+        gas_params,
+    );
+
+    gateway::send_message(message_ticket);
 }
