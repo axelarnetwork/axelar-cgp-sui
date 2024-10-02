@@ -144,27 +144,27 @@ describe('ITS', () => {
     });
 
     it('should call register_transaction successfully', async () => {
-        const txBuilder = new TxBuilder(client);
+        const txb = new TxBuilder(client);
 
-        await txBuilder.moveCall({
+        await txb.moveCall({
             target: `${deployments.example.packageId}::its_example::register_transaction`,
             arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, clock],
         });
 
-        const txResult = await txBuilder.signAndExecute(deployer);
+        const txResult = await txb.signAndExecute(deployer);
 
         const discoveryTx = findObjectId(txResult, 'discovery::Transaction');
         expect(discoveryTx).to.be.not.null;
     });
 
     it('should register a coin successfully', async () => {
-        const txBuilder = new TxBuilder(client);
-        await txBuilder.moveCall({
+        const txb = new TxBuilder(client);
+        await txb.moveCall({
             target: `${deployments.example.packageId}::its_example::register_coin`,
             arguments: [objectIds.singleton, objectIds.its],
         });
 
-        const txResult = await txBuilder.signAndExecute(deployer, {
+        const txResult = await txb.signAndExecute(deployer, {
             showEvents: true,
         });
 
@@ -177,21 +177,21 @@ describe('ITS', () => {
     describe('Interchain Transfer', () => {
         it('should send interchain transfer successfully', async () => {
             // Send interchain transfer
-            const txBuilder = new TxBuilder(client);
+            const txb = new TxBuilder(client);
 
-            const tx = txBuilder.tx;
+            const tx = txb.tx;
 
             const coin = tx.splitCoins(objectIds.coin, [1e9]);
             const gas = tx.splitCoins(tx.gas, [1e8]);
 
-            const TokenId = await txBuilder.moveCall({
+            const TokenId = await txb.moveCall({
                 target: `${deployments.its.packageId}::token_id::from_u256`,
                 arguments: [objectIds.tokenId],
             });
 
             const { singleton, its, gasService } = objectIds;
 
-            await txBuilder.moveCall({
+            await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
                 arguments: [
                     singleton,
@@ -209,7 +209,7 @@ describe('ITS', () => {
                 ],
             });
 
-            await txBuilder.signAndExecute(deployer);
+            await txb.signAndExecute(deployer);
         });
 
         // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
@@ -241,9 +241,9 @@ describe('ITS', () => {
 
             await approveMessage(client, keypair, gatewayInfo, message);
 
-            const receiveTransferTxBuilder = new TxBuilder(client);
+            const txb = new TxBuilder(client);
 
-            const approvedMessage = await receiveTransferTxBuilder.moveCall({
+            const approvedMessage = await txb.moveCall({
                 target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
                 arguments: [
                     objectIds.gateway,
@@ -254,33 +254,33 @@ describe('ITS', () => {
                     payload,
                 ],
             });
-            await receiveTransferTxBuilder.moveCall({
+            await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
                 arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
             });
 
-            await receiveTransferTxBuilder.signAndExecute(deployer);
+            await txb.signAndExecute(deployer);
         });
     });
 
     describe('Deploy Interchain Token', () => {
         it('should deploy remote interchain token to other chain', async () => {
-            const txBuilder = new TxBuilder(client);
-            const tx = txBuilder.tx;
+            const txb = new TxBuilder(client);
 
+            const tx = txb.tx;
             const gas = tx.splitCoins(tx.gas, [1e8]);
 
-            const TokenId = await txBuilder.moveCall({
+            const TokenId = await txb.moveCall({
                 target: `${deployments.its.packageId}::token_id::from_u256`,
                 arguments: [objectIds.tokenId],
             });
 
-            await txBuilder.moveCall({
+            await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
                 arguments: [objectIds.its, objectIds.gasService, trustedSourceChain, TokenId, gas, '0x', deployer.toSuiAddress()],
             });
 
-            await txBuilder.signAndExecute(deployer);
+            await txb.signAndExecute(deployer);
         });
 
         it('should receive interchain token deployment from other chain', async () => {
@@ -313,9 +313,9 @@ describe('ITS', () => {
 
             await approveMessage(client, keypair, gatewayInfo, message);
 
-            const receiveTransferTxBuilder = new TxBuilder(client);
+            const txb = new TxBuilder(client);
 
-            const approvedMessage = await receiveTransferTxBuilder.moveCall({
+            const approvedMessage = await txb.moveCall({
                 target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
                 arguments: [
                     objectIds.gateway,
@@ -327,19 +327,19 @@ describe('ITS', () => {
                 ],
             });
 
-            receiveTransferTxBuilder.moveCall({
+            txb.moveCall({
                 target: `${deployments.its.packageId}::service::give_unregistered_coin`,
                 arguments: [objectIds.its, treasuryCap, metadata],
                 typeArguments: [`${publishReceipt.packageId}::q::Q`],
             });
 
-            await receiveTransferTxBuilder.moveCall({
+            await txb.moveCall({
                 target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
                 arguments: [objectIds.its, approvedMessage],
                 typeArguments: [`${publishReceipt.packageId}::q::Q`],
             });
 
-            await receiveTransferTxBuilder.signAndExecute(deployer);
+            await txb.signAndExecute(deployer);
         });
     });
 });
