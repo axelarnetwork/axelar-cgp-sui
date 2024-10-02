@@ -2,6 +2,10 @@ name: Linting
 
 on: pull_request
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -10,7 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Node.js and its dependencies
       - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
