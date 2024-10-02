@@ -138,6 +138,9 @@ describe('ITS', () => {
 
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
+
+        // Setup Trusted Addresses
+        await setupITSTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -173,16 +176,6 @@ describe('ITS', () => {
 
     describe('Interchain Transfer', () => {
         it('should send interchain transfer successfully', async () => {
-            await setupITSTrustedAddresses(
-                client,
-                keypair,
-                gatewayInfo,
-                objectIds,
-                deployments,
-                [trustedSourceAddress],
-                [trustedSourceChain],
-            );
-
             // Send interchain transfer
             const txBuilder = new TxBuilder(client);
 
@@ -221,16 +214,6 @@ describe('ITS', () => {
 
         // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
         it('should receive interchain transfer successfully', async () => {
-            await setupITSTrustedAddresses(
-                client,
-                keypair,
-                gatewayInfo,
-                objectIds,
-                deployments,
-                [trustedSourceAddress],
-                [trustedSourceChain],
-            );
-
             // Approve ITS transfer message
             const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
             const tokenId = objectIds.tokenId; // The token ID to transfer
@@ -282,16 +265,6 @@ describe('ITS', () => {
 
     describe('Deploy Interchain Token', () => {
         it('should deploy remote interchain token to other chain', async () => {
-            await setupITSTrustedAddresses(
-                client,
-                keypair,
-                gatewayInfo,
-                objectIds,
-                deployments,
-                [trustedSourceAddress],
-                [trustedSourceChain],
-            );
-
             const txBuilder = new TxBuilder(client);
             const tx = txBuilder.tx;
 
@@ -311,16 +284,6 @@ describe('ITS', () => {
         });
 
         it('should receive interchain token deployment from other chain', async () => {
-            await setupITSTrustedAddresses(
-                client,
-                keypair,
-                gatewayInfo,
-                objectIds,
-                deployments,
-                [trustedSourceAddress],
-                [trustedSourceChain],
-            );
-
             // Deploy the interchain token and store object ids for treasury cap and metadata
             const publishReceipt = await publishPackage(client, deployer, 'interchain_token');
             const treasuryCap = findObjectId(publishReceipt.publishTxn, 'TreasuryCap');
