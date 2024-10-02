@@ -254,6 +254,7 @@ describe('ITS', () => {
                     payload,
                 ],
             });
+
             await txb.moveCall({
                 target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
                 arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
