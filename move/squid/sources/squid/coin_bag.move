@@ -126,18 +126,18 @@ module squid::coin_bag {
         let ctx = &mut tx_context::dummy();
         let mut coin_bag = new(ctx);
 
-        assert!(coin_bag.get_balance_amount<COIN>() == 0, 0);
+        assert!(coin_bag.get_balance_amount<COIN>() == 0);
 
         coin_bag.store_balance(sui::balance::create_for_testing<COIN>(1));
-        assert!(coin_bag.get_balance_amount<COIN>() == 1, 1);
+        assert!(coin_bag.get_balance_amount<COIN>() == 1);
 
         coin_bag.store_balance(sui::balance::create_for_testing<COIN>(2));
         let mut balance = coin_bag.get_balance<COIN>();
-        assert!(balance.borrow().value() == 3, 2);
+        assert!(balance.borrow().value() == 3);
         sui::test_utils::destroy(balance);
 
         balance = coin_bag.get_balance<COIN>();
-        assert!(balance.is_none(), 3);
+        assert!(balance.is_none());
         balance.destroy_none();
 
         coin_bag.destroy();
@@ -148,17 +148,17 @@ module squid::coin_bag {
         let ctx = &mut tx_context::dummy();
         let mut coin_bag = new(ctx);
 
-        assert!(coin_bag.get_estimate_amount<COIN>() == 0, 0);
+        assert!(coin_bag.get_estimate_amount<COIN>() == 0);
 
         coin_bag.store_estimate<COIN>(1);
-        assert!(coin_bag.get_estimate_amount<COIN>() == 1, 1);
+        assert!(coin_bag.get_estimate_amount<COIN>() == 1);
 
         coin_bag.store_estimate<COIN>(2);
         let mut estimate = coin_bag.get_estimate<COIN>();
-        assert!(estimate == 3, 2);
+        assert!(estimate == 3);
 
         estimate = coin_bag.get_estimate<COIN>();
-        assert!(estimate == 0, 3);
+        assert!(estimate == 0);
 
         coin_bag.destroy();
     }

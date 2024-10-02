@@ -123,10 +123,9 @@ public(package) fun create_approved_message(
     }
 }
 
-// -----
-// Tests
-// -----
-
+// ---------
+// Test Only
+// ---------
 #[test_only]
 public fun new_approved_message(
     source_chain: String,
@@ -155,6 +154,34 @@ public fun destroy_for_testing(approved_message: ApprovedMessage) {
     } = approved_message;
 }
 
+#[test_only]
+public(package) fun approved_message_source_chain(self: &ApprovedMessage): String {
+    self.source_chain
+}
+
+#[test_only]
+public(package) fun approved_message_message_id(self: &ApprovedMessage): String {
+    self.message_id
+}
+
+#[test_only]
+public(package) fun approved_message_source_address(self: &ApprovedMessage): String {
+    self.source_address
+}
+
+#[test_only]
+public(package) fun approved_message_destination_id(self: &ApprovedMessage): address {
+    self.destination_id
+}
+
+#[test_only]
+public(package) fun approved_message_payload(self: &ApprovedMessage): vector<u8> {
+    self.payload
+}
+
+// -----
+// Tests
+// -----
 #[test]
 fun test_new_and_destroy() {
     let ctx = &mut sui::tx_context::dummy();
@@ -166,7 +193,7 @@ fun test_new_and_destroy() {
 fun test_id() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    assert!(channel.id() == object::id(&channel), 0);
+    assert!(channel.id() == object::id(&channel));
     channel.destroy()
 }
 
@@ -174,7 +201,7 @@ fun test_id() {
 fun test_to_address() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    assert!(channel.to_address() == object::id_address(&channel), 0);
+    assert!(channel.to_address() == object::id_address(&channel));
     channel.destroy()
 }
 
@@ -200,11 +227,11 @@ fun test_create_approved_message() {
         destination_id,
         payload,
     } = approved_message;
-    assert!(source_chain == input_source_chain, 0);
-    assert!(message_id == input_message_id, 1);
-    assert!(source_address == input_source_address, 2);
-    assert!(destination_id == input_destination_id, 3);
-    assert!(payload == input_payload, 4);
+    assert!(source_chain == input_source_chain);
+    assert!(message_id == input_message_id);
+    assert!(source_address == input_source_address);
+    assert!(destination_id == input_destination_id);
+    assert!(payload == input_payload);
 }
 
 #[test]
@@ -232,10 +259,10 @@ fun test_consume_approved_message() {
         payload,
     ) = channel.consume_approved_message(approved_message);
 
-    assert!(source_chain == input_source_chain, 1);
-    assert!(message_id == input_message_id, 2);
-    assert!(source_address == input_source_address, 3);
-    assert!(payload == input_payload, 4);
+    assert!(source_chain == input_source_chain);
+    assert!(message_id == input_message_id);
+    assert!(source_address == input_source_address);
+    assert!(payload == input_payload);
 
     channel.destroy();
 }

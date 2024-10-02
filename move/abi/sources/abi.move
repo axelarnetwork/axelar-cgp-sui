@@ -274,10 +274,10 @@ fun test_u256() {
 
     let mut writer = new_writer(1);
     writer.write_u256(input);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
-    assert!(reader.read_u256() == input, 1);
+    assert!(reader.read_u256() == input);
 }
 
 #[test]
@@ -287,11 +287,11 @@ fun test_skip_slot() {
 
     let mut writer = new_writer(2);
     writer.write_u256(1).write_u256(input);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
     reader.skip_slot();
-    assert!(reader.read_u256() == input, 1);
+    assert!(reader.read_u256() == input);
 }
 
 #[test]
@@ -301,10 +301,10 @@ fun test_read_bytes() {
 
     let mut writer = new_writer(1);
     writer.write_bytes(input);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
-    assert!(reader.read_bytes() == input, 1);
+    assert!(reader.read_bytes() == input);
 }
 
 #[test]
@@ -314,10 +314,10 @@ fun test_read_vector_u256() {
 
     let mut writer = new_writer(1);
     writer.write_vector_u256(input);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
-    assert!(reader.read_vector_u256() == input, 1);
+    assert!(reader.read_vector_u256() == input);
 }
 
 #[test]
@@ -327,10 +327,10 @@ fun test_read_vector_bytes() {
 
     let mut writer = new_writer(1);
     writer.write_vector_bytes(input);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
-    assert!(reader.read_vector_bytes() == input, 1);
+    assert!(reader.read_vector_bytes() == input);
 }
 
 #[test]
@@ -343,11 +343,11 @@ fun test_multiple() {
     writer.write_bytes(input2);
     writer.write_vector_u256(input3);
     writer.write_vector_bytes(input4);
-    assert!(writer.into_bytes() == output, 0);
+    assert!(writer.into_bytes() == output);
 
     let mut reader = new_reader(output);
-    assert!(reader.read_u256() == input1, 1);
-    assert!(reader.read_bytes() == input2, 2);
-    assert!(reader.read_vector_u256() == input3, 3);
-    assert!(reader.read_vector_bytes() == input4, 4);
+    assert!(reader.read_u256() == input1);
+    assert!(reader.read_bytes() == input2);
+    assert!(reader.read_vector_u256() == input3);
+    assert!(reader.read_vector_bytes() == input4);
 }

@@ -74,41 +74,41 @@ module its::address_tracker {
         self.set_trusted_address(chain1, address1);
         self.set_trusted_address(chain2, address2);
 
-        assert!(self.get_trusted_address(chain1) == &address1, 0);
-        assert!(self.get_trusted_address(chain2) == &address2, 1);
+        assert!(self.get_trusted_address(chain1) == &address1);
+        assert!(self.get_trusted_address(chain2) == &address2);
 
-        assert!(self.is_trusted_address(chain1, address1) == true, 2);
-        assert!(self.is_trusted_address(chain1, address2) == false, 3);
-        assert!(self.is_trusted_address(chain2, address1) == false, 4);
-        assert!(self.is_trusted_address(chain2, address2) == true, 5);
+        assert!(self.is_trusted_address(chain1, address1) == true);
+        assert!(self.is_trusted_address(chain1, address2) == false);
+        assert!(self.is_trusted_address(chain2, address1) == false);
+        assert!(self.is_trusted_address(chain2, address2) == true);
 
 
         self.set_trusted_address(chain1, address2);
         self.set_trusted_address(chain2, address1);
 
-        assert!(self.get_trusted_address(chain1) == &address2, 6);
-        assert!(self.get_trusted_address(chain2) == &address1, 7);
+        assert!(self.get_trusted_address(chain1) == &address2);
+        assert!(self.get_trusted_address(chain2) == &address1);
 
-        assert!(self.is_trusted_address(chain1, address1) == false, 8);
-        assert!(self.is_trusted_address(chain1, address2) == true, 9);
-        assert!(self.is_trusted_address(chain2, address1) == true, 10);
-        assert!(self.is_trusted_address(chain2, address2) == false, 11);
+        assert!(self.is_trusted_address(chain1, address1) == false);
+        assert!(self.is_trusted_address(chain1, address2) == true);
+        assert!(self.is_trusted_address(chain2, address1) == true);
+        assert!(self.is_trusted_address(chain2, address2) == false);
 
-        assert!(self.trusted_addresses.contains(chain1), 12);
-        assert!(self.trusted_addresses.contains(chain2), 13);
-
-        self.set_trusted_address(chain1, std::ascii::string(b""));
-        self.set_trusted_address(chain2, std::ascii::string(b""));
-
-        assert!(!self.trusted_addresses.contains(chain1), 14);
-        assert!(!self.trusted_addresses.contains(chain2), 15);
-
+        assert!(self.trusted_addresses.contains(chain1));
+        assert!(self.trusted_addresses.contains(chain2));
 
         self.set_trusted_address(chain1, std::ascii::string(b""));
         self.set_trusted_address(chain2, std::ascii::string(b""));
 
-        assert!(!self.trusted_addresses.contains(chain1), 16);
-        assert!(!self.trusted_addresses.contains(chain2), 17);
+        assert!(!self.trusted_addresses.contains(chain1));
+        assert!(!self.trusted_addresses.contains(chain2));
+
+
+        self.set_trusted_address(chain1, std::ascii::string(b""));
+        self.set_trusted_address(chain2, std::ascii::string(b""));
+
+        assert!(!self.trusted_addresses.contains(chain1));
+        assert!(!self.trusted_addresses.contains(chain2));
 
         sui::test_utils::destroy(self);
     }

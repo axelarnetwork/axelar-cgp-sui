@@ -175,7 +175,7 @@ module its::coin_management {
         let clock = sui::clock::create_for_testing(ctx);
         management1.take_balance(coin.into_balance(), &clock);
 
-        assert!(management1.balance.borrow().value() == amount1, 0);
+        assert!(management1.balance.borrow().value() == amount1);
 
         coin = cap.mint(amount2, ctx);
         let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
@@ -201,8 +201,8 @@ module its::coin_management {
         management1.take_balance(coin.into_balance(), &clock);
         coin = management1.give_coin((amount1 as u256), &clock, ctx);
 
-        assert!(management1.balance.borrow().value() == 0, 0);
-        assert!(coin.value() == amount1, 0);
+        assert!(management1.balance.borrow().value() == 0);
+        assert!(coin.value() == amount1);
 
         sui::test_utils::destroy(coin);
 
@@ -210,7 +210,7 @@ module its::coin_management {
         management2.scaling = 1;
         coin = management2.give_coin((amount2 as u256), &clock, ctx);
 
-        assert!(coin.value() == amount2, 1);
+        assert!(coin.value() == amount2);
 
         sui::test_utils::destroy(coin);
         sui::test_utils::destroy(metadata);

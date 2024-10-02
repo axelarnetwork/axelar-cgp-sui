@@ -49,7 +49,6 @@ public struct Transaction has store, copy, drop {
     move_calls: vector<MoveCall>,
 }
 
-
 /// ----------------
 /// Public Functions
 /// ----------------
@@ -202,9 +201,29 @@ fun test_new_function_from_bcs() {
     let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e";
 
     let function = new_function_from_bcs(&mut bcs::new(input));
-    assert!(function.package_id == package_id, 0);
-    assert!(function.module_name == module_name, 1);
-    assert!(function.name == name, 2);
+    assert!(function.package_id == package_id);
+    assert!(function.module_name == module_name);
+    assert!(function.name == name);
+}
+
+#[test]
+fun test_new_move_call_from_bcs() {
+    let package_id = @0x5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962;
+    let module_name = std::ascii::string(b"module");
+    let name = std::ascii::string(b"function");
+    let arguments = vector[x"1234", x"5678"];
+    let type_arguments = vector[
+        ascii::string(b"type1"),
+        ascii::string(b"type2"),
+    ];
+    let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
+
+    let transaction = new_move_call_from_bcs(&mut bcs::new(input));
+    assert!(transaction.function.package_id == package_id);
+    assert!(transaction.function.module_name == module_name);
+    assert!(transaction.function.name == name);
+    assert!(transaction.arguments == arguments);
+    assert!(transaction.type_arguments == type_arguments);
 }
 
 #[test]
@@ -217,12 +236,48 @@ fun test_new_transaction_from_bcs() {
         ascii::string(b"type1"),
         ascii::string(b"type2"),
     ];
-    let input = x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
 
-    let transaction = new_move_call_from_bcs(&mut bcs::new(input));
-    assert!(transaction.function.package_id == package_id, 0);
-    assert!(transaction.function.module_name == module_name, 1);
-    assert!(transaction.function.name == name, 2);
-    assert!(transaction.arguments == arguments, 3);
-    assert!(transaction.type_arguments == type_arguments, 4);
+    let transaction = Transaction {
+        is_final: true,
+        move_calls: vector[
+            MoveCall {
+                function: Function {
+                    package_id,
+                    module_name,
+                    name,
+                },
+                arguments,
+                type_arguments,
+            },
+            MoveCall {
+                function: Function {
+                    package_id,
+                    module_name,
+                    name,
+                },
+                arguments,
+                type_arguments,
+            },
+        ]
+    };
+
+    assert!(transaction == new_transaction_from_bcs(&mut bcs::new(bcs::to_bytes(&transaction))));
+}
+
+#[test]
+fun test_package_id() {
+    assert!(package_id<Transaction>() == address::from_bytes(
+        hex::decode(
+            *ascii::as_bytes(
+                &type_name::get_address(&type_name::get<Transaction>()),
+            ),
+        ),
+    ));
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidString)]
+fun test_peel_type_invalid_string() {
+    let bcs_bytes = bcs::to_bytes(&vector[128u8]);
+    peel_type(&mut bcs::new(bcs_bytes));
 }

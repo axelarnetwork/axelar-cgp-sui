@@ -432,11 +432,11 @@ module its::service {
             .write_u256((token_decimals as u256))
             .write_bytes(vector::empty());
 
-        assert!(message_ticket.source_id() == its.channel().to_address(), 0);
-        assert!(message_ticket.destination_chain() == destination_chain, 1);
-        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain), 2);
-        assert!(message_ticket.payload() == writer.into_bytes(), 3);
-        assert!(message_ticket.version() == 0, 4);
+        assert!(message_ticket.source_id() == its.channel().to_address());
+        assert!(message_ticket.destination_chain() == destination_chain);
+        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain));
+        assert!(message_ticket.payload() == writer.into_bytes());
+        assert!(message_ticket.version() == 0);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(message_ticket);
@@ -477,11 +477,11 @@ module its::service {
             .write_u256((amount as u256) * scaling)
             .write_bytes(b"");
 
-        assert!(message_ticket.source_id() == its.channel().to_address(), 0);
-        assert!(message_ticket.destination_chain() == destination_chain, 1);
-        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain), 2);
-        assert!(message_ticket.payload() == writer.into_bytes(), 3);
-        assert!(message_ticket.version() == 0, 4);
+        assert!(message_ticket.source_id() == its.channel().to_address());
+        assert!(message_ticket.destination_chain() == destination_chain);
+        assert!(message_ticket.destination_address() == its.get_trusted_address(destination_chain));
+        assert!(message_ticket.payload() == writer.into_bytes());
+        assert!(message_ticket.version() == 0);
 
         clock.destroy_for_testing();
         source_channel.destroy();
@@ -686,10 +686,10 @@ module its::service {
          
         let (received_source_chain, received_source_address, received_data, received_coin) = receive_interchain_transfer_with_data<COIN>(&mut its, approved_message, &channel, &clock, ctx);
 
-        assert!(received_source_chain == source_chain, 0);
-        assert!(received_source_address == its_source_address, 1);
-        assert!(received_data == data, 2);
-        assert!(received_coin.value() == amount / (scaling as u64), 3);
+        assert!(received_source_chain == source_chain);
+        assert!(received_source_address == its_source_address);
+        assert!(received_data == data);
+        assert!(received_coin.value() == amount / (scaling as u64));
 
         clock.destroy_for_testing();
         channel.destroy();
@@ -1508,8 +1508,8 @@ module its::service {
 
         let message_ticket = prepare_message(&mut its, destination_chain, payload);
 
-        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME), 0);
-        assert!(message_ticket.destination_address() == hub_address, 1);
+        assert!(message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME));
+        assert!(message_ticket.destination_address() == hub_address);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(message_ticket);

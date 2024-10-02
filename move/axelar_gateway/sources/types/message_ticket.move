@@ -111,11 +111,11 @@ fun test_all() {
         version,
     );
 
-    assert!(message_ticket.source_id() == source_id, 0);
-    assert!(message_ticket.destination_chain() == destination_chain, 1);
-    assert!(message_ticket.destination_address() == destination_address, 2);
-    assert!(message_ticket.payload() == payload, 3);
-    assert!(message_ticket.version() == version, 4);
+    assert!(message_ticket.source_id() == source_id);
+    assert!(message_ticket.destination_chain() == destination_chain);
+    assert!(message_ticket.destination_address() == destination_address);
+    assert!(message_ticket.payload() == payload);
+    assert!(message_ticket.version() == version);
 
     let (
         result_source_id,
@@ -126,9 +126,9 @@ fun test_all() {
     ) = message_ticket.destroy();
 
 
-    assert!(result_source_id == source_id, 0);
-    assert!(result_destination_chain == destination_chain, 1);
-    assert!(result_destination_address == destination_address, 2);
-    assert!(result_payload == payload, 3);
-    assert!(result_version == version, 4);
+    assert!(result_source_id == source_id);
+    assert!(result_destination_chain == destination_chain);
+    assert!(result_destination_address == destination_address);
+    assert!(result_payload == payload);
+    assert!(result_version == version);
 }

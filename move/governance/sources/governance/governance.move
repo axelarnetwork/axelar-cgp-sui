@@ -343,7 +343,7 @@ fun test_take_upgrade_cap() {
             &mut governance.caps,
             upgrade_id,
         );
-        assert!(object::id(recieved_upgrade_cap) == upgrade_id, 1);
+        assert!(object::id(recieved_upgrade_cap) == upgrade_id);
         test_scenario::return_shared(governance);
     };
 
@@ -378,8 +378,8 @@ fun test_commit_upgrade() {
         &governance.caps,
         upgrade_id,
     );
-    assert!(upgrade_id == object::id(upgrade_cap_return), 1);
-    assert!(package::version(upgrade_cap_return) == 2, 2);
+    assert!(upgrade_id == object::id(upgrade_cap_return));
+    assert!(package::version(upgrade_cap_return) == 2);
     test_utils::destroy(uid);
     test_utils::destroy(governance);
 }
@@ -427,9 +427,9 @@ fun test_authorize_upgrade() {
         1,
     );
     let policy = abi.read_u8();
-    assert!(package::ticket_policy(&upgrade_ticket) == policy, 2);
+    assert!(package::ticket_policy(&upgrade_ticket) == policy);
     let digest = abi.read_bytes();
-    assert!(package::ticket_digest(&upgrade_ticket) == digest, 3);
+    assert!(package::ticket_digest(&upgrade_ticket) == digest);
     test_utils::destroy(upgrade_ticket);
     test_utils::destroy(uid);
     test_utils::destroy(governance);

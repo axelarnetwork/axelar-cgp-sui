@@ -280,10 +280,22 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
 /// Test Only
 /// ---------
 #[test_only]
+use axelar_gateway::weighted_signers::WeightedSigners;
+#[test_only]
+use sui::bcs;
+
+#[test_only]
 public(package) fun messages_mut(
     self: &mut GatewayV0,
 ): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
+}
+
+#[test_only]
+public(package) fun signers_mut(
+    self: &mut GatewayV0,
+): &mut AxelarSigners {
+    &mut self.signers
 }
 
 #[test_only]
@@ -307,6 +319,21 @@ fun dummy(ctx: &mut TxContext): GatewayV0 {
         axelar_gateway::auth::dummy(ctx),
         version_control::version_control::new(vector[]),
     )
+}
+
+#[test_only]
+public(package) fun approve_messages_data_hash(messages: vector<Message>): Bytes32 {
+    data_hash(COMMAND_TYPE_APPROVE_MESSAGES, bcs::to_bytes(&messages))
+}
+
+#[test_only]
+public(package) fun rotate_signers_data_hash(weighted_signers: WeightedSigners): Bytes32 {
+    data_hash(COMMAND_TYPE_ROTATE_SIGNERS, bcs::to_bytes(&weighted_signers))
+}
+
+#[test_only]
+public(package) fun approve_message_for_testing(self: &mut GatewayV0, message: Message) {
+    self.approve_message(message);
 }
 
 /// -----
@@ -416,9 +443,9 @@ fun test_peel_messages() {
 
     let messages = peel_messages(bytes);
 
-    assert!(messages.length() == 2, 0);
-    assert!(messages[0] == message1, 1);
-    assert!(messages[1] == message2, 2);
+    assert!(messages.length() == 2);
+    assert!(messages[0] == message1);
+    assert!(messages[1] == message2);
 }
 
 #[test]
@@ -450,4 +477,56 @@ fun test_data_hash() {
         bytes32::from_bytes(hash::keccak256(&typed_data)),
         0,
     );
+}
+
+#[test]
+#[expected_failure(abort_code = ENewerMessage)]
+fun test_send_message_newer_message() {
+    let source_id = @0x1;
+    let destination_chain = std::ascii::string(b"Destination Chain");
+    let destination_address = std::ascii::string(b"Destination Address");
+    let payload = b"payload";
+    let version = 1;
+    let message = axelar_gateway::message_ticket::new(
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        version,
+    );
+    let ctx = &mut sui::tx_context::dummy();
+    let self = dummy(ctx);
+    self.send_message(message, 0);
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = EMessageNotApproved)]
+fun test_take_approved_message_message_not_approved() {
+    let destination_id = @0x1;
+    let source_chain = std::ascii::string(b"Source Chain");
+    let source_address = std::ascii::string(b"Source Address");
+    let message_id = std::ascii::string(b"Message Id");
+    let payload = b"payload";
+    let command_id = message::message_to_command_id(source_chain, message_id);
+
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = dummy(ctx);
+
+    self
+    .messages
+    .add(
+        command_id,
+        message_status::executed(),
+    );
+
+    let approved_message = self.take_approved_message(
+        source_chain,
+        message_id,
+        source_address,
+        destination_id,
+        payload,
+    );
+    sui::test_utils::destroy(self);
+    sui::test_utils::destroy(approved_message);
 }

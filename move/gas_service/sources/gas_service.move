@@ -113,6 +113,7 @@ public fun pay_gas(
 ) {
     let coin_value = coin.value();
     self.value_mut!(b"pay_gas").put(coin);
+
     let payload_hash = address::from_bytes(keccak256(&payload));
 
     event::emit(GasPaid<SUI> {
@@ -272,7 +273,7 @@ fun test_pay_gas() {
         vector[],
     );
 
-    assert!(service.value!().balance().value() == value, 0);
+    assert!(service.value!().balance().value() == value);
 
     cap.destroy_cap();
     service.destroy();
@@ -294,7 +295,7 @@ fun test_add_gas() {
         vector[],
     );
 
-    assert!(service.value!().balance().value() == value, 0);
+    assert!(service.value!().balance().value() == value);
 
     cap.destroy_cap();
     service.destroy();
@@ -323,7 +324,7 @@ fun test_collect_gas() {
         ctx,
     );
 
-    assert!(service.value!().balance().value() == 0, 0);
+    assert!(service.value!().balance().value() == 0);
 
     cap.destroy_cap();
     service.destroy();
@@ -353,7 +354,7 @@ fun test_refund() {
         ctx,
     );
 
-    assert!(service.value!().balance().value() == 0, 0);
+    assert!(service.value!().balance().value() == 0);
 
     cap.destroy_cap();
     service.destroy();

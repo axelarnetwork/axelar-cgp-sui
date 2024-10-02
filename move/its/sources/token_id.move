@@ -83,7 +83,7 @@ module its::token_id {
                 keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))
             )
         );
-        assert!(prefix == PREFIX_SUI_TOKEN_ID, 5);
+        assert!(prefix == PREFIX_SUI_TOKEN_ID);
 
         let name = string::utf8(b"Name");
         let symbol = ascii::string(b"Symbol");

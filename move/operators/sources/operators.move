@@ -278,11 +278,11 @@ fun test_add_and_remove_operator() {
 
     let new_operator = @0x1;
     add_operator(&mut operators, &owner_cap, new_operator, ctx);
-    assert!(operators.operators.size() == 1, 0);
+    assert!(operators.operators.size() == 1);
 
     let operator_id = operators.operators.keys()[0];
     remove_operator(&mut operators, &owner_cap, operator_id);
-    assert!(operators.operators.is_empty(), 1);
+    assert!(operators.operators.is_empty());
 
     destroy_owner_cap(owner_cap);
     destroy_operators(operators);
@@ -299,7 +299,7 @@ fun test_store_and_remove_cap() {
     let external_id = object::id(&external_cap);
 
     store_cap(&mut operators, &owner_cap, external_cap);
-    assert!(operators.caps.contains(external_id), 0);
+    assert!(operators.caps.contains(external_id));
 
     let (cap, loaned_cap) = loan_cap<OwnerCap>(
         &mut operators,
@@ -307,16 +307,16 @@ fun test_store_and_remove_cap() {
         external_id,
         ctx,
     );
-    assert!(!operators.caps.contains(external_id), 1);
+    assert!(!operators.caps.contains(external_id));
     restore_cap(&mut operators, &operator_cap, cap, loaned_cap);
-    assert!(operators.caps.contains(external_id), 2);
+    assert!(operators.caps.contains(external_id));
 
     let removed_cap = remove_cap<OwnerCap>(
         &mut operators,
         &owner_cap,
         external_id,
     );
-    assert!(!operators.caps.contains(external_id), 3);
+    assert!(!operators.caps.contains(external_id));
 
     destroy_operator_cap(operator_cap);
     destroy_owner_cap(owner_cap);

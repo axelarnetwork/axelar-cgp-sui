@@ -216,8 +216,8 @@ module its::discovery {
 
         register_transaction(&mut its, &mut discovery);
 
-        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
-        assert!(its.relayer_discovery_id() == object::id(&discovery), 1);
+        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its));
+        assert!(its.relayer_discovery_id() == object::id(&discovery));
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -253,14 +253,14 @@ module its::discovery {
         let mut reader = abi::new_reader(payload);
         reader.skip_slot(); // skip message_type
 
-        assert!(tx_block == get_interchain_transfer_tx(&its, &mut reader), 1);
-        assert!(tx_block.is_final() && tx_block.move_calls().length() == 1, 2);
+        assert!(tx_block == get_interchain_transfer_tx(&its, &mut reader));
+        assert!(tx_block.is_final() && tx_block.move_calls().length() == 1);
 
         let call_info = tx_block.move_calls().pop_back();
 
-        assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 3);
-        assert!(call_info.function().module_name() == ascii::string(b"service"), 4);
-        assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"), 5);
+        assert!(call_info.function().package_id_from_function() == package_id<ITS>());
+        assert!(call_info.function().module_name() == ascii::string(b"service"));
+        assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"));
         let mut arg = vector[0];
         arg.append(object::id_address(&its).to_bytes());
 
@@ -269,8 +269,8 @@ module its::discovery {
             vector[2],
             vector[0, 6],
         ];
-        assert!(call_info.arguments() == arguments, 6);
-        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 7);
+        assert!(call_info.arguments() == arguments);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()]);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -284,7 +284,7 @@ module its::discovery {
 
         register_transaction(&mut its, &mut discovery);
 
-        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its), 0);
+        assert!(discovery.get_transaction(its.channel_id()) == get_initial_tx(&its));
 
         let token_id = @0x1234;
         let source_address = b"source address";
@@ -312,7 +312,7 @@ module its::discovery {
         let mut reader = abi::new_reader(payload);
         reader.skip_slot(); // skip message_type
 
-        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &mut reader), 1);
+        assert!(get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &mut reader));
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
@@ -348,15 +348,15 @@ module its::discovery {
         let mut reader = abi::new_reader(payload);
         reader.skip_slot(); // skip message_type
 
-        assert!(tx_block == get_deploy_interchain_token_tx(&its, &mut reader), 1);
+        assert!(tx_block == get_deploy_interchain_token_tx(&its, &mut reader));
 
-        assert!(tx_block.is_final(), 2);
+        assert!(tx_block.is_final());
         let mut move_calls = tx_block.move_calls();
-        assert!(move_calls.length() == 1, 3);
+        assert!(move_calls.length() == 1);
         let call_info = move_calls.pop_back();
-        assert!(call_info.function().package_id_from_function() == package_id<ITS>(), 4);
-        assert!(call_info.function().module_name() == ascii::string(b"service"), 5);
-        assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"), 6);
+        assert!(call_info.function().package_id_from_function() == package_id<ITS>());
+        assert!(call_info.function().module_name() == ascii::string(b"service"));
+        assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"));
         let mut arg = vector[0];
         arg.append(object::id_address(&its).to_bytes());
 
@@ -364,8 +364,8 @@ module its::discovery {
             arg,
             vector[2]
         ];
-        assert!(call_info.arguments() == arguments, 7);
-        assert!(call_info.type_arguments() == vector[type_arg.into_string()], 8);
+        assert!(call_info.arguments() == arguments);
+        assert!(call_info.type_arguments() == vector[type_arg.into_string()]);
 
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(discovery);
