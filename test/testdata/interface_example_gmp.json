@@ -1,0 +1,34 @@
+{
+  "structs": {
+    "Singleton": {
+      "name": "Singleton",
+      "abilities": [
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        },
+        {
+          "name": "channel",
+          "type": "Channel"
+        }
+      ]
+    },
+    "Executed": {
+      "name": "Executed",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "data",
+          "type": "vector<u8>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

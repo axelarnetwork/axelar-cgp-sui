@@ -1,0 +1,66 @@
+{
+  "structs": {
+    "Bytes32": {
+      "name": "Bytes32",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "bytes",
+          "type": "address"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "new": {
+      "name": "new",
+      "visibility": "public",
+      "params": {
+        "bytes#0#0": "address"
+      },
+      "returnType": "Bytes32"
+    },
+    "default": {
+      "name": "default",
+      "visibility": "public",
+      "params": {},
+      "returnType": "Bytes32"
+    },
+    "from_bytes": {
+      "name": "from_bytes",
+      "visibility": "public",
+      "params": {
+        "bytes#0#0": "vector<u8>"
+      },
+      "returnType": "Bytes32"
+    },
+    "from_address": {
+      "name": "from_address",
+      "visibility": "public",
+      "params": {
+        "addr#0#0": "address"
+      },
+      "returnType": "Bytes32"
+    },
+    "to_bytes": {
+      "name": "to_bytes",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "Bytes32"
+      },
+      "returnType": "vector<u8>"
+    },
+    "length": {
+      "name": "length",
+      "visibility": "public",
+      "params": {
+        "_self#0#0": "&Bytes32"
+      },
+      "returnType": "u64"
+    }
+  }
+}

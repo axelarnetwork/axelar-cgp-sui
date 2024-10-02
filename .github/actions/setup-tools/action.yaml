@@ -1,0 +1,38 @@
+name: Setup tools
+description: 'Setup tools for repo workflows'
+
+inputs:
+  install-sui:
+    description: "Install the Sui CLI"
+    required: false
+    default: 'false'
+  install-nodejs:
+    description: "Install nodejs and setup repo's npm package"
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'  
+  steps:
+
+    # This step ensures that the "LITERAL" value is given to the actions.
+    # Using `jq` sends it uninterepted to the action which is sort of "hackish" and doesn't ensure the separation of concerns.
+    - name: Get Sui Version
+      shell: bash
+      if: inputs.install-sui == 'true'
+      run: |
+        SUI_VERSION=$(jq -r '.SUI_VERSION' "version.json")
+        echo "SUI_VERSION=$SUI_VERSION" >> $GITHUB_ENV
+
+    - name: Setup Sui CLI and install dependencies
+      if: inputs.install-sui == 'true'
+      uses: ./.github/actions/setup-sui
+      with:
+        sui-version: ${{ env.SUI_VERSION }}
+
+    # Install Node.js and its dependencies
+    - name: Setup node.js and install dependencies
+      if: inputs.install-nodejs == 'true'
+      uses: ./.github/actions/nodejs-ci
+      with:
+        node-version: '18' # Version is hardcoded across all other steps to ensure stability of the code, although the `package.json` has `>=18` engine version

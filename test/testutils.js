@@ -1,3 +1,5 @@
+'use strict';
+
 const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
@@ -10,6 +12,10 @@ const {
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
+const chalk = require('chalk');
+const { diffJson } = require('diff');
+const fs = require('fs');
+const path = require('path');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
@@ -90,6 +96,49 @@ async function expectEvent(builder, keypair, eventData = {}) {
     }
 }
 
+/**
+ *
+ * @param {object} data Arbitrary data to be either written to a golden file
+ *  or compared to an existing golden file, depending on whether `GOLDEN_TESTS` env var is set or not.
+ * @param {string} name Name of the test. The golden file will be stored at `testdata/${name}.json`
+ */
+function goldenTest(data, name) {
+    const goldenDir = path.resolve(__dirname, 'testdata');
+    const goldenFilePath = path.join(goldenDir, `${name}.json`);
+    const encodedData = JSON.stringify(data, null, 2) + '\n';
+
+    if (process.env.GOLDEN_TESTS) {
+        // Write the extracted info to the golden file
+        fs.mkdirSync(path.dirname(goldenFilePath), { recursive: true });
+        fs.writeFileSync(goldenFilePath, encodedData);
+    } else {
+        // Read the golden file and compare
+        if (!fs.existsSync(goldenFilePath)) {
+            throw new Error(`Golden file not found: ${goldenFilePath}`);
+        }
+
+        const expectedData = fs.readFileSync(goldenFilePath, 'utf8');
+
+        if (encodedData !== expectedData) {
+            const diff = diffJson(JSON.parse(expectedData), JSON.parse(encodedData));
+
+            console.log(`Diff with ${goldenFilePath}:`);
+
+            diff.forEach((part) => {
+                const color = part.added ? 'green' : part.removed ? 'red' : '';
+
+                if (color) {
+                    process.stdout.write(chalk[color](part.value));
+                }
+            });
+
+            console.log();
+
+            expect(false).to.be.true(`Public interface for ${name} does not match golden file`);
+        }
+    }
+}
+
 function hashMessage(data, commandType) {
     const toHash = new Uint8Array(data.length + 1);
     toHash[0] = commandType;
@@ -158,6 +207,7 @@ async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
 
 async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInfo, executeOptions) {
     const axelarPackageId = gatewayInfo.packageId;
+    const discoveryPackageId = gatewayInfo.discoveryPackageId;
     const gateway = gatewayInfo.gateway;
     const discovery = gatewayInfo.discovery;
 
@@ -170,7 +220,7 @@ async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInf
     let moveCalls = [
         {
             function: {
-                package_id: axelarPackageId,
+                package_id: discoveryPackageId,
                 module_name: 'discovery',
                 name: 'get_transaction',
             },
@@ -251,4 +301,5 @@ module.exports = {
     signMessage,
     approveMessage,
     approveAndExecuteMessage,
+    goldenTest,
 };

@@ -14,13 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Sui CLI
-        uses: ./.github/actions/install-sui-cli
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
         with:
-          sui-version: "$(jq -r '.SUI_VERSION' version.json)"
-
-      - name: Setup Node Dependencies
-        uses: ./.github/actions/install-node-dependencies
+          install-sui: 'true'
+          install-nodejs: 'true'
 
       - name: Coverage
         run: npm run coverage

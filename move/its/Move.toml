@@ -9,6 +9,7 @@ AxelarGateway = { local = "../axelar_gateway" }
 Governance = { local = "../governance" }
 Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
+RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]
 its = "0xa5"

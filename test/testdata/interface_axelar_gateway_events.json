@@ -1,0 +1,107 @@
+{
+  "structs": {
+    "SignersRotated": {
+      "name": "SignersRotated",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "epoch",
+          "type": "u64"
+        },
+        {
+          "name": "signers_hash",
+          "type": "Bytes32"
+        },
+        {
+          "name": "signers",
+          "type": "WeightedSigners"
+        }
+      ]
+    },
+    "ChannelCreated": {
+      "name": "ChannelCreated",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "address"
+        }
+      ]
+    },
+    "ChannelDestroyed": {
+      "name": "ChannelDestroyed",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "address"
+        }
+      ]
+    },
+    "ContractCall": {
+      "name": "ContractCall",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "source_id",
+          "type": "address"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "destination_address",
+          "type": "String"
+        },
+        {
+          "name": "payload",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "payload_hash",
+          "type": "address"
+        }
+      ]
+    },
+    "MessageApproved": {
+      "name": "MessageApproved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "message",
+          "type": "Message"
+        }
+      ]
+    },
+    "MessageExecuted": {
+      "name": "MessageExecuted",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "message",
+          "type": "Message"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

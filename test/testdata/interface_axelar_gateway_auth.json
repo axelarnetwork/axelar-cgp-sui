@@ -1,0 +1,59 @@
+{
+  "structs": {
+    "AxelarSigners": {
+      "name": "AxelarSigners",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "epoch",
+          "type": "u64"
+        },
+        {
+          "name": "epoch_by_signers_hash",
+          "type": "Table<Bytes32, u64>"
+        },
+        {
+          "name": "domain_separator",
+          "type": "Bytes32"
+        },
+        {
+          "name": "minimum_rotation_delay",
+          "type": "u64"
+        },
+        {
+          "name": "last_rotation_timestamp",
+          "type": "u64"
+        },
+        {
+          "name": "previous_signers_retention",
+          "type": "u64"
+        }
+      ]
+    },
+    "MessageToSign": {
+      "name": "MessageToSign",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "domain_separator",
+          "type": "Bytes32"
+        },
+        {
+          "name": "signers_hash",
+          "type": "Bytes32"
+        },
+        {
+          "name": "data_hash",
+          "type": "Bytes32"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
