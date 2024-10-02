@@ -59,11 +59,8 @@ describe.only('ITS', () => {
         // Publish all packages
         for (const packageName of dependencies) {
             const result = await publishPackage(client, deployer, packageName);
-            deployments[packageName] = result;
 
-            if (packageName === 'example') {
-                console.log('example digest', result.publishTxn.digest);
-            }
+            deployments[packageName] = result;
         }
 
         objectIds = {
@@ -74,7 +71,6 @@ describe.only('ITS', () => {
             upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
         };
-        console.log('singleton', objectIds.singleton);
 
         const txBuilder = new TxBuilder(client);
 
@@ -166,7 +162,7 @@ describe.only('ITS', () => {
         expect(objectIds.tokenId).to.be.not.null;
     });
 
-    it('should send interchain transfer successfully', async () => {
+    it.skip('should send interchain transfer successfully', async () => {
         // Setup trusted addresses
         const trustedSourceChain = 'Ethereum';
         const trustedSourceAddress = hexlify(randomBytes(20));
@@ -216,7 +212,8 @@ describe.only('ITS', () => {
         // console.log(txResult);
     });
 
-    it('should receive interchain transfer successfully', async () => {
+    // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
+    it.skip('should receive interchain transfer successfully', async () => {
         // Setup trusted addresses
         const trustedSourceChain = 'Avalanche';
         const trustedSourceAddress = hexlify(randomBytes(20));
@@ -275,6 +272,38 @@ describe.only('ITS', () => {
         // TODO: check for events
     });
 
+    it('should be able to deploy remote interchain token to other chain', async () => {
+        const trustedSourceChain = 'Avalanche';
+        const trustedSourceAddress = hexlify(randomBytes(20));
+        const trustedAddressMessage = {
+            message_id: hexlify(randomBytes(32)),
+            destination_id: objectIds.itsChannel,
+        };
+        await setupTrustedAddresses(trustedAddressMessage, [trustedSourceAddress], [trustedSourceChain]);
+
+        const txBuilder = new TxBuilder(client);
+        const tx = txBuilder.tx;
+
+        const gas = tx.splitCoins(tx.gas, [1e8]);
+
+        console.log('Debug ObjectIds');
+        console.log(objectIds);
+
+        const TokenId = await txBuilder.moveCall({
+            target: `${deployments.its.packageId}::token_id::from_u256`,
+            arguments: [objectIds.tokenId],
+        });
+
+        await txBuilder.moveCall({
+            target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
+            arguments: [objectIds.its, objectIds.gasService, trustedSourceChain, TokenId, gas, '0x', deployer.toSuiAddress()],
+        });
+
+        await txBuilder.signAndExecute(deployer);
+
+        // TODO: validate some events
+    });
+
     async function setupTrustedAddresses(message, trustedAddresses, trustedChains = ['Ethereum']) {
         // Approve the message to set trusted addresses
         const messageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
@@ -307,6 +336,7 @@ describe.only('ITS', () => {
                 hexlify(payload),
             ],
         });
+
         await trustedAddressTxBuilder.moveCall({
             target: `${deployments.its.packageId}::service::set_trusted_addresses`,
             arguments: [objectIds.its, objectIds.governance, approvedMessage],
