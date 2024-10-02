@@ -86,10 +86,10 @@ public(package) fun dummy(): Message {
     let destination_id = @0x4;
     let payload_hash = bytes32::new(@0x5);
     Message {
-            source_chain,
-            message_id,
-            source_address,
-            destination_id,
-            payload_hash,
+        source_chain,
+        message_id,
+        source_address,
+        destination_id,
+        payload_hash,
     }
 }

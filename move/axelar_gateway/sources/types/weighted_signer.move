@@ -31,7 +31,8 @@ public fun weight(self: &WeightedSigner): u128 {
 // ------
 
 #[error]
-const EInvalidPubKeyLength: vector<u8> = b"invalid public key length: expected 33 bytes";
+const EInvalidPubKeyLength: vector<u8> =
+    b"invalid public key length: expected 33 bytes";
 
 #[error]
 const EInvalidWeight: vector<u8> = b"invalid weight: expected non-zero value";
@@ -98,19 +99,23 @@ fun test_new_incorrect_pubkey() {
 #[test]
 #[expected_failure(abort_code = EInvalidWeight)]
 fun test_validate_invalid_weight() {
-    validate(&WeightedSigner {
-        pub_key: vector[],
-        weight: 0,
-    })
+    validate(
+        &WeightedSigner {
+            pub_key: vector[],
+            weight: 0,
+        },
+    )
 }
 
 #[test]
 fun test_pub_key() {
     let pub_key = vector[1u8, 2u8, 3u8];
-    assert!(&WeightedSigner {
+    assert!(
+        &WeightedSigner {
         pub_key,
         weight: 0,
-    }.pub_key() == &pub_key);
+    }.pub_key() == &pub_key,
+    );
 }
 
 #[test]

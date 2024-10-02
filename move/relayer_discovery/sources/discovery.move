@@ -6,16 +6,12 @@
 /// proper discovery / execution mechanism in place.
 module relayer_discovery::discovery;
 
-use std::ascii;
-
-use sui::versioned::{Self, Versioned};
-
-use version_control::version_control::{Self, VersionControl};
-
 use axelar_gateway::channel::Channel;
-
-use relayer_discovery::transaction::Transaction;
 use relayer_discovery::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
+use relayer_discovery::transaction::Transaction;
+use std::ascii;
+use sui::versioned::{Self, Versioned};
+use version_control::version_control::{Self, VersionControl};
 
 /// -------
 /// Version
@@ -51,14 +47,20 @@ fun init(ctx: &mut TxContext) {
 /// ------
 /// Macros
 /// ------
-macro fun value($self: &RelayerDiscovery, $function_name: vector<u8>): &RelayerDiscoveryV0 {
+macro fun value(
+    $self: &RelayerDiscovery,
+    $function_name: vector<u8>,
+): &RelayerDiscoveryV0 {
     let relayer_discovery = $self;
     let value = relayer_discovery.inner.load_value<RelayerDiscoveryV0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
-macro fun value_mut($self: &mut RelayerDiscovery, $function_name: vector<u8>): &mut RelayerDiscoveryV0 {
+macro fun value_mut(
+    $self: &mut RelayerDiscovery,
+    $function_name: vector<u8>,
+): &mut RelayerDiscoveryV0 {
     let relayer_discovery = $self;
     let value = relayer_discovery.inner.load_value_mut<RelayerDiscoveryV0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -90,10 +92,7 @@ public fun register_transaction(
     value.set_transaction(channel_id, tx);
 }
 
-public fun remove_transaction(
-    self: &mut RelayerDiscovery,
-    channel: &Channel,
-) {
+public fun remove_transaction(self: &mut RelayerDiscovery, channel: &Channel) {
     let value = self.value_mut!(b"remove_transaction");
     let channel_id = channel.id();
     value.remove_transaction(channel_id);
@@ -112,16 +111,14 @@ public fun get_transaction(
 /// Private Functions
 /// -----------------
 fun version_control(): VersionControl {
-    version_control::new(
+    version_control::new(vector[
+        // version 0
         vector[
-            // version 0
-            vector[
-                b"register_transaction",
-                b"remove_transaction",
-                b"get_transaction",
-            ].map!(|function_name| function_name.to_ascii_string()),
-        ]
-    )
+            b"register_transaction",
+            b"remove_transaction",
+            b"get_transaction",
+        ].map!(|function_name| function_name.to_ascii_string()),
+    ])
 }
 
 #[test_only]
@@ -135,7 +132,7 @@ public fun new(ctx: &mut TxContext): RelayerDiscovery {
             VERSION,
             relayer_discovery_v0::new(version_control(), ctx),
             ctx,
-        )
+        ),
     }
 }
 

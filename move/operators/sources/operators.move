@@ -2,10 +2,9 @@ module operators::operators;
 
 use std::ascii::String;
 use std::type_name;
-
 use sui::bag::{Self, Bag};
-use sui::vec_set::{Self, VecSet};
 use sui::event;
+use sui::vec_set::{Self, VecSet};
 
 // -----
 // Types
@@ -48,7 +47,8 @@ const ECapNotFound: vector<u8> = b"the given capability id does not exist";
 
 /// When the cap trying to restore does not match the Borrow object.
 #[error]
-const ECapIdMismatch: vector<u8> = b"the ID of the returned capability does not match the ID in the Borrow object";
+const ECapIdMismatch: vector<u8> =
+    b"the ID of the returned capability does not match the ID in the Borrow object";
 
 // ------
 // Events

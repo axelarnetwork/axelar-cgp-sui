@@ -1,12 +1,10 @@
 module axelar_gateway::events;
 
-use std::ascii::String;
-
-use sui::event;
-
 use axelar_gateway::bytes32::Bytes32;
-use axelar_gateway::weighted_signers::WeightedSigners;
 use axelar_gateway::message::Message;
+use axelar_gateway::weighted_signers::WeightedSigners;
+use std::ascii::String;
+use sui::event;
 
 // ------
 // Events
@@ -55,33 +53,23 @@ public(package) fun signers_rotated(
     signers_hash: Bytes32,
     signers: WeightedSigners,
 ) {
-    event::emit(
-        SignersRotated {
-            epoch,
-            signers_hash,
-            signers,
-        }
-    );
+    event::emit(SignersRotated {
+        epoch,
+        signers_hash,
+        signers,
+    });
 }
 
-public(package) fun channel_created(
-    id: address,
-) {
-    event::emit(
-        ChannelCreated {
-            id
-        }
-    );
+public(package) fun channel_created(id: address) {
+    event::emit(ChannelCreated {
+        id,
+    });
 }
 
-public(package) fun channel_destroyed(
-    id: address,
-) {
-    event::emit(
-        ChannelDestroyed {
-            id
-        }
-    );
+public(package) fun channel_destroyed(id: address) {
+    event::emit(ChannelDestroyed {
+        id,
+    });
 }
 
 public(package) fun contract_call(
@@ -91,32 +79,23 @@ public(package) fun contract_call(
     payload: vector<u8>,
     payload_hash: address,
 ) {
-    event::emit(
-        ContractCall {    
-            source_id,
-            destination_chain,
-            destination_address,
-            payload,
-            payload_hash,
-        }
-    );
+    event::emit(ContractCall {
+        source_id,
+        destination_chain,
+        destination_address,
+        payload,
+        payload_hash,
+    });
 }
 
-public(package) fun message_approved(
-    message: Message,
-) {
-    event::emit(
-        MessageApproved {
-            message
-        }
-    );
+public(package) fun message_approved(message: Message) {
+    event::emit(MessageApproved {
+        message,
+    });
 }
-public(package) fun message_executed(
-    message: Message,
-) {
-    event::emit(
-        MessageExecuted {
-            message
-        }
-    );
+
+public(package) fun message_executed(message: Message) {
+    event::emit(MessageExecuted {
+        message,
+    });
 }

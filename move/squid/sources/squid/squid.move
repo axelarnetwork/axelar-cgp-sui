@@ -1,161 +1,171 @@
-module squid::squid {
-    use sui::clock::Clock;
-    
-    use version_control::version_control::{Self, VersionControl};
+module squid::squid;
 
-    use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use its::its::ITS;
+use its::service;
+use squid::coin_bag::{Self, CoinBag};
+use squid::swap_info::{Self, SwapInfo};
+use sui::clock::Clock;
+use version_control::version_control::{Self, VersionControl};
 
-    use its::service;
-    use its::its::ITS;
+// -------
+// Version
+// -------
+const VERSION: u64 = 0;
 
-    use squid::coin_bag::{Self, CoinBag};
-    use squid::swap_info::{Self, SwapInfo};
+public struct Squid has key, store {
+    id: UID,
+    channel: Channel,
+    coin_bag: CoinBag,
+    version_control: VersionControl,
+}
 
-    // -------
-    // Version
-    // -------
-    const VERSION: u64 = 0;
+fun init(ctx: &mut TxContext) {
+    transfer::share_object(Squid {
+        id: object::new(ctx),
+        channel: channel::new(ctx),
+        coin_bag: coin_bag::new(ctx),
+        version_control: new_version_control(),
+    });
+}
 
-    public struct Squid has key, store{
-        id: UID,
-        channel: Channel,
-        coin_bag: CoinBag,
-        version_control: VersionControl,
+public(package) fun borrow_channel(self: &Squid): &Channel {
+    &self.channel
+}
+
+public fun start_swap<T>(
+    self: &mut Squid,
+    its: &mut ITS,
+    approved_message: ApprovedMessage,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): SwapInfo {
+    self.version_control.check(VERSION, b"start_swap".to_ascii_string());
+    let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
+        its,
+        approved_message,
+        &self.channel,
+        clock,
+        ctx,
+    );
+    let mut swap_info = swap_info::new(data, ctx);
+    swap_info.coin_bag().store_estimate<T>(coin.value());
+    swap_info.coin_bag().store_balance(coin.into_balance());
+    swap_info
+}
+
+public(package) fun coin_bag(self: &mut Squid): &mut CoinBag {
+    &mut self.coin_bag
+}
+
+/// -------
+/// Private
+/// -------
+fun new_version_control(): VersionControl {
+    version_control::new(vector[
+        // Version 0
+        vector[b"start_swap"].map!(
+            |function_name| function_name.to_ascii_string(),
+        ),
+    ])
+}
+
+#[test_only]
+public fun new_for_testing(ctx: &mut TxContext): Squid {
+    Squid {
+        id: object::new(ctx),
+        channel: channel::new(ctx),
+        coin_bag: coin_bag::new(ctx),
+        version_control: new_version_control(),
     }
+}
 
-    fun init(ctx: &mut TxContext) {
-        transfer::share_object(Squid {
-            id: object::new(ctx),
-            channel: channel::new(ctx),
-            coin_bag: coin_bag::new(ctx),
-            version_control: new_version_control(),
-        });
-    }
+#[test_only]
+use its::coin::COIN;
 
-    public (package) fun borrow_channel(self: &Squid): &Channel {
-        &self.channel
-    }
+#[test]
+fun test_start_swap() {
+    let ctx = &mut tx_context::dummy();
+    let clock = sui::clock::create_for_testing(ctx);
+    let mut its = its::its::new_for_testing();
+    let mut squid = new_for_testing(ctx);
 
-    public fun start_swap<T>(self: &mut Squid, its: &mut ITS, approved_message: ApprovedMessage, clock: &Clock, ctx: &mut TxContext): SwapInfo {
-        self.version_control.check(VERSION, b"start_swap".to_ascii_string());
-        let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
-            its,
-            approved_message,
-            &self.channel,
-            clock,
-            ctx,
-        );
-        let mut swap_info = swap_info::new(data, ctx);
-        swap_info.coin_bag().store_estimate<T>(
-            coin.value(),
-        );
-        swap_info.coin_bag().store_balance(
-            coin.into_balance(),
-        );
-        swap_info
-    }
+    let coin_info = its::coin_info::from_info<COIN>(
+        std::string::utf8(b"Name"),
+        std::ascii::string(b"Symbol"),
+        10,
+        12,
+    );
 
-    public (package) fun coin_bag(self: &mut Squid): &mut CoinBag{
-        &mut self.coin_bag
-    }
+    let amount = 1234;
+    let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
+    let coin_management = its::coin_management::new_locked();
+    let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
 
-    /// -------
-    /// Private
-    /// -------
-    fun new_version_control(): VersionControl {
-        version_control::new(
-            vector[
-                // Version 0
-                vector[
-                    b"start_swap",
-                ].map!(|function_name| function_name.to_ascii_string()),
-            ]
-        )
-    }
+    let token_id = its::service::register_coin(
+        &mut its,
+        coin_info,
+        coin_management,
+    );
 
-    #[test_only]
-    public fun new_for_testing(ctx: &mut TxContext): Squid {
-        Squid {
-            id: object::new(ctx),
-            channel: channel::new(ctx),
-            coin_bag: coin_bag::new(ctx),
-            version_control: new_version_control(),
-        }
-    }
+    // This gives some coin to the service.
+    let interchain_transfer_ticket = service::prepare_interchain_transfer(
+        token_id,
+        coin,
+        std::ascii::string(b"Chain Name"),
+        b"Destination Address",
+        b"",
+        &squid.channel,
+    );
+    sui::test_utils::destroy(
+        service::send_interchain_transfer(
+            &mut its,
+            interchain_transfer_ticket,
+            &clock,
+        ),
+    );
 
-    #[test_only]
-    use its::coin::COIN;
+    let source_chain = std::ascii::string(b"Chain Name");
+    let message_id = std::ascii::string(b"Message Id");
+    let message_source_address = std::ascii::string(b"Address");
+    let its_source_address = b"Source Address";
 
-    #[test]
-    fun test_start_swap() {
-        let ctx = &mut tx_context::dummy();
-        let clock = sui::clock::create_for_testing(ctx);
-        let mut its = its::its::new_for_testing();
-        let mut squid = new_for_testing(ctx);
+    let destination_address = squid.borrow_channel().to_address();
 
-        let coin_info = its::coin_info::from_info<COIN>(
-            std::string::utf8(b"Name"),
-            std::ascii::string(b"Symbol"),
-            10,
-            12,
-        );
-        
-        let amount = 1234;
-        let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
-        let coin_management = its::coin_management::new_locked();
-        let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
+    let mut writer = abi::abi::new_writer(6);
+    writer
+        .write_u256(0)
+        .write_u256(token_id.to_u256())
+        .write_bytes(its_source_address)
+        .write_bytes(destination_address.to_bytes())
+        .write_u256((amount as u256))
+        .write_bytes(data);
+    let payload = writer.into_bytes();
 
-        let token_id = its::service::register_coin(&mut its, coin_info, coin_management);
+    let approved_message = channel::new_approved_message(
+        source_chain,
+        message_id,
+        message_source_address,
+        its.channel_address(),
+        payload,
+    );
 
-        // This gives some coin to the service.
-        let interchain_transfer_ticket = service::prepare_interchain_transfer(
-            token_id,
-            coin,
-            std::ascii::string(b"Chain Name"),
-            b"Destination Address",
-            b"",
-            &squid.channel,
-        );
-        sui::test_utils::destroy(
-            service::send_interchain_transfer(&mut its, interchain_transfer_ticket, &clock)
-        );
-        
-        let source_chain = std::ascii::string(b"Chain Name");
-        let message_id = std::ascii::string(b"Message Id");
-        let message_source_address = std::ascii::string(b"Address");
-        let its_source_address = b"Source Address";
+    let swap_info = start_swap<COIN>(
+        &mut squid,
+        &mut its,
+        approved_message,
+        &clock,
+        ctx,
+    );
 
-        let destination_address = squid.borrow_channel().to_address();
-        
-        let mut writer = abi::abi::new_writer(6);
-        writer
-            .write_u256(0)
-            .write_u256(token_id.to_u256())
-            .write_bytes(its_source_address)
-            .write_bytes(destination_address.to_bytes())
-            .write_u256((amount as u256))
-            .write_bytes(data);
-        let payload = writer.into_bytes();
+    sui::test_utils::destroy(its);
+    sui::test_utils::destroy(squid);
+    sui::test_utils::destroy(swap_info);
+    clock.destroy_for_testing();
+}
 
-        let approved_message = channel::new_approved_message(
-            source_chain,
-            message_id,
-            message_source_address,
-            its.channel_address(),
-            payload,
-        );
-
-        let swap_info = start_swap<COIN>(&mut squid, &mut its, approved_message, &clock, ctx);
-
-        sui::test_utils::destroy(its);
-        sui::test_utils::destroy(squid);
-        sui::test_utils::destroy(swap_info);
-        clock.destroy_for_testing();
-    }
-
-    #[test]
-    fun test_init() {
-        let ctx = &mut tx_context::dummy();
-        init(ctx);
-    }
+#[test]
+fun test_init() {
+    let ctx = &mut tx_context::dummy();
+    init(ctx);
 }

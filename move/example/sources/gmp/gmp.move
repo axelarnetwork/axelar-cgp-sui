@@ -1,20 +1,17 @@
 module example::gmp;
 
+use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::gateway::{Self, Gateway};
+use gas_service::gas_service::GasService;
+use relayer_discovery::discovery::RelayerDiscovery;
+use relayer_discovery::transaction;
 use std::ascii::{Self, String};
 use std::type_name;
-
 use sui::address;
 use sui::coin::Coin;
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
-
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use relayer_discovery::discovery::RelayerDiscovery;
-use axelar_gateway::gateway::{Self, Gateway};
-use relayer_discovery::transaction;
-
-use gas_service::gas_service::GasService;
 
 public struct Singleton has key {
     id: UID,

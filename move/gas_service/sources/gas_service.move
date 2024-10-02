@@ -1,17 +1,13 @@
 module gas_service::gas_service;
 
+use gas_service::gas_service_v0::{Self, GasServiceV0};
 use std::ascii::{Self, String};
-
 use sui::address;
 use sui::coin::Coin;
 use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
 use sui::versioned::{Self, Versioned};
-
-use gas_service::gas_service_v0::{Self, GasServiceV0};
-
-// Version
 use version_control::version_control::{Self, VersionControl};
 
 // -------
@@ -88,7 +84,10 @@ fun init(ctx: &mut TxContext) {
 // ------
 // Macros
 // ------
-macro fun value_mut($self: &GasService, $function_name: vector<u8>): &mut GasServiceV0 {
+macro fun value_mut(
+    $self: &GasService,
+    $function_name: vector<u8>,
+): &mut GasServiceV0 {
     let gas_service = $self;
     let value = gas_service.inner.load_value_mut<GasServiceV0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -190,12 +189,11 @@ public fun refund(
 // -----------------
 fun version_control(): VersionControl {
     version_control::new(
-        vector [
-            // Version 0
-            vector [
-                b"pay_gas", b"add_gas", b"collect_gas", b"refund", 
-            ].map!(|function_name| function_name.to_ascii_string()),
-        ]
+        vector[
+            vector[b"pay_gas", b"add_gas", b"collect_gas", b"refund"].map!(
+                |function_name| function_name.to_ascii_string(),
+            ),
+        ],
     )
 }
 

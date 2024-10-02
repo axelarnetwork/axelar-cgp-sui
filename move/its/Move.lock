@@ -2,11 +2,12 @@
 
 [move]
 version = 2
-manifest_digest = "153CA6FB585A7C3416A40A9919A2EACABB73BEBB3086968004FD13AE4BDEBA4E"
-deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
+manifest_digest = "82177724589701880CC04411BEB432C6AD49CDA2414D116028343446BFCB1FBF"
+deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
 dependencies = [
   { name = "AxelarGateway" },
   { name = "Governance" },
+  { name = "RelayerDiscovery" },
   { name = "Sui" },
   { name = "Utils" },
   { name = "VersionControl" },
@@ -47,6 +48,16 @@ name = "MoveStdlib"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
+name = "RelayerDiscovery"
+source = { local = "../relayer_discovery" }
+
+dependencies = [
+  { name = "AxelarGateway" },
+  { name = "Sui" },
+  { name = "VersionControl" },
+]
+
+[[move.package]]
 name = "Sui"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/sui-framework" }
 
@@ -71,6 +82,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.32.0"
+compiler-version = "1.32.2"
 edition = "2024.beta"
 flavor = "sui"
