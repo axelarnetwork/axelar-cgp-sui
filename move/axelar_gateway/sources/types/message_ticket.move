@@ -43,7 +43,7 @@ public fun version(self: &MessageTicket): u64 {
 // -----------------
 // Package Functions
 // -----------------
-public (package) fun new(
+public(package) fun new(
     source_id: address,
     destination_chain: String,
     destination_address: String,
@@ -55,13 +55,13 @@ public (package) fun new(
         destination_chain,
         destination_address,
         payload,
-        version
+        version,
     }
 }
 
-public (package) fun destroy(self: MessageTicket): (
-    address, String, String, vector<u8>, u64,
-) {
+public(package) fun destroy(
+    self: MessageTicket,
+): (address, String, String, vector<u8>, u64) {
     let MessageTicket {
         source_id,
         destination_chain,
@@ -69,13 +69,7 @@ public (package) fun destroy(self: MessageTicket): (
         payload,
         version,
     } = self;
-    (
-        source_id,
-        destination_chain,
-        destination_address,
-        payload,
-        version,
-    )
+    (source_id, destination_chain, destination_address, payload, version)
 }
 
 #[test_only]
@@ -91,7 +85,7 @@ public fun new_for_testing(
         destination_chain,
         destination_address,
         payload,
-        version
+        version,
     }
 }
 
@@ -99,10 +93,12 @@ public fun new_for_testing(
 fun test_all() {
     let source_id: address = @0x123;
     let destination_chain: String = std::ascii::string(b"Destination Chain");
-    let destination_address: String = std::ascii::string(b"Destination Address");
+    let destination_address: String = std::ascii::string(
+        b"Destination Address",
+    );
     let payload: vector<u8> = b"payload";
     let version: u64 = 2;
-    
+
     let message_ticket = new(
         source_id,
         destination_chain,
@@ -111,11 +107,11 @@ fun test_all() {
         version,
     );
 
-    assert!(message_ticket.source_id() == source_id, 0);
-    assert!(message_ticket.destination_chain() == destination_chain, 1);
-    assert!(message_ticket.destination_address() == destination_address, 2);
-    assert!(message_ticket.payload() == payload, 3);
-    assert!(message_ticket.version() == version, 4);
+    assert!(message_ticket.source_id() == source_id);
+    assert!(message_ticket.destination_chain() == destination_chain);
+    assert!(message_ticket.destination_address() == destination_address);
+    assert!(message_ticket.payload() == payload);
+    assert!(message_ticket.version() == version);
 
     let (
         result_source_id,
@@ -125,10 +121,9 @@ fun test_all() {
         result_version,
     ) = message_ticket.destroy();
 
-
-    assert!(result_source_id == source_id, 0);
-    assert!(result_destination_chain == destination_chain, 1);
-    assert!(result_destination_address == destination_address, 2);
-    assert!(result_payload == payload, 3);
-    assert!(result_version == version, 4);
+    assert!(result_source_id == source_id);
+    assert!(result_destination_chain == destination_chain);
+    assert!(result_destination_address == destination_address);
+    assert!(result_payload == payload);
+    assert!(result_version == version);
 }

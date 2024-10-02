@@ -88,8 +88,10 @@ describe('Axelar Gateway', () => {
         const creatorCap = result.publishTxn.objectChanges.find(
             (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
         ).objectId;
+        result = await publishPackage(client, deployer, 'relayer_discovery');
+        const discoveryPackageId = result.packageId;
         discovery = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${packageId}::discovery::RelayerDiscovery`,
+            (change) => change.objectType === `${discoveryPackageId}::discovery::RelayerDiscovery`,
         ).objectId;
 
         calculateNextSigners();
@@ -97,17 +99,12 @@ describe('Axelar Gateway', () => {
         const encodedSigners = WeightedSigners.serialize(gatewayInfo.signers).toBytes();
         const builder = new TxBuilder(client);
 
-        const separator = await builder.moveCall({
-            target: `${packageId}::bytes32::new`,
-            arguments: [domainSeparator],
-        });
-
         await builder.moveCall({
             target: `${packageId}::gateway::setup`,
             arguments: [
                 creatorCap,
                 operator.toSuiAddress(),
-                separator,
+                domainSeparator,
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
@@ -123,10 +120,11 @@ describe('Axelar Gateway', () => {
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = packageId;
         gatewayInfo.discovery = discovery;
+        gatewayInfo.discoveryPackageId = discoveryPackageId;
     });
 
     describe('Signer Rotation', () => {
-        it('Should rotate signers', async () => {
+        it('should rotate signers', async () => {
             await sleep(2000);
             const proofSigners = gatewayInfo.signers;
             const proofKeys = gatewayInfo.signerKeys;
@@ -199,7 +197,7 @@ describe('Axelar Gateway', () => {
         });
     });
 
-    describe('Contract Call', () => {
+    describe('Send Message', () => {
         let channel;
         before(async () => {
             const builder = new TxBuilder(client);
@@ -217,7 +215,7 @@ describe('Axelar Gateway', () => {
             channel = response.objectChanges.find((change) => change.objectType === `${packageId}::channel::Channel`).objectId;
         });
 
-        it('Should Make a Contract Call', async () => {
+        it('should send a message', async () => {
             const destinationChain = 'Destination Chain';
             const destinationAddress = 'Destination Address';
             const payload = '0x1234';
@@ -231,12 +229,12 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::send_message`,
-                arguments: [messageTicket],
+                arguments: [gateway, messageTicket],
                 typeArguments: [],
             });
 
             await expectEvent(builder, keypair, {
-                type: `${packageId}::gateway::ContractCall`,
+                type: `${packageId}::events::ContractCall`,
                 arguments: {
                     destination_address: destinationAddress,
                     destination_chain: destinationChain,
@@ -247,7 +245,7 @@ describe('Axelar Gateway', () => {
             });
         });
 
-        it('Should approve a Message', async () => {
+        it('should approve a message', async () => {
             const message = {
                 source_chain: 'Ethereum',
                 message_id: 'Message Id',
@@ -281,7 +279,7 @@ describe('Axelar Gateway', () => {
             expect(bcs.Bool.parse(new Uint8Array(resp.results[2].returnValues[0][0]))).to.equal(false);
         });
 
-        it('Should Execute Contract Call', async () => {
+        it('should execute a message', async () => {
             await publishPackage(client, keypair, 'gas_service');
             const result = await publishPackage(client, keypair, 'example');
 

@@ -1,9 +1,10 @@
 module example::gmp;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use axelar_gateway::discovery::{Self, RelayerDiscovery};
-use axelar_gateway::gateway;
-use gas_service::gas_service::{Self, GasService};
+use axelar_gateway::gateway::{Self, Gateway};
+use gas_service::gas_service::GasService;
+use relayer_discovery::discovery::RelayerDiscovery;
+use relayer_discovery::transaction;
 use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
@@ -40,11 +41,11 @@ public fun register_transaction(
     arg = vector::singleton<u8>(0);
     arg.append(object::id_address(singleton).to_bytes());
     arguments.push_back(arg);
-    let transaction = discovery::new_transaction(
+    let transaction = transaction::new_transaction(
         true,
         vector[
-            discovery::new_move_call(
-                discovery::new_function(
+            transaction::new_move_call(
+                transaction::new_function(
                     address::from_bytes(
                         hex::decode(
                             *ascii::as_bytes(
@@ -62,11 +63,12 @@ public fun register_transaction(
             ),
         ],
     );
-    discovery::register_transaction(discovery, &singleton.channel, transaction);
+    discovery.register_transaction(&singleton.channel, transaction);
 }
 
 public fun send_call(
     singleton: &Singleton,
+    gateway: &Gateway,
     gas_service: &mut GasService,
     destination_chain: String,
     destination_address: String,
@@ -75,8 +77,7 @@ public fun send_call(
     coin: Coin<SUI>,
     params: vector<u8>,
 ) {
-    gas_service::pay_gas(
-        gas_service,
+    gas_service.pay_gas(
         coin,
         sui::object::id_address(&singleton.channel),
         destination_chain,
@@ -92,7 +93,7 @@ public fun send_call(
         payload,
     );
 
-    gateway::send_message(message_ticket);
+    gateway.send_message(message_ticket);
 }
 
 public fun execute(call: ApprovedMessage, singleton: &mut Singleton) {

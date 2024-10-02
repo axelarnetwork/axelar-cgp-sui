@@ -11,6 +11,7 @@ Utils = { local = "../utils" }
 AxelarGateway = { local = "../axelar_gateway" }
 ITS = { local = "../its" }
 VersionControl = { local = "../version_control" }
+RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]
 squid = "0xa6"

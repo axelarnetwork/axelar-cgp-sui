@@ -14,12 +14,12 @@ use sui::bcs::{Self, BCS};
 /// $data: The BCS encoded vector
 /// $peel_fn: The function to peel the data
 /// Returns: The peeled data or an error if there is any remaining data in the BCS
-/// 
+///
 /// Example Usage:
 /// ```
 /// use axelar_gateway::proof;
 /// use utils::utils;
-/// 
+///
 /// let proof: Proof = utils::peel!(proof_data, |bcs| proof::peel(bcs));
 /// ```
 public macro fun peel<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
@@ -29,15 +29,11 @@ public macro fun peel<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
     result
 }
 
-
 #[test]
 fun peel_bcs_data_succeeds() {
     let test_bytes = b"test";
     let data = bcs::to_bytes(&test_bytes);
-    let peeled_data: vector<u8> = peel!(
-        data,
-        |bcs| bcs::peel_vec_u8(bcs),
-    );
+    let peeled_data: vector<u8> = peel!(data, |bcs| bcs::peel_vec_u8(bcs));
     assert!(peeled_data == test_bytes);
 }
 
@@ -45,8 +41,5 @@ fun peel_bcs_data_succeeds() {
 #[expected_failure]
 fun peel_bcs_data_fails_when_data_remains() {
     let data = b"ab";
-    let _peeled: u8 = peel!(
-        data,
-        |bcs| bcs::peel_u8(bcs),
-    );
+    let _peeled: u8 = peel!(data, |bcs| bcs::peel_u8(bcs));
 }

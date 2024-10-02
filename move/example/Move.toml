@@ -10,6 +10,7 @@ GasService = { local = "../gas_service" }
 Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
 ITS = { local = "../its" }
+RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]
 example = "0xa9"
