@@ -57,8 +57,6 @@ fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
         coin_metadata,
         treasury_cap,
     });
-
-
 }
 
 /// This needs to be called to register the transaction so that the relayer knows to call this to fulfill calls.
@@ -92,6 +90,19 @@ public fun register_transaction(
                     ),
                     ascii::string(b"its_example"),
                     ascii::string(b"receive_interchain_transfer"),
+                ),
+                arguments,
+                vector[type_name::get<Singleton>().into_string()],
+            ),
+			discovery::new_move_call(
+                discovery::new_function(
+                    address::from_bytes(
+                        hex::decode(
+                            type_name::get<Singleton>().get_address().into_bytes(),
+                        ),
+                    ),
+                    ascii::string(b"its_example"),
+                    ascii::string(b"receive_deploy_interchain_token"),
                 ),
                 arguments,
                 vector[type_name::get<Singleton>().into_string()],
@@ -174,16 +185,6 @@ public fun send_interchain_transfer_call(
         clock,
     );
 
-    // gas_service.pay_gas(
-    //     gas,
-    //     message_ticket.source_id(),
-    //     message_ticket.destination_chain(),
-    //     message_ticket.destination_address(),
-    //     message_ticket.payload(),
-    //     refund_address,
-    //     gas_params,
-    // );
-    // gateway::send_message(message_ticket);
 	pay_gas_and_send_message(
 		gas_service,
 		gas,
@@ -221,6 +222,13 @@ public fun receive_interchain_transfer(
 
     // give the coin to the caller
     transfer::public_transfer(coin, ctx.sender());
+}
+
+public fun receive_deploy_interchain_token(its: &mut ITS, approved_message: ApprovedMessage) {
+    service::receive_deploy_interchain_token<ITS_EXAMPLE>(
+		its,
+        approved_message,
+    );
 }
 
 /// Call this to obtain some coins for testing.

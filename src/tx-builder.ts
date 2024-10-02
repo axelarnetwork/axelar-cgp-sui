@@ -13,10 +13,8 @@ import {
 import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
+import { STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
 import { updateMoveToml } from './utils';
-
-const stdPackage = '0x1';
-const suiPackage = '0x2';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -182,7 +180,7 @@ function isTxContext(parameter: SuiMoveNormalizedType): boolean {
         return false;
     }
 
-    return inside.address === suiPackage && inside.module === 'tx_context' && inside.name === 'TxContext';
+    return inside.address === SUI_PACKAGE_ID && inside.module === 'tx_context' && inside.name === 'TxContext';
 }
 
 function isString(parameter: SuiMoveNormalizedType): boolean {
@@ -192,8 +190,8 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     if (asAny.Reference) asAny = asAny.Reference;
     asAny = asAny.Struct;
     if (!asAny) return false;
-    const isAsciiString = asAny.address === stdPackage && asAny.module === 'ascii' && asAny.name === 'String';
-    const isStringString = asAny.address === stdPackage && asAny.module === 'string' && asAny.name === 'String';
+    const isAsciiString = asAny.address === STD_PACKAGE_ID && asAny.module === 'ascii' && asAny.name === 'String';
+    const isStringString = asAny.address === STD_PACKAGE_ID && asAny.module === 'string' && asAny.name === 'String';
     return isAsciiString || isStringString;
 }
 

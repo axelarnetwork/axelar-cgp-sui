@@ -21,8 +21,9 @@ const {
 } = require('./testutils');
 const { expect } = require('chai');
 const { bcsStructs } = require('../dist/bcs');
+const { SUI_PACKAGE_ID } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
-const { keccak256, defaultAbiCoder, arrayify, hexlify, randomBytes } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
 // TODO: Remove `only` when finish testing
 describe.only('ITS', () => {
@@ -286,9 +287,6 @@ describe.only('ITS', () => {
 
         const gas = tx.splitCoins(tx.gas, [1e8]);
 
-        console.log('Debug ObjectIds');
-        console.log(objectIds);
-
         const TokenId = await txBuilder.moveCall({
             target: `${deployments.its.packageId}::token_id::from_u256`,
             arguments: [objectIds.tokenId],
@@ -302,6 +300,66 @@ describe.only('ITS', () => {
         await txBuilder.signAndExecute(deployer);
 
         // TODO: validate some events
+    });
+
+    it('should receive interchain token deployment successfully', async () => {
+        const receipt = await publishPackage(client, deployer, 'example');
+        const example = receipt.packageId;
+
+        // Setup trusted addresses
+        const trustedSourceChain = 'Avalanche';
+        const trustedSourceAddress = hexlify(randomBytes(20));
+        const trustedAddressMessage = {
+            message_id: hexlify(randomBytes(32)),
+            destination_id: objectIds.itsChannel,
+        };
+        await setupTrustedAddresses(trustedAddressMessage, [trustedSourceAddress], [trustedSourceChain]);
+        // Approve ITS transfer message
+        const messageType = 1; // MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN
+        const tokenId = hexlify(randomBytes(32)); // The token ID to transfer
+        const name = toUtf8Bytes('ITS Example Coin');
+        const symbol = toUtf8Bytes('ITS');
+        const decimals = 9;
+        const distributor = '0x';
+
+        // ITS transfer payload from Ethereum to Sui
+        const payload = defaultAbiCoder.encode(
+            ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+            [messageType, tokenId, name, symbol, decimals, distributor],
+        );
+
+        const message = {
+            source_chain: trustedSourceChain,
+            message_id: hexlify(randomBytes(32)),
+            source_address: trustedSourceAddress,
+            destination_id: objectIds.itsChannel,
+            payload_hash: keccak256(payload),
+        };
+
+        await approveMessage(client, keypair, gatewayInfo, message);
+
+        const receiveTransferTxBuilder = new TxBuilder(client);
+
+        const approvedMessage = await receiveTransferTxBuilder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+            arguments: [
+                objectIds.gateway,
+                message.source_chain,
+                message.message_id,
+                message.source_address,
+                message.destination_id,
+                payload,
+            ],
+        });
+
+        await receiveTransferTxBuilder.moveCall({
+            target: `${example}::its_example::receive_deploy_interchain_token`,
+            arguments: [objectIds.its, approvedMessage],
+        });
+
+        const result = await receiveTransferTxBuilder.signAndExecute(deployer);
+        // TODO: check for events
+        console.log(result);
     });
 
     async function setupTrustedAddresses(message, trustedAddresses, trustedChains = ['Ethereum']) {
