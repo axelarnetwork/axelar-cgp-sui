@@ -392,7 +392,7 @@ describe.only('ITS', () => {
             });
 
             await receiveTransferTxBuilder.moveCall({
-                target: `${example}::its_example::receive_deploy_interchain_token`,
+                target: `${deployments.example.packageId}::its_example::receive_deploy_interchain_token`,
                 arguments: [objectIds.its, approvedMessage],
             });
 
