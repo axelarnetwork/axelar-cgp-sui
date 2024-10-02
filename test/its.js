@@ -86,14 +86,14 @@ describe.only('ITS', () => {
         objectIds['creatorCap'] = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
 
         // Mint some coins for tests
-        const txBuilder = new TxBuilder(client);
+        const tokenTxBuilder = new TxBuilder(client);
 
-        await txBuilder.moveCall({
+        await tokenTxBuilder.moveCall({
             target: `${deployments.example.packageId}::its_example::mint`,
             arguments: [objectIds.singleton, 1e18, deployer.toSuiAddress()],
         });
 
-        const mintReceipt = await txBuilder.signAndExecute(deployer);
+        const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
 
         // Find the coin object id
         objectIds.coin = findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE');
@@ -102,14 +102,14 @@ describe.only('ITS', () => {
         calculateNextSigners(gatewayInfo, nonce);
         const encodedSigners = bcsStructs.gateway.WeightedSigners.serialize(gatewayInfo.signers).toBytes();
 
-        const builder = new TxBuilder(client);
+        const gatewaySetupTxBuilder = new TxBuilder(client);
 
-        const separator = await builder.moveCall({
+        const separator = await gatewaySetupTxBuilder.moveCall({
             target: `${deployments.axelar_gateway.packageId}::bytes32::new`,
             arguments: [domainSeparator],
         });
 
-        await builder.moveCall({
+        await gatewaySetupTxBuilder.moveCall({
             target: `${deployments.axelar_gateway.packageId}::gateway::setup`,
             arguments: [
                 objectIds.creatorCap,
@@ -122,20 +122,21 @@ describe.only('ITS', () => {
             ],
         });
 
-        const setupResult = await builder.signAndExecute(deployer);
-        objectIds.gateway = findObjectId(setupResult, 'gateway::Gateway');
+        const gatewaySetupReceipt = await gatewaySetupTxBuilder.signAndExecute(deployer);
+        objectIds.gateway = findObjectId(gatewaySetupReceipt, 'gateway::Gateway');
 
         gatewayInfo.gateway = objectIds.gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
 
         // Setup Governance
-        const setupGovernanceTxBuilder = new TxBuilder(client);
-        await setupGovernanceTxBuilder.moveCall({
+        const governanceSetupTxBuilder = new TxBuilder(client);
+        await governanceSetupTxBuilder.moveCall({
             target: `${deployments.governance.packageId}::governance::new`,
             arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
         });
-        const receipt = await setupGovernanceTxBuilder.signAndExecute(deployer);
+        const receipt = await governanceSetupTxBuilder.signAndExecute(deployer);
+
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
     });
@@ -217,9 +218,6 @@ describe.only('ITS', () => {
             });
 
             await txBuilder.signAndExecute(deployer);
-            // TODO: Add some validations?
-
-            // console.log(txResult);
         });
 
         // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
@@ -279,8 +277,7 @@ describe.only('ITS', () => {
                 arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
             });
 
-            const result = await receiveTransferTxBuilder.signAndExecute(deployer);
-            // TODO: check for events
+            await receiveTransferTxBuilder.signAndExecute(deployer);
         });
     });
 
@@ -312,8 +309,6 @@ describe.only('ITS', () => {
             });
 
             await txBuilder.signAndExecute(deployer);
-
-            // TODO: validate some events
         });
 
         it('should receive interchain token deployment from other chain', async () => {
@@ -370,7 +365,6 @@ describe.only('ITS', () => {
             });
 
             const result = await receiveTransferTxBuilder.signAndExecute(deployer);
-            // TODO: check for events
             console.log(result);
         });
     });
