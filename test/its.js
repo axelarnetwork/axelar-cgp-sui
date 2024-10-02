@@ -321,11 +321,17 @@ describe.only('ITS', () => {
                 [trustedSourceAddress],
                 [trustedSourceChain],
             );
+
+            // Deploy the interchain token and store object ids for treasury cap and metadata
+            const publishReceipt = await publishPackage(client, deployer, 'interchain_token');
+            const treasuryCap = findObjectId(publishReceipt.publishTxn, 'TreasuryCap');
+            const metadata = findObjectId(publishReceipt.publishTxn, 'CoinMetadata');
+
             // Approve ITS transfer message
             const messageType = 1; // MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN
             const tokenId = hexlify(randomBytes(32)); // The token ID to transfer
-            const name = toUtf8Bytes('ITS Example Coin');
-            const symbol = toUtf8Bytes('ITS');
+            const name = toUtf8Bytes('Quote');
+            const symbol = toUtf8Bytes('Q');
             const decimals = 9;
             const distributor = '0x';
 
@@ -359,13 +365,19 @@ describe.only('ITS', () => {
                 ],
             });
 
-            await receiveTransferTxBuilder.moveCall({
-                target: `${deployments.example.packageId}::its_example::receive_deploy_interchain_token`,
-                arguments: [objectIds.its, approvedMessage],
+            receiveTransferTxBuilder.moveCall({
+                target: `${deployments.its.packageId}::service::give_unregistered_coin`,
+                arguments: [objectIds.its, treasuryCap, metadata],
+                typeArguments: [`${publishReceipt.packageId}::q::Q`],
             });
 
-            const result = await receiveTransferTxBuilder.signAndExecute(deployer);
-            console.log(result);
+            await receiveTransferTxBuilder.moveCall({
+                target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
+                arguments: [objectIds.its, approvedMessage],
+                typeArguments: [`${publishReceipt.packageId}::q::Q`],
+            });
+
+            await receiveTransferTxBuilder.signAndExecute(deployer);
         });
     });
 });
