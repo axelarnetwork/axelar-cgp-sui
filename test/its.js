@@ -38,11 +38,10 @@ describe.only('ITS', () => {
     const minimumRotationDelay = 1000;
     const previousSignersRetention = 15;
     const nonce = 0;
-    const governanceInfo = {
-        trustedSourceChain: 'Axelar',
-        trustedSourceAddress: 'Governance Source Address',
-        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
-    };
+
+    const governanceSourceChain = 'Axelar';
+    const governanceSourceAddress = 'Governance Source Address';
+    const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
 
     before(async () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
@@ -120,12 +119,7 @@ describe.only('ITS', () => {
         const setupGovernanceTxBuilder = new TxBuilder(client);
         await setupGovernanceTxBuilder.moveCall({
             target: `${deployments.governance.packageId}::governance::new`,
-            arguments: [
-                governanceInfo.trustedSourceChain,
-                governanceInfo.trustedSourceAddress,
-                governanceInfo.messageType,
-                objectIds.upgradeCap,
-            ],
+            arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
         });
         const receipt = await setupGovernanceTxBuilder.signAndExecute(deployer);
         objectIds.governance = findObjectId(receipt, 'governance::Governance');
@@ -168,17 +162,12 @@ describe.only('ITS', () => {
             // Setup trusted addresses
             const trustedSourceChain = 'Ethereum';
             const trustedSourceAddress = hexlify(randomBytes(20));
-            const trustedAddressMessage = {
-                message_id: hexlify(randomBytes(32)),
-                destination_id: objectIds.itsChannel,
-            };
 
             await setupITSTrustedAddresses(
                 client,
                 keypair,
                 gatewayInfo,
                 objectIds,
-                trustedAddressMessage,
                 deployments,
                 [trustedSourceAddress],
                 [trustedSourceChain],
@@ -228,16 +217,11 @@ describe.only('ITS', () => {
             // Setup trusted addresses
             const trustedSourceChain = 'Avalanche';
             const trustedSourceAddress = hexlify(randomBytes(20));
-            const trustedAddressMessage = {
-                message_id: hexlify(randomBytes(32)),
-                destination_id: objectIds.itsChannel,
-            };
             await setupITSTrustedAddresses(
                 client,
                 keypair,
                 gatewayInfo,
                 objectIds,
-                trustedAddressMessage,
                 deployments,
                 [trustedSourceAddress],
                 [trustedSourceChain],
@@ -297,16 +281,11 @@ describe.only('ITS', () => {
         it('should deploy remote interchain token to other chain', async () => {
             const trustedSourceChain = 'Avalanche';
             const trustedSourceAddress = hexlify(randomBytes(20));
-            const trustedAddressMessage = {
-                message_id: hexlify(randomBytes(32)),
-                destination_id: objectIds.itsChannel,
-            };
             await setupITSTrustedAddresses(
                 client,
                 keypair,
                 gatewayInfo,
                 objectIds,
-                trustedAddressMessage,
                 deployments,
                 [trustedSourceAddress],
                 [trustedSourceChain],
@@ -333,22 +312,14 @@ describe.only('ITS', () => {
         });
 
         it('should receive interchain token deployment from other chain', async () => {
-            //const receipt = await publishPackage(client, deployer, 'example');
-            //const example = receipt.packageId;
-
             // Setup trusted addresses
             const trustedSourceChain = 'Avalanche';
             const trustedSourceAddress = hexlify(randomBytes(20));
-            const trustedAddressMessage = {
-                message_id: hexlify(randomBytes(32)),
-                destination_id: objectIds.itsChannel,
-            };
             await setupITSTrustedAddresses(
                 client,
                 keypair,
                 gatewayInfo,
                 objectIds,
-                trustedAddressMessage,
                 deployments,
                 [trustedSourceAddress],
                 [trustedSourceChain],

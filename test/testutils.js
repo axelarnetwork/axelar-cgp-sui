@@ -1,4 +1,4 @@
-const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, randomBytes, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
@@ -303,7 +303,6 @@ async function setupITSTrustedAddresses(
     keypair,
     gatewayInfo,
     objectIds,
-    message,
     deployments,
     trustedAddresses,
     trustedChains = ['Ethereum'],
@@ -322,11 +321,15 @@ async function setupITSTrustedAddresses(
 
     const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [governanceInfo.messageType, trustedAddressesData]);
 
-    message.source_chain = governanceInfo.trustedSourceChain;
-    message.source_address = governanceInfo.trustedSourceAddress;
-    message.payload_hash = keccak256(payload);
+    const trustedAddressMessage = {
+        message_id: hexlify(randomBytes(32)),
+        destination_id: objectIds.itsChannel,
+        source_chain: governanceInfo.trustedSourceChain,
+        source_address: governanceInfo.trustedSourceAddress,
+        payload_hash: keccak256(payload),
+    };
 
-    await approveMessage(client, keypair, gatewayInfo, message);
+    await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
 
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
@@ -335,10 +338,10 @@ async function setupITSTrustedAddresses(
         target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
         arguments: [
             objectIds.gateway,
-            message.source_chain,
-            message.message_id,
-            message.source_address,
-            message.destination_id,
+            trustedAddressMessage.source_chain,
+            trustedAddressMessage.message_id,
+            trustedAddressMessage.source_address,
+            trustedAddressMessage.destination_id,
             hexlify(payload),
         ],
     });
