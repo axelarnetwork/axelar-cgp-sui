@@ -187,7 +187,7 @@ function getSquidStructs() {
 }
 
 function getITSStructs() {
-    const { Bytes32, Table, Bag, Channel } = getCommonStructs();
+    const { Table, Bag, Channel } = getCommonStructs();
 
     const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
         trusted_addresses: Table,

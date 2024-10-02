@@ -77,12 +77,12 @@ describe('ITS', () => {
         }
 
         // Find the object ids from the publish transactions
-        objectIds['its'] = findObjectId(deployments.its.publishTxn, 'ITS');
-        objectIds['singleton'] = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
-        objectIds['relayerDiscovery'] = findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery');
-        objectIds['gasService'] = findObjectId(deployments.gas_service.publishTxn, 'GasService');
-        objectIds['upgradeCap'] = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
-        objectIds['creatorCap'] = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
+        objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
+        objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
+        objectIds.relayerDiscovery = findObjectId(deployments.axelar_gateway.publishTxn, 'RelayerDiscovery');
+        objectIds.gasService = findObjectId(deployments.gas_service.publishTxn, 'GasService');
+        objectIds.upgradeCap = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
+        objectIds.creatorCap = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
 
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
