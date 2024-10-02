@@ -3,13 +3,14 @@ const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
-const { fromB64 } = require('@mysten/bcs')
+const { fromB64 } = require('@mysten/bcs');
 const chai = require('chai');
 const { expect } = chai;
 const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
+        its: { TrustedAddresses },
     },
 } = require('../dist/bcs');
 const { bcs } = require('@mysten/sui/bcs');
@@ -272,7 +273,8 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
         target: decodeDescription(moveCallInfo.function),
         arguments: decodeArgs(moveCallInfo.arguments, tx),
         typeArguments: moveCallInfo.type_arguments,
-        getSingletonChannelId};
+        getSingletonChannelId,
+    };
 }
 
 function findObjectId(tx, objectType, type = 'created') {
@@ -280,21 +282,76 @@ function findObjectId(tx, objectType, type = 'created') {
 }
 
 const getBcsBytesByObjectId = async (client, objectId) => {
-  const response = await client.getObject({
-      id: objectId,
-      options: {
-          showBcs: true,
-      },
-  });
+    const response = await client.getObject({
+        id: objectId,
+        options: {
+            showBcs: true,
+        },
+    });
 
-  return fromB64(response.data.bcs.bcsBytes);
+    return fromB64(response.data.bcs.bcsBytes);
 };
 
 const getSingletonChannelId = async (client, singletonObjectId) => {
-  const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
-  const data = Singleton.parse(bcsBytes);
-  return '0x' + data.channel.id;
+    const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
+    const data = Singleton.parse(bcsBytes);
+    return '0x' + data.channel.id;
 };
+
+async function setupITSTrustedAddresses(
+    client,
+    keypair,
+    gatewayInfo,
+    objectIds,
+    message,
+    deployments,
+    trustedAddresses,
+    trustedChains = ['Ethereum'],
+) {
+    const governanceInfo = {
+        trustedSourceChain: 'Axelar',
+        trustedSourceAddress: 'Governance Source Address',
+        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
+    };
+
+    // The payload is abi encoded, the trusted address data is bcs encoded.
+    const trustedAddressesData = TrustedAddresses.serialize({
+        trusted_chains: trustedChains,
+        trusted_addresses: trustedAddresses,
+    }).toBytes();
+
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [governanceInfo.messageType, trustedAddressesData]);
+
+    message.source_chain = governanceInfo.trustedSourceChain;
+    message.source_address = governanceInfo.trustedSourceAddress;
+    message.payload_hash = keccak256(payload);
+
+    await approveMessage(client, keypair, gatewayInfo, message);
+
+    // Set trusted addresses
+    const trustedAddressTxBuilder = new TxBuilder(client);
+
+    const approvedMessage = await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+        arguments: [
+            objectIds.gateway,
+            message.source_chain,
+            message.message_id,
+            message.source_address,
+            message.destination_id,
+            hexlify(payload),
+        ],
+    });
+
+    await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.its.packageId}::service::set_trusted_addresses`,
+        arguments: [objectIds.its, objectIds.governance, approvedMessage],
+    });
+
+    const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);
+
+    return trustedAddressResult;
+}
 
 module.exports = {
     clock,
@@ -311,4 +368,5 @@ module.exports = {
     calculateNextSigners,
     getBcsBytesByObjectId,
     getSingletonChannelId,
+    setupITSTrustedAddresses,
 };
