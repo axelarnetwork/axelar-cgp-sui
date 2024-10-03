@@ -13,8 +13,8 @@ import {
 import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
-import { STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
-import { updateMoveToml } from './utils';
+import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
+import { newInterchainToken, updateMoveToml } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -281,6 +281,20 @@ export class TxBuilder {
         } finally {
             rmTmpDir();
         }
+    }
+
+    async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
+        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
+
+        const { filePath, content } = newInterchainToken(templateFilePath, options);
+
+        fs.writeFileSync(filePath, content, 'utf8');
+
+        const publishReceipt = await this.publishPackage('interchain_token', moveDir);
+
+        fs.rmSync(filePath);
+
+        return publishReceipt;
     }
 
     async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {

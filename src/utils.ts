@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import toml from 'smol-toml';
+import { InterchainTokenOptions } from './types';
 
 export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
     // Path to the Move.toml file for the package
@@ -34,10 +35,43 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
         fromDir = `${__dirname}/../move`;
     }
 
-    // Remove the package directory if it exists to avoid conflicts
-    fs.rmSync(`${toDir}/${packageName}`, { recursive: true });
-
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
+}
+
+export function newInterchainToken(templateFilePath: string, options: InterchainTokenOptions) {
+    let content = fs.readFileSync(templateFilePath, 'utf8');
+
+    const defaultFilePath = path.join(path.dirname(templateFilePath), `${options.symbol.toLowerCase()}.move`);
+
+    const filePath = options.filePath || defaultFilePath;
+
+    const structRegex = new RegExp(`struct\\s+Q\\s+has\\s+drop\\s+{}`, 'g');
+
+    // replace the module name with the token symbol in lowercase
+    content = content.replace(/(module\s+)([^:]+)(::)([^;]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
+
+    // replace the struct name with the token symbol in uppercase
+    content = content.replace(structRegex, `struct ${options.symbol.toUpperCase()} has drop {}`);
+
+    // replace the witness type with the token symbol in uppercase
+    content = content.replace(/(fun\s+init\s*\()witness:\s*Q/, `$1witness: ${options.symbol.toUpperCase()}`);
+
+    // replace the decimals with the given decimals
+    content = content.replace(/(witness,\s*)(\d+)/, `$1${options.decimals}`);
+
+    // replace the symbol with the given symbol
+    content = content.replace(/(b")(Q)(")/, `$1${options.symbol.toUpperCase()}$3`);
+
+    // replace the name with the given name
+    content = content.replace(/(b")(Quote)(")/, `$1${options.name}$3`);
+
+    // replace the generic type with the given symbol
+    content = content.replace(/<Q>/g, `<${options.symbol.toUpperCase()}>`);
+
+    return {
+        filePath,
+        content,
+    };
 }
 
 /**

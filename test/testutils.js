@@ -15,6 +15,7 @@ const {
         its: { TrustedAddresses },
     },
 } = require('../dist/bcs');
+const { newInterchainToken } = require('../dist/utils');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
 const chalk = require('chalk');
@@ -41,26 +42,13 @@ async function publishPackage(client, keypair, packageName) {
 async function publishInterchainToken(client, keypair, options) {
     const templateFilePath = `${__dirname}/../move/interchain_token/sources/interchain_token.move`;
 
-    let content = fs.readFileSync(templateFilePath, 'utf8');
+    const { filePath, content } = newInterchainToken(templateFilePath, options);
 
-    const dir = path.dirname(templateFilePath);
-    const newFilePath = path.join(dir, `${options.symbol.toLowerCase()}.move`);
-
-    const structRegex = new RegExp(`struct\\s+Q\\s+has\\s+drop\\s+{}`, 'g');
-
-    content = content.replace(/(module\s+)([^:]+)(::)([^;]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
-    content = content.replace(structRegex, `struct ${options.symbol.toUpperCase()} has drop {}`);
-    content = content.replace(/(fun\s+init\s*\()witness:\s*Q/, `$1witness: ${options.symbol.toUpperCase()}`);
-    content = content.replace(/(witness,\s*)(\d+)/, `$1${options.decimals}`);
-    content = content.replace(/(b")(Q)(")/, `$1${options.symbol.toUpperCase()}$3`);
-    content = content.replace(/(b")(Quote)(")/, `$1${options.name}$3`);
-    content = content.replace(/<Q>/g, `<${options.symbol}>`);
-
-    fs.writeFileSync(newFilePath, content, 'utf8');
+    fs.writeFileSync(filePath, content, 'utf8');
 
     const publishReceipt = await publishPackage(client, keypair, 'interchain_token');
 
-    fs.rmSync(newFilePath);
+    fs.rmSync(filePath);
 
     return publishReceipt;
 }
