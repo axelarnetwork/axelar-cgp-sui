@@ -24,7 +24,6 @@ const fs = require('fs');
 const path = require('path');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
-const clock = '0x6';
 
 async function publishPackage(client, keypair, packageName) {
     const compileDir = `${__dirname}/../move_compile`;
@@ -414,7 +413,6 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
 }
 
 module.exports = {
-    clock,
     publishPackage,
     findObjectId,
     getRandomBytes32,

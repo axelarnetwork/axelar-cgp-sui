@@ -12,7 +12,6 @@ const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const {
     publishPackage,
     publishInterchainToken,
-    clock,
     generateEd25519Keypairs,
     findObjectId,
     getRandomBytes32,
@@ -22,6 +21,7 @@ const {
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
+const { CLOCK_PACKAGE_ID } = require('../dist/types');
 const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
@@ -93,7 +93,7 @@ describe('ITS', () => {
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
-                clock,
+                CLOCK_PACKAGE_ID,
             ],
         });
 
@@ -154,7 +154,7 @@ describe('ITS', () => {
 
         await txb.moveCall({
             target: `${deployments.example.packageId}::its_example::register_transaction`,
-            arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, clock],
+            arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
         });
 
         const txResult = await txb.signAndExecute(deployer);
@@ -217,7 +217,7 @@ describe('ITS', () => {
                         deployer.toSuiAddress(),
                         gas,
                         '0x', // gas params
-                        clock,
+                        CLOCK_PACKAGE_ID,
                     ],
                 });
 
@@ -269,7 +269,7 @@ describe('ITS', () => {
 
                 await txb.moveCall({
                     target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
-                    arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
+                    arguments: [approvedMessage, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
                 });
 
                 await txb.signAndExecute(deployer);

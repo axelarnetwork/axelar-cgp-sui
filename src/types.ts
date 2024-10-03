@@ -3,6 +3,7 @@ const { fromHEX, toHEX } = require('@mysten/bcs');
 
 export const SUI_PACKAGE_ID = '0x2';
 export const STD_PACKAGE_ID = '0x1';
+export const CLOCK_PACKAGE_ID = '0x6';
 
 export interface InterchainTokenOptions {
     filePath?: string;
