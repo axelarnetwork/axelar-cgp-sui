@@ -281,6 +281,8 @@ describe('Axelar Gateway', () => {
 
         it('should execute a message', async () => {
             await publishPackage(client, keypair, 'gas_service');
+            await publishPackage(client, keypair, 'governance');
+            await publishPackage(client, keypair, 'its');
             const result = await publishPackage(client, keypair, 'example');
 
             const testId = result.packageId;
