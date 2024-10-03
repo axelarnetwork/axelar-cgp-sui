@@ -18,7 +18,7 @@ const {
     calculateNextSigners,
     approveMessage,
     getSingletonChannelId,
-    setupTrustedAddress,
+    setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
 const { bcsStructs } = require('../dist/bcs');
@@ -151,7 +151,7 @@ describe('ITS', () => {
 
         await setupGovernance();
 
-        await setupTrustedAddress(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
     });
 
     it('should call register_transaction successfully', async () => {
