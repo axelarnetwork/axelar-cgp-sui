@@ -1,9 +1,6 @@
-module squid::squid;
-
-use std::ascii;
+module squid::squid_v0;
 
 use sui::clock::Clock;
-use sui::versioned::{Self, Versioned};
 
 use version_control::version_control::{Self, VersionControl};
 
@@ -11,102 +8,64 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
 use its::its::ITS;
 use its::service;
+use squid::coin_bag::{Self, CoinBag};
+use squid::swap_info::{Self, SwapInfo};
 
-use squid::coin_bag::CoinBag;
-use squid::swap_info::SwapInfo;
-use squid::squid_v0::{Self, SquidV0};
-// -------
-// Version
-// -------
-const VERSION: u64 = 0;
-
-public struct Squid has key, store {
-    id: UID,
-    inner: Versioned,
+public struct SquidV0 has store {
+    channel: Channel,
+    coin_bag: CoinBag,
+    version_control: VersionControl,
 }
 
-fun init(ctx: &mut TxContext) {
-    transfer::share_object(Squid {
-        id: object::new(ctx),
-        inner: versioned::create(
-            VERSION,
-            squid_v0::new(
-                new_version_control(),
-                ctx,
-            ),
-            ctx,
-        ),
-    });
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): SquidV0 {
+    SquidV0 {
+        channel: channel::new(ctx),
+        coin_bag: coin_bag::new(ctx),
+        version_control,
+    }
 }
 
-// ------
-// Macros
-// ------
-/// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &Squid, $function_name: vector<u8>): &SquidV0 {
-    let squid = $self;
-    let value = squid.inner.load_value<SquidV0>();
-    value.version_control().check(VERSION, ascii::string($function_name));
-    value
+public(package) fun channel(self: &SquidV0): &Channel {
+    &self.channel
 }
 
-/// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut SquidV0 {
-    let squid = $self;
-    let value = squid.inner.load_value_mut<SquidV0>();
-    value.version_control().check(VERSION, ascii::string($function_name));
-    value
+public(package) fun version_control(self: &SquidV0): &VersionControl {
+    &self.version_control
 }
 
-public(package) fun channel(self: &Squid, function_name: vector<u8>): &Channel {
-    self.value!(function_name).channel()
-}
-
-public(package) fun coin_bag_mut(self: &mut Squid, function_name: vector<u8>): &mut CoinBag {
-    self.value_mut!(function_name).coin_bag_mut()
+public(package) fun coin_bag_mut(self: &mut SquidV0): &mut CoinBag {
+    &mut self.coin_bag
 }
 
 public fun start_swap<T>(
-    self: &mut Squid,
+    self: &mut SquidV0,
     its: &mut ITS,
     approved_message: ApprovedMessage,
     clock: &Clock,
     ctx: &mut TxContext,
 ): SwapInfo {
-    self.value_mut!(b"start_swap").start_swap<T>(its, approved_message, clock, ctx)
-}
-
-/// -------
-/// Private
-/// -------
-fun new_version_control(): VersionControl {
-    version_control::new(vector[
-        // Version 0
-        vector[
-            b"start_swap",
-            b"its_transfer",
-            b"deepbook_v3_swap",
-            b"register_transaction",
-        ].map!(
-            |function_name| function_name.to_ascii_string(),
-        ),
-    ])
+    let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
+        its,
+        approved_message,
+        self.channel(),
+        clock,
+        ctx,
+    );
+    let mut swap_info = swap_info::new(data, ctx);
+    swap_info.coin_bag().store_estimate<T>(coin.value());
+    swap_info.coin_bag().store_balance(coin.into_balance());
+    swap_info
 }
 
 #[test_only]
-public fun new_for_testing(ctx: &mut TxContext): Squid {
-    let mut version_control = new_version_control();
-    version_control.allowed_functions()[VERSION].insert(ascii::string(b""));
-    Squid {
-        id: object::new(ctx),
-        inner: versioned::create(
-            VERSION,
-            squid_v0::new(
-                version_control,
-                ctx,
-            ),
-            ctx,
-        ),
+public fun new_for_testing(ctx: &mut TxContext): SquidV0 {
+    SquidV0 {
+        channel: channel::new(ctx),
+        coin_bag: coin_bag::new(ctx),
+        version_control: version_control::new(vector[]),
     }
 }
 
@@ -145,7 +104,7 @@ fun test_start_swap() {
         std::ascii::string(b"Chain Name"),
         b"Destination Address",
         b"",
-        squid.channel(b""),
+        &squid.channel,
     );
     sui::test_utils::destroy(
         service::send_interchain_transfer(
@@ -160,7 +119,7 @@ fun test_start_swap() {
     let message_source_address = std::ascii::string(b"Address");
     let its_source_address = b"Source Address";
 
-    let destination_address = squid.channel(b"").to_address();
+    let destination_address = squid.channel().to_address();
 
     let mut writer = abi::abi::new_writer(6);
     writer
@@ -195,7 +154,8 @@ fun test_start_swap() {
 }
 
 #[test]
-fun test_init() {
+fun test_new() {
     let ctx = &mut tx_context::dummy();
-    init(ctx);
+    let self = new(version_control::new(vector[]), ctx);
+    sui::test_utils::destroy(self);
 }

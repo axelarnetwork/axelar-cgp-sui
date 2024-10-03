@@ -90,7 +90,7 @@ fun test_estimate() {
     let sui_coin = mint_for_testing<SUI>(100_000_000_000, test.ctx());
     let deep_coin = mint_for_testing<DEEP>(100_000_000_000, test.ctx());
     swap_info.coin_bag().store_balance(sui_coin.into_balance());
-    squid.coin_bag().store_balance(deep_coin.into_balance());
+    squid.coin_bag_mut(b"").store_balance(deep_coin.into_balance());
 
     // Swap 100 SUI for 99.9 USDC
     deepbook_v3::swap(
@@ -109,7 +109,7 @@ fun test_estimate() {
     // squid should have a balance of 100 DEEP
     let quote_balance = swap_info.coin_bag().get_balance<USDC>().destroy_some();
     assert!(quote_balance.value() == 99_900_000_000);
-    let deep_balance = squid.coin_bag().get_balance<DEEP>().destroy_some();
+    let deep_balance = squid.coin_bag_mut(b"").get_balance<DEEP>().destroy_some();
     assert!(deep_balance.value() == 100_000_000_000 - 999_000);
 
     destroy(pool);
