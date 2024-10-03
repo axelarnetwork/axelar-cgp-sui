@@ -20,6 +20,9 @@ use sui::event;
 use sui::hex;
 use sui::sui::SUI;
 
+// -------
+// Structs
+// -------
 public struct Singleton has key {
     id: UID,
     channel: Channel,
@@ -34,8 +37,14 @@ public struct ExecutedWithToken has copy, drop {
     amount: u64,
 }
 
+// ------------
+// Capabilities
+// ------------
 public struct ITS_EXAMPLE has drop {}
 
+// -----
+// Setup
+// -----
 fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
     let (treasury_cap, coin_metadata) = coin::create_currency(
         witness,
@@ -55,6 +64,11 @@ fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
         treasury_cap,
     });
 }
+
+
+// -----
+// Public Functions
+// -----
 
 /// This needs to be called to register the transaction so that the relayer
 /// knows to call this to fulfill calls.
@@ -231,6 +245,10 @@ public fun mint(
     singleton.treasury_cap.mint_and_transfer(amount, to, ctx);
 }
 
+
+// -----
+// Internal Functions
+// -----
 fun pay_gas_and_send_message(
     gateway: &Gateway,
     gas_service: &mut GasService,
