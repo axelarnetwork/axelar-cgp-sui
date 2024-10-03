@@ -11,6 +11,7 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const {
     publishPackage,
+    publishInterchainToken,
     clock,
     generateEd25519Keypairs,
     findObjectId,
@@ -146,12 +147,6 @@ describe('ITS', () => {
 
         // Find the coin object id
         objectIds.coin = findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE');
-
-        await setupGateway();
-
-        await setupGovernance();
-
-        await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -185,181 +180,201 @@ describe('ITS', () => {
         expect(objectIds.tokenId).to.be.not.null;
     });
 
-    describe('Interchain Transfer', () => {
-        it('should send interchain transfer successfully', async () => {
-            // Send interchain transfer
-            const txb = new TxBuilder(client);
-
-            const tx = txb.tx;
-
-            const coin = tx.splitCoins(objectIds.coin, [1e9]);
-            const gas = tx.splitCoins(tx.gas, [1e8]);
-
-            const TokenId = await txb.moveCall({
-                target: `${deployments.its.packageId}::token_id::from_u256`,
-                arguments: [objectIds.tokenId],
-            });
-
-            await txb.moveCall({
-                target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
-                arguments: [
-                    objectIds.singleton,
-                    objectIds.its,
-                    objectIds.gateway,
-                    objectIds.gasService,
-                    TokenId,
-                    coin,
-                    trustedSourceChain,
-                    trustedSourceAddress,
-                    '0x', // its token metadata
-                    deployer.toSuiAddress(),
-                    gas,
-                    '0x', // gas params
-                    clock,
-                ],
-            });
-
-            await txb.signAndExecute(deployer);
+    describe('Two-way Calls', () => {
+        before(async () => {
+            await setupGateway();
+            await setupGovernance();
+            await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
         });
 
-        // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
-        it('should receive interchain transfer successfully', async () => {
-            // Approve ITS transfer message
-            const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
-            const tokenId = objectIds.tokenId; // The token ID to transfer
-            const sourceAddress = trustedSourceAddress; // Previously set as trusted address
-            const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
-            const amount = 1e9; // An amount to transfer
-            const data = '0x1234'; // Random data
+        describe('Interchain Token Transfer', () => {
+            it('should send interchain transfer successfully', async () => {
+                // Send interchain transfer
+                const txb = new TxBuilder(client);
 
-            // Channel ID for the ITS example. This will be encoded in the payload
-            const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
+                const tx = txb.tx;
 
-            // ITS transfer payload from Ethereum to Sui
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
-            );
+                const coin = tx.splitCoins(objectIds.coin, [1e9]);
+                const gas = tx.splitCoins(tx.gas, [1e8]);
 
-            const message = {
-                source_chain: trustedSourceChain,
-                message_id: hexlify(randomBytes(32)),
-                source_address: trustedSourceAddress,
-                destination_id: destinationAddress,
-                payload_hash: keccak256(payload),
-            };
+                const TokenId = await txb.moveCall({
+                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    arguments: [objectIds.tokenId],
+                });
 
-            await approveMessage(client, keypair, gatewayInfo, message);
+                await txb.moveCall({
+                    target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
+                    arguments: [
+                        objectIds.singleton,
+                        objectIds.its,
+                        objectIds.gateway,
+                        objectIds.gasService,
+                        TokenId,
+                        coin,
+                        trustedSourceChain,
+                        trustedSourceAddress,
+                        '0x', // its token metadata
+                        deployer.toSuiAddress(),
+                        gas,
+                        '0x', // gas params
+                        clock,
+                    ],
+                });
 
-            const txb = new TxBuilder(client);
-
-            const approvedMessage = await txb.moveCall({
-                target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
-                arguments: [
-                    objectIds.gateway,
-                    message.source_chain,
-                    message.message_id,
-                    message.source_address,
-                    message.destination_id,
-                    payload,
-                ],
+                await txb.signAndExecute(deployer);
             });
 
-            await txb.moveCall({
-                target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
-                arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
-            });
+            // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
+            it('should receive interchain transfer successfully', async () => {
+                // Approve ITS transfer message
+                const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
+                const tokenId = objectIds.tokenId; // The token ID to transfer
+                const sourceAddress = trustedSourceAddress; // Previously set as trusted address
+                const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
+                const amount = 1e9; // An amount to transfer
+                const data = '0x1234'; // Random data
 
-            await txb.signAndExecute(deployer);
+                // Channel ID for the ITS example. This will be encoded in the payload
+                const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
+
+                // ITS transfer payload from Ethereum to Sui
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
+                );
+
+                const message = {
+                    source_chain: trustedSourceChain,
+                    message_id: hexlify(randomBytes(32)),
+                    source_address: trustedSourceAddress,
+                    destination_id: destinationAddress,
+                    payload_hash: keccak256(payload),
+                };
+
+                await approveMessage(client, keypair, gatewayInfo, message);
+
+                const txb = new TxBuilder(client);
+
+                const approvedMessage = await txb.moveCall({
+                    target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+                    arguments: [
+                        objectIds.gateway,
+                        message.source_chain,
+                        message.message_id,
+                        message.source_address,
+                        message.destination_id,
+                        payload,
+                    ],
+                });
+
+                await txb.moveCall({
+                    target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
+                    arguments: [approvedMessage, objectIds.singleton, objectIds.its, clock],
+                });
+
+                await txb.signAndExecute(deployer);
+            });
         });
-    });
 
-    describe('Deploy Interchain Token', () => {
-        it('should deploy remote interchain token to other chain successfully', async () => {
-            const txb = new TxBuilder(client);
+        describe('Interchain Token Deployment', () => {
+            it('should deploy remote interchain token to other chain successfully', async () => {
+                const txb = new TxBuilder(client);
 
-            const tx = txb.tx;
-            const gas = tx.splitCoins(tx.gas, [1e8]);
+                const tx = txb.tx;
+                const gas = tx.splitCoins(tx.gas, [1e8]);
 
-            const TokenId = await txb.moveCall({
-                target: `${deployments.its.packageId}::token_id::from_u256`,
-                arguments: [objectIds.tokenId],
+                const TokenId = await txb.moveCall({
+                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    arguments: [objectIds.tokenId],
+                });
+
+                await txb.moveCall({
+                    target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
+                    arguments: [
+                        objectIds.its,
+                        objectIds.gateway,
+                        objectIds.gasService,
+                        trustedSourceChain,
+                        TokenId,
+                        gas,
+                        '0x',
+                        deployer.toSuiAddress(),
+                    ],
+                });
+
+                await txb.signAndExecute(deployer);
             });
 
-            await txb.moveCall({
-                target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
-                arguments: [
-                    objectIds.its,
-                    objectIds.gateway,
-                    objectIds.gasService,
-                    trustedSourceChain,
-                    TokenId,
-                    gas,
-                    '0x',
-                    deployer.toSuiAddress(),
-                ],
+            it('should receive interchain token deployment from other chain successfully', async () => {
+                // Define the interchain token options
+                const interchainTokenOptions = {
+                    symbol: 'IMD',
+                    name: 'Interchain Moo Deng',
+                    decimals: 6,
+                };
+
+                // Deploy the interchain token and store object ids for treasury cap and metadata
+                const { packageId, publishTxn } = await publishInterchainToken(client, deployer, interchainTokenOptions);
+
+                const symbol = interchainTokenOptions.symbol.toUpperCase();
+
+                const typeArg = `${packageId}::${symbol.toLowerCase()}::${symbol}`;
+
+                const treasuryCap = findObjectId(publishTxn, `TreasuryCap<${typeArg}>`);
+                const metadata = findObjectId(publishTxn, `CoinMetadata<${typeArg}>`);
+
+                // Approve ITS transfer message
+                const messageType = 1; // MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN
+                const tokenId = hexlify(randomBytes(32)); // The token ID to transfer
+                const byteName = toUtf8Bytes(interchainTokenOptions.name);
+                const byteSymbol = toUtf8Bytes(interchainTokenOptions.symbol);
+                const decimals = interchainTokenOptions.decimals;
+                const distributor = '0x';
+
+                // ITS transfer payload from Ethereum to Sui
+                const payload = defaultAbiCoder.encode(
+                    ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+                    [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
+                );
+
+                const message = {
+                    source_chain: trustedSourceChain,
+                    message_id: hexlify(randomBytes(32)),
+                    source_address: trustedSourceAddress,
+                    destination_id: objectIds.itsChannel,
+                    payload_hash: keccak256(payload),
+                };
+
+                await approveMessage(client, keypair, gatewayInfo, message);
+
+                const txb = new TxBuilder(client);
+
+                const approvedMessage = await txb.moveCall({
+                    target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+                    arguments: [
+                        objectIds.gateway,
+                        message.source_chain,
+                        message.message_id,
+                        message.source_address,
+                        message.destination_id,
+                        payload,
+                    ],
+                });
+
+                await txb.moveCall({
+                    target: `${deployments.its.packageId}::service::give_unregistered_coin`,
+                    arguments: [objectIds.its, treasuryCap, metadata],
+                    typeArguments: [typeArg],
+                });
+
+                await txb.moveCall({
+                    target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
+                    arguments: [objectIds.its, approvedMessage],
+                    typeArguments: [typeArg],
+                });
+
+                await txb.signAndExecute(deployer);
             });
-
-            await txb.signAndExecute(deployer);
-        });
-
-        it('should receive interchain token deployment from other chain successfully', async () => {
-            // Deploy the interchain token and store object ids for treasury cap and metadata
-            const publishReceipt = await publishPackage(client, deployer, 'interchain_token');
-            const treasuryCap = findObjectId(publishReceipt.publishTxn, 'TreasuryCap');
-            const metadata = findObjectId(publishReceipt.publishTxn, 'CoinMetadata');
-
-            // Approve ITS transfer message
-            const messageType = 1; // MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN
-            const tokenId = hexlify(randomBytes(32)); // The token ID to transfer
-            const name = toUtf8Bytes('Quote');
-            const symbol = toUtf8Bytes('Q');
-            const decimals = 9;
-            const distributor = '0x';
-
-            // ITS transfer payload from Ethereum to Sui
-            const payload = defaultAbiCoder.encode(
-                ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
-                [messageType, tokenId, name, symbol, decimals, distributor],
-            );
-
-            const message = {
-                source_chain: trustedSourceChain,
-                message_id: hexlify(randomBytes(32)),
-                source_address: trustedSourceAddress,
-                destination_id: objectIds.itsChannel,
-                payload_hash: keccak256(payload),
-            };
-
-            await approveMessage(client, keypair, gatewayInfo, message);
-
-            const txb = new TxBuilder(client);
-
-            const approvedMessage = await txb.moveCall({
-                target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
-                arguments: [
-                    objectIds.gateway,
-                    message.source_chain,
-                    message.message_id,
-                    message.source_address,
-                    message.destination_id,
-                    payload,
-                ],
-            });
-
-            txb.moveCall({
-                target: `${deployments.its.packageId}::service::give_unregistered_coin`,
-                arguments: [objectIds.its, treasuryCap, metadata],
-                typeArguments: [`${publishReceipt.packageId}::q::Q`],
-            });
-
-            await txb.moveCall({
-                target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
-                arguments: [objectIds.its, approvedMessage],
-                typeArguments: [`${publishReceipt.packageId}::q::Q`],
-            });
-
-            await txb.signAndExecute(deployer);
         });
     });
 });

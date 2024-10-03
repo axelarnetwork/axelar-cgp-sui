@@ -34,6 +34,9 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
         fromDir = `${__dirname}/../move`;
     }
 
+    // Remove the package directory if it exists to avoid conflicts
+    fs.rmSync(`${toDir}/${packageName}`, { recursive: true });
+
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
