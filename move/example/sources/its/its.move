@@ -3,14 +3,14 @@ module example::its_example;
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use gas_service::gas_service::GasService;
 use example::utils::concat;
+use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
 use its::its::ITS;
 use its::service;
 use its::token_id::TokenId;
-use relayer_discovery::discovery::{RelayerDiscovery};
+use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction;
 use std::ascii::{Self, String};
 use std::type_name;
@@ -66,7 +66,6 @@ fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
     });
 }
 
-
 // -----
 // Public Functions
 // -----
@@ -79,12 +78,13 @@ public fun register_transaction(
     its: &ITS,
     clock: &Clock,
 ) {
-    let arguments = vector [
-		vector[2u8],
-		concat(vector[0u8], object::id_address(singleton).to_bytes()),
-		concat(vector[0u8], object::id_address(its).to_bytes()),
-		concat(vector[0u8], object::id_address(clock).to_bytes())
-	];
+    let arguments =
+        vector[
+            vector[2u8],
+            concat(vector[0u8], object::id_address(singleton).to_bytes()),
+            concat(vector[0u8], object::id_address(its).to_bytes()),
+            concat(vector[0u8], object::id_address(clock).to_bytes()),
+        ];
 
     let transaction = transaction::new_transaction(
         true,
@@ -240,7 +240,6 @@ public fun mint(
 ) {
     singleton.treasury_cap.mint_and_transfer(amount, to, ctx);
 }
-
 
 // -----
 // Internal Functions
