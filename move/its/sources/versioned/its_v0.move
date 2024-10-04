@@ -14,6 +14,9 @@ use sui::coin::{TreasuryCap, CoinMetadata};
 use sui::table::Table;
 use version_control::version_control::VersionControl;
 
+/// ------
+/// Structs
+/// ------
 public struct ITSV0 has store {
     channel: Channel,
     address_tracker: InterchainAddressTracker,
@@ -41,6 +44,9 @@ public struct UnregisteredCoinData<phantom T> has store {
 /// Trying to find a coin that doesn't exist.
 const EUnregisteredCoin: u64 = 0;
 
+/// ------
+/// Package Functions
+/// ------
 public(package) fun new(
     channel: Channel,
     address_tracker: InterchainAddressTracker,
@@ -63,7 +69,6 @@ public(package) fun new(
     }
 }
 
-// === Package Functions ===
 public(package) fun set_relayer_discovery_id(
     self: &mut ITSV0,
     relayer_discovery: &RelayerDiscovery,
@@ -224,7 +229,7 @@ public(package) fun add_registered_coin<T>(
     add_registered_coin_type(self, token_id, type_name);
 }
 
-public fun get_registered_coin_type(
+public(package) fun get_registered_coin_type(
     self: &ITSV0,
     token_id: TokenId,
 ): &TypeName {
@@ -263,6 +268,11 @@ public(package) fun add_registered_coin_type(
 ) {
     self.registered_coin_types.add(token_id, type_name);
 }
+
+
+/// ------
+/// Private Functions
+/// ------
 
 #[allow(unused_function)]
 fun remove_registered_coin_type_for_testing(

@@ -71,7 +71,9 @@ macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITSV0 {
     value
 }
 
-// === Getters ===
+/// ------
+/// Public Functions
+/// ------
 public fun get_unregistered_coin_type(
     self: &ITS,
     symbol: &String,
@@ -241,6 +243,9 @@ public(package) fun add_registered_coin_type(
     value.add_registered_coin_type(token_id, type_name);
 }
 
+/// ------
+/// Private Functions
+/// ------
 fun new_version_control(): VersionControl {
     version_control::new(vector[
         // Version 0
@@ -279,7 +284,9 @@ fun new_version_control(): VersionControl {
     ])
 }
 
-// === Tests ===
+/// ------
+/// Test Only Functions
+/// ------
 #[test_only]
 use its::trusted_addresses::{Self};
 
