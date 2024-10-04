@@ -79,7 +79,7 @@ fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
     let clock = sui::clock::create_for_testing(ctx);
     let mut its = its::its::new_for_testing();
-    let mut squid = new_for_testing(ctx);
+    let squid = new_for_testing(ctx);
 
     let coin_info = its::coin_info::from_info<COIN>(
         std::string::utf8(b"Name"),
