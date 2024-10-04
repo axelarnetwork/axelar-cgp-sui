@@ -22,11 +22,12 @@ const {
 } = require('./testutils');
 const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
+const { getDeploymentOrder } = require('../dist/utils');
 const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -38,17 +39,8 @@ describe('ITS', () => {
     const objectIds = {};
 
     // A list of contracts to publish
-    const dependencies = [
-        'utils',
-        'version_control',
-        'gas_service',
-        'abi',
-        'axelar_gateway',
-        'relayer_discovery',
-        'governance',
-        'its',
-        'example',
-    ];
+    const dependencies = getDeploymentOrder('example', `${__dirname}/../move`);
+    // should be ['version_control', 'utils', 'axelar_gateway', 'gas_service', 'abi', 'governance', 'relayer_discovery', 'its', 'example']
 
     // Parameters for Gateway Setup
     const gatewayInfo = {};
@@ -120,10 +112,10 @@ describe('ITS', () => {
         );
 
         // Publish all packages
-        for (const packageName of dependencies) {
-            const result = await publishPackage(client, deployer, packageName);
+        for (const packageDir of dependencies) {
+            const publishedReceipt = await publishPackage(client, deployer, packageDir);
 
-            deployments[packageName] = result;
+            deployments[packageDir] = publishedReceipt;
         }
 
         // Find the object ids from the publish transactions

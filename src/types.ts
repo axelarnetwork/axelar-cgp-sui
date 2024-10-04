@@ -12,6 +12,16 @@ export interface InterchainTokenOptions {
     decimals: number;
 }
 
+export interface Dependency {
+    name: string;
+    directory: string;
+    path: string;
+}
+
+export interface DependencyNode extends Dependency {
+    dependencies: string[];
+}
+
 export const UID = bcs.fixedArray(32, bcs.u8()).transform({
     input: (id: string) => fromHEX(id),
     output: (id: number[]) => toHEX(Uint8Array.from(id)),

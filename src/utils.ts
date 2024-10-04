@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import toml from 'smol-toml';
-import { InterchainTokenOptions } from './types';
+import { Dependency, DependencyNode, InterchainTokenOptions } from './types';
 
 export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
     // Path to the Move.toml file for the package
@@ -80,7 +80,7 @@ export function newInterchainToken(templateFilePath: string, options: Interchain
  * @param baseMoveDir The parent directory of the Move.toml file.
  * @returns An array of objects containing the name and path of the local dependencies.
  */
-export function getLocalDependencies(packageName: string, baseMoveDir: string) {
+export function getLocalDependencies(packageName: string, baseMoveDir: string): Dependency[] {
     const movePath = `${baseMoveDir}/${packageName}/Move.toml`;
 
     if (!fs.existsSync(movePath)) {
@@ -95,7 +95,82 @@ export function getLocalDependencies(packageName: string, baseMoveDir: string) {
     return localDependencies.map((key: string) => ({
         name: key,
         path: `${baseMoveDir}/${path.resolve(path.dirname(movePath), dependencies[key].local)}`,
+        directory: dependencies[key].local.split('/').slice(-1)[0],
     }));
+}
+
+/**
+ * Determines the deployment order of Move packages based on their dependencies.
+ *
+ * @param packageDir - The directory of the main package to start the dependency resolution from.
+ * @param baseMoveDir - The base directory where all Move packages are located.
+ * @returns An array of package directory names in the order they should be deployed.
+ *          The array is sorted such that packages with no dependencies come first,
+ *          followed by packages whose dependencies have already appeared in the array.
+ *
+ * @description
+ * This function performs the following steps:
+ * 1. Recursively builds a dependency map starting from the given package.
+ * 2. Performs a topological sort on the dependency graph.
+ * 3. Returns the sorted list of package directories.
+ *
+ * The function handles circular dependencies and will include each package only once in the output.
+ * If a package has multiple dependencies, it will appear in the list after all its dependencies.
+ *
+ * @example
+ * const deploymentOrder = getDeploymentOrder('myPackage', '/path/to/move');
+ * console.log(deploymentOrder);
+ * Might output: ['dependency1', 'dependency2', 'myPackage']
+ */
+export function getDeploymentOrder(packageDir: string, baseMoveDir: string): string[] {
+    const dependencyMap: { [key: string]: DependencyNode } = {};
+
+    function recursiveDependencies(pkgDir: string) {
+        if (dependencyMap[pkgDir]) {
+            return;
+        }
+
+        const dependencies = getLocalDependencies(pkgDir, baseMoveDir);
+
+        dependencyMap[pkgDir] = {
+            name: pkgDir,
+            directory: pkgDir,
+            path: `${baseMoveDir}/${pkgDir}`,
+            dependencies: dependencies.map((dep) => dep.directory),
+        };
+
+        for (const dependency of dependencies) {
+            recursiveDependencies(dependency.directory);
+        }
+    }
+
+    recursiveDependencies(packageDir);
+
+    // Topological sort
+    const sorted: Dependency[] = [];
+    const visited: { [key: string]: boolean } = {};
+
+    function visit(name: string) {
+        if (visited[name]) {
+            return;
+        }
+
+        visited[name] = true;
+
+        const node = dependencyMap[name];
+
+        for (const depName of node.dependencies) {
+            visit(depName);
+        }
+
+        sorted.push(node);
+    }
+
+    for (const name in dependencyMap) {
+        visit(name);
+    }
+
+    return sorted.map((dep) => dep.directory);
 }
 
 export const getInstalledSuiVersion = () => {
