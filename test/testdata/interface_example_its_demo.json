@@ -16,11 +16,11 @@
         },
         {
           "name": "coin_metadata",
-          "type": "CoinMetadata<ITS>"
+          "type": "CoinMetadata<ITS_DEMO>"
         },
         {
           "name": "treasury_cap",
-          "type": "TreasuryCap<ITS>"
+          "type": "TreasuryCap<ITS_DEMO>"
         }
       ]
     },
@@ -49,8 +49,8 @@
         }
       ]
     },
-    "ITS": {
-      "name": "ITS",
+    "ITS_DEMO": {
+      "name": "ITS_DEMO",
       "abilities": [
         "drop"
       ],

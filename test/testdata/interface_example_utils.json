@@ -1,14 +1,4 @@
 {
   "structs": {},
-  "publicFunctions": {
-    "concat<T: copy>": {
-      "name": "concat<T: copy>",
-      "visibility": "public",
-      "params": {
-        "v1#0#0": "vector<T>",
-        "v2#0#0": "vector<T>"
-      },
-      "returnType": "vector<T>"
-    }
-  }
+  "publicFunctions": {}
 }
