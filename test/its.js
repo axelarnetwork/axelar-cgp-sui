@@ -115,7 +115,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
         objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
-        objectIds.relayerDiscovery = findObjectId(deployments.relayer_discovery.publishTxn, 'RelayerDiscovery');
+        objectIds.relayerDiscovery = findObjectId(deployments.relayer_discovery.publishTxn, `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`);
         objectIds.gasService = findObjectId(
             deployments.gas_service.publishTxn,
             `${deployments.gas_service.packageId}::gas_service::GasService`,
