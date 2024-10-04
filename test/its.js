@@ -8,7 +8,6 @@ This is a short spec for what there is to be done. You can check https://github.
 [x] Use the ITS example for end to end tests.
 */
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
-const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const {
     publishPackage,
     publishInterchainToken,
@@ -36,7 +35,7 @@ describe('ITS', () => {
     const deployments = {};
 
     // Store the object ids from move transactions
-    const objectIds = {};
+    let objectIds = {};
 
     // A list of contracts to publish
     const dependencies = getDeploymentOrder('example', `${__dirname}/../move`);
@@ -112,17 +111,7 @@ describe('ITS', () => {
             deployments[packageDir] = publishedReceipt;
         }
 
-        // Find the object ids from the publish transactions
-        objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
         objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
-        objectIds.relayerDiscovery = findObjectId(deployments.relayer_discovery.publishTxn, `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`);
-        objectIds.gasService = findObjectId(
-            deployments.gas_service.publishTxn,
-            `${deployments.gas_service.packageId}::gas_service::GasService`,
-        );
-        objectIds.upgradeCap = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
-        objectIds.creatorCap = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
-        objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
 
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
@@ -134,8 +123,19 @@ describe('ITS', () => {
 
         const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
 
-        // Find the coin object id
-        objectIds.coin = findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE');
+        objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
+        // Find the object ids from the publish transactions
+        objectIds = {
+            relayerDiscovery: findObjectId(
+                deployments.relayer_discovery.publishTxn,
+                `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
+            ),
+            gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
+            upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
+            creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
+            itsChannel: await getSingletonChannelId(client, objectIds.its),
+            coin: findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE'),
+        };
     });
 
     it('should call register_transaction successfully', async () => {
