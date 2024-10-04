@@ -1,19 +1,22 @@
 {
   "structs": {
-    "Squid": {
-      "name": "Squid",
+    "SquidV0": {
+      "name": "SquidV0",
       "abilities": [
-        "store",
-        "key"
+        "store"
       ],
       "fields": [
         {
-          "name": "id",
-          "type": "UID"
+          "name": "channel",
+          "type": "Channel"
         },
         {
-          "name": "inner",
-          "type": "Versioned"
+          "name": "coin_bag",
+          "type": "CoinBag"
+        },
+        {
+          "name": "version_control",
+          "type": "VersionControl"
         }
       ]
     }
@@ -23,7 +26,7 @@
       "name": "start_swap<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut Squid",
+        "self#0#0": "&mut SquidV0",
         "its#0#0": "&mut ITS",
         "approved_message#0#0": "ApprovedMessage",
         "clock#0#0": "&Clock",
