@@ -40,8 +40,8 @@ public(package) fun coin_bag_mut(self: &mut SquidV0): &mut CoinBag {
     &mut self.coin_bag
 }
 
-public fun start_swap<T>(
-    self: &mut SquidV0,
+public(package) fun start_swap<T>(
+    self: &SquidV0,
     its: &mut ITS,
     approved_message: ApprovedMessage,
     clock: &Clock,
@@ -71,6 +71,8 @@ public fun new_for_testing(ctx: &mut TxContext): SquidV0 {
 
 #[test_only]
 use its::coin::COIN;
+#[test_only]
+use sui::test_utils::destroy;
 
 #[test]
 fun test_start_swap() {
@@ -106,7 +108,7 @@ fun test_start_swap() {
         b"",
         &squid.channel,
     );
-    sui::test_utils::destroy(
+    destroy(
         service::send_interchain_transfer(
             &mut its,
             interchain_transfer_ticket,
@@ -147,9 +149,9 @@ fun test_start_swap() {
         ctx,
     );
 
-    sui::test_utils::destroy(its);
-    sui::test_utils::destroy(squid);
-    sui::test_utils::destroy(swap_info);
+    destroy(its);
+    destroy(squid);
+    destroy(swap_info);
     clock.destroy_for_testing();
 }
 
@@ -157,5 +159,5 @@ fun test_start_swap() {
 fun test_new() {
     let ctx = &mut tx_context::dummy();
     let self = new(version_control::version_control::new(vector[]), ctx);
-    sui::test_utils::destroy(self);
+    destroy(self);
 }

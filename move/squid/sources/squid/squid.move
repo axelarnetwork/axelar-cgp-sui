@@ -41,7 +41,7 @@ fun init(ctx: &mut TxContext) {
 // ------
 // Macros
 // ------
-/// This macro also uses version control to sinplify things a bit.
+/// This macro retrieves the underlying versioned singleton by reference
 macro fun value($self: &Squid, $function_name: vector<u8>): &SquidV0 {
     let squid = $self;
     let value = squid.inner.load_value<SquidV0>();
