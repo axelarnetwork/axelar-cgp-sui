@@ -7,10 +7,9 @@ use sui::versioned::{Self, Versioned};
 
 use version_control::version_control::{Self, VersionControl};
 
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::channel::{Channel, ApprovedMessage};
 
 use its::its::ITS;
-use its::service;
 
 use squid::coin_bag::CoinBag;
 use squid::swap_info::SwapInfo;
@@ -139,7 +138,7 @@ fun test_start_swap() {
     );
 
     // This gives some coin to the service.
-    let interchain_transfer_ticket = service::prepare_interchain_transfer(
+    let interchain_transfer_ticket = its::service::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),
@@ -148,7 +147,7 @@ fun test_start_swap() {
         squid.channel(b""),
     );
     sui::test_utils::destroy(
-        service::send_interchain_transfer(
+        its::service::send_interchain_transfer(
             &mut its,
             interchain_transfer_ticket,
             &clock,
@@ -172,7 +171,7 @@ fun test_start_swap() {
         .write_bytes(data);
     let payload = writer.into_bytes();
 
-    let approved_message = channel::new_approved_message(
+    let approved_message = axelar_gateway::channel::new_approved_message(
         source_chain,
         message_id,
         message_source_address,

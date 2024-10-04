@@ -2,7 +2,7 @@ module squid::squid_v0;
 
 use sui::clock::Clock;
 
-use version_control::version_control::{Self, VersionControl};
+use version_control::version_control::VersionControl;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
@@ -65,7 +65,7 @@ public fun new_for_testing(ctx: &mut TxContext): SquidV0 {
     SquidV0 {
         channel: channel::new(ctx),
         coin_bag: coin_bag::new(ctx),
-        version_control: version_control::new(vector[]),
+        version_control: version_control::version_control::new(vector[]),
     }
 }
 
@@ -156,6 +156,6 @@ fun test_start_swap() {
 #[test]
 fun test_new() {
     let ctx = &mut tx_context::dummy();
-    let self = new(version_control::new(vector[]), ctx);
+    let self = new(version_control::version_control::new(vector[]), ctx);
     sui::test_utils::destroy(self);
 }
