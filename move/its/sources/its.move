@@ -5,7 +5,7 @@ use its::address_tracker::{Self};
 use its::coin_info::CoinInfo;
 use its::coin_management::CoinManagement;
 use its::token_id::{Self, TokenId, UnregisteredTokenId};
-use its::trusted_addresses::TrustedAddresses;
+use its::trusted_addresses::{Self, TrustedAddresses};
 use its::its_v0::{Self, ITSV0, CoinData};
 use relayer_discovery::discovery::RelayerDiscovery;
 use std::ascii::{Self, String};
@@ -139,25 +139,6 @@ public fun channel_address(self: &ITS): address {
 	value.channel_address()
 }
 
-fun new_version_control(): VersionControl {
-    version_control::new(vector[
-        // Version 0
-        vector[
-            b"register_coin",
-            b"deploy_remote_interchain_token",
-            b"send_interchain_transfer",
-            b"receive_interchain_transfer",
-            b"receive_interchain_transfer_with_data",
-            b"receive_deploy_interchain_token",
-            b"give_unregistered_coin",
-            b"mint_as_distributor",
-            b"mint_to_as_distributor",
-            b"burn_as_distributor",
-            b"set_trusted_addresses",
-        ].map!(|function_name| function_name.to_ascii_string()),
-    ])
-}
-
 public(package) fun set_relayer_discovery_id(
     self: &mut ITS,
     relayer_discovery: &RelayerDiscovery,
@@ -252,39 +233,93 @@ public(package) fun add_registered_coin<T>(
    value.add_registered_coin(token_id, coin_management, coin_info);
 }
 
+public(package) fun add_registered_coin_type(
+    self: &mut ITS,
+    token_id: TokenId,
+    type_name: TypeName,
+) {
+	let value = self.value_mut!(b"add_registered_coin_type");
+    value.add_registered_coin_type(token_id, type_name);
+}
+
+fun new_version_control(): VersionControl {
+    version_control::new(vector[
+        // Version 0
+        vector[
+            b"register_coin",
+            b"deploy_remote_interchain_token",
+            b"send_interchain_transfer",
+            b"receive_interchain_transfer",
+            b"receive_interchain_transfer_with_data",
+            b"receive_deploy_interchain_token",
+            b"give_unregistered_coin",
+            b"mint_as_distributor",
+            b"mint_to_as_distributor",
+            b"burn_as_distributor",
+            b"set_trusted_addresses",
+			b"channel",
+			b"version_control",
+			b"channel_mut",
+			b"add_registered_coin",
+			b"is_trusted_address",
+			b"coin_management_mut",
+			b"add_unregistered_coin",
+            b"add_unregistered_coin_type",
+			b"add_registered_coin_type",
+			b"get_registered_coin_type",
+			b"remove_unregistered_coin_type",
+			b"remove_unregistered_coin",
+			b"set_trusted_address",
+			b"get_trusted_address",
+			b"get_coin_info",
+			b"set_relayer_discovery_id",
+			b"channel_id",
+			b"get_unregistered_coin_type",
+			b"relayer_discovery_id",
+        ].map!(|function_name| function_name.to_ascii_string()),
+    ])
+}
+
 // === Tests ===
 #[test_only]
 public fun new_for_testing(): ITS {
     let ctx = &mut sui::tx_context::dummy();
+	let mut version_control = new_version_control();
+
+	let inner = versioned::create(
+		VERSION,
+		its_v0::new(
+			axelar_gateway::channel::new(ctx),
+			address_tracker::new(
+				ctx,
+			),
+			table::new(ctx),
+			bag::new(ctx),
+			table::new(ctx),
+			bag::new(ctx),
+			object::id_from_address(@0x0),
+			version_control,
+		),
+		ctx,
+	);
+
     let mut its = ITS {
         id: object::new(ctx),
-        channel: axelar_gateway::channel::new(ctx),
-        address_tracker: address_tracker::new(
-            ctx,
-        ),
-        registered_coins: bag::new(ctx),
-        registered_coin_types: table::new(ctx),
-        unregistered_coin_info: bag::new(ctx),
-        unregistered_coin_types: table::new(ctx),
-        relayer_discovery_id: object::id_from_address(@0x0),
-        version_control: new_version_control(),
-    };
+		inner
+	};
 
-    its.set_trusted_address(
-        std::ascii::string(b"Chain Name"),
-        std::ascii::string(b"Address"),
-    );
+	let trusted_addresses = trusted_addresses::new_for_testing(
+		vector[
+			b"Chain Name",
+		],
+		vector[
+			b"Address",
+		],
+	);
+
+    its.set_trusted_addresses(trusted_addresses);
 
     its
-}
-
-#[test_only]
-public fun add_unregistered_coin_type_for_testing(
-    self: &mut ITS,
-    token_id: UnregisteredTokenId,
-    type_name: TypeName,
-) {
-    self.add_unregistered_coin_type(token_id, type_name);
 }
 
 #[test_only]
@@ -292,15 +327,17 @@ public fun remove_unregistered_coin_type_for_testing(
     self: &mut ITS,
     token_id: UnregisteredTokenId,
 ): TypeName {
-    self.remove_unregistered_coin_type(token_id)
+	let value = self.value_mut!(b"remove_unregistered_coin_type");
+    value.remove_unregistered_coin_type(token_id)
 }
 
 #[test_only]
-public fun add_registered_coin_type_for_testing(
+public fun add_unregistered_coin_type_for_testing(
     self: &mut ITS,
-    token_id: TokenId,
-    type_name: TypeName,
+	token_id: UnregisteredTokenId,
+	type_name: TypeName,
 ) {
-    self.add_registered_coin_type(token_id, type_name);
+	let value = self.value_mut!(b"add_unregistered_coin_type");
+    value.add_unregistered_coin_type(token_id, type_name);
 }
 

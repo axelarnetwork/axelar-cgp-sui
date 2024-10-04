@@ -248,7 +248,7 @@ fun test_discovery_interchain_transfer() {
     let payload = writer.into_bytes();
 
     let type_arg = std::type_name::get<RelayerDiscovery>();
-    its.add_registered_coin_type_for_testing(
+    its.add_registered_coin_type(
         its::token_id::from_address(token_id),
         type_arg,
     );
@@ -311,7 +311,7 @@ fun test_discovery_interchain_transfer_with_data() {
         .write_bytes(data);
     let payload = writer.into_bytes();
 
-    its.add_registered_coin_type_for_testing(
+    its.add_registered_coin_type(
         its::token_id::from_address(token_id),
         std::type_name::get<RelayerDiscovery>(),
     );

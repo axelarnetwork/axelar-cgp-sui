@@ -225,8 +225,7 @@ public(package) fun get_unregistered_coin_type(
     &self.unregistered_coin_types[token_id]
 }
 
-// === Private ===
-fun add_unregistered_coin_type(
+public(package) fun add_unregistered_coin_type(
     self: &mut ITSV0,
     token_id: UnregisteredTokenId,
     type_name: TypeName,
@@ -234,14 +233,14 @@ fun add_unregistered_coin_type(
     self.unregistered_coin_types.add(token_id, type_name);
 }
 
-fun remove_unregistered_coin_type(
+public(package) fun remove_unregistered_coin_type(
     self: &mut ITSV0,
     token_id: UnregisteredTokenId,
 ): TypeName {
     self.unregistered_coin_types.remove(token_id)
 }
 
-fun add_registered_coin_type(
+public(package) fun add_registered_coin_type(
     self: &mut ITSV0,
     token_id: TokenId,
     type_name: TypeName,
@@ -264,3 +263,4 @@ public fun test_remove_registered_coin_type_for_testing(
 ): TypeName {
     self.remove_registered_coin_type_for_testing(token_id)
 }
+
