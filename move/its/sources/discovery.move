@@ -37,12 +37,11 @@ public fun get_interchain_transfer_info(
 }
 
 public fun register_transaction(
-    self: &mut ITS,
+    its: &mut ITS,
     discovery: &mut RelayerDiscovery,
 ) {
-    self.set_relayer_discovery_id(discovery);
     let mut arg = vector[0];
-    arg.append(object::id(self).to_bytes());
+    arg.append(object::id(its).to_bytes());
 
     let arguments = vector[arg, vector[3]];
 
@@ -58,8 +57,8 @@ public fun register_transaction(
         vector[],
     );
 
-    discovery.register_transaction(
-        self.channel(),
+    its.register_transaction(
+        discovery,
         transaction::new_transaction(
             false,
             vector[move_call],
@@ -67,7 +66,7 @@ public fun register_transaction(
     );
 }
 
-public fun get_call_info(self: &ITS, mut payload: vector<u8>): Transaction {
+public fun get_call_info(its: &ITS, mut payload: vector<u8>): Transaction {
     let mut reader = abi::new_reader(payload);
     let mut message_type = reader.read_u256();
 
@@ -79,18 +78,18 @@ public fun get_call_info(self: &ITS, mut payload: vector<u8>): Transaction {
     };
 
     if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-        get_interchain_transfer_tx(self, &mut reader)
+        get_interchain_transfer_tx(its, &mut reader)
     } else {
         assert!(
             message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
             EUnsupportedMessageType,
         );
-        get_deploy_interchain_token_tx(self, &mut reader)
+        get_deploy_interchain_token_tx(its, &mut reader)
     }
 }
 
 fun get_interchain_transfer_tx(
-    self: &ITS,
+    its: &ITS,
     reader: &mut AbiReader,
 ): Transaction {
     let token_id = token_id::from_u256(reader.read_u256());
@@ -98,12 +97,13 @@ fun get_interchain_transfer_tx(
     let destination_address = address::from_bytes(reader.read_bytes());
     reader.skip_slot(); // skip amount
     let data = reader.read_bytes();
+    let value = its.package_value();
 
     if (data.is_empty()) {
         let mut arg = vector[0];
-        arg.append(object::id_address(self).to_bytes());
+        arg.append(object::id_address(its).to_bytes());
 
-        let type_name = self.get_registered_coin_type(token_id);
+        let type_name = value.registered_coin_type(token_id);
 
         let arguments = vector[arg, vector[2], vector[0, 6]];
 
@@ -123,7 +123,7 @@ fun get_interchain_transfer_tx(
         )
     } else {
         let mut discovery_arg = vector[0];
-        discovery_arg.append(self
+        discovery_arg.append(value
             .relayer_discovery_id()
             .id_to_address()
             .to_bytes());
@@ -149,11 +149,11 @@ fun get_interchain_transfer_tx(
 }
 
 fun get_deploy_interchain_token_tx(
-    self: &ITS,
+    its: &ITS,
     reader: &mut AbiReader,
 ): Transaction {
     let mut arg = vector[0];
-    arg.append(object::id_address(self).to_bytes());
+    arg.append(object::id_address(its).to_bytes());
 
     let arguments = vector[arg, vector[2]];
 
@@ -163,7 +163,8 @@ fun get_deploy_interchain_token_tx(
     let decimals = (reader.read_u256() as u8);
     reader.skip_slot(); // skip distributor
 
-    let type_name = self.get_unregistered_coin_type(&symbol, decimals);
+    let value = its.package_value();
+    let type_name = value.unregistered_coin_type(&symbol, decimals);
 
     let move_call = transaction::new_move_call(
         transaction::new_function(
@@ -183,9 +184,9 @@ fun get_deploy_interchain_token_tx(
 
 // === Tests ===
 #[test_only]
-fun get_initial_tx(self: &ITS): Transaction {
+fun get_initial_tx(its: &ITS): Transaction {
     let mut arg = vector[0];
-    arg.append(sui::bcs::to_bytes(&object::id(self)));
+    arg.append(sui::bcs::to_bytes(&object::id(its)));
 
     let arguments = vector[arg, vector[3]];
 
@@ -210,15 +211,16 @@ fun get_initial_tx(self: &ITS): Transaction {
 #[test]
 fun test_discovery_initial() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
 
+    let value = its.package_value();
     assert!(
-        discovery.get_transaction(its.channel_id()) == get_initial_tx(&its),
+        discovery.get_transaction(value.channel_id()) == get_initial_tx(&its),
     );
-    assert!(its.relayer_discovery_id() == object::id(&discovery));
+    assert!(value.relayer_discovery_id() == object::id(&discovery));
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(discovery);
@@ -227,7 +229,7 @@ fun test_discovery_initial() {
 #[test]
 fun test_discovery_interchain_transfer() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -283,13 +285,13 @@ fun test_discovery_interchain_transfer() {
 #[test]
 fun test_discovery_interchain_transfer_with_data() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
 
     assert!(
-        discovery.get_transaction(its.channel_id()) == get_initial_tx(&its),
+        discovery.get_transaction(its.package_value().channel_id()) == get_initial_tx(&its),
     );
 
     let token_id = @0x1234;
@@ -330,7 +332,7 @@ fun test_discovery_interchain_transfer_with_data() {
 #[test]
 fun test_discovery_deploy_token() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);

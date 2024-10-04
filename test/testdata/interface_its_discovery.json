@@ -13,7 +13,7 @@
       "name": "get_call_info",
       "visibility": "public",
       "params": {
-        "self#0#0": "&ITS",
+        "its#0#0": "&ITS",
         "payload#0#0": "vector<u8>"
       },
       "returnType": "Transaction"

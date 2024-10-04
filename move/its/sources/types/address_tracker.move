@@ -20,7 +20,7 @@ public struct InterchainAddressTracker has store {
 // Getters
 // ------
 /// Get the trusted address for a chain.
-public fun get_trusted_address(
+public fun trusted_address(
     self: &InterchainAddressTracker,
     chain_name: String,
 ): &String {
@@ -34,7 +34,7 @@ public fun is_trusted_address(
     chain_name: String,
     addr: String,
 ): bool {
-    get_trusted_address(self, chain_name) == &addr
+    trusted_address(self, chain_name) == &addr
 }
 // === Protected ===
 
@@ -77,8 +77,8 @@ fun test_address_tracker() {
     self.set_trusted_address(chain1, address1);
     self.set_trusted_address(chain2, address2);
 
-    assert!(self.get_trusted_address(chain1) == &address1);
-    assert!(self.get_trusted_address(chain2) == &address2);
+    assert!(self.trusted_address(chain1) == &address1);
+    assert!(self.trusted_address(chain2) == &address2);
 
     assert!(self.is_trusted_address(chain1, address1) == true);
     assert!(self.is_trusted_address(chain1, address2) == false);
@@ -88,8 +88,8 @@ fun test_address_tracker() {
     self.set_trusted_address(chain1, address2);
     self.set_trusted_address(chain2, address1);
 
-    assert!(self.get_trusted_address(chain1) == &address2);
-    assert!(self.get_trusted_address(chain2) == &address1);
+    assert!(self.trusted_address(chain1) == &address2);
+    assert!(self.trusted_address(chain2) == &address1);
 
     assert!(self.is_trusted_address(chain1, address1) == false);
     assert!(self.is_trusted_address(chain1, address2) == true);
@@ -116,7 +116,7 @@ fun test_address_tracker() {
 
 #[test]
 #[expected_failure(abort_code = ENoAddress)]
-fun test_address_tracker_get_no_address() {
+fun test_address_tracker_no_address() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
     let chain1 = std::ascii::string(b"chain1");
@@ -125,7 +125,7 @@ fun test_address_tracker_get_no_address() {
     self.set_trusted_address(chain1, address1);
     self.set_trusted_address(chain1, std::ascii::string(b""));
 
-    self.get_trusted_address(chain1);
+    self.trusted_address(chain1);
 
     sui::test_utils::destroy(self);
 }

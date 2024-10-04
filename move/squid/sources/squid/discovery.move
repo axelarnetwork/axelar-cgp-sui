@@ -55,7 +55,7 @@ public fun get_transaction(
     let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(
         payload,
     );
-    let type_in = (*its.get_registered_coin_type(token_id)).into_string();
+    let type_in = (*its.registered_coin_type(token_id)).into_string();
     let package_id = transaction::package_id<Squid>();
     let swap_data = bcs::new(data).peel_vec_vec_u8();
 

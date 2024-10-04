@@ -14,8 +14,8 @@
     }
   },
   "publicFunctions": {
-    "get_trusted_address": {
-      "name": "get_trusted_address",
+    "trusted_address": {
+      "name": "trusted_address",
       "visibility": "public",
       "params": {
         "self#0#0": "&InterchainAddressTracker",
