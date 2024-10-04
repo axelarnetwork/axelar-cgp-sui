@@ -109,10 +109,6 @@ describe.only('ITS', () => {
         for (const packageDir of dependencies) {
             const publishedReceipt = await publishPackage(client, deployer, packageDir);
 
-            if (packageDir === 'gas_service') {
-                console.log(publishedReceipt);
-            }
-
             deployments[packageDir] = publishedReceipt;
         }
 
