@@ -1,7 +1,7 @@
 module its::its_v0;
 
 use axelar_gateway::channel::Channel;
-use its::address_tracker::{InterchainAddressTracker};
+use its::address_tracker::InterchainAddressTracker;
 use its::coin_info::CoinInfo;
 use its::coin_management::CoinManagement;
 use its::token_id::{TokenId, UnregisteredTokenId};
@@ -9,10 +9,10 @@ use its::trusted_addresses::TrustedAddresses;
 use relayer_discovery::discovery::RelayerDiscovery;
 use std::ascii::{Self, String};
 use std::type_name::{Self, TypeName};
-use sui::bag::{Bag};
+use sui::bag::Bag;
 use sui::coin::{TreasuryCap, CoinMetadata};
-use sui::table::{Table};
-use version_control::version_control::{VersionControl};
+use sui::table::Table;
+use version_control::version_control::VersionControl;
 
 public struct ITSV0 has store {
     channel: Channel,
@@ -99,11 +99,18 @@ public(package) fun set_trusted_addresses(
     }
 }
 
-public(package) fun get_trusted_address(self: &ITSV0, chain_name: String): &String {
+public(package) fun get_trusted_address(
+    self: &ITSV0,
+    chain_name: String,
+): &String {
     self.address_tracker.get_trusted_address(chain_name)
 }
 
-public(package) fun is_trusted_address(self: &ITSV0, source_chain: String, source_address: String): bool {
+public(package) fun is_trusted_address(
+    self: &ITSV0,
+    source_chain: String,
+    source_address: String,
+): bool {
     self.address_tracker.is_trusted_address(source_chain, source_address)
 }
 
@@ -123,12 +130,18 @@ public(package) fun get_coin_data_mut<T>(
     &mut self.registered_coins[token_id]
 }
 
-public(package) fun get_coin_data<T>(self: &ITSV0, token_id: TokenId): &CoinData<T> {
+public(package) fun get_coin_data<T>(
+    self: &ITSV0,
+    token_id: TokenId,
+): &CoinData<T> {
     assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
     &self.registered_coins[token_id]
 }
 
-public(package) fun get_coin_info<T>(self: &ITSV0, token_id: TokenId): &CoinInfo<T> {
+public(package) fun get_coin_info<T>(
+    self: &ITSV0,
+    token_id: TokenId,
+): &CoinInfo<T> {
     &get_coin_data<T>(self, token_id).coin_info
 }
 
@@ -211,7 +224,10 @@ public(package) fun add_registered_coin<T>(
     add_registered_coin_type(self, token_id, type_name);
 }
 
-public fun get_registered_coin_type(self: &ITSV0, token_id: TokenId): &TypeName {
+public fun get_registered_coin_type(
+    self: &ITSV0,
+    token_id: TokenId,
+): &TypeName {
     assert!(self.registered_coin_types.contains(token_id), EUnregisteredCoin);
     &self.registered_coin_types[token_id]
 }
@@ -263,4 +279,3 @@ public fun test_remove_registered_coin_type_for_testing(
 ): TypeName {
     self.remove_registered_coin_type_for_testing(token_id)
 }
-
