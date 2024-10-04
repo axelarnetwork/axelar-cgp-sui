@@ -27,7 +27,7 @@ const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -109,6 +109,10 @@ describe('ITS', () => {
         for (const packageDir of dependencies) {
             const publishedReceipt = await publishPackage(client, deployer, packageDir);
 
+            if (packageDir === 'gas_service') {
+                console.log(publishedReceipt);
+            }
+
             deployments[packageDir] = publishedReceipt;
         }
 
@@ -116,7 +120,10 @@ describe('ITS', () => {
         objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
         objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
         objectIds.relayerDiscovery = findObjectId(deployments.relayer_discovery.publishTxn, 'RelayerDiscovery');
-        objectIds.gasService = findObjectId(deployments.gas_service.publishTxn, 'GasService');
+        objectIds.gasService = findObjectId(
+            deployments.gas_service.publishTxn,
+            `${deployments.gas_service.packageId}::gas_service::GasService`,
+        );
         objectIds.upgradeCap = findObjectId(deployments.governance.publishTxn, 'UpgradeCap');
         objectIds.creatorCap = findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap');
         objectIds.itsChannel = await getSingletonChannelId(client, objectIds.its);
