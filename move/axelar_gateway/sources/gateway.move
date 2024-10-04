@@ -119,7 +119,7 @@ entry fun setup(
 // ------
 // Macros
 // ------
-/// This macro also uses version control to sinplify things a bit.
+/// This macro also uses version control to simplify things a bit.
 macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
     let gateway = $self;
     let value = gateway.inner.load_value<GatewayV0>();
@@ -127,7 +127,7 @@ macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
     value
 }
 
-/// This macro also uses version control to sinplify things a bit.
+/// This macro also uses version control to simplify things a bit.
 macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut GatewayV0 {
     let gateway = $self;
     let value = gateway.inner.load_value_mut<GatewayV0>();
