@@ -23,6 +23,7 @@ const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
 const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
 const { bcsStructs } = require('../dist/bcs');
+const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
@@ -126,6 +127,7 @@ describe('ITS', () => {
         objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
         // Find the object ids from the publish transactions
         objectIds = {
+            ...objectIds,
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -216,12 +218,12 @@ describe('ITS', () => {
             // This test depends on the previous one because it needs to have fund transferred to the coin_management contract beforehand.
             it('should receive interchain transfer successfully', async () => {
                 // Approve ITS transfer message
-                const messageType = 0; // MESSAGE_TYPE_INTERCHAIN_TRANSFER
-                const tokenId = objectIds.tokenId; // The token ID to transfer
-                const sourceAddress = trustedSourceAddress; // Previously set as trusted address
+                const messageType = ITSMessageType.InterchainTokenTransfer;
+                const tokenId = objectIds.tokenId;
+                const sourceAddress = trustedSourceAddress;
                 const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
-                const amount = 1e9; // An amount to transfer
-                const data = '0x1234'; // Random data
+                const amount = 1e9;
+                const data = '0x1234';
 
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
@@ -313,8 +315,8 @@ describe('ITS', () => {
                 const metadata = findObjectId(publishTxn, `CoinMetadata<${typeArg}>`);
 
                 // Approve ITS transfer message
-                const messageType = 1; // MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN
-                const tokenId = hexlify(randomBytes(32)); // The token ID to transfer
+                const messageType = ITSMessageType.InterchainTokenDeployment;
+                const tokenId = hexlify(randomBytes(32));
                 const byteName = toUtf8Bytes(interchainTokenOptions.name);
                 const byteSymbol = toUtf8Bytes(interchainTokenOptions.symbol);
                 const decimals = interchainTokenOptions.decimals;

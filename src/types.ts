@@ -18,6 +18,11 @@ export interface Dependency {
     path: string;
 }
 
+export enum ITSMessageType {
+    InterchainTokenTransfer = 0,
+    InterchainTokenDeployment = 1,
+}
+
 export interface DependencyNode extends Dependency {
     dependencies: string[];
 }
