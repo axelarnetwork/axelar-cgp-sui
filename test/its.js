@@ -22,12 +22,12 @@ const {
 } = require('./testutils');
 const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder } = require('../dist/utils');
+const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
 const { bcsStructs } = require('../dist/bcs');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe.only('ITS', () => {
+describe('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -102,14 +102,8 @@ describe.only('ITS', () => {
         client = new SuiClient({ url: getFullnodeUrl(network) });
 
         // Request funds from faucet
-        await Promise.all(
-            [operator, deployer, keypair].map((keypair) =>
-                requestSuiFromFaucetV0({
-                    host: getFaucetHost(network),
-                    recipient: keypair.toSuiAddress(),
-                }),
-            ),
-        );
+        const addresses = [operator, deployer, keypair].map((keypair) => keypair.toSuiAddress());
+        await fundAccountsFromFaucet(addresses);
 
         // Publish all packages
         for (const packageDir of dependencies) {

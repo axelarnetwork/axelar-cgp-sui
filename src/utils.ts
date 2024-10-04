@@ -2,6 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { getFullnodeUrl } from '@mysten/sui/client';
+import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
 import toml from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from './types';
 
@@ -172,6 +173,19 @@ export function getDeploymentOrder(packageDir: string, baseMoveDir: string): str
 
     return sorted.map((dep) => dep.directory);
 }
+
+export const fundAccountsFromFaucet = async (addresses: string[]) => {
+    const promises = addresses.map(async (address) => {
+        const network = process.env.NETWORK || 'localnet';
+
+        return requestSuiFromFaucetV0({
+            host: getFaucetHost(network as 'localnet' | 'devnet' | 'testnet'),
+            recipient: address,
+        });
+    });
+
+    return Promise.all(promises);
+};
 
 export const getInstalledSuiVersion = () => {
     const suiVersion = execSync('sui --version').toString().trim();
