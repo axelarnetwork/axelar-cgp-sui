@@ -113,7 +113,7 @@ public fun register_transaction(
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
 public fun register_coin(singleton: &Singleton, its: &mut ITS) {
-    let coin_info = coin_info::from_info<ITS>(
+    let coin_info = coin_info::from_info<ITS_DEMO>(
         singleton.coin_metadata.get_name(),
         singleton.coin_metadata.get_symbol(),
         singleton.coin_metadata.get_decimals(),
