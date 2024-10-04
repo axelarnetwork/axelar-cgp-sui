@@ -21,18 +21,5 @@
       ]
     }
   },
-  "publicFunctions": {
-    "start_swap<T>": {
-      "name": "start_swap<T>",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&mut SquidV0",
-        "its#0#0": "&mut ITS",
-        "approved_message#0#0": "ApprovedMessage",
-        "clock#0#0": "&Clock",
-        "ctx#0#0": "&mut TxContext"
-      },
-      "returnType": "SwapInfo"
-    }
-  }
+  "publicFunctions": {}
 }
