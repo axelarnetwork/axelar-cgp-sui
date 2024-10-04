@@ -1,4 +1,4 @@
-module example::its_example;
+module example::its;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use axelar_gateway::gateway::{Self, Gateway};
@@ -7,7 +7,7 @@ use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
-use its::its::ITS;
+use its::its;
 use its::service;
 use its::token_id::TokenId;
 use relayer_discovery::discovery::RelayerDiscovery;
@@ -27,8 +27,8 @@ use sui::sui::SUI;
 public struct Singleton has key {
     id: UID,
     channel: Channel,
-    coin_metadata: CoinMetadata<ITS_EXAMPLE>,
-    treasury_cap: TreasuryCap<ITS_EXAMPLE>,
+    coin_metadata: CoinMetadata<ITS>,
+    treasury_cap: TreasuryCap<ITS>,
 }
 
 public struct ExecutedWithToken has copy, drop {
@@ -41,12 +41,12 @@ public struct ExecutedWithToken has copy, drop {
 // ------------
 // Capabilities
 // ------------
-public struct ITS_EXAMPLE has drop {}
+public struct ITS has drop {}
 
 // -----
 // Setup
 // -----
-fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
+fun init(witness: ITS, ctx: &mut TxContext) {
     let (treasury_cap, coin_metadata) = coin::create_currency(
         witness,
         9,
@@ -75,7 +75,7 @@ fun init(witness: ITS_EXAMPLE, ctx: &mut TxContext) {
 public fun register_transaction(
     discovery: &mut RelayerDiscovery,
     singleton: &Singleton,
-    its: &ITS,
+    its: &its::ITS,
     clock: &Clock,
 ) {
     let arguments =
@@ -113,8 +113,8 @@ public fun register_transaction(
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
-public fun register_coin(singleton: &Singleton, its: &mut ITS) {
-    let coin_info = coin_info::from_info<ITS_EXAMPLE>(
+public fun register_coin(singleton: &Singleton, its: &mut its::ITS) {
+    let coin_info = coin_info::from_info<ITS>(
         singleton.coin_metadata.get_name(),
         singleton.coin_metadata.get_symbol(),
         singleton.coin_metadata.get_decimals(),
@@ -129,7 +129,7 @@ public fun register_coin(singleton: &Singleton, its: &mut ITS) {
 }
 
 public fun deploy_remote_interchain_token(
-    its: &mut ITS,
+    its: &mut its::ITS,
     gateway: &mut Gateway,
     gas_service: &mut GasService,
     destination_chain: String,
@@ -138,7 +138,7 @@ public fun deploy_remote_interchain_token(
     gas_params: vector<u8>,
     refund_address: address,
 ) {
-    let message_ticket = service::deploy_remote_interchain_token<ITS_EXAMPLE>(
+    let message_ticket = service::deploy_remote_interchain_token<ITS>(
         its,
         token_id,
         destination_chain,
@@ -157,11 +157,11 @@ public fun deploy_remote_interchain_token(
 /// This should trigger an interchain trasnfer.
 public fun send_interchain_transfer_call(
     singleton: &Singleton,
-    its: &mut ITS,
+    its: &mut its::ITS,
     gateway: &mut Gateway,
     gas_service: &mut GasService,
     token_id: TokenId,
-    coin: Coin<ITS_EXAMPLE>,
+    coin: Coin<ITS>,
     destination_chain: String,
     destination_address: vector<u8>,
     metadata: vector<u8>,
@@ -171,7 +171,7 @@ public fun send_interchain_transfer_call(
     clock: &Clock,
 ) {
     let interchain_transfer_ticket = service::prepare_interchain_transfer<
-        ITS_EXAMPLE,
+        ITS,
     >(
         token_id,
         coin,
@@ -181,7 +181,7 @@ public fun send_interchain_transfer_call(
         &singleton.channel,
     );
 
-    let message_ticket = service::send_interchain_transfer<ITS_EXAMPLE>(
+    let message_ticket = service::send_interchain_transfer<ITS>(
         its,
         interchain_transfer_ticket,
         clock,
@@ -203,7 +203,7 @@ public fun send_interchain_transfer_call(
 public fun receive_interchain_transfer(
     approved_message: ApprovedMessage,
     singleton: &Singleton,
-    its: &mut ITS,
+    its: &mut its::ITS,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
@@ -212,7 +212,7 @@ public fun receive_interchain_transfer(
         source_address,
         data,
         coin,
-    ) = service::receive_interchain_transfer_with_data<ITS_EXAMPLE>(
+    ) = service::receive_interchain_transfer_with_data<ITS>(
         its,
         approved_message,
         &singleton.channel,

@@ -112,13 +112,13 @@ describe('ITS', () => {
             deployments[packageDir] = publishedReceipt;
         }
 
-        objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its_example::Singleton');
+        objectIds.singleton = findObjectId(deployments.example.publishTxn, 'its::Singleton');
 
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
 
         await tokenTxBuilder.moveCall({
-            target: `${deployments.example.packageId}::its_example::mint`,
+            target: `${deployments.example.packageId}::its::mint`,
             arguments: [objectIds.singleton, 1e18, deployer.toSuiAddress()],
         });
 
@@ -136,7 +136,7 @@ describe('ITS', () => {
             upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
             itsChannel: await getSingletonChannelId(client, objectIds.its),
-            coin: findObjectId(mintReceipt, 'its_example::ITS_EXAMPLE'),
+            coin: findObjectId(mintReceipt, 'its::ITS'),
         };
     });
 
@@ -144,7 +144,7 @@ describe('ITS', () => {
         const txBuilder = new TxBuilder(client);
 
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::its_example::register_transaction`,
+            target: `${deployments.example.packageId}::its::register_transaction`,
             arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
         });
 
@@ -157,7 +157,7 @@ describe('ITS', () => {
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::its_example::register_coin`,
+            target: `${deployments.example.packageId}::its::register_coin`,
             arguments: [objectIds.singleton, objectIds.its],
         });
 
@@ -194,7 +194,7 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::its_example::send_interchain_transfer_call`,
+                    target: `${deployments.example.packageId}::its::send_interchain_transfer_call`,
                     arguments: [
                         objectIds.singleton,
                         objectIds.its,
@@ -259,7 +259,7 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::its_example::receive_interchain_transfer`,
+                    target: `${deployments.example.packageId}::its::receive_interchain_transfer`,
                     arguments: [approvedMessage, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
                 });
 
@@ -280,7 +280,7 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::its_example::deploy_remote_interchain_token`,
+                    target: `${deployments.example.packageId}::its::deploy_remote_interchain_token`,
                     arguments: [
                         objectIds.its,
                         objectIds.gateway,
