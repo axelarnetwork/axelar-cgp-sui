@@ -142,7 +142,7 @@ fun test_start_swap() {
     );
 
     let swap_info = start_swap<COIN>(
-        &mut squid,
+        &squid,
         &mut its,
         approved_message,
         &clock,
