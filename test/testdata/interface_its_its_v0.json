@@ -1,0 +1,45 @@
+{
+  "structs": {
+    "ITSV0": {
+      "name": "ITSV0",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "channel",
+          "type": "Channel"
+        },
+        {
+          "name": "address_tracker",
+          "type": "InterchainAddressTracker"
+        },
+        {
+          "name": "unregistered_coin_types",
+          "type": "Table<UnregisteredTokenId, TypeName>"
+        },
+        {
+          "name": "unregistered_coin_info",
+          "type": "Bag"
+        },
+        {
+          "name": "registered_coin_types",
+          "type": "Table<TokenId, TypeName>"
+        },
+        {
+          "name": "registered_coins",
+          "type": "Bag"
+        },
+        {
+          "name": "relayer_discovery_id",
+          "type": "ID"
+        },
+        {
+          "name": "version_control",
+          "type": "VersionControl"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
