@@ -3,102 +3,107 @@ module squid::swap_info;
 use squid::coin_bag::{Self, CoinBag};
 use sui::bcs;
 
+public enum SwapStatus has copy, drop, store {
+    Swapping{index: u64, fallback: bool},
+    Estimating{index: u64, fallback: bool},
+    Done,
+}
+
 public struct SwapInfo {
-    swap_index: u64,
-    estimate_index: u64,
-    status: u8,
+    status: SwapStatus,
     swap_data: vector<vector<u8>>,
     coin_bag: CoinBag,
 }
 
-const ESTIMATING: u8 = 0;
-const SWAPPING: u8 = 1;
-const SKIP_SWAP: u8 = 2;
+#[error]
+const EOutOfEstimates: vector<u8> = b"Trying to get make an estimate but there are none left.";
+#[error]
+const EOutOfSwaps: vector<u8> = b"Trying to get make a swap but there are none left.";
+#[error]
+const ENotEstimating: vector<u8> = b"Trying to get an estimate but estimating is done.";
+#[error]
+const ENotDoneEstimating: vector<u8> = b"Trying to swap while still swapping.";
+#[error]
+const EDoneSwapping: vector<u8> = b"Trying to swap but swapping is finished.";
+#[error]
+const EAlreadySkippingSwaps: vector<u8> = b"Trying to skip swaps while swaps are skipped.";
+#[error]
+const ENotDone: vector<u8> = b"Trying to finalize but SwapInfo is not Done yet.";
+#[error]
+const EDoneEstimating: vector<u8> = b"Trying to estimate but estimating is finished.";
 
-const EOutOfEstimates: u64 = 0;
-const EOutOfSwaps: u64 = 1;
-const ENotEstimating: u64 = 3;
-const ENotSwapping: u64 = 4;
-const ENotDoneEstimating: u64 = 5;
-const ENotDoneSwapping: u64 = 6;
+
 
 public(package) fun new(data: vector<u8>, ctx: &mut TxContext): SwapInfo {
     let swap_data = bcs::new(data).peel_vec_vec_u8();
     SwapInfo {
-        swap_index: 0,
-        estimate_index: 0,
-        status: ESTIMATING,
+        status: SwapStatus::Estimating{index: 0, fallback: false},
         coin_bag: coin_bag::new(ctx),
         swap_data,
     }
 }
 
-public(package) fun get_data_swapping(self: &mut SwapInfo): vector<u8> {
-    let index = self.swap_index;
-    if (index == 0 && self.status == ESTIMATING) {
-        assert!(
-            self.estimate_index == self.swap_data.length(),
-            ENotDoneEstimating,
-        );
-        self.status = SWAPPING;
+public(package) fun get_data_swapping(self: &mut SwapInfo): (vector<u8>, bool) {
+    let (index, fallback) = match(self.status) {
+        SwapStatus::Estimating{index: _, fallback: _} => abort(ENotDoneEstimating),
+        SwapStatus::Swapping{index, fallback} => (index, fallback),
+        SwapStatus::Done => abort(EDoneSwapping),
     };
+
     assert!(index < self.swap_data.length(), EOutOfSwaps);
 
-    self.swap_index = index + 1;
-    if (self.status == SKIP_SWAP) {
-        vector[]
+    self.status = if (index + 1 < self.swap_data.length()) {
+        SwapStatus::Swapping{index: index + 1, fallback}
     } else {
-        assert!(self.status == SWAPPING, ENotSwapping);
-        self.swap_data[index]
-    }
+        SwapStatus::Done
+    };
+
+    (self.swap_data[index], fallback)
 }
 
-public(package) fun get_data_estimating(self: &mut SwapInfo): vector<u8> {
-    let index = self.estimate_index;
+public(package) fun get_data_estimating(self: &mut SwapInfo): (vector<u8>, bool) {
+    let (index, fallback) = match(self.status) {
+        SwapStatus::Estimating{index, fallback} => (index, fallback),
+        _ => abort(EDoneEstimating),
+    };
+
     assert!(index < self.swap_data.length(), EOutOfEstimates);
 
-    self.estimate_index = index + 1;
-
-    if (self.status == SKIP_SWAP) {
-        vector[]
+    self.status = if (index + 1 < self.swap_data.length()) {
+        SwapStatus::Estimating{index: index + 1, fallback}
     } else {
-        assert!(self.status == ESTIMATING, ENotEstimating);
-        self.swap_data[index]
-    }
+        SwapStatus::Swapping{index: 0, fallback}
+    };
+    
+    (self.swap_data[index], fallback)
 }
 
 public(package) fun coin_bag(self: &mut SwapInfo): &mut CoinBag {
     &mut self.coin_bag
 }
 
-public(package) fun swap_data(self: &SwapInfo, i: u64): vector<u8> {
-    self.swap_data[i]
-}
-
 public(package) fun skip_swap(self: &mut SwapInfo) {
-    self.status = SKIP_SWAP;
+    self.status = match(self.status) {
+        SwapStatus::Estimating{index, fallback} => {
+            assert!(!fallback, EAlreadySkippingSwaps);
+            SwapStatus::Estimating{index, fallback: true}
+        },
+        _ => abort(ENotEstimating),
+    };
 }
 
 public fun finalize(self: SwapInfo) {
-    assert!(
-        self.estimate_index == self.swap_data.length() &&
-            self.swap_index == self.swap_data.length(),
-        ENotDoneSwapping,
-    );
-    assert!(
-        self.status == SWAPPING ||
-            self.status == SKIP_SWAP,
-        ENotDoneEstimating,
-    );
+    match(self.status) {
+        SwapStatus::Done => (),
+        _ => abort(ENotDone),
+    };
     self.destroy();
 }
 
 fun destroy(self: SwapInfo) {
     let SwapInfo {
-        swap_index: _,
-        estimate_index: _,
-        swap_data: _,
         status: _,
+        swap_data: _,
         coin_bag,
     } = self;
     coin_bag.destroy();
@@ -115,10 +120,14 @@ fun test_swap_data() {
 
     let mut swap_info = new(data, ctx);
 
-    assert!(swap_info.get_data_estimating() == swap1);
-    assert!(swap_info.get_data_estimating() == swap2);
-    assert!(swap_info.get_data_swapping() == swap1);
-    assert!(swap_info.get_data_swapping() == swap2);
+    let (mut data, _) = swap_info.get_data_estimating();
+    assert!(data == swap1);
+    (data, _) = swap_info.get_data_estimating();
+    assert!(data == swap2);
+    (data, _) = swap_info.get_data_swapping();
+    assert!(data == swap1);
+    (data, _) = swap_info.get_data_swapping();
+    assert!(data == swap2);
 
     swap_info.finalize();
 }
@@ -141,8 +150,8 @@ fun test_get_data_swapping_not_done_estimating() {
 }
 
 #[test]
-#[expected_failure(abort_code = ENotSwapping)]
-fun test_get_data_swapping_not_swapping() {
+#[expected_failure(abort_code = EDoneSwapping)]
+fun test_get_data_swapping_done_swapping() {
     let ctx = &mut tx_context::dummy();
 
     let swap1 = b"1";
@@ -151,7 +160,7 @@ fun test_get_data_swapping_not_swapping() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.swap_index = 1;
+    swap_info.status = SwapStatus::Done;
 
     swap_info.get_data_swapping();
 
@@ -169,9 +178,66 @@ fun test_get_data_swapping_out_of_swaps() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.swap_index = 2;
+    swap_info.status = SwapStatus::Swapping{index: 2, fallback: false};
 
     swap_info.get_data_swapping();
+
+    swap_info.destroy();
+}
+
+#[test]
+#[expected_failure(abort_code = EAlreadySkippingSwaps)]
+fun test_skip_swap_already_skipped_swaps() {
+    let ctx = &mut tx_context::dummy();
+
+    let swap1 = b"1";
+    let swap2 = b"2";
+
+    let data = std::bcs::to_bytes(&vector[swap1, swap2]);
+
+    let mut swap_info = new(data, ctx);
+
+    swap_info.skip_swap();
+    swap_info.skip_swap();
+
+    swap_info.destroy();
+}
+
+
+#[test]
+#[expected_failure(abort_code = ENotEstimating)]
+fun test_skip_swap_already_not_estimating_swapping() {
+    let ctx = &mut tx_context::dummy();
+
+    let swap1 = b"1";
+    let swap2 = b"2";
+
+    let data = std::bcs::to_bytes(&vector[swap1, swap2]);
+
+    let mut swap_info = new(data, ctx);
+    swap_info.status = SwapStatus::Swapping{index: 0, fallback: false};
+
+    swap_info.skip_swap();
+    swap_info.skip_swap();
+
+    swap_info.destroy();
+}
+
+#[test]
+#[expected_failure(abort_code = ENotEstimating)]
+fun test_skip_swap_already_not_estimating_done() {
+    let ctx = &mut tx_context::dummy();
+
+    let swap1 = b"1";
+    let swap2 = b"2";
+
+    let data = std::bcs::to_bytes(&vector[swap1, swap2]);
+
+    let mut swap_info = new(data, ctx);
+    swap_info.status = SwapStatus::Done;
+
+    swap_info.skip_swap();
+    swap_info.skip_swap();
 
     swap_info.destroy();
 }
@@ -186,7 +252,7 @@ fun test_get_data_swapping_skip_swap() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.skip_swap();
+    swap_info.status = SwapStatus::Swapping{index: 0, fallback: true};
 
     swap_info.get_data_swapping();
 
@@ -204,7 +270,7 @@ fun test_get_data_estimating_out_of_swaps() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.estimate_index = 2;
+    swap_info.status = SwapStatus::Estimating{index: 2, fallback: false};
 
     swap_info.get_data_estimating();
 
@@ -212,8 +278,8 @@ fun test_get_data_estimating_out_of_swaps() {
 }
 
 #[test]
-#[expected_failure(abort_code = ENotEstimating)]
-fun test_get_data_estimating_not_estimating() {
+#[expected_failure(abort_code = EDoneEstimating)]
+fun test_get_data_estimating_swapping() {
     let ctx = &mut tx_context::dummy();
 
     let swap1 = b"1";
@@ -222,7 +288,25 @@ fun test_get_data_estimating_not_estimating() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.status = SWAPPING;
+    swap_info.status = SwapStatus::Swapping{index: 0, fallback: false};
+
+    swap_info.get_data_estimating();
+
+    swap_info.destroy();
+}
+
+#[test]
+#[expected_failure(abort_code = EDoneEstimating)]
+fun test_get_data_estimating_done() {
+    let ctx = &mut tx_context::dummy();
+
+    let swap1 = b"1";
+    let swap2 = b"2";
+
+    let data = std::bcs::to_bytes(&vector[swap1, swap2]);
+
+    let mut swap_info = new(data, ctx);
+    swap_info.status = SwapStatus::Done;
 
     swap_info.get_data_estimating();
 
@@ -247,7 +331,7 @@ fun test_get_data_estimating_skip_swap() {
 }
 
 #[test]
-#[expected_failure(abort_code = ENotDoneSwapping)]
+#[expected_failure(abort_code = ENotDone)]
 fun test_finalize_not_done_swapping() {
     let ctx = &mut tx_context::dummy();
 
@@ -257,13 +341,13 @@ fun test_finalize_not_done_swapping() {
     let data = std::bcs::to_bytes(&vector[swap1, swap2]);
 
     let mut swap_info = new(data, ctx);
-    swap_info.status = SWAPPING;
+    swap_info.status = SwapStatus::Swapping{index: 0, fallback: false};
 
     swap_info.finalize();
 }
 
 #[test]
-#[expected_failure(abort_code = ENotDoneEstimating)]
+#[expected_failure(abort_code = ENotDone)]
 fun test_finalize_not_done_estimating() {
     let ctx = &mut tx_context::dummy();
 

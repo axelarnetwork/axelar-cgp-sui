@@ -35,8 +35,8 @@ public fun estimate<B, Q>(
     pool: &Pool<B, Q>,
     clock: &Clock,
 ) {
-    let data = self.get_data_estimating();
-    if (data.length() == 0) return;
+    let (data, fallback) = self.get_data_estimating();
+    if (fallback) return;
     let swap_data = peel_swap_data(data);
 
     assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
@@ -101,8 +101,8 @@ public fun swap<B, Q>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let data = self.get_data_swapping();
-    if (data.length() == 0) return;
+    let (data, fallback) = self.get_data_swapping();
+    if (fallback) return;
     let swap_data = peel_swap_data(data);
 
     assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);

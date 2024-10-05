@@ -21,6 +21,7 @@ public struct SuiTransferSwapData has drop {
     swap_type: u8,
     coin_type: String,
     recipient: address,
+    fallback: bool,
 }
 
 public struct ItsTransferSwapData has drop {
@@ -30,6 +31,7 @@ public struct ItsTransferSwapData has drop {
     destination_chain: String,
     destination_address: vector<u8>,
     metadata: vector<u8>,
+    fallback: bool,
 }
 
 fun new_sui_transfer_swap_data(data: vector<u8>): SuiTransferSwapData {
@@ -38,6 +40,7 @@ fun new_sui_transfer_swap_data(data: vector<u8>): SuiTransferSwapData {
         swap_type: bcs.peel_u8(),
         coin_type: ascii::string(bcs.peel_vec_u8()),
         recipient: bcs.peel_address(),
+        fallback: bcs.peel_bool(),
     }
 }
 
@@ -50,12 +53,13 @@ fun new_its_transfer_swap_data(data: vector<u8>): ItsTransferSwapData {
         destination_chain: ascii::string(bcs.peel_vec_u8()),
         destination_address: bcs.peel_vec_u8(),
         metadata: bcs.peel_vec_u8(),
+        fallback: bcs.peel_bool(),
     }
 }
 
 public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
-    let data = swap_info.get_data_estimating();
-    if (data.length() == 0) return;
+    let (data, fallback) = swap_info.get_data_estimating();
+    if (fallback) return;
     let swap_data = new_sui_transfer_swap_data(data);
 
     assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
@@ -69,8 +73,8 @@ public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
 }
 
 public fun its_estimate<T>(swap_info: &mut SwapInfo) {
-    let data = swap_info.get_data_estimating();
-    if (data.length() == 0) return;
+    let (data, fallback) = swap_info.get_data_estimating();
+    if (fallback) return;
     let swap_data = new_its_transfer_swap_data(data);
 
     assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
@@ -84,9 +88,9 @@ public fun its_estimate<T>(swap_info: &mut SwapInfo) {
 }
 
 public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
-    let data = swap_info.get_data_swapping();
-    if (data.length() == 0) return;
+    let (data, fallback) = swap_info.get_data_swapping();
     let swap_data = new_sui_transfer_swap_data(data);
+    if (fallback != swap_data.fallback) return;
 
     assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
 
@@ -113,9 +117,9 @@ public fun its_transfer<T>(
     squid: &Squid,
     ctx: &mut TxContext,
 ): Option<InterchainTransferTicket<T>> {
-    let data = swap_info.get_data_swapping();
-    if (data.length() == 0) return option::none<InterchainTransferTicket<T>>();
+    let (data, fallback) = swap_info.get_data_swapping();
     let swap_data = new_its_transfer_swap_data(data);
+    if (fallback != swap_data.fallback) return option::none<InterchainTransferTicket<T>>();
 
     assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
 
