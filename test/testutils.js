@@ -1,15 +1,21 @@
 'use strict';
 
-const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, randomBytes, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
+const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
+const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
+const { fromB64 } = require('@mysten/bcs');
 const chai = require('chai');
 const { expect } = chai;
 const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
+        gmp: { Singleton },
+        its: { TrustedAddresses },
     },
 } = require('../dist/bcs');
+const { newInterchainToken } = require('../dist/utils');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
 const chalk = require('chalk');
@@ -30,6 +36,24 @@ async function publishPackage(client, keypair, packageName) {
 
     updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
+}
+
+async function publishInterchainToken(client, keypair, options) {
+    const templateFilePath = `${__dirname}/../move/interchain_token/sources/interchain_token.move`;
+
+    const { filePath, content } = newInterchainToken(templateFilePath, options);
+
+    fs.writeFileSync(filePath, content, 'utf8');
+
+    const publishReceipt = await publishPackage(client, keypair, 'interchain_token');
+
+    fs.rmSync(filePath);
+
+    return publishReceipt;
+}
+
+function generateEd25519Keypairs(length) {
+    return Array.from({ length }, () => Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32())));
 }
 
 function getRandomBytes32() {
@@ -156,6 +180,30 @@ function signMessage(privKeys, messageToSign) {
     }
 
     return signatures;
+}
+
+function calculateNextSigners(gatewayInfo, nonce) {
+    const signerKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
+    const pubKeys = signerKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
+    const keys = signerKeys.map((key, index) => {
+        return { privKey: key, pubKey: pubKeys[index] };
+    });
+    keys.sort((key1, key2) => {
+        for (let i = 0; i < 33; i++) {
+            if (key1.pubKey[i] < key2.pubKey[i]) return -1;
+            if (key1.pubKey[i] > key2.pubKey[i]) return 1;
+        }
+
+        return 0;
+    });
+    gatewayInfo.signerKeys = keys.map((key) => key.privKey);
+    gatewayInfo.signers = {
+        signers: keys.map((key) => {
+            return { pub_key: key.pubKey, weight: 1 };
+        }),
+        threshold: 2,
+        nonce: hexlify([++nonce]),
+    };
 }
 
 async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
@@ -289,11 +337,84 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
         target: decodeDescription(moveCallInfo.function),
         arguments: decodeArgs(moveCallInfo.arguments, tx),
         typeArguments: moveCallInfo.type_arguments,
+        getSingletonChannelId,
     };
+}
+
+function findObjectId(tx, objectType, type = 'created') {
+    return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType))?.objectId;
+}
+
+const getBcsBytesByObjectId = async (client, objectId) => {
+    const response = await client.getObject({
+        id: objectId,
+        options: {
+            showBcs: true,
+        },
+    });
+
+    return fromB64(response.data.bcs.bcsBytes);
+};
+
+const getSingletonChannelId = async (client, singletonObjectId) => {
+    const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
+    const data = Singleton.parse(bcsBytes);
+    return '0x' + data.channel.id;
+};
+
+async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
+    const governanceInfo = {
+        trustedSourceChain: 'Axelar',
+        trustedSourceAddress: 'Governance Source Address',
+        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
+    };
+
+    // The payload is abi encoded, the trusted address data is bcs encoded.
+    const trustedAddressesData = TrustedAddresses.serialize({
+        trusted_chains: trustedChains,
+        trusted_addresses: trustedAddresses,
+    }).toBytes();
+
+    const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [governanceInfo.messageType, trustedAddressesData]);
+
+    const trustedAddressMessage = {
+        message_id: hexlify(randomBytes(32)),
+        destination_id: objectIds.itsChannel,
+        source_chain: governanceInfo.trustedSourceChain,
+        source_address: governanceInfo.trustedSourceAddress,
+        payload_hash: keccak256(payload),
+    };
+
+    await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
+
+    // Set trusted addresses
+    const trustedAddressTxBuilder = new TxBuilder(client);
+
+    const approvedMessage = await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+        arguments: [
+            objectIds.gateway,
+            trustedAddressMessage.source_chain,
+            trustedAddressMessage.message_id,
+            trustedAddressMessage.source_address,
+            trustedAddressMessage.destination_id,
+            hexlify(payload),
+        ],
+    });
+
+    await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.its.packageId}::service::set_trusted_addresses`,
+        arguments: [objectIds.its, objectIds.governance, approvedMessage],
+    });
+
+    const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);
+
+    return trustedAddressResult;
 }
 
 module.exports = {
     publishPackage,
+    findObjectId,
     getRandomBytes32,
     expectRevert,
     expectEvent,
@@ -301,5 +422,11 @@ module.exports = {
     signMessage,
     approveMessage,
     approveAndExecuteMessage,
+    generateEd25519Keypairs,
+    calculateNextSigners,
+    getBcsBytesByObjectId,
+    getSingletonChannelId,
+    setupTrustedAddresses,
+    publishInterchainToken,
     goldenTest,
 };
