@@ -11,6 +11,9 @@ use its::service;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
 
+// -----
+// Types
+// -----
 public struct SquidV0 has store {
     channel: Channel,
     coin_bag: CoinBag,

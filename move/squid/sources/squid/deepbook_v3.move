@@ -118,7 +118,7 @@ public fun swap<B, Q>(
 
     let (taker_fee, _, _) = pool.pool_trade_params();
 
-    let squid_coin_bag = squid.coin_bag_mut(b"deepbook_v3_swap");
+    let squid_coin_bag = squid.value_mut!(b"deepbook_v3_swap").coin_bag_mut();
 
     if (swap_data.has_base) {
         // Get base coin, split away taker fees and store it in Squid.

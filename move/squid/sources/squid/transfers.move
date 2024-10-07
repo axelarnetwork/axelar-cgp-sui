@@ -137,7 +137,7 @@ public fun its_transfer<T>(
             swap_data.destination_chain,
             swap_data.destination_address,
             swap_data.metadata,
-            squid.channel(b"its_transfer"),
+            squid.value!(b"its_transfer").channel(),
         ),
     )
 }

@@ -7,11 +7,10 @@ use sui::versioned::{Self, Versioned};
 
 use version_control::version_control::{Self, VersionControl};
 
-use axelar_gateway::channel::{Channel, ApprovedMessage};
+use axelar_gateway::channel::ApprovedMessage;
 
 use its::its::ITS;
 
-use squid::coin_bag::CoinBag;
 use squid::swap_info::SwapInfo;
 use squid::squid_v0::{Self, SquidV0};
 // -------
@@ -42,29 +41,24 @@ fun init(ctx: &mut TxContext) {
 // Macros
 // ------
 /// This macro retrieves the underlying versioned singleton by reference
-macro fun value($self: &Squid, $function_name: vector<u8>): &SquidV0 {
+public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &SquidV0 {
     let squid = $self;
-    let value = squid.inner.load_value<SquidV0>();
-    value.version_control().check(VERSION, ascii::string($function_name));
+    let value = squid.inner().load_value<SquidV0>();
+    value.version_control().check(version(), ascii::string($function_name));
     value
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut SquidV0 {
+public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut SquidV0 {
     let squid = $self;
-    let value = squid.inner.load_value_mut<SquidV0>();
-    value.version_control().check(VERSION, ascii::string($function_name));
+    let value = squid.inner_mut().load_value_mut<SquidV0>();
+    value.version_control().check(version(), ascii::string($function_name));
     value
 }
 
-public(package) fun channel(self: &Squid, function_name: vector<u8>): &Channel {
-    self.value!(function_name).channel()
-}
-
-public(package) fun coin_bag_mut(self: &mut Squid, function_name: vector<u8>): &mut CoinBag {
-    self.value_mut!(function_name).coin_bag_mut()
-}
-
+// ----------------
+// Public Functions
+// ----------------
 public fun start_swap<T>(
     self: &mut Squid,
     its: &mut ITS,
@@ -73,6 +67,21 @@ public fun start_swap<T>(
     ctx: &mut TxContext,
 ): SwapInfo {
     self.value_mut!(b"start_swap").start_swap<T>(its, approved_message, clock, ctx)
+}
+
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun inner(self: &Squid): &Versioned {
+    &self.inner
+}
+
+public(package) fun inner_mut(self: &mut Squid): &mut Versioned {
+    &mut self.inner
+}
+
+public(package) fun version(): u64 {
+    VERSION
 }
 
 /// -------
@@ -144,7 +153,7 @@ fun test_start_swap() {
         std::ascii::string(b"Chain Name"),
         b"Destination Address",
         b"",
-        squid.channel(b""),
+        squid.value!(b"").channel(),
     );
     sui::test_utils::destroy(
         its::service::send_interchain_transfer(
@@ -159,7 +168,7 @@ fun test_start_swap() {
     let message_source_address = std::ascii::string(b"Address");
     let its_source_address = b"Source Address";
 
-    let destination_address = squid.channel(b"").to_address();
+    let destination_address = squid.value!(b"").channel().to_address();
 
     let mut writer = abi::abi::new_writer(6);
     writer

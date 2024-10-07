@@ -42,7 +42,7 @@ public fun register_transaction(
     );
 
     relayer_discovery.register_transaction(
-        squid.channel(b"register_transaction"),
+        squid.value!(b"register_transaction").channel(),
         transaction,
     )
 }
