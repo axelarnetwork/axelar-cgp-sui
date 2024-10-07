@@ -357,13 +357,13 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::give_unregistered_coin`,
+                    target: `${deployments.its.packageId}::its::give_unregistered_coin`,
                     arguments: [objectIds.its, treasuryCap, metadata],
                     typeArguments: [typeArg],
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
+                    target: `${deployments.its.packageId}::its::receive_deploy_interchain_token`,
                     arguments: [objectIds.its, approvedMessage],
                     typeArguments: [typeArg],
                 });
