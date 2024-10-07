@@ -13,7 +13,6 @@ public struct Singleton has key {
     treasury_cap: TreasuryCap<TOKEN>,
 }
 
-
 // ------------
 // Capabilities
 // ------------
@@ -53,11 +52,15 @@ public fun get_coin_metadata(self: &Singleton): &CoinMetadata<TOKEN> {
     &self.coin_metadata
 }
 
-
 /// -----
 /// Public Functions
 /// -----
 /// Call this to obtain some coins for testing.
-public fun mint(self: &mut Singleton, amount: u64, to: address, ctx: &mut TxContext) {
-	self.treasury_cap.mint_and_transfer(amount, to, ctx);
+public fun mint(
+    self: &mut Singleton,
+    amount: u64,
+    to: address,
+    ctx: &mut TxContext,
+) {
+    self.treasury_cap.mint_and_transfer(amount, to, ctx);
 }

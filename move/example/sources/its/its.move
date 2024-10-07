@@ -1,14 +1,14 @@
 module example::its;
 
-use axelar_gateway::channel::{ApprovedMessage};
+use axelar_gateway::channel::ApprovedMessage;
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use example::utils::concat;
 use example::token::{TOKEN, Singleton};
+use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
-use its::its::{ITS};
+use its::its::ITS;
 use its::service;
 use its::token_id::TokenId;
 use relayer_discovery::discovery::RelayerDiscovery;
@@ -17,7 +17,7 @@ use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
 use sui::clock::Clock;
-use sui::coin::{Coin};
+use sui::coin::Coin;
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
@@ -74,19 +74,19 @@ public fun register_transaction(
         ],
     );
 
-	let channel = singleton.get_channel();
+    let channel = singleton.get_channel();
     discovery.register_transaction(channel, transaction);
 }
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
 public fun register_coin(singleton: &Singleton, its: &mut ITS) {
-	let coin_metadata = singleton.get_coin_metadata();
+    let coin_metadata = singleton.get_coin_metadata();
     let coin_info = coin_info::from_info<TOKEN>(
-		coin_metadata.get_name(),
-		coin_metadata.get_symbol(),
-		coin_metadata.get_decimals(),
-		coin_metadata.get_decimals(),
+        coin_metadata.get_name(),
+        coin_metadata.get_symbol(),
+        coin_metadata.get_decimals(),
+        coin_metadata.get_decimals(),
     );
     let coin_management = coin_management::new_locked();
     service::register_coin(
@@ -138,8 +138,10 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-	let channel = singleton.get_channel();
-    let interchain_transfer_ticket = service::prepare_interchain_transfer<TOKEN>(
+    let channel = singleton.get_channel();
+    let interchain_transfer_ticket = service::prepare_interchain_transfer<
+        TOKEN,
+    >(
         token_id,
         coin,
         destination_chain,
@@ -174,7 +176,7 @@ public fun receive_interchain_transfer(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-	let channel = singleton.get_channel();
+    let channel = singleton.get_channel();
     let (
         source_chain,
         source_address,
