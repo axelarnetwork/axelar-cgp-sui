@@ -48,7 +48,7 @@ public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &Squ
     value
 }
 
-/// This macro also uses version control to sinplify things a bit.
+/// This macro retrieves the underlying versioned singleton by mutable reference
 public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut SquidV0 {
     let squid = $self;
     let value = squid.inner_mut().load_value_mut<SquidV0>();
