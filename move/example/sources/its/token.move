@@ -1,7 +1,6 @@
 module example::token;
 
-use sui::coin::{Self};
-use sui::coin::{TreasuryCap};
+use sui::coin::{Self, TreasuryCap};
 
 // ------------
 // Capabilities
@@ -23,8 +22,13 @@ fun init(witness: TOKEN, ctx: &mut TxContext) {
     );
     transfer::public_transfer(treasury_cap, tx_context::sender(ctx));
     transfer::public_transfer(coin_metadata, tx_context::sender(ctx));
-  }
+}
 
-public fun mint(treasury_cap: &mut TreasuryCap<TOKEN>, amount: u64,to: address, ctx: &mut TxContext) {
-	treasury_cap.mint_and_transfer(amount, to, ctx);
+public fun mint(
+    treasury_cap: &mut TreasuryCap<TOKEN>,
+    amount: u64,
+    to: address,
+    ctx: &mut TxContext,
+) {
+    treasury_cap.mint_and_transfer(amount, to, ctx);
 }

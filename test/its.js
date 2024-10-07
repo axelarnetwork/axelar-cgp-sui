@@ -27,7 +27,7 @@ const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -112,22 +112,11 @@ describe('ITS', () => {
             deployments[packageDir] = publishedReceipt;
         }
 
-        objectIds.singleton = findObjectId(deployments.example.publishTxn, 'token::Singleton');
-
-        // Mint some coins for tests
-        const tokenTxBuilder = new TxBuilder(client);
-
-        await tokenTxBuilder.moveCall({
-            target: `${deployments.example.packageId}::token::mint`,
-            arguments: [objectIds.singleton, 1e18, deployer.toSuiAddress()],
-        });
-
-        const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
-
-        objectIds.its = findObjectId(deployments.its.publishTxn, 'ITS');
-        // Find the object ids from the publish transactions
         objectIds = {
-            ...objectIds,
+            singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
+            tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
+            tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
+            its: findObjectId(deployments.its.publishTxn, 'ITS'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -135,8 +124,23 @@ describe('ITS', () => {
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
+        };
+
+        // Mint some coins for tests
+        const tokenTxBuilder = new TxBuilder(client);
+
+        await tokenTxBuilder.moveCall({
+            target: `${deployments.example.packageId}::token::mint`,
+            arguments: [objectIds.tokenTreasuryCap, 1e18, deployer.toSuiAddress()],
+        });
+
+        const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
+
+        // Find the object ids from the publish transactions
+        objectIds = {
+            ...objectIds,
             itsChannel: await getSingletonChannelId(client, objectIds.its),
-            coin: findObjectId(mintReceipt, 'token::TOKEN'),
+            token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
 
@@ -158,7 +162,7 @@ describe('ITS', () => {
         const txBuilder = new TxBuilder(client);
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its::register_coin`,
-            arguments: [objectIds.singleton, objectIds.its],
+            arguments: [objectIds.its, objectIds.tokenCoinMetadata],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer, {
@@ -185,7 +189,7 @@ describe('ITS', () => {
 
                 const tx = txBuilder.tx;
 
-                const coin = tx.splitCoins(objectIds.coin, [1e9]);
+                const coin = tx.splitCoins(objectIds.token, [1e9]);
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({

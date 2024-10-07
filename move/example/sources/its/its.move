@@ -1,11 +1,9 @@
 module example::its;
 
-use axelar_gateway::channel::ApprovedMessage;
+use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use axelar_gateway::channel::{Channel};
-use example::token::{TOKEN};
-use sui::coin::{CoinMetadata};
+use example::token::TOKEN;
 use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
@@ -19,7 +17,7 @@ use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
 use sui::clock::Clock;
-use sui::coin::Coin;
+use sui::coin::{CoinMetadata, Coin};
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
@@ -29,7 +27,7 @@ use sui::sui::SUI;
 // -------
 public struct Singleton has key {
     id: UID,
-    channel: Channel
+    channel: Channel,
 }
 
 public struct ExecutedWithToken has copy, drop {
@@ -37,6 +35,18 @@ public struct ExecutedWithToken has copy, drop {
     source_address: vector<u8>,
     data: vector<u8>,
     amount: u64,
+}
+
+/// -----
+/// Setup
+/// -----
+fun init(ctx: &mut TxContext) {
+    let singletonId = object::new(ctx);
+    let channel = channel::new(ctx);
+    transfer::share_object(Singleton {
+        id: singletonId,
+        channel,
+    });
 }
 
 // -----
@@ -86,12 +96,15 @@ public fun register_transaction(
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
-public fun register_coin(its: &mut ITS, coin_metadata: &CoinMetadata<TOKEN>): TokenId {
+public fun register_coin(
+    its: &mut ITS,
+    coin_metadata: &CoinMetadata<TOKEN>,
+): TokenId {
     let coin_info = coin_info::from_info<TOKEN>(
         coin_metadata.get_name(),
-		coin_metadata.get_symbol(),
-		coin_metadata.get_decimals(),
-		coin_metadata.get_decimals(),
+        coin_metadata.get_symbol(),
+        coin_metadata.get_decimals(),
+        coin_metadata.get_decimals(),
     );
     let coin_management = coin_management::new_locked();
 
