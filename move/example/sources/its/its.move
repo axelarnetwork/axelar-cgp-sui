@@ -3,7 +3,9 @@ module example::its;
 use axelar_gateway::channel::ApprovedMessage;
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use example::token::{TOKEN, Singleton};
+use axelar_gateway::channel::{Channel};
+use example::token::{TOKEN};
+use sui::coin::{CoinMetadata};
 use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
@@ -25,6 +27,11 @@ use sui::sui::SUI;
 // -------
 // Structs
 // -------
+public struct Singleton has key {
+    id: UID,
+    channel: Channel
+}
+
 public struct ExecutedWithToken has copy, drop {
     source_chain: String,
     source_address: vector<u8>,
@@ -65,7 +72,7 @@ public fun register_transaction(
                             ),
                         ),
                     ),
-                    ascii::string(b"its_example"),
+                    ascii::string(b"its"),
                     ascii::string(b"receive_interchain_transfer"),
                 ),
                 arguments,
@@ -74,26 +81,25 @@ public fun register_transaction(
         ],
     );
 
-    let channel = singleton.get_channel();
-    discovery.register_transaction(channel, transaction);
+    discovery.register_transaction(&singleton.channel, transaction);
 }
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
-public fun register_coin(singleton: &Singleton, its: &mut ITS) {
-    let coin_metadata = singleton.get_coin_metadata();
+public fun register_coin(its: &mut ITS, coin_metadata: &CoinMetadata<TOKEN>): TokenId {
     let coin_info = coin_info::from_info<TOKEN>(
         coin_metadata.get_name(),
-        coin_metadata.get_symbol(),
-        coin_metadata.get_decimals(),
-        coin_metadata.get_decimals(),
+		coin_metadata.get_symbol(),
+		coin_metadata.get_decimals(),
+		coin_metadata.get_decimals(),
     );
     let coin_management = coin_management::new_locked();
+
     service::register_coin(
         its,
         coin_info,
         coin_management,
-    );
+    )
 }
 
 public fun deploy_remote_interchain_token(
@@ -138,7 +144,6 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let channel = singleton.get_channel();
     let interchain_transfer_ticket = service::prepare_interchain_transfer<
         TOKEN,
     >(
@@ -147,7 +152,7 @@ public fun send_interchain_transfer_call(
         destination_chain,
         destination_address,
         metadata,
-        channel,
+        &singleton.channel,
     );
 
     let message_ticket = service::send_interchain_transfer<TOKEN>(
@@ -176,7 +181,6 @@ public fun receive_interchain_transfer(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let channel = singleton.get_channel();
     let (
         source_chain,
         source_address,
@@ -185,7 +189,7 @@ public fun receive_interchain_transfer(
     ) = service::receive_interchain_transfer_with_data<TOKEN>(
         its,
         approved_message,
-        channel,
+        &singleton.channel,
         clock,
         ctx,
     );
