@@ -18,12 +18,12 @@ const {
         gateway: { WeightedSigners, MessageToSign, Proof },
     },
 } = require('../dist/bcs');
+const { CLOCK_PACKAGE_ID } = require('../dist/types');
 const { bcs } = require('@mysten/sui/bcs');
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { expect } = require('chai');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
-const clock = '0x6';
 
 describe('Axelar Gateway', () => {
     let client;
@@ -108,7 +108,7 @@ describe('Axelar Gateway', () => {
                 minimumRotationDelay,
                 previousSignersRetention,
                 encodedSigners,
-                clock,
+                CLOCK_PACKAGE_ID,
             ],
         });
 
@@ -150,7 +150,7 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
-                arguments: [gateway, clock, encodedSigners, encodedProof],
+                arguments: [gateway, CLOCK_PACKAGE_ID, encodedSigners, encodedProof],
             });
 
             await builder.signAndExecute(keypair);
@@ -185,7 +185,7 @@ describe('Axelar Gateway', () => {
 
             await builder.moveCall({
                 target: `${packageId}::gateway::rotate_signers`,
-                arguments: [gateway, clock, encodedSigners, encodedProof],
+                arguments: [gateway, CLOCK_PACKAGE_ID, encodedSigners, encodedProof],
             });
 
             await expectRevert(builder, keypair, {
@@ -281,6 +281,9 @@ describe('Axelar Gateway', () => {
 
         it('should execute a message', async () => {
             await publishPackage(client, keypair, 'gas_service');
+            await publishPackage(client, keypair, 'abi');
+            await publishPackage(client, keypair, 'governance');
+            await publishPackage(client, keypair, 'its');
             const result = await publishPackage(client, keypair, 'example');
 
             const testId = result.packageId;
