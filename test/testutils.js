@@ -359,6 +359,7 @@ const getBcsBytesByObjectId = async (client, objectId) => {
 const getSingletonChannelId = async (client, singletonObjectId) => {
     const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
     const data = Singleton.parse(bcsBytes);
+    console.log('getSingletonChannelId', data);
     return '0x' + data.channel.id;
 };
 
@@ -385,7 +386,11 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
         payload_hash: keccak256(payload),
     };
 
+    console.log('destinationId', objectIds.itsChannel);
+
     await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
+
+    console.log('Approved trusted address message');
 
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
@@ -402,8 +407,10 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
         ],
     });
 
+    console.log('Set trusted addresses', [objectIds.gateway, objectIds.governance, approvedMessage]);
+
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::service::set_trusted_addresses`,
+        target: `${deployments.its.packageId}::its::set_trusted_addresses`,
         arguments: [objectIds.its, objectIds.governance, approvedMessage],
     });
 

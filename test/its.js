@@ -27,7 +27,7 @@ const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -116,7 +116,8 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
-            its: findObjectId(deployments.its.publishTxn, 'ITS'),
+            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
+            itsv0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_V0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -140,8 +141,11 @@ describe('ITS', () => {
         objectIds = {
             ...objectIds,
             itsChannel: await getSingletonChannelId(client, objectIds.its),
+            itsv0Channel: await getSingletonChannelId(client, objectIds.itsv0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
+
+        console.log('Itsv0Channel', objectIds.itsv0Channel);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -179,7 +183,9 @@ describe('ITS', () => {
         before(async () => {
             await setupGateway();
             await setupGovernance();
+            console.log('Setup trusted addresses');
             await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            console.log('Setup trusted addresses done');
         });
 
         describe('Interchain Token Transfer', () => {

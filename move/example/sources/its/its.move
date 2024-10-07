@@ -141,7 +141,7 @@ public fun deploy_remote_interchain_token(
 /// This should trigger an interchain trasnfer.
 public fun send_interchain_transfer_call(
     singleton: &Singleton,
-    its: &mut ITS,
+	its: &mut ITS,
     gateway: &mut Gateway,
     gas_service: &mut GasService,
     token_id: TokenId,
