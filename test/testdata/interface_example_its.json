@@ -13,14 +13,6 @@
         {
           "name": "channel",
           "type": "Channel"
-        },
-        {
-          "name": "coin_metadata",
-          "type": "CoinMetadata<ITS_DEMO>"
-        },
-        {
-          "name": "treasury_cap",
-          "type": "TreasuryCap<ITS_DEMO>"
         }
       ]
     },
@@ -48,19 +40,17 @@
           "type": "u64"
         }
       ]
-    },
-    "ITS_DEMO": {
-      "name": "ITS_DEMO",
-      "abilities": [
-        "drop"
-      ],
-      "fields": [
-        {
-          "name": "dummy_field",
-          "type": "bool"
-        }
-      ]
     }
   },
-  "publicFunctions": {}
+  "publicFunctions": {
+    "register_coin": {
+      "name": "register_coin",
+      "visibility": "public",
+      "params": {
+        "its#0#0": "&mut ITS",
+        "coin_metadata#0#0": "&CoinMetadata<TOKEN>"
+      },
+      "returnType": "TokenId"
+    }
+  }
 }
