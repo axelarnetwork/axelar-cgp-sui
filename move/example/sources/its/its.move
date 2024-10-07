@@ -8,8 +8,7 @@ use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
-use its::its::ITS;
-use its::service;
+use its::its::{Self, ITS};
 use its::token_id::TokenId;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction;
@@ -108,8 +107,7 @@ public fun register_coin(
     );
     let coin_management = coin_management::new_locked();
 
-    service::register_coin(
-        its,
+    its.register_coin(
         coin_info,
         coin_management,
     )
@@ -125,8 +123,7 @@ public fun deploy_remote_interchain_token(
     gas_params: vector<u8>,
     refund_address: address,
 ) {
-    let message_ticket = service::deploy_remote_interchain_token<TOKEN>(
-        its,
+    let message_ticket = its.deploy_remote_interchain_token<TOKEN>(
         token_id,
         destination_chain,
     );
@@ -157,7 +154,7 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let interchain_transfer_ticket = service::prepare_interchain_transfer<
+    let interchain_transfer_ticket = its::prepare_interchain_transfer<
         TOKEN,
     >(
         token_id,
@@ -168,8 +165,7 @@ public fun send_interchain_transfer_call(
         &singleton.channel,
     );
 
-    let message_ticket = service::send_interchain_transfer<TOKEN>(
-        its,
+    let message_ticket = its.send_interchain_transfer<TOKEN>(
         interchain_transfer_ticket,
         clock,
     );
@@ -199,8 +195,7 @@ public fun receive_interchain_transfer(
         source_address,
         data,
         coin,
-    ) = service::receive_interchain_transfer_with_data<TOKEN>(
-        its,
+    ) = its.receive_interchain_transfer_with_data<TOKEN>(
         approved_message,
         &singleton.channel,
         clock,
