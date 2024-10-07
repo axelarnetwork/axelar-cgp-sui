@@ -61,29 +61,29 @@ const DECIMALS_CAP: u8 = 9;
 // Errors
 // ------
 #[error]
-const EUntrustedAddress: u64 = b"The sender that sent this message is not trusted.";
+const EUntrustedAddress: vector<u8> = b"The sender that sent this message is not trusted.";
 #[error]
-const EInvalidMessageType: u64 = b"The message type received is not supported.";
+const EInvalidMessageType: vector<u8> = b"The message type received is not supported.";
 #[error]
-const EWrongDestination: u64 = b"The channel trying to receive this call is not the destination.";
+const EWrongDestination: vector<u8> = b"The channel trying to receive this call is not the destination.";
 #[error]
-const EInterchainTransferHasData: u64 = b"Interchain transfer with data trying to be processed as an interchain transfer.";
+const EInterchainTransferHasData: vector<u8> = b"Interchain transfer with data trying to be processed as an interchain transfer.";
 #[error]
-const EInterchainTransferHasNoData: u64 = b"Interchain transfer trying to be proccessed as an interchain transfer";
+const EInterchainTransferHasNoData: vector<u8> = b"Interchain transfer trying to be proccessed as an interchain transfer";
 #[error]
-const EModuleNameDoesNotMatchSymbol: u64 = b"The module name does not match the symbol.";
+const EModuleNameDoesNotMatchSymbol: vector<u8> = b"The module name does not match the symbol.";
 #[error]
-const ENotDistributor: u64 = b"Only the distributor can mint.";
+const ENotDistributor: vector<u8> = b"Only the distributor can mint.";
 #[error]
-const ENonZeroTotalSupply: u64 = b"Trying to give a token that has had some supply already minted.";
+const ENonZeroTotalSupply: vector<u8> = b"Trying to give a token that has had some supply already minted.";
 #[error]
-const EUnregisteredCoinHasUrl: u64 = b"The interchain token that is being registered has a URL.";
+const EUnregisteredCoinHasUrl: vector<u8> = b"The interchain token that is being registered has a URL.";
 #[error]
-const EUntrustedChain: u64 = b"The chain is not trusted.";
+const EUntrustedChain: vector<u8> = b"The chain is not trusted.";
 #[error]
-const ERemainingData: u64 = b"There should not be any remaining data when BCS decoding.";
+const ERemainingData: vector<u8> = b"There should not be any remaining data when BCS decoding.";
 #[error]
-const ENewerTicket: u64 = b"Cannot proccess newer tickets.";
+const ENewerTicket: vector<u8> = b"Cannot proccess newer tickets.";
 
 // ------
 // Events
