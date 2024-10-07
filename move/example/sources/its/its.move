@@ -1,9 +1,10 @@
-module example::its_demo;
+module example::its;
 
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::channel::{ApprovedMessage};
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
 use example::utils::concat;
+use example::token::{TOKEN, Singleton};
 use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
@@ -16,7 +17,7 @@ use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
 use sui::clock::Clock;
-use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
+use sui::coin::{Coin};
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
@@ -24,46 +25,11 @@ use sui::sui::SUI;
 // -------
 // Structs
 // -------
-public struct Singleton has key {
-    id: UID,
-    channel: Channel,
-    coin_metadata: CoinMetadata<ITS_DEMO>,
-    treasury_cap: TreasuryCap<ITS_DEMO>,
-}
-
 public struct ExecutedWithToken has copy, drop {
     source_chain: String,
     source_address: vector<u8>,
     data: vector<u8>,
     amount: u64,
-}
-
-// ------------
-// Capabilities
-// ------------
-public struct ITS_DEMO has drop {}
-
-// -----
-// Setup
-// -----
-fun init(witness: ITS_DEMO, ctx: &mut TxContext) {
-    let (treasury_cap, coin_metadata) = coin::create_currency(
-        witness,
-        9,
-        b"ITS",
-        b"ITS Example Coin",
-        b"",
-        option::none(),
-        ctx,
-    );
-    let singletonId = object::new(ctx);
-    let channel = channel::new(ctx);
-    transfer::share_object(Singleton {
-        id: singletonId,
-        channel,
-        coin_metadata,
-        treasury_cap,
-    });
 }
 
 // -----
@@ -107,17 +73,20 @@ public fun register_transaction(
             ),
         ],
     );
-    discovery.register_transaction(&singleton.channel, transaction);
+
+	let channel = singleton.get_channel();
+    discovery.register_transaction(channel, transaction);
 }
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
 public fun register_coin(singleton: &Singleton, its: &mut ITS) {
-    let coin_info = coin_info::from_info<ITS_DEMO>(
-        singleton.coin_metadata.get_name(),
-        singleton.coin_metadata.get_symbol(),
-        singleton.coin_metadata.get_decimals(),
-        singleton.coin_metadata.get_decimals(),
+	let coin_metadata = singleton.get_coin_metadata();
+    let coin_info = coin_info::from_info<TOKEN>(
+		coin_metadata.get_name(),
+		coin_metadata.get_symbol(),
+		coin_metadata.get_decimals(),
+		coin_metadata.get_decimals(),
     );
     let coin_management = coin_management::new_locked();
     service::register_coin(
@@ -137,7 +106,7 @@ public fun deploy_remote_interchain_token(
     gas_params: vector<u8>,
     refund_address: address,
 ) {
-    let message_ticket = service::deploy_remote_interchain_token<ITS_DEMO>(
+    let message_ticket = service::deploy_remote_interchain_token<TOKEN>(
         its,
         token_id,
         destination_chain,
@@ -160,7 +129,7 @@ public fun send_interchain_transfer_call(
     gateway: &mut Gateway,
     gas_service: &mut GasService,
     token_id: TokenId,
-    coin: Coin<ITS_DEMO>,
+    coin: Coin<TOKEN>,
     destination_chain: String,
     destination_address: vector<u8>,
     metadata: vector<u8>,
@@ -169,16 +138,17 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let interchain_transfer_ticket = service::prepare_interchain_transfer<ITS_DEMO>(
+	let channel = singleton.get_channel();
+    let interchain_transfer_ticket = service::prepare_interchain_transfer<TOKEN>(
         token_id,
         coin,
         destination_chain,
         destination_address,
         metadata,
-        &singleton.channel,
+        channel,
     );
 
-    let message_ticket = service::send_interchain_transfer<ITS_DEMO>(
+    let message_ticket = service::send_interchain_transfer<TOKEN>(
         its,
         interchain_transfer_ticket,
         clock,
@@ -204,15 +174,16 @@ public fun receive_interchain_transfer(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
+	let channel = singleton.get_channel();
     let (
         source_chain,
         source_address,
         data,
         coin,
-    ) = service::receive_interchain_transfer_with_data<ITS_DEMO>(
+    ) = service::receive_interchain_transfer_with_data<TOKEN>(
         its,
         approved_message,
-        &singleton.channel,
+        channel,
         clock,
         ctx,
     );
@@ -226,16 +197,6 @@ public fun receive_interchain_transfer(
 
     // give the coin to the caller
     transfer::public_transfer(coin, ctx.sender());
-}
-
-/// Call this to obtain some coins for testing.
-public fun mint(
-    singleton: &mut Singleton,
-    amount: u64,
-    to: address,
-    ctx: &mut TxContext,
-) {
-    singleton.treasury_cap.mint_and_transfer(amount, to, ctx);
 }
 
 // -----
