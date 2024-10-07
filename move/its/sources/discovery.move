@@ -18,7 +18,7 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 //const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
-public fun get_interchain_transfer_info(
+public fun interchain_transfer_info(
     payload: vector<u8>,
 ): (TokenId, address, u64, vector<u8>) {
     let mut reader = abi::new_reader(payload);
@@ -66,7 +66,7 @@ public fun register_transaction(
     );
 }
 
-public fun get_call_info(its: &ITS, mut payload: vector<u8>): Transaction {
+public fun call_info(its: &ITS, mut payload: vector<u8>): Transaction {
     let mut reader = abi::new_reader(payload);
     let mut message_type = reader.read_u256();
 
@@ -78,17 +78,17 @@ public fun get_call_info(its: &ITS, mut payload: vector<u8>): Transaction {
     };
 
     if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
-        get_interchain_transfer_tx(its, &mut reader)
+        interchain_transfer_tx(its, &mut reader)
     } else {
         assert!(
             message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
             EUnsupportedMessageType,
         );
-        get_deploy_interchain_token_tx(its, &mut reader)
+        deploy_interchain_token_tx(its, &mut reader)
     }
 }
 
-fun get_interchain_transfer_tx(
+fun interchain_transfer_tx(
     its: &ITS,
     reader: &mut AbiReader,
 ): Transaction {
@@ -148,7 +148,7 @@ fun get_interchain_transfer_tx(
     }
 }
 
-fun get_deploy_interchain_token_tx(
+fun deploy_interchain_token_tx(
     its: &ITS,
     reader: &mut AbiReader,
 ): Transaction {
@@ -184,7 +184,7 @@ fun get_deploy_interchain_token_tx(
 
 // === Tests ===
 #[test_only]
-fun get_initial_tx(its: &ITS): Transaction {
+fun initial_tx(its: &ITS): Transaction {
     let mut arg = vector[0];
     arg.append(sui::bcs::to_bytes(&object::id(its)));
 
@@ -218,7 +218,7 @@ fun test_discovery_initial() {
 
     let value = its.package_value();
     assert!(
-        discovery.get_transaction(value.channel_id()) == get_initial_tx(&its),
+        discovery.get_transaction(value.channel_id()) == initial_tx(&its),
     );
     assert!(value.relayer_discovery_id() == object::id(&discovery));
 
@@ -254,12 +254,12 @@ fun test_discovery_interchain_transfer() {
         its::token_id::from_address(token_id),
         type_arg,
     );
-    let tx_block = get_call_info(&its, payload);
+    let tx_block = call_info(&its, payload);
 
     let mut reader = abi::new_reader(payload);
     reader.skip_slot(); // skip message_type
 
-    assert!(tx_block == get_interchain_transfer_tx(&its, &mut reader));
+    assert!(tx_block == interchain_transfer_tx(&its, &mut reader));
     assert!(tx_block.is_final() && tx_block.move_calls().length() == 1);
 
     let call_info = tx_block.move_calls().pop_back();
@@ -291,14 +291,14 @@ fun test_discovery_interchain_transfer_with_data() {
     register_transaction(&mut its, &mut discovery);
 
     assert!(
-        discovery.get_transaction(its.package_value().channel_id()) == get_initial_tx(&its),
+        discovery.get_transaction(its.package_value().channel_id()) == initial_tx(&its),
     );
 
     let token_id = @0x1234;
     let source_address = b"source address";
     let target_channel = @0x5678;
     let amount = 1905;
-    let tx_data = sui::bcs::to_bytes(&get_initial_tx(&its));
+    let tx_data = sui::bcs::to_bytes(&initial_tx(&its));
     let mut writer = abi::new_writer(2);
     writer.write_bytes(tx_data).write_u256(1245);
     let data = writer.into_bytes();
@@ -322,7 +322,7 @@ fun test_discovery_interchain_transfer_with_data() {
     reader.skip_slot(); // skip message_type
 
     assert!(
-        get_call_info(&its, payload) == get_interchain_transfer_tx(&its, &mut reader),
+        call_info(&its, payload) == interchain_transfer_tx(&its, &mut reader),
     );
 
     sui::test_utils::destroy(its);
@@ -360,12 +360,12 @@ fun test_discovery_deploy_token() {
         ),
         type_arg,
     );
-    let tx_block = get_call_info(&its, payload);
+    let tx_block = call_info(&its, payload);
 
     let mut reader = abi::new_reader(payload);
     reader.skip_slot(); // skip message_type
 
-    assert!(tx_block == get_deploy_interchain_token_tx(&its, &mut reader));
+    assert!(tx_block == deploy_interchain_token_tx(&its, &mut reader));
 
     assert!(tx_block.is_final());
     let mut move_calls = tx_block.move_calls();

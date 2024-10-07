@@ -1,16 +1,16 @@
 {
   "structs": {},
   "publicFunctions": {
-    "get_interchain_transfer_info": {
-      "name": "get_interchain_transfer_info",
+    "interchain_transfer_info": {
+      "name": "interchain_transfer_info",
       "visibility": "public",
       "params": {
         "payload#0#0": "vector<u8>"
       },
       "returnType": "TokenId * address * u64 * vector<u8>"
     },
-    "get_call_info": {
-      "name": "get_call_info",
+    "call_info": {
+      "name": "call_info",
       "visibility": "public",
       "params": {
         "its#0#0": "&ITS",

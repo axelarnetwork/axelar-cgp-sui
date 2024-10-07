@@ -1,7 +1,7 @@
 {
   "structs": {
-    "ITS_V0": {
-      "name": "ITS_V0",
+    "ITS_v0": {
+      "name": "ITS_v0",
       "abilities": [
         "store"
       ],

@@ -24,7 +24,7 @@ entry fun is_number(c: u8): bool {
     c >= NUMBERS_START && c < NUMBERS_START + NUMBERS_LENGTH
 }
 
-public(package) fun get_module_from_symbol(
+public(package) fun module_from_symbol(
     symbol: &ascii::String,
 ): ascii::String {
     let symbolBytes = ascii::as_bytes(symbol);
@@ -96,7 +96,7 @@ public(package) fun pow(mut base: u256, mut exponent: u8): u256 {
 #[test]
 fun test_get_module_from_symbol() {
     let symbol = ascii::string(b"1(TheCool1234Coin) _ []!rdt");
-    std::debug::print(&get_module_from_symbol(&symbol));
+    std::debug::print(&module_from_symbol(&symbol));
 }
 
 #[test]
