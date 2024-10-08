@@ -1,21 +1,19 @@
 module squid::squid;
 
-use axelar_gateway::channel::ApprovedMessage;
-use its::its::ITS;
-use squid::squid_v0::{Self, Squid_v0};
-use squid::swap_info::SwapInfo;
 use std::ascii;
+
 use sui::clock::Clock;
 use sui::versioned::{Self, Versioned};
+
 use version_control::version_control::{Self, VersionControl};
 
-use axelar_gateway::channel::{Channel, ApprovedMessage};
+use axelar_gateway::channel::ApprovedMessage;
 
 use its::its::ITS;
 
-use squid::coin_bag::CoinBag;
+use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
-use squid::squid_v0::{Self, SquidV0};
+
 // -------
 // Version
 // -------
