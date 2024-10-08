@@ -26,17 +26,9 @@ function getCommonStructs() {
         fields: DiscoveryTable,
     });
 
-    const VecSet = bcs.struct('VecSet', {
-        contents: bcs.vector(bcs.string()),
-    });
-
     const Table = bcs.struct('Table', {
         id: UID,
         size: bcs.U64,
-    });
-
-    const VersionControl = bcs.struct('VersionControl', {
-        allowed_functions: bcs.vector(VecSet),
     });
 
     return {
@@ -47,8 +39,20 @@ function getCommonStructs() {
         DiscoveryTable,
         Discovery,
         Table,
+    };
+}
+
+function getVersionControlStructs() {
+    const VecSet = bcs.struct('VecSet', {
+        contents: bcs.vector(bcs.string()),
+    });
+
+    const VersionControl = bcs.struct('VersionControl', {
+        allowed_functions: bcs.vector(VecSet),
+    });
+
+    return {
         VersionControl,
-        VecSet,
     };
 }
 
@@ -197,7 +201,8 @@ function getSquidStructs() {
 }
 
 function getITSStructs() {
-    const { Table, Bag, Channel, VersionControl } = getCommonStructs();
+    const { Table, Bag, Channel } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
         trusted_addresses: Table,
@@ -261,6 +266,7 @@ export const bcsStructs = {
     gateway: getGatewayStructs(),
     squid: getSquidStructs(),
     gmp: getGMPStructs(),
+    versionControl: getVersionControlStructs(),
     gasService: getGasServiceStructs(),
     its: getITSStructs(),
 };
