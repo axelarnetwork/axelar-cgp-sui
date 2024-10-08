@@ -218,7 +218,18 @@ async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
         data_hash: hashed,
     }).toBytes();
 
-    const signatures = signMessage(signerKeys, message);
+    let minSigners = 0;
+    let totalWeight = 0;
+    for (let i = 0; i < signers.signers.length; i++) {
+        totalWeight += signers.signers[i].weight;
+        if (totalWeight >= signers.threshold) {
+            minSigners = i + 1;
+            break;
+        }
+    }
+
+    const signatures = signMessage(signerKeys.slice(minSigners), message);
+
     const encodedProof = Proof.serialize({
         signers,
         signatures,
