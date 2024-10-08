@@ -17,6 +17,7 @@ const {
     calculateNextSigners,
     approveMessage,
     getSingletonChannelId,
+    getITSChannelId,
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
@@ -127,6 +128,8 @@ describe.only('ITS', () => {
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
         };
 
+        const itsChannelId = await getITSChannelId(client, objectIds.itsv0);
+
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
 
@@ -140,12 +143,9 @@ describe.only('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: await getSingletonChannelId(client, objectIds.its),
-            itsv0Channel: await getSingletonChannelId(client, objectIds.itsv0),
+            itsChannel: itsChannelId,
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
-
-        console.log('Itsv0Channel', objectIds.itsv0Channel);
     });
 
     it('should call register_transaction successfully', async () => {
@@ -183,9 +183,7 @@ describe.only('ITS', () => {
         before(async () => {
             await setupGateway();
             await setupGovernance();
-            console.log('Setup trusted addresses');
             await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
-            console.log('Setup trusted addresses done');
         });
 
         describe('Interchain Token Transfer', () => {

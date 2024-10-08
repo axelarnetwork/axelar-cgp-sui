@@ -12,7 +12,7 @@ const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
-        its: { TrustedAddresses },
+        its: { TrustedAddresses, ITS },
     },
 } = require('../dist/bcs');
 const { newInterchainToken } = require('../dist/utils');
@@ -359,7 +359,6 @@ const getBcsBytesByObjectId = async (client, objectId) => {
 const getSingletonChannelId = async (client, singletonObjectId) => {
     const bcsBytes = await getBcsBytesByObjectId(client, singletonObjectId);
     const data = Singleton.parse(bcsBytes);
-    console.log('getSingletonChannelId', data);
     return '0x' + data.channel.id;
 };
 
@@ -386,11 +385,7 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
         payload_hash: keccak256(payload),
     };
 
-    console.log('destinationId', objectIds.itsChannel);
-
     await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
-
-    console.log('Approved trusted address message');
 
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
@@ -407,8 +402,6 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
         ],
     });
 
-    console.log('Set trusted addresses', [objectIds.gateway, objectIds.governance, approvedMessage]);
-
     await trustedAddressTxBuilder.moveCall({
         target: `${deployments.its.packageId}::its::set_trusted_addresses`,
         arguments: [objectIds.its, objectIds.governance, approvedMessage],
@@ -417,6 +410,19 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
     const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);
 
     return trustedAddressResult;
+}
+
+async function getITSChannelId(client, itsVersionedObjectId) {
+    const response = await client.getObject({
+        id: itsVersionedObjectId,
+        options: {
+            showContent: true,
+        },
+    });
+
+    const channelId = response.data.content.fields.value.fields.channel.fields.id.id;
+
+    return channelId;
 }
 
 module.exports = {
@@ -435,5 +441,6 @@ module.exports = {
     getSingletonChannelId,
     setupTrustedAddresses,
     publishInterchainToken,
+    getITSChannelId,
     goldenTest,
 };
