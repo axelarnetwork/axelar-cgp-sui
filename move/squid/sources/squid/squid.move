@@ -1,17 +1,14 @@
 module squid::squid;
 
 use std::ascii;
-
+use axelar_gateway::channel::{ApprovedMessage};
+use its::its::ITS;
+use squid::swap_info::{SwapInfo};
 use sui::clock::Clock;
 use sui::versioned::{Self, Versioned};
 
 use version_control::version_control::{Self, VersionControl};
 
-use axelar_gateway::channel::ApprovedMessage;
-
-use its::its::ITS;
-
-use squid::swap_info::SwapInfo;
 use squid::squid_v0::{Self, Squid_v0};
 
 // -------
@@ -146,7 +143,7 @@ fun test_start_swap() {
         coin_management,
     );
 
-    // This gives some coin to the service.
+    // This gives some coin to ITS
     let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
         token_id,
         coin,

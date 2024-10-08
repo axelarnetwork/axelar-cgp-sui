@@ -7,7 +7,6 @@ use version_control::version_control::VersionControl;
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 
 use its::its::ITS;
-use its::service;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
 
@@ -50,8 +49,7 @@ public(package) fun start_swap<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): SwapInfo {
-    let (_, _, data, coin) = service::receive_interchain_transfer_with_data<T>(
-        its,
+    let (_, _, data, coin) = its.receive_interchain_transfer_with_data<T>(
         approved_message,
         self.channel(),
         clock,
@@ -81,7 +79,7 @@ use sui::test_utils::destroy;
 fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
     let clock = sui::clock::create_for_testing(ctx);
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let squid = new_for_testing(ctx);
 
     let coin_info = its::coin_info::from_info<COIN>(
@@ -93,17 +91,16 @@ fun test_start_swap() {
 
     let amount = 1234;
     let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
-    let coin_management = its::coin_management::new_locked();
+    let coin_management = its::coin_management::new_locked<COIN>();
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
 
-    let token_id = its::service::register_coin(
-        &mut its,
+    let token_id = its.register_coin(
         coin_info,
         coin_management,
     );
 
     // This gives some coin to the service.
-    let interchain_transfer_ticket = service::prepare_interchain_transfer(
+    let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),
@@ -112,8 +109,7 @@ fun test_start_swap() {
         &squid.channel,
     );
     destroy(
-        service::send_interchain_transfer(
-            &mut its,
+        its.send_interchain_transfer(
             interchain_transfer_ticket,
             &clock,
         ),
