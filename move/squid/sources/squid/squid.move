@@ -1,10 +1,12 @@
 module squid::squid;
 
-use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
+use axelar_gateway::channel::ApprovedMessage;
 use its::its::ITS;
-use squid::coin_bag::{Self, CoinBag};
-use squid::swap_info::{Self, SwapInfo};
+use squid::squid_v0::{Self, Squid_v0};
+use squid::swap_info::SwapInfo;
+use std::ascii;
 use sui::clock::Clock;
+use sui::versioned::{Self, Versioned};
 use version_control::version_control::{Self, VersionControl};
 
 // -------
@@ -14,24 +16,51 @@ const VERSION: u64 = 0;
 
 public struct Squid has key, store {
     id: UID,
-    channel: Channel,
-    coin_bag: CoinBag,
-    version_control: VersionControl,
+    inner: Versioned,
 }
 
 fun init(ctx: &mut TxContext) {
     transfer::share_object(Squid {
         id: object::new(ctx),
-        channel: channel::new(ctx),
-        coin_bag: coin_bag::new(ctx),
-        version_control: new_version_control(),
+        inner: versioned::create(
+            VERSION,
+            squid_v0::new(
+                new_version_control(),
+                ctx,
+            ),
+            ctx,
+        ),
     });
 }
 
-public(package) fun borrow_channel(self: &Squid): &Channel {
-    &self.channel
+// ------
+// Macros
+// ------
+/// This macro retrieves the underlying versioned singleton by reference
+public(package) macro fun value(
+    $self: &Squid,
+    $function_name: vector<u8>,
+): &Squid_v0 {
+    let squid = $self;
+    let value = squid.inner().load_value<Squid_v0>();
+    value.version_control().check(version(), ascii::string($function_name));
+    value
 }
 
+/// This macro retrieves the underlying versioned singleton by mutable reference
+public(package) macro fun value_mut(
+    $self: &mut Squid,
+    $function_name: vector<u8>,
+): &mut Squid_v0 {
+    let squid = $self;
+    let value = squid.inner_mut().load_value_mut<Squid_v0>();
+    value.version_control().check(version(), ascii::string($function_name));
+    value
+}
+
+// ----------------
+// Public Functions
+// ----------------
 public fun start_swap<T>(
     self: &mut Squid,
     its: &mut ITS,
@@ -39,21 +68,24 @@ public fun start_swap<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): SwapInfo {
-    self.version_control.check(VERSION, b"start_swap".to_ascii_string());
-    let (_, _, data, coin) = its.receive_interchain_transfer_with_data<T>(
-        approved_message,
-        &self.channel,
-        clock,
-        ctx,
-    );
-    let mut swap_info = swap_info::new(data, ctx);
-    swap_info.coin_bag().store_estimate<T>(coin.value());
-    swap_info.coin_bag().store_balance(coin.into_balance());
-    swap_info
+    self
+        .value_mut!(b"start_swap")
+        .start_swap<T>(its, approved_message, clock, ctx)
 }
 
-public(package) fun coin_bag(self: &mut Squid): &mut CoinBag {
-    &mut self.coin_bag
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun inner(self: &Squid): &Versioned {
+    &self.inner
+}
+
+public(package) fun inner_mut(self: &mut Squid): &mut Versioned {
+    &mut self.inner
+}
+
+public(package) fun version(): u64 {
+    VERSION
 }
 
 /// -------
@@ -62,19 +94,29 @@ public(package) fun coin_bag(self: &mut Squid): &mut CoinBag {
 fun new_version_control(): VersionControl {
     version_control::new(vector[
         // Version 0
-        vector[b"start_swap"].map!(
-            |function_name| function_name.to_ascii_string(),
-        ),
+        vector[
+            b"start_swap",
+            b"its_transfer",
+            b"deepbook_v3_swap",
+            b"register_transaction",
+        ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
 
 #[test_only]
 public fun new_for_testing(ctx: &mut TxContext): Squid {
+    let mut version_control = new_version_control();
+    version_control.allowed_functions()[VERSION].insert(ascii::string(b""));
     Squid {
         id: object::new(ctx),
-        channel: channel::new(ctx),
-        coin_bag: coin_bag::new(ctx),
-        version_control: new_version_control(),
+        inner: versioned::create(
+            VERSION,
+            squid_v0::new(
+                version_control,
+                ctx,
+            ),
+            ctx,
+        ),
     }
 }
 
@@ -105,28 +147,26 @@ fun test_start_swap() {
         coin_management,
     );
 
-    // This gives some coin to the service.
+    // This gives some coin to ITS
     let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),
         b"Destination Address",
         b"",
-        &squid.channel,
+        squid.value!(b"").channel(),
     );
-    sui::test_utils::destroy(
-        its.send_interchain_transfer(
-            interchain_transfer_ticket,
-            &clock,
-        ),
-    );
+    sui::test_utils::destroy(its.send_interchain_transfer(
+        interchain_transfer_ticket,
+        &clock,
+    ));
 
     let source_chain = std::ascii::string(b"Chain Name");
     let message_id = std::ascii::string(b"Message Id");
     let message_source_address = std::ascii::string(b"Address");
     let its_source_address = b"Source Address";
 
-    let destination_address = squid.borrow_channel().to_address();
+    let destination_address = squid.value!(b"").channel().to_address();
 
     let mut writer = abi::abi::new_writer(6);
     writer
@@ -138,7 +178,7 @@ fun test_start_swap() {
         .write_bytes(data);
     let payload = writer.into_bytes();
 
-    let approved_message = channel::new_approved_message(
+    let approved_message = axelar_gateway::channel::new_approved_message(
         source_chain,
         message_id,
         message_source_address,

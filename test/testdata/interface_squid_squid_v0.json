@@ -1,14 +1,18 @@
 {
   "structs": {
-    "GasService_v0": {
-      "name": "GasService_v0",
+    "Squid_v0": {
+      "name": "Squid_v0",
       "abilities": [
         "store"
       ],
       "fields": [
         {
-          "name": "balance",
-          "type": "Balance<SUI>"
+          "name": "channel",
+          "type": "Channel"
+        },
+        {
+          "name": "coin_bag",
+          "type": "CoinBag"
         },
         {
           "name": "version_control",

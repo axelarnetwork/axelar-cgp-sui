@@ -75,12 +75,14 @@ fun test_estimate() {
     swap_info.coin_bag().store_estimate<SUI>(100_000_000_000);
 
     // The pool comes with a bid at $1 with quantity 1000. Taker fee of 10bps.
-    // When estimating, we should take 10bps worth of SUI out, then swap the rest for USDC.
+    // When estimating, we should take 10bps worth of SUI out, then swap the
+    // rest for USDC.
     let clock = test.take_shared<Clock>();
     let mut pool = test.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
     deepbook_v3::estimate(&mut swap_info, &pool, &clock);
 
-    // This will call DeepBook's pool with base_in of 99.9 SUI. Since there is a bid at $1
+    // This will call DeepBook's pool with base_in of 99.9 SUI. Since there is a
+    // bid at $1
     // It will output 99.9 worth of USDC can be obtained.
     let estimate = swap_info.coin_bag().get_estimate<USDC>();
     assert!(estimate == 99_900_000_000);
@@ -90,7 +92,10 @@ fun test_estimate() {
     let sui_coin = mint_for_testing<SUI>(100_000_000_000, test.ctx());
     let deep_coin = mint_for_testing<DEEP>(100_000_000_000, test.ctx());
     swap_info.coin_bag().store_balance(sui_coin.into_balance());
-    squid.coin_bag().store_balance(deep_coin.into_balance());
+    squid
+        .value_mut!(b"")
+        .coin_bag_mut()
+        .store_balance(deep_coin.into_balance());
 
     // Swap 100 SUI for 99.9 USDC
     deepbook_v3::swap(
@@ -109,7 +114,11 @@ fun test_estimate() {
     // squid should have a balance of 100 DEEP
     let quote_balance = swap_info.coin_bag().get_balance<USDC>().destroy_some();
     assert!(quote_balance.value() == 99_900_000_000);
-    let deep_balance = squid.coin_bag().get_balance<DEEP>().destroy_some();
+    let deep_balance = squid
+        .value_mut!(b"")
+        .coin_bag_mut()
+        .get_balance<DEEP>()
+        .destroy_some();
     assert!(deep_balance.value() == 100_000_000_000 - 999_000);
 
     destroy(pool);

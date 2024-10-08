@@ -107,7 +107,8 @@ public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
     );
 }
 
-// TODO: This will break squid for now, since the MessageTicket is not submitted by discovery.
+// TODO: This will break squid for now, since the MessageTicket is not submitted
+// by discovery.
 public fun its_transfer<T>(
     swap_info: &mut SwapInfo,
     squid: &Squid,
@@ -137,7 +138,7 @@ public fun its_transfer<T>(
             swap_data.destination_chain,
             swap_data.destination_address,
             swap_data.metadata,
-            squid.borrow_channel(),
+            squid.value!(b"its_transfer").channel(),
         ),
     )
 }
