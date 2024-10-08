@@ -66,8 +66,9 @@ public fun get_transaction(
     its_arg.append(object::id(its).id_to_bytes());
     let swap_info_arg = vector[4, 0, 0];
 
-    let mut move_calls =
-        vector[start_swap(package_id, squid_arg, its_arg, type_in)];
+    let mut move_calls = vector[
+        start_swap(package_id, squid_arg, its_arg, type_in),
+    ];
 
     let mut i = 0;
     while (i < swap_data.length()) {

@@ -1,15 +1,13 @@
 module squid::squid;
 
-use std::ascii;
-use axelar_gateway::channel::{ApprovedMessage};
+use axelar_gateway::channel::ApprovedMessage;
 use its::its::ITS;
-use squid::swap_info::{SwapInfo};
+use squid::squid_v0::{Self, Squid_v0};
+use squid::swap_info::SwapInfo;
+use std::ascii;
 use sui::clock::Clock;
 use sui::versioned::{Self, Versioned};
-
 use version_control::version_control::{Self, VersionControl};
-
-use squid::squid_v0::{Self, Squid_v0};
 
 // -------
 // Version
@@ -39,7 +37,10 @@ fun init(ctx: &mut TxContext) {
 // Macros
 // ------
 /// This macro retrieves the underlying versioned singleton by reference
-public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &Squid_v0 {
+public(package) macro fun value(
+    $self: &Squid,
+    $function_name: vector<u8>,
+): &Squid_v0 {
     let squid = $self;
     let value = squid.inner().load_value<Squid_v0>();
     value.version_control().check(version(), ascii::string($function_name));
@@ -47,7 +48,10 @@ public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &Squ
 }
 
 /// This macro retrieves the underlying versioned singleton by mutable reference
-public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut Squid_v0 {
+public(package) macro fun value_mut(
+    $self: &mut Squid,
+    $function_name: vector<u8>,
+): &mut Squid_v0 {
     let squid = $self;
     let value = squid.inner_mut().load_value_mut<Squid_v0>();
     value.version_control().check(version(), ascii::string($function_name));
@@ -64,7 +68,9 @@ public fun start_swap<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): SwapInfo {
-    self.value_mut!(b"start_swap").start_swap<T>(its, approved_message, clock, ctx)
+    self
+        .value_mut!(b"start_swap")
+        .start_swap<T>(its, approved_message, clock, ctx)
 }
 
 // -----------------
@@ -93,9 +99,7 @@ fun new_version_control(): VersionControl {
             b"its_transfer",
             b"deepbook_v3_swap",
             b"register_transaction",
-        ].map!(
-            |function_name| function_name.to_ascii_string(),
-        ),
+        ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
 
@@ -152,12 +156,10 @@ fun test_start_swap() {
         b"",
         squid.value!(b"").channel(),
     );
-    sui::test_utils::destroy(
-        its.send_interchain_transfer(
-            interchain_transfer_ticket,
-            &clock,
-        ),
-    );
+    sui::test_utils::destroy(its.send_interchain_transfer(
+        interchain_transfer_ticket,
+        &clock,
+    ));
 
     let source_chain = std::ascii::string(b"Chain Name");
     let message_id = std::ascii::string(b"Message Id");

@@ -1,14 +1,11 @@
 module squid::squid_v0;
 
-use sui::clock::Clock;
-
-use version_control::version_control::VersionControl;
-
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-
 use its::its::ITS;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
+use sui::clock::Clock;
+use version_control::version_control::VersionControl;
 
 // -----
 // Types
@@ -22,7 +19,10 @@ public struct Squid_v0 has store {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): Squid_v0 {
+public(package) fun new(
+    version_control: VersionControl,
+    ctx: &mut TxContext,
+): Squid_v0 {
     Squid_v0 {
         channel: channel::new(ctx),
         coin_bag: coin_bag::new(ctx),
@@ -108,12 +108,10 @@ fun test_start_swap() {
         b"",
         &squid.channel,
     );
-    destroy(
-        its.send_interchain_transfer(
-            interchain_transfer_ticket,
-            &clock,
-        ),
-    );
+    destroy(its.send_interchain_transfer(
+        interchain_transfer_ticket,
+        &clock,
+    ));
 
     let source_chain = std::ascii::string(b"Chain Name");
     let message_id = std::ascii::string(b"Message Id");

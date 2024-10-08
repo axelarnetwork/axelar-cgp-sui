@@ -28,7 +28,8 @@ public struct DeepbookV3SwapData has drop {
     should_sweep: bool,
 }
 
-/// Estimate the output of a swap. If the output is less than the minimum output, the swap is skipped.
+/// Estimate the output of a swap. If the output is less than the minimum
+/// output, the swap is skipped.
 /// If the swap is not skipped, the estimate is stored in the coin bag.
 public fun estimate<B, Q>(
     self: &mut SwapInfo,
@@ -90,8 +91,10 @@ public fun estimate<B, Q>(
 }
 
 /// Perform a swap. First, check how much DEEP is required to perform the swap.
-/// Then, get that amount of DEEP from squid. Get the taker_fee for this swap and
-/// split that amount from the input token. Store the fee in Squid. Use the remaining
+/// Then, get that amount of DEEP from squid. Get the taker_fee for this swap
+/// and
+/// split that amount from the input token. Store the fee in Squid. Use the
+/// remaining
 /// input token to perform the swap. Store the output tokens in the coin bag.
 /// Store the remaining DEEP back in squid.
 public fun swap<B, Q>(
