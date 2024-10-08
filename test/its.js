@@ -128,8 +128,6 @@ describe.only('ITS', () => {
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
         };
 
-        const itsChannelId = await getITSChannelId(client, objectIds.itsv0);
-
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
 
@@ -143,7 +141,7 @@ describe.only('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: itsChannelId,
+            itsChannel: await getITSChannelId(client, objectIds.itsv0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
