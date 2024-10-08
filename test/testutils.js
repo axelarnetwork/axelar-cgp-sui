@@ -362,49 +362,21 @@ const getSingletonChannelId = async (client, singletonObjectId) => {
     return '0x' + data.channel.id;
 };
 
-async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
-    const governanceInfo = {
-        trustedSourceChain: 'Axelar',
-        trustedSourceAddress: 'Governance Source Address',
-        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
-    };
-
-    // The payload is abi encoded, the trusted address data is bcs encoded.
-    const trustedAddressesData = TrustedAddresses.serialize({
-        trusted_chains: trustedChains,
-        trusted_addresses: trustedAddresses,
-    }).toBytes();
-
-    const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [governanceInfo.messageType, trustedAddressesData]);
-
-    const trustedAddressMessage = {
-        message_id: hexlify(randomBytes(32)),
-        destination_id: objectIds.itsChannel,
-        source_chain: governanceInfo.trustedSourceChain,
-        source_address: governanceInfo.trustedSourceAddress,
-        payload_hash: keccak256(payload),
-    };
-
-    await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
-
+async function setupTrustedAddresses(client, keypair, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
 
-    const approvedMessage = await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
+    const trustedAddressesObject = await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.its.packageId}::trusted_addresses::new`,
         arguments: [
-            objectIds.gateway,
-            trustedAddressMessage.source_chain,
-            trustedAddressMessage.message_id,
-            trustedAddressMessage.source_address,
-            trustedAddressMessage.destination_id,
-            hexlify(payload),
+            trustedChains,
+            trustedAddresses,
         ],
     });
 
     await trustedAddressTxBuilder.moveCall({
         target: `${deployments.its.packageId}::its::set_trusted_addresses`,
-        arguments: [objectIds.its, objectIds.governance, approvedMessage],
+        arguments: [objectIds.its, objectIds.itsOwnerCap, trustedAddressesObject],
     });
 
     const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);

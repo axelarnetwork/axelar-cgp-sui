@@ -28,7 +28,7 @@ const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -54,22 +54,6 @@ describe('ITS', () => {
     // Parameters for Trusted Addresses
     const trustedSourceChain = 'Avalanche';
     const trustedSourceAddress = hexlify(randomBytes(20));
-
-    async function setupGovernance() {
-        // Parameters for Governance Setup
-        const governanceSourceChain = 'Axelar';
-        const governanceSourceAddress = 'Governance Source Address';
-        const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
-
-        const governanceSetupTxBuilder = new TxBuilder(client);
-        await governanceSetupTxBuilder.moveCall({
-            target: `${deployments.governance.packageId}::governance::new`,
-            arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
-        });
-        const receipt = await governanceSetupTxBuilder.signAndExecute(deployer);
-
-        objectIds.governance = findObjectId(receipt, 'governance::Governance');
-    }
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -124,8 +108,8 @@ describe('ITS', () => {
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
-            upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
+            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
         };
 
         // Mint some coins for tests
@@ -180,8 +164,7 @@ describe('ITS', () => {
     describe('Two-way Calls', () => {
         before(async () => {
             await setupGateway();
-            await setupGovernance();
-            await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
         });
 
         describe('Interchain Token Transfer', () => {
