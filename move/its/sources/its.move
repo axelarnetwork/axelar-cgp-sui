@@ -113,7 +113,7 @@ fun init(ctx: &mut TxContext) {
         ctx,
     );
 
-    // Share the gateway object for anyone to use.
+    // Share the its object for anyone to use.
     transfer::share_object(ITS {
         id: object::new(ctx),
         inner,
