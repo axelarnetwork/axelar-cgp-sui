@@ -1,6 +1,6 @@
 'use strict';
 
-const { keccak256, defaultAbiCoder, randomBytes, arrayify, hexlify } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
 const { TxBuilder } = require('../dist/tx-builder');
 const { updateMoveToml, copyMovePackage } = require('../dist/utils');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
@@ -12,7 +12,6 @@ const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
-        its: { TrustedAddresses },
     },
 } = require('../dist/bcs');
 const { newInterchainToken } = require('../dist/utils');
@@ -368,10 +367,7 @@ async function setupTrustedAddresses(client, keypair, objectIds, deployments, tr
 
     const trustedAddressesObject = await trustedAddressTxBuilder.moveCall({
         target: `${deployments.its.packageId}::trusted_addresses::new`,
-        arguments: [
-            trustedChains,
-            trustedAddresses,
-        ],
+        arguments: [trustedChains, trustedAddresses],
     });
 
     await trustedAddressTxBuilder.moveCall({
