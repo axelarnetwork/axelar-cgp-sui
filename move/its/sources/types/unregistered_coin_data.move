@@ -9,6 +9,7 @@ public struct UnregisteredCoinData<phantom T> has store {
     treasury_cap: TreasuryCap<T>,
     coin_metadata: CoinMetadata<T>,
 }
+
 // -----------------
 // Package Functions
 // -----------------
@@ -22,7 +23,9 @@ public(package) fun new<T>(
     }
 }
 
-public(package) fun destroy<T>(self: UnregisteredCoinData<T>): (TreasuryCap<T>, CoinMetadata<T>) {
-    let UnregisteredCoinData { treasury_cap, coin_metadata} = self;
+public(package) fun destroy<T>(
+    self: UnregisteredCoinData<T>,
+): (TreasuryCap<T>, CoinMetadata<T>) {
+    let UnregisteredCoinData { treasury_cap, coin_metadata } = self;
     (treasury_cap, coin_metadata)
 }

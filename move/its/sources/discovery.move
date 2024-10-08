@@ -14,8 +14,8 @@ const EInvalidMessageType: u64 = 0;
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
-//const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
-//const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
+// onst MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+// onst MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
 public fun interchain_transfer_info(
@@ -88,10 +88,7 @@ public fun call_info(its: &ITS, mut payload: vector<u8>): Transaction {
     }
 }
 
-fun interchain_transfer_tx(
-    its: &ITS,
-    reader: &mut AbiReader,
-): Transaction {
+fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
     let token_id = token_id::from_u256(reader.read_u256());
     reader.skip_slot(); // skip source_address
     let destination_address = address::from_bytes(reader.read_bytes());
@@ -148,10 +145,7 @@ fun interchain_transfer_tx(
     }
 }
 
-fun deploy_interchain_token_tx(
-    its: &ITS,
-    reader: &mut AbiReader,
-): Transaction {
+fun deploy_interchain_token_tx(its: &ITS, reader: &mut AbiReader): Transaction {
     let mut arg = vector[0];
     arg.append(object::id_address(its).to_bytes());
 
@@ -217,9 +211,7 @@ fun test_discovery_initial() {
     register_transaction(&mut its, &mut discovery);
 
     let value = its.package_value();
-    assert!(
-        discovery.get_transaction(value.channel_id()) == initial_tx(&its),
-    );
+    assert!(discovery.get_transaction(value.channel_id()) == initial_tx(&its));
     assert!(value.relayer_discovery_id() == object::id(&discovery));
 
     sui::test_utils::destroy(its);

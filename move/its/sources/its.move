@@ -1,29 +1,10 @@
 module its::its;
 
-use std::ascii::{Self, String};
-use std::string;
-use std::type_name::{Self, TypeName};
-
-use sui::address;
-use sui::bcs;
-use sui::clock::Clock;
-use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-use sui::event;
-use sui::versioned::{Self, Versioned};
-
 use abi::abi;
-
-use version_control::version_control::{Self, VersionControl};
-
 use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
-
 use governance::governance::{Self, Governance};
-
-use relayer_discovery::discovery::RelayerDiscovery;
-use relayer_discovery::transaction::Transaction;
-
 use its::coin_info::{Self, CoinInfo};
 use its::coin_management::{Self, CoinManagement};
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
@@ -31,6 +12,18 @@ use its::its_v0::{Self, ITS_v0};
 use its::token_id::{Self, TokenId};
 use its::trusted_addresses;
 use its::utils as its_utils;
+use relayer_discovery::discovery::RelayerDiscovery;
+use relayer_discovery::transaction::Transaction;
+use std::ascii::{Self, String};
+use std::string;
+use std::type_name::{Self, TypeName};
+use sui::address;
+use sui::bcs;
+use sui::clock::Clock;
+use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
+use sui::event;
+use sui::versioned::{Self, Versioned};
+use version_control::version_control::{Self, VersionControl};
 
 // -------
 // Version
@@ -41,7 +34,7 @@ const DATA_VERSION: u64 = 0;
 // === MESSAGE TYPES ===
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
-//const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+// onst MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
 const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
@@ -49,9 +42,11 @@ const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 =
     0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
 
 // === HUB CONSTANTS ===
-// Chain name for Axelar. This is used for routing ITS calls via ITS hub on Axelar.
+// Chain name for Axelar. This is used for routing ITS calls via ITS hub on
+// Axelar.
 const ITS_HUB_CHAIN_NAME: vector<u8> = b"Axelarnet";
-// Identifier to be used as destination address for chains that route to hub. For Sui this will probably be every supported chain.
+// Identifier to be used as destination address for chains that route to hub.
+// For Sui this will probably be every supported chain.
 const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
 // === The maximum number of decimals allowed ===
@@ -61,27 +56,36 @@ const DECIMALS_CAP: u8 = 9;
 // Errors
 // ------
 #[error]
-const EUntrustedAddress: vector<u8> = b"The sender that sent this message is not trusted.";
+const EUntrustedAddress: vector<u8> =
+    b"The sender that sent this message is not trusted.";
 #[error]
-const EInvalidMessageType: vector<u8> = b"The message type received is not supported.";
+const EInvalidMessageType: vector<u8> =
+    b"The message type received is not supported.";
 #[error]
-const EWrongDestination: vector<u8> = b"The channel trying to receive this call is not the destination.";
+const EWrongDestination: vector<u8> =
+    b"The channel trying to receive this call is not the destination.";
 #[error]
-const EInterchainTransferHasData: vector<u8> = b"Interchain transfer with data trying to be processed as an interchain transfer.";
+const EInterchainTransferHasData: vector<u8> =
+    b"Interchain transfer with data trying to be processed as an interchain transfer.";
 #[error]
-const EInterchainTransferHasNoData: vector<u8> = b"Interchain transfer trying to be proccessed as an interchain transfer";
+const EInterchainTransferHasNoData: vector<u8> =
+    b"Interchain transfer trying to be proccessed as an interchain transfer";
 #[error]
-const EModuleNameDoesNotMatchSymbol: vector<u8> = b"The module name does not match the symbol.";
+const EModuleNameDoesNotMatchSymbol: vector<u8> =
+    b"The module name does not match the symbol.";
 #[error]
 const ENotDistributor: vector<u8> = b"Only the distributor can mint.";
 #[error]
-const ENonZeroTotalSupply: vector<u8> = b"Trying to give a token that has had some supply already minted.";
+const ENonZeroTotalSupply: vector<u8> =
+    b"Trying to give a token that has had some supply already minted.";
 #[error]
-const EUnregisteredCoinHasUrl: vector<u8> = b"The interchain token that is being registered has a URL.";
+const EUnregisteredCoinHasUrl: vector<u8> =
+    b"The interchain token that is being registered has a URL.";
 #[error]
 const EUntrustedChain: vector<u8> = b"The chain is not trusted.";
 #[error]
-const ERemainingData: vector<u8> = b"There should not be any remaining data when BCS decoding.";
+const ERemainingData: vector<u8> =
+    b"There should not be any remaining data when BCS decoding.";
 #[error]
 const ENewerTicket: vector<u8> = b"Cannot proccess newer tickets.";
 
@@ -246,7 +250,7 @@ public fun receive_interchain_transfer<T>(
     ctx: &mut TxContext,
 ) {
     let value = self.value_mut!(b"receive_interchain_transfer");
-    
+
     let (_, payload) = decode_approved_message(value, approved_message);
     let mut reader = abi::new_reader(payload);
     assert!(
@@ -301,7 +305,9 @@ public fun receive_interchain_transfer_with_data<T>(
     );
     assert!(!data.is_empty(), EInterchainTransferHasNoData);
 
-    let coin = value.coin_management_mut(token_id).give_coin(amount, clock, ctx);
+    let coin = value
+        .coin_management_mut(token_id)
+        .give_coin(amount, clock, ctx);
 
     (source_chain, source_address, data, coin)
 }
@@ -343,7 +349,8 @@ public fun receive_deploy_interchain_token<T>(
     value.add_registered_coin<T>(token_id, coin_management, coin_info);
 }
 
-// We need an coin with zero supply that has the proper decimals and typing, and no Url.
+// We need an coin with zero supply that has the proper decimals and typing, and
+// no Url.
 public fun give_unregistered_coin<T>(
     self: &mut ITS,
     treasury_cap: TreasuryCap<T>,
@@ -381,7 +388,7 @@ public fun mint_as_distributor<T>(
     ctx: &mut TxContext,
 ): Coin<T> {
     let value = self.value_mut!(b"mint_as_distributor");
-    
+
     let coin_management = value.coin_management_mut<T>(token_id);
     let distributor = channel.to_address();
 
@@ -433,7 +440,7 @@ public fun set_trusted_addresses(
     approved_message: ApprovedMessage,
 ) {
     let value = self.value_mut!(b"set_trusted_addresses");
-    
+
     let (
         source_chain,
         _,
@@ -476,11 +483,17 @@ public fun channel_address(self: &ITS): address {
 // -----------------
 // Package Functions
 // -----------------
-// This function allows the rest of the package to read information about ITS (discovery needs this).
+// This function allows the rest of the package to read information about ITS
+// (discovery needs this).
 public(package) fun package_value(self: &ITS): &ITS_v0 {
     self.inner.load_value<ITS_v0>()
 }
-public(package) fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery, transaction: Transaction) {
+
+public(package) fun register_transaction(
+    self: &mut ITS,
+    discovery: &mut RelayerDiscovery,
+    transaction: Transaction,
+) {
     let value = self.value_mut!(b"register_transaction");
 
     value.set_relayer_discovery_id(discovery);
@@ -532,7 +545,8 @@ fun decode_approved_message(
     (source_chain, payload)
 }
 
-/// Send a payload to a destination chain. The destination chain needs to have a trusted address.
+/// Send a payload to a destination chain. The destination chain needs to have a
+/// trusted address.
 fun prepare_message(
     value: &ITS_v0,
     mut destination_chain: String,
@@ -540,13 +554,15 @@ fun prepare_message(
 ): MessageTicket {
     let mut destination_address = value.trusted_address(destination_chain);
 
-    // Prevent sending directly to the ITS Hub chain. This is not supported yet, so fail early to prevent the user from having their funds stuck.
+    // Prevent sending directly to the ITS Hub chain. This is not supported yet,
+    // so fail early to prevent the user from having their funds stuck.
     assert!(
         destination_chain.into_bytes() != ITS_HUB_CHAIN_NAME,
         EUntrustedChain,
     );
 
-    // Check whether the ITS call should be routed via ITS hub for this destination chain
+    // Check whether the ITS call should be routed via ITS hub for this
+    // destination chain
     if (destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
         let mut writer = abi::new_writer(3);
         writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
@@ -634,7 +650,9 @@ public fun create_unregistered_coin(
         decimals,
     );
 
-    self.value_mut!(b"").add_unregistered_coin(token_id, treasury_cap, coin_metadata);
+    self
+        .value_mut!(b"")
+        .add_unregistered_coin(token_id, treasury_cap, coin_metadata);
 }
 
 #[test_only]
@@ -643,7 +661,9 @@ public(package) fun add_unregistered_coin_type_for_testing(
     token_id: its::token_id::UnregisteredTokenId,
     type_name: std::type_name::TypeName,
 ) {
-    self.value_mut!(b"").add_unregistered_coin_type_for_testing(token_id, type_name);
+    self
+        .value_mut!(b"")
+        .add_unregistered_coin_type_for_testing(token_id, type_name);
 }
 
 #[test_only]
@@ -660,7 +680,9 @@ public(package) fun add_registered_coin_type_for_testing(
     token_id: TokenId,
     type_name: std::type_name::TypeName,
 ) {
-    self.value_mut!(b"").add_registered_coin_type_for_testing(token_id, type_name);
+    self
+        .value_mut!(b"")
+        .add_registered_coin_type_for_testing(token_id, type_name);
 }
 
 #[test_only]
@@ -670,7 +692,6 @@ public(package) fun remove_registered_coin_type_for_testing(
 ): std::type_name::TypeName {
     self.value_mut!(b"").remove_registered_coin_type_for_testing(token_id)
 }
-
 
 // -----
 // Tests
@@ -728,7 +749,9 @@ fun test_deploy_remote_interchain_token() {
         .write_u256((token_decimals as u256))
         .write_bytes(vector::empty());
 
-    assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+    assert!(
+        message_ticket.source_id() == its.value!(b"").channel().to_address(),
+    );
     assert!(message_ticket.destination_chain() == destination_chain);
     assert!(
         message_ticket.destination_address() == its.value!(b"").trusted_address(destination_chain),
@@ -786,7 +809,9 @@ fun test_deploy_interchain_token() {
         .write_u256((amount as u256) * scaling)
         .write_bytes(b"");
 
-    assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+    assert!(
+        message_ticket.source_id() == its.value!(b"").channel().to_address(),
+    );
     assert!(message_ticket.destination_chain() == destination_chain);
     assert!(
         message_ticket.destination_address() == its.value!(b"").trusted_address(destination_chain),
@@ -1854,7 +1879,7 @@ fun test_decode_approved_message_axelar_hub_sender() {
 fun test_decode_approved_message_sender_not_hub() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
-    
+
     let source_chain = ascii::string(b"Chain Name");
     let source_address = ascii::string(b"Address");
     let message_id = ascii::string(b"message_id");

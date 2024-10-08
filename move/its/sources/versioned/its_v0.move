@@ -1,27 +1,21 @@
 module its::its_v0;
 
-use std::ascii::{Self, String};
-use std::string;
-use std::type_name::{Self, TypeName};
-
-use sui::bag::{Self, Bag};
-use sui::coin::{TreasuryCap, CoinMetadata};
-use sui::table::{Self, Table};
-
-use version_control::version_control::VersionControl;
-
 use axelar_gateway::channel::Channel;
-
-use relayer_discovery::discovery::RelayerDiscovery;
-
 use its::address_tracker::{Self, InterchainAddressTracker};
+use its::coin_data::{Self, CoinData};
 use its::coin_info::CoinInfo;
 use its::coin_management::CoinManagement;
 use its::token_id::{Self, TokenId, UnregisteredTokenId};
 use its::trusted_addresses::TrustedAddresses;
-use its::coin_data::{Self, CoinData};
 use its::unregistered_coin_data::{Self, UnregisteredCoinData};
-
+use relayer_discovery::discovery::RelayerDiscovery;
+use std::ascii::{Self, String};
+use std::string;
+use std::type_name::{Self, TypeName};
+use sui::bag::{Self, Bag};
+use sui::coin::{TreasuryCap, CoinMetadata};
+use sui::table::{Self, Table};
+use version_control::version_control::VersionControl;
 
 // ------
 // Errors
@@ -43,7 +37,10 @@ public struct ITS_v0 has store {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): ITS_v0 {
+public(package) fun new(
+    version_control: VersionControl,
+    ctx: &mut TxContext,
+): ITS_v0 {
     ITS_v0 {
         channel: axelar_gateway::channel::new(ctx),
         address_tracker: address_tracker::new(
@@ -69,21 +66,33 @@ public(package) fun unregistered_coin_type(
     &self.unregistered_coin_types[key]
 }
 
-public(package) fun registered_coin_type(self: &ITS_v0, token_id: TokenId): &TypeName {
+public(package) fun registered_coin_type(
+    self: &ITS_v0,
+    token_id: TokenId,
+): &TypeName {
     assert!(self.registered_coin_types.contains(token_id), EUnregisteredCoin);
     &self.registered_coin_types[token_id]
 }
 
-public(package) fun coin_data<T>(self: &ITS_v0, token_id: TokenId): &CoinData<T> {
+public(package) fun coin_data<T>(
+    self: &ITS_v0,
+    token_id: TokenId,
+): &CoinData<T> {
     assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
     &self.registered_coins[token_id]
 }
 
-public(package) fun coin_info<T>(self: &ITS_v0, token_id: TokenId): &CoinInfo<T> {
+public(package) fun coin_info<T>(
+    self: &ITS_v0,
+    token_id: TokenId,
+): &CoinInfo<T> {
     coin_data<T>(self, token_id).coin_info()
 }
 
-public(package) fun token_name<T>(self: &ITS_v0, token_id: TokenId): string::String {
+public(package) fun token_name<T>(
+    self: &ITS_v0,
+    token_id: TokenId,
+): string::String {
     coin_info<T>(self, token_id).name()
 }
 
@@ -95,7 +104,10 @@ public(package) fun token_decimals<T>(self: &ITS_v0, token_id: TokenId): u8 {
     coin_info<T>(self, token_id).decimals()
 }
 
-public(package) fun token_remote_decimals<T>(self: &ITS_v0, token_id: TokenId): u8 {
+public(package) fun token_remote_decimals<T>(
+    self: &ITS_v0,
+    token_id: TokenId,
+): u8 {
     coin_info<T>(self, token_id).remote_decimals()
 }
 
@@ -174,7 +186,9 @@ public(package) fun version_control(self: &ITS_v0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun version_control_mut(self: &mut ITS_v0): &mut VersionControl {
+public(package) fun version_control_mut(
+    self: &mut ITS_v0,
+): &mut VersionControl {
     &mut self.version_control
 }
 
@@ -210,11 +224,10 @@ public(package) fun remove_unregistered_coin<T>(
     self: &mut ITS_v0,
     token_id: UnregisteredTokenId,
 ): (TreasuryCap<T>, CoinMetadata<T>) {
-    let unregistered_coins: UnregisteredCoinData<T> = self.unregistered_coins.remove(token_id);
-    let (
-        treasury_cap,
-        coin_metadata,
-    ) = unregistered_coins.destroy();
+    let unregistered_coins: UnregisteredCoinData<T> = self
+        .unregistered_coins
+        .remove(token_id);
+    let (treasury_cap, coin_metadata) = unregistered_coins.destroy();
 
     remove_unregistered_coin_type(self, token_id);
 
@@ -242,7 +255,9 @@ public(package) fun add_registered_coin<T>(
     add_registered_coin_type(self, token_id, type_name);
 }
 
-// === Private ===
+// -----------------
+// Private Functions
+// -----------------
 fun add_unregistered_coin_type(
     self: &mut ITS_v0,
     token_id: UnregisteredTokenId,

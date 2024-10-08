@@ -24,9 +24,7 @@ entry fun is_number(c: u8): bool {
     c >= NUMBERS_START && c < NUMBERS_START + NUMBERS_LENGTH
 }
 
-public(package) fun module_from_symbol(
-    symbol: &ascii::String,
-): ascii::String {
+public(package) fun module_from_symbol(symbol: &ascii::String): ascii::String {
     let symbolBytes = ascii::as_bytes(symbol);
     let mut moduleName = vector[];
 

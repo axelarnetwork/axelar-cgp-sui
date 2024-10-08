@@ -14,7 +14,10 @@ public struct CoinData<phantom T> has store {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new<T>(coin_management: CoinManagement<T>, coin_info: CoinInfo<T>): CoinData<T> {
+public(package) fun new<T>(
+    coin_management: CoinManagement<T>,
+    coin_info: CoinInfo<T>,
+): CoinData<T> {
     CoinData<T> {
         coin_management,
         coin_info,
@@ -25,7 +28,9 @@ public(package) fun coin_info<T>(self: &CoinData<T>): &CoinInfo<T> {
     &self.coin_info
 }
 
-public(package) fun coin_management_mut<T>(self: &mut CoinData<T>): &mut CoinManagement<T> {
+public(package) fun coin_management_mut<T>(
+    self: &mut CoinData<T>,
+): &mut CoinManagement<T> {
     &mut self.coin_management
 }
 
