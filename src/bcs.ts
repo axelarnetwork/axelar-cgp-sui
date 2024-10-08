@@ -224,6 +224,26 @@ function getSquidStructs() {
     };
 }
 
+function getRelayerDiscoveryStructs() {
+    const { Table } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
+
+    const RelayerDiscoveryV0 = bcs.struct('RelayerDiscoveryV0', {
+        configurations: Table,
+        version_control: VersionControl,
+    });
+
+    const RelayerDiscovery = bcs.struct('RelayerDiscovery', {
+        id: UID,
+        name: bcs.U64,
+        value: RelayerDiscoveryV0,
+    });
+
+    return {
+        RelayerDiscovery,
+    };
+}
+
 function getITSStructs() {
     const { Table, Bag, Channel } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
@@ -301,4 +321,5 @@ export const bcsStructs = {
     versionControl: getVersionControlStructs(),
     gasService: getGasServiceStructs(),
     its: getITSStructs(),
+    relayerDiscovery: getRelayerDiscoveryStructs(),
 };
