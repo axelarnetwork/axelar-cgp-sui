@@ -25,7 +25,7 @@
 ///  - CallApproval is checked for uniqueness (for this channel)
 ///  - CallApproval is checked to match the `Channel`.id
 ///
-/// The Gateway object uses a versioned field to support upgradability. The current implementation uses GatewayV0.
+/// The Gateway object uses a versioned field to support upgradability. The current implementation uses Gateway_v0.
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
@@ -33,7 +33,7 @@ use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::weighted_signers;
 use axelar_gateway::message_ticket::{Self, MessageTicket};
-use axelar_gateway::gateway_v0::{Self, GatewayV0};
+use axelar_gateway::gateway_v0::{Self, Gateway_v0};
 use std::ascii::{Self, String};
 use sui::clock::Clock;
 use sui::table::{Self};
@@ -120,17 +120,17 @@ entry fun setup(
 // Macros
 // ------
 /// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &Gateway, $function_name: vector<u8>): &GatewayV0 {
+macro fun value($self: &Gateway, $function_name: vector<u8>): &Gateway_v0 {
     let gateway = $self;
-    let value = gateway.inner.load_value<GatewayV0>();
+    let value = gateway.inner.load_value<Gateway_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut GatewayV0 {
+macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut Gateway_v0 {
     let gateway = $self;
-    let value = gateway.inner.load_value_mut<GatewayV0>();
+    let value = gateway.inner.load_value_mut<Gateway_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -347,7 +347,7 @@ public fun destroy_for_testing(self: Gateway) {
     } = self;
     id.delete();
 
-    let value = inner.destroy<GatewayV0>();
+    let value = inner.destroy<Gateway_v0>();
     let (
         _,
         messages,
@@ -422,7 +422,7 @@ fun test_setup() {
         messages,
         signers,
         _,
-    ) = inner.destroy<GatewayV0>().destroy_for_testing();
+    ) = inner.destroy<Gateway_v0>().destroy_for_testing();
 
     assert!(operator == operator_result);
     messages.destroy_empty();
@@ -499,7 +499,7 @@ fun test_setup_remaining_bytes() {
         messages,
         signers,
         _,
-    ) = inner.destroy<GatewayV0>().destroy_for_testing();
+    ) = inner.destroy<Gateway_v0>().destroy_for_testing();
 
     assert!(operator == operator_result);
     messages.destroy_empty();
