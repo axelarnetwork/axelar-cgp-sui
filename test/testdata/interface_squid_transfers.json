@@ -17,6 +17,10 @@
         {
           "name": "recipient",
           "type": "address"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     },
@@ -49,6 +53,10 @@
         {
           "name": "metadata",
           "type": "vector<u8>"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     }
