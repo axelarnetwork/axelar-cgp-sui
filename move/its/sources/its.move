@@ -432,7 +432,9 @@ public fun burn_as_distributor<T>(
     coin_management.burn(coin.into_balance());
 }
 
-// === Special Call Receiving
+// ---------------
+// Owner Functions
+// ---------------
 public fun set_trusted_addresses(
     self: &mut ITS,
     _owner_cap: &OwnerCap,
@@ -441,6 +443,16 @@ public fun set_trusted_addresses(
     let value = self.value_mut!(b"set_trusted_addresses");
 
     value.set_trusted_addresses(trusted_addresses);
+}
+
+public fun remove_trusted_addresses(
+    self: &mut ITS,
+    _owner_cap: &OwnerCap,
+    trusted_addresses: TrustedAddresses,
+) {
+    let value = self.value_mut!(b"set_trusted_addresses");
+
+    value.remove_trusted_addresses(trusted_addresses);
 }
 
 // === Getters ===
@@ -1590,11 +1602,11 @@ fun test_set_trusted_address() {
         ctx,
     );
 
-    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"];
+    let trusted_chains = vector[b"Ethereum".to_ascii_string(), b"Avalance".to_ascii_string(), b"Axelar".to_ascii_string()];
     let trusted_addresses = vector[
-        b"ethereum address",
-        ITS_HUB_ROUTING_IDENTIFIER,
-        b"hub address",
+        b"ethereum address".to_ascii_string(),
+        ITS_HUB_ROUTING_IDENTIFIER.to_ascii_string(),
+        b"hub address".to_ascii_string(),
     ];
     let trusted_addresses = its::trusted_addresses::new(
         trusted_chains,
