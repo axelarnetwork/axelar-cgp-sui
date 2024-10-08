@@ -126,7 +126,7 @@ use its::coin::COIN;
 fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
     let clock = sui::clock::create_for_testing(ctx);
-    let mut its = its::its::new_for_testing();
+    let mut its = its::its::create_for_testing(ctx);
     let mut squid = new_for_testing(ctx);
 
     let coin_info = its::coin_info::from_info<COIN>(
@@ -141,14 +141,13 @@ fun test_start_swap() {
     let coin_management = its::coin_management::new_locked();
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
 
-    let token_id = its::service::register_coin(
-        &mut its,
+    let token_id = its.register_coin(
         coin_info,
         coin_management,
     );
 
     // This gives some coin to the service.
-    let interchain_transfer_ticket = its::service::prepare_interchain_transfer(
+    let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),
@@ -157,8 +156,7 @@ fun test_start_swap() {
         squid.value!(b"").channel(),
     );
     sui::test_utils::destroy(
-        its::service::send_interchain_transfer(
-            &mut its,
+        its.send_interchain_transfer(
             interchain_transfer_ticket,
             &clock,
         ),
