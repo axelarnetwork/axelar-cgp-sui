@@ -1,7 +1,7 @@
 {
   "structs": {
-    "GatewayV0": {
-      "name": "GatewayV0",
+    "Gateway_v0": {
+      "name": "Gateway_v0",
       "abilities": [
         "store"
       ],

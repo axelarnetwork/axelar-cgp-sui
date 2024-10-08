@@ -8,7 +8,7 @@ use version_control::version_control::VersionControl;
 // -------
 // Structs
 // -------
-public struct GasServiceV0 has store {
+public struct GasService_v0 has store {
     balance: Balance<SUI>,
     version_control: VersionControl,
 }
@@ -16,23 +16,23 @@ public struct GasServiceV0 has store {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new(version_control: VersionControl): GasServiceV0 {
-    GasServiceV0 {
+public(package) fun new(version_control: VersionControl): GasService_v0 {
+    GasService_v0 {
         balance: balance::zero<SUI>(),
         version_control,
     }
 }
 
-public(package) fun version_control(self: &GasServiceV0): &VersionControl {
+public(package) fun version_control(self: &GasService_v0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun put(self: &mut GasServiceV0, coin: Coin<SUI>) {
+public(package) fun put(self: &mut GasService_v0, coin: Coin<SUI>) {
     coin::put(&mut self.balance, coin);
 }
 
 public(package) fun take(
-    self: &mut GasServiceV0,
+    self: &mut GasService_v0,
     amount: u64,
     ctx: &mut TxContext,
 ): Coin<SUI> {
@@ -43,22 +43,22 @@ public(package) fun take(
 // Test Only
 // ---------
 #[test_only]
-public fun version_control_mut(self: &mut GasServiceV0): &mut VersionControl {
+public fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
     &mut self.version_control
 }
 
 #[test_only]
-public fun balance(self: &GasServiceV0): &Balance<SUI> {
+public fun balance(self: &GasService_v0): &Balance<SUI> {
     &self.balance
 }
 
 #[test_only]
-public fun balance_mut(self: &mut GasServiceV0): &mut Balance<SUI> {
+public fun balance_mut(self: &mut GasService_v0): &mut Balance<SUI> {
     &mut self.balance
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GasServiceV0) {
-    let GasServiceV0 { balance, version_control: _ } = self;
+public fun destroy_for_testing(self: GasService_v0) {
+    let GasService_v0 { balance, version_control: _ } = self;
     balance.destroy_for_testing();
 }
