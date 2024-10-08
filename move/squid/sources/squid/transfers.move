@@ -1,7 +1,7 @@
 module squid::transfers;
 
 use its::interchain_transfer_ticket::InterchainTransferTicket;
-use its::service;
+use its::its;
 use its::token_id::{Self, TokenId};
 use relayer_discovery::transaction::{Self, MoveCall};
 use squid::squid::Squid;
@@ -131,7 +131,7 @@ public fun its_transfer<T>(
     };
 
     option::some(
-        service::prepare_interchain_transfer(
+        its::prepare_interchain_transfer(
             swap_data.token_id,
             coin::from_balance(option.destroy_some(), ctx),
             swap_data.destination_chain,

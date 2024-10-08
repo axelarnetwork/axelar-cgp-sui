@@ -403,13 +403,26 @@ async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, de
     });
 
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::service::set_trusted_addresses`,
+        target: `${deployments.its.packageId}::its::set_trusted_addresses`,
         arguments: [objectIds.its, objectIds.governance, approvedMessage],
     });
 
     const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);
 
     return trustedAddressResult;
+}
+
+async function getITSChannelId(client, itsVersionedObjectId) {
+    const response = await client.getObject({
+        id: itsVersionedObjectId,
+        options: {
+            showContent: true,
+        },
+    });
+
+    const channelId = response.data.content.fields.value.fields.channel.fields.id.id;
+
+    return channelId;
 }
 
 module.exports = {
@@ -428,5 +441,6 @@ module.exports = {
     getSingletonChannelId,
     setupTrustedAddresses,
     publishInterchainToken,
+    getITSChannelId,
     goldenTest,
 };
