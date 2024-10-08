@@ -118,7 +118,7 @@ describe('ITS', () => {
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
             its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsv0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_V0'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -141,7 +141,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: await getITSChannelId(client, objectIds.itsv0),
+            itsChannel: await getITSChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
