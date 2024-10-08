@@ -1,7 +1,7 @@
 {
   "structs": {
-    "SquidV0": {
-      "name": "SquidV0",
+    "Squid_v0": {
+      "name": "Squid_v0",
       "abilities": [
         "store"
       ],

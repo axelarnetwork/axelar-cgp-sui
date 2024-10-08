@@ -42,7 +42,7 @@ public fun register_transaction(
     );
 
     relayer_discovery.register_transaction(
-        squid.channel(b"register_transaction"),
+        squid.value!(b"register_transaction").channel(),
         transaction,
     )
 }
@@ -52,10 +52,10 @@ public fun get_transaction(
     its: &ITS,
     payload: vector<u8>,
 ): Transaction {
-    let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(
+    let (token_id, _, _, data) = its::discovery::interchain_transfer_info(
         payload,
     );
-    let type_in = (*its.get_registered_coin_type(token_id)).into_string();
+    let type_in = (*its.registered_coin_type(token_id)).into_string();
     let package_id = transaction::package_id<Squid>();
     let swap_data = bcs::new(data).peel_vec_vec_u8();
 
@@ -66,8 +66,9 @@ public fun get_transaction(
     its_arg.append(object::id(its).id_to_bytes());
     let swap_info_arg = vector[4, 0, 0];
 
-    let mut move_calls =
-        vector[start_swap(package_id, squid_arg, its_arg, type_in)];
+    let mut move_calls = vector[
+        start_swap(package_id, squid_arg, its_arg, type_in),
+    ];
 
     let mut i = 0;
     while (i < swap_data.length()) {

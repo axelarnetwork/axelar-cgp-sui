@@ -13,10 +13,8 @@ import {
 import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
-import { updateMoveToml } from './utils';
-
-const stdPackage = '0x1';
-const suiPackage = '0x2';
+import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
+import { newInterchainToken, updateMoveToml } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -182,7 +180,7 @@ function isTxContext(parameter: SuiMoveNormalizedType): boolean {
         return false;
     }
 
-    return inside.address === suiPackage && inside.module === 'tx_context' && inside.name === 'TxContext';
+    return inside.address === SUI_PACKAGE_ID && inside.module === 'tx_context' && inside.name === 'TxContext';
 }
 
 function isString(parameter: SuiMoveNormalizedType): boolean {
@@ -192,8 +190,8 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     if (asAny.Reference) asAny = asAny.Reference;
     asAny = asAny.Struct;
     if (!asAny) return false;
-    const isAsciiString = asAny.address === stdPackage && asAny.module === 'ascii' && asAny.name === 'String';
-    const isStringString = asAny.address === stdPackage && asAny.module === 'string' && asAny.name === 'String';
+    const isAsciiString = asAny.address === STD_PACKAGE_ID && asAny.module === 'ascii' && asAny.name === 'String';
+    const isStringString = asAny.address === STD_PACKAGE_ID && asAny.module === 'string' && asAny.name === 'String';
     return isAsciiString || isStringString;
 }
 
@@ -229,7 +227,7 @@ export class TxBuilder {
         const moveFn = await this.client.getNormalizedMoveFunction(target);
 
         let length = moveFn.parameters.length;
-        if (isTxContext(moveFn.parameters[length - 1])) length = length - 1;
+        if (length && isTxContext(moveFn.parameters[length - 1])) length = length - 1;
         if (!moveCallInfo.arguments) moveCallInfo.arguments = [];
         if (length !== moveCallInfo.arguments.length)
             throw new Error(
@@ -283,6 +281,20 @@ export class TxBuilder {
         } finally {
             rmTmpDir();
         }
+    }
+
+    async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
+        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
+
+        const { filePath, content } = newInterchainToken(templateFilePath, options);
+
+        fs.writeFileSync(filePath, content, 'utf8');
+
+        const publishReceipt = await this.publishPackage('interchain_token', moveDir);
+
+        fs.rmSync(filePath);
+
+        return publishReceipt;
     }
 
     async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
