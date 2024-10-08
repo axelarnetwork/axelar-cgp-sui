@@ -17,6 +17,7 @@ const {
     calculateNextSigners,
     approveMessage,
     getSingletonChannelId,
+    getITSChannelId,
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
@@ -116,7 +117,8 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
-            its: findObjectId(deployments.its.publishTxn, 'ITS'),
+            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -139,7 +141,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: await getSingletonChannelId(client, objectIds.its),
+            itsChannel: await getITSChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
@@ -357,13 +359,13 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::give_unregistered_coin`,
+                    target: `${deployments.its.packageId}::its::give_unregistered_coin`,
                     arguments: [objectIds.its, treasuryCap, metadata],
                     typeArguments: [typeArg],
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
+                    target: `${deployments.its.packageId}::its::receive_deploy_interchain_token`,
                     arguments: [objectIds.its, approvedMessage],
                     typeArguments: [typeArg],
                 });
