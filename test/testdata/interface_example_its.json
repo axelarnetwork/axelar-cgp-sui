@@ -1,0 +1,56 @@
+{
+  "structs": {
+    "Singleton": {
+      "name": "Singleton",
+      "abilities": [
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        },
+        {
+          "name": "channel",
+          "type": "Channel"
+        }
+      ]
+    },
+    "ExecutedWithToken": {
+      "name": "ExecutedWithToken",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "source_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "data",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "register_coin": {
+      "name": "register_coin",
+      "visibility": "public",
+      "params": {
+        "its#0#0": "&mut ITS",
+        "coin_metadata#0#0": "&CoinMetadata<TOKEN>"
+      },
+      "returnType": "TokenId"
+    }
+  }
+}
