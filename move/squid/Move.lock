@@ -60,7 +60,7 @@ dependencies = [
 
 [[move.package]]
 name = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.34.2", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 name = "RelayerDiscovery"
@@ -74,7 +74,7 @@ dependencies = [
 
 [[move.package]]
 name = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.32.2", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.34.2", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
@@ -98,7 +98,7 @@ dependencies = [
 
 [[move.package]]
 name = "deepbook"
-source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/deepbook" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.34.2", subdir = "packages/deepbook" }
 
 dependencies = [
   { name = "Sui" },
@@ -107,13 +107,13 @@ dependencies = [
 
 [[move.package]]
 name = "token"
-source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.32.2", subdir = "packages/token" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "deepbook/mainnet-1.34.2", subdir = "packages/token" }
 
 dependencies = [
   { name = "Sui" },
 ]
 
 [move.toolchain-version]
-compiler-version = "1.32.2"
+compiler-version = "1.34.2"
 edition = "2024.beta"
 flavor = "sui"
