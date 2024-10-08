@@ -90,6 +90,8 @@ public fun its_estimate<T>(swap_info: &mut SwapInfo) {
 public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
     let (data, fallback) = swap_info.get_data_swapping();
     let swap_data = new_sui_transfer_swap_data(data);
+
+    // This check allows to skip the transfer if the `fallback` state does not match the state of the transaction here.
     if (fallback != swap_data.fallback) return;
 
     assert!(swap_data.swap_type == SWAP_TYPE_SUI_TRANSFER, EWrongSwapType);
@@ -120,6 +122,8 @@ public fun its_transfer<T>(
 ): Option<InterchainTransferTicket<T>> {
     let (data, fallback) = swap_info.get_data_swapping();
     let swap_data = new_its_transfer_swap_data(data);
+
+    // This check allows to skip the transfer if the `fallback` state does not match the state of the transaction here.
     if (fallback != swap_data.fallback) return option::none<InterchainTransferTicket<T>>();
 
     assert!(swap_data.swap_type == SWAP_TYPE_ITS_TRANSFER, EWrongSwapType);
