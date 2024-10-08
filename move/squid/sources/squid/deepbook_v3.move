@@ -28,7 +28,8 @@ public struct DeepbookV3SwapData has drop {
     should_sweep: bool,
 }
 
-/// Estimate the output of a swap. If the output is less than the minimum output, the swap is skipped.
+/// Estimate the output of a swap. If the output is less than the minimum
+/// output, the swap is skipped.
 /// If the swap is not skipped, the estimate is stored in the coin bag.
 public fun estimate<B, Q>(
     self: &mut SwapInfo,
@@ -90,8 +91,10 @@ public fun estimate<B, Q>(
 }
 
 /// Perform a swap. First, check how much DEEP is required to perform the swap.
-/// Then, get that amount of DEEP from squid. Get the taker_fee for this swap and
-/// split that amount from the input token. Store the fee in Squid. Use the remaining
+/// Then, get that amount of DEEP from squid. Get the taker_fee for this swap
+/// and
+/// split that amount from the input token. Store the fee in Squid. Use the
+/// remaining
 /// input token to perform the swap. Store the output tokens in the coin bag.
 /// Store the remaining DEEP back in squid.
 public fun swap<B, Q>(
@@ -118,6 +121,8 @@ public fun swap<B, Q>(
 
     let (taker_fee, _, _) = pool.pool_trade_params();
 
+    let squid_coin_bag = squid.value_mut!(b"deepbook_v3_swap").coin_bag_mut();
+
     if (swap_data.has_base) {
         // Get base coin, split away taker fees and store it in Squid.
         let mut base_in = self
@@ -127,15 +132,14 @@ public fun swap<B, Q>(
             .into_coin(ctx);
         let base_fee_amount = mul_scaled(base_in.value(), taker_fee);
         let base_fee = base_in.split(base_fee_amount, ctx);
-        squid.coin_bag().store_balance(base_fee.into_balance());
+        squid_coin_bag.store_balance(base_fee.into_balance());
 
         // Calculate the DEEP quantity required and get it from Squid.
         let (_, _, deep_required) = pool.get_quote_quantity_out(
             base_in.value(),
             clock,
         );
-        let deep_in = squid
-            .coin_bag()
+        let deep_in = squid_coin_bag
             .get_exact_balance<DEEP>(deep_required)
             .into_coin(ctx);
 
@@ -151,9 +155,9 @@ public fun swap<B, Q>(
         );
 
         self.coin_bag().store_balance(quote_out.into_balance());
-        squid.coin_bag().store_balance(deep_out.into_balance());
+        squid_coin_bag.store_balance(deep_out.into_balance());
         if (swap_data.should_sweep) {
-            squid.coin_bag().store_balance(base_out.into_balance());
+            squid_coin_bag.store_balance(base_out.into_balance());
         } else {
             self.coin_bag().store_balance(base_out.into_balance());
         };
@@ -166,15 +170,14 @@ public fun swap<B, Q>(
             .into_coin(ctx);
         let quote_fee_amount = mul_scaled(quote_in.value(), taker_fee);
         let quote_fee = quote_in.split(quote_fee_amount, ctx);
-        squid.coin_bag().store_balance(quote_fee.into_balance());
+        squid_coin_bag.store_balance(quote_fee.into_balance());
 
         // Calculate the DEEP quantity required and get it from Squid.
         let (_, _, deep_required) = pool.get_base_quantity_out(
             quote_in.value(),
             clock,
         );
-        let deep_in = squid
-            .coin_bag()
+        let deep_in = squid_coin_bag
             .get_exact_balance<DEEP>(deep_required)
             .into_coin(ctx);
 
@@ -190,9 +193,9 @@ public fun swap<B, Q>(
         );
 
         self.coin_bag().store_balance(base_out.into_balance());
-        squid.coin_bag().store_balance(deep_out.into_balance());
+        squid_coin_bag.store_balance(deep_out.into_balance());
         if (swap_data.should_sweep) {
-            squid.coin_bag().store_balance(quote_out.into_balance());
+            squid_coin_bag.store_balance(quote_out.into_balance());
         } else {
             self.coin_bag().store_balance(quote_out.into_balance());
         };

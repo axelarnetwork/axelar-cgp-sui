@@ -12,16 +12,8 @@
           "type": "UID"
         },
         {
-          "name": "channel",
-          "type": "Channel"
-        },
-        {
-          "name": "coin_bag",
-          "type": "CoinBag"
-        },
-        {
-          "name": "version_control",
-          "type": "VersionControl"
+          "name": "inner",
+          "type": "Versioned"
         }
       ]
     }
