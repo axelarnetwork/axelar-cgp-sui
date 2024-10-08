@@ -65,7 +65,8 @@ public(package) fun new_signature(bytes: vector<u8>): Signature {
     }
 }
 
-/// Recover the public key from an EVM recoverable signature, using keccak256 as the hash function
+/// Recover the public key from an EVM recoverable signature, using keccak256 as
+/// the hash function
 public(package) fun recover_pub_key(
     self: &Signature,
     message: &vector<u8>,
@@ -74,7 +75,8 @@ public(package) fun recover_pub_key(
 }
 
 /// Validates the signatures of a message against the signers.
-/// The total weight of the signatures must be greater than or equal to the threshold.
+/// The total weight of the signatures must be greater than or equal to the
+/// threshold.
 /// Otherwise, the error `ELowSignaturesWeight` is raised.
 public(package) fun validate(self: &Proof, message: vector<u8>) {
     let signers = &self.signers;

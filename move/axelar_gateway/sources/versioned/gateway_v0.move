@@ -38,7 +38,8 @@ const ENewerMessage: vector<u8> =
 // Types
 // -----
 /// An object holding the state of the Axelar bridge.
-/// The central piece in managing call approval creation and signature verification.
+/// The central piece in managing call approval creation and signature
+/// verification.
 public struct Gateway_v0 has store {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
@@ -54,7 +55,8 @@ public enum CommandType {
 // -----------------
 // Package Functions
 // -----------------
-/// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
+/// Init the module by giving a CreatorCap to the sender to allow a full
+/// `setup`.
 public(package) fun new(
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
@@ -154,7 +156,8 @@ public(package) fun is_message_executed(
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
-/// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
+/// to get the hot potato `ApprovedMessage` object, and then trigger the app's
+/// package via discovery.
 public(package) fun take_approved_message(
     self: &mut Gateway_v0,
     source_chain: String,
