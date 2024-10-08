@@ -12,7 +12,7 @@ const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
-        its: { TrustedAddresses, ITS },
+        its: { TrustedAddresses },
     },
 } = require('../dist/bcs');
 const { newInterchainToken } = require('../dist/utils');
