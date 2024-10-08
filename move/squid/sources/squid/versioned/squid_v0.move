@@ -14,7 +14,7 @@ use squid::swap_info::{Self, SwapInfo};
 // -----
 // Types
 // -----
-public struct SquidV0 has store {
+public struct Squid_v0 has store {
     channel: Channel,
     coin_bag: CoinBag,
     version_control: VersionControl,
@@ -23,28 +23,28 @@ public struct SquidV0 has store {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): SquidV0 {
-    SquidV0 {
+public(package) fun new(version_control: VersionControl, ctx: &mut TxContext): Squid_v0 {
+    Squid_v0 {
         channel: channel::new(ctx),
         coin_bag: coin_bag::new(ctx),
         version_control,
     }
 }
 
-public(package) fun channel(self: &SquidV0): &Channel {
+public(package) fun channel(self: &Squid_v0): &Channel {
     &self.channel
 }
 
-public(package) fun version_control(self: &SquidV0): &VersionControl {
+public(package) fun version_control(self: &Squid_v0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun coin_bag_mut(self: &mut SquidV0): &mut CoinBag {
+public(package) fun coin_bag_mut(self: &mut Squid_v0): &mut CoinBag {
     &mut self.coin_bag
 }
 
 public(package) fun start_swap<T>(
-    self: &SquidV0,
+    self: &Squid_v0,
     its: &mut ITS,
     approved_message: ApprovedMessage,
     clock: &Clock,
@@ -64,8 +64,8 @@ public(package) fun start_swap<T>(
 }
 
 #[test_only]
-public fun new_for_testing(ctx: &mut TxContext): SquidV0 {
-    SquidV0 {
+public fun new_for_testing(ctx: &mut TxContext): Squid_v0 {
+    Squid_v0 {
         channel: channel::new(ctx),
         coin_bag: coin_bag::new(ctx),
         version_control: version_control::version_control::new(vector[]),

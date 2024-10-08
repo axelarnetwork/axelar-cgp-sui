@@ -12,7 +12,8 @@ use axelar_gateway::channel::ApprovedMessage;
 use its::its::ITS;
 
 use squid::swap_info::SwapInfo;
-use squid::squid_v0::{Self, SquidV0};
+use squid::squid_v0::{Self, Squid_v0};
+
 // -------
 // Version
 // -------
@@ -41,17 +42,17 @@ fun init(ctx: &mut TxContext) {
 // Macros
 // ------
 /// This macro retrieves the underlying versioned singleton by reference
-public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &SquidV0 {
+public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &Squid_v0 {
     let squid = $self;
-    let value = squid.inner().load_value<SquidV0>();
+    let value = squid.inner().load_value<Squid_v0>();
     value.version_control().check(version(), ascii::string($function_name));
     value
 }
 
 /// This macro retrieves the underlying versioned singleton by mutable reference
-public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut SquidV0 {
+public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut Squid_v0 {
     let squid = $self;
-    let value = squid.inner_mut().load_value_mut<SquidV0>();
+    let value = squid.inner_mut().load_value_mut<Squid_v0>();
     value.version_control().check(version(), ascii::string($function_name));
     value
 }
