@@ -27,7 +27,7 @@ use relayer_discovery::transaction::Transaction;
 use its::coin_info::{Self, CoinInfo};
 use its::coin_management::{Self, CoinManagement};
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
-use its::its_v0::{Self, ITS_V0};
+use its::its_v0::{Self, ITS_v0};
 use its::token_id::{Self, TokenId};
 use its::trusted_addresses;
 use its::utils as its_utils;
@@ -60,18 +60,30 @@ const DECIMALS_CAP: u8 = 9;
 // ------
 // Errors
 // ------
-const EUntrustedAddress: u64 = 0;
-const EInvalidMessageType: u64 = 1;
-const EWrongDestination: u64 = 2;
-const EInterchainTransferHasData: u64 = 3;
-const EInterchainTransferHasNoData: u64 = 4;
-const EModuleNameDoesNotMatchSymbol: u64 = 5;
-const ENotDistributor: u64 = 6;
-const ENonZeroTotalSupply: u64 = 7;
-const EUnregisteredCoinHasUrl: u64 = 8;
-const EUntrustedChain: u64 = 9;
-const ERemainingData: u64 = 10;
-const ENewerTicket: u64 = 11;
+#[error]
+const EUntrustedAddress: vector<u8> = b"The sender that sent this message is not trusted.";
+#[error]
+const EInvalidMessageType: vector<u8> = b"The message type received is not supported.";
+#[error]
+const EWrongDestination: vector<u8> = b"The channel trying to receive this call is not the destination.";
+#[error]
+const EInterchainTransferHasData: vector<u8> = b"Interchain transfer with data trying to be processed as an interchain transfer.";
+#[error]
+const EInterchainTransferHasNoData: vector<u8> = b"Interchain transfer trying to be proccessed as an interchain transfer";
+#[error]
+const EModuleNameDoesNotMatchSymbol: vector<u8> = b"The module name does not match the symbol.";
+#[error]
+const ENotDistributor: vector<u8> = b"Only the distributor can mint.";
+#[error]
+const ENonZeroTotalSupply: vector<u8> = b"Trying to give a token that has had some supply already minted.";
+#[error]
+const EUnregisteredCoinHasUrl: vector<u8> = b"The interchain token that is being registered has a URL.";
+#[error]
+const EUntrustedChain: vector<u8> = b"The chain is not trusted.";
+#[error]
+const ERemainingData: vector<u8> = b"There should not be any remaining data when BCS decoding.";
+#[error]
+const ENewerTicket: vector<u8> = b"Cannot proccess newer tickets.";
 
 // ------
 // Events
@@ -112,17 +124,17 @@ fun init(ctx: &mut TxContext) {
 // Macros
 // ------
 /// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &ITS, $function_name: vector<u8>): &ITS_V0 {
+macro fun value($self: &ITS, $function_name: vector<u8>): &ITS_v0 {
     let its = $self;
-    let value = its.inner.load_value<ITS_V0>();
+    let value = its.inner.load_value<ITS_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_V0 {
+macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_v0 {
     let its = $self;
-    let value = its.inner.load_value_mut<ITS_V0>();
+    let value = its.inner.load_value_mut<ITS_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -135,9 +147,11 @@ public fun register_coin<T>(
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
+    let value = self.value_mut!(b"register_coin");
+
     let token_id = token_id::from_coin_data(&coin_info, &coin_management);
 
-    self.value_mut!(b"register_coin").add_registered_coin(token_id, coin_management, coin_info);
+    value.add_registered_coin(token_id, coin_management, coin_info);
 
     event::emit(CoinRegistered<T> {
         token_id,
@@ -317,7 +331,6 @@ public fun receive_deploy_interchain_token<T>(
     );
 
     treasury_cap.update_name(&mut coin_metadata, name);
-    //coin::update_symbol(&treasury_cap, &mut coin_metadata, symbol);
 
     let mut coin_management = coin_management::new_with_cap<T>(treasury_cap);
     let coin_info = coin_info::from_metadata<T>(coin_metadata, remote_decimals);
@@ -351,7 +364,7 @@ public fun give_unregistered_coin<T>(
 
     let module_name = type_name::get_module(&type_name::get<T>());
     assert!(
-        &module_name == &its_utils::get_module_from_symbol(&symbol),
+        &module_name == &its_utils::module_from_symbol(&symbol),
         EModuleNameDoesNotMatchSymbol,
     );
 
@@ -464,8 +477,8 @@ public fun channel_address(self: &ITS): address {
 // Package Functions
 // -----------------
 // This function allows the rest of the package to read information about ITS (discovery needs this).
-public(package) fun package_value(self: &ITS): &ITS_V0 {
-    self.inner.load_value<ITS_V0>()
+public(package) fun package_value(self: &ITS): &ITS_v0 {
+    self.inner.load_value<ITS_v0>()
 }
 public(package) fun register_transaction(self: &mut ITS, discovery: &mut RelayerDiscovery, transaction: Transaction) {
     let value = self.value_mut!(b"register_transaction");
@@ -483,7 +496,7 @@ public(package) fun register_transaction(self: &mut ITS, discovery: &mut Relayer
 // -----------------
 /// Decode an approved call and check that the source chain is trusted.
 fun decode_approved_message(
-    value: &mut ITS_V0,
+    value: &mut ITS_v0,
     approved_message: ApprovedMessage,
 ): (String, vector<u8>) {
     let (mut source_chain, _, source_address, mut payload) = value
@@ -521,7 +534,7 @@ fun decode_approved_message(
 
 /// Send a payload to a destination chain. The destination chain needs to have a trusted address.
 fun prepare_message(
-    value: &ITS_V0,
+    value: &ITS_v0,
     mut destination_chain: String,
     mut payload: vector<u8>,
 ): MessageTicket {

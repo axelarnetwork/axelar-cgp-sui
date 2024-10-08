@@ -16,9 +16,9 @@ public struct InterchainAddressTracker has store {
     trusted_addresses: Table<String, String>,
 }
 
-// ------
+// -------
 // Getters
-// ------
+// -------
 /// Get the trusted address for a chain.
 public fun trusted_address(
     self: &InterchainAddressTracker,
@@ -36,8 +36,10 @@ public fun is_trusted_address(
 ): bool {
     trusted_address(self, chain_name) == &addr
 }
-// === Protected ===
 
+// -----------------
+// Package Functions
+// -----------------
 /// Create a new interchain address tracker.
 public(package) fun new(ctx: &mut TxContext): InterchainAddressTracker {
     InterchainAddressTracker {
@@ -64,7 +66,9 @@ public(package) fun set_trusted_address(
     }
 }
 
-// === Tests ===
+// -----
+// Tests
+// -----
 #[test]
 fun test_address_tracker() {
     let ctx = &mut sui::tx_context::dummy();

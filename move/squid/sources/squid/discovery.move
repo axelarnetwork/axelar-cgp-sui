@@ -52,7 +52,7 @@ public fun get_transaction(
     its: &ITS,
     payload: vector<u8>,
 ): Transaction {
-    let (token_id, _, _, data) = its::discovery::get_interchain_transfer_info(
+    let (token_id, _, _, data) = its::discovery::interchain_transfer_info(
         payload,
     );
     let type_in = (*its.registered_coin_type(token_id)).into_string();

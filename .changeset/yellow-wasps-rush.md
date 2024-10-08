@@ -2,4 +2,4 @@
 '@axelar-network/axelar-cgp-sui': minor
 ---
 
-Chaning the layout and adding versioned to ITS.
+Making ITS into a versioned contract, and changing the layout

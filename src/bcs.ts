@@ -193,6 +193,11 @@ function getITSStructs() {
         trusted_addresses: Table,
     });
 
+    const TrustedAddresses = bcs.struct('TrustedAddresses', {
+        trusted_chains: bcs.vector(bcs.string()),
+        trusted_addresses: bcs.vector(bcs.string()),
+    });
+
     const ITS = bcs.struct('ITS', {
         id: UID,
         channel: Channel,
@@ -206,6 +211,7 @@ function getITSStructs() {
     return {
         InterchainAddressTracker,
         ITS,
+        TrustedAddresses,
     };
 }
 
