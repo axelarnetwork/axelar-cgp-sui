@@ -57,7 +57,8 @@ function getVersionControlStructs() {
 }
 
 function getGatewayStructs() {
-    const { Bytes32, Bag } = getCommonStructs();
+    const { Bytes32, Bag, Table } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const Message = bcs.struct('Message', {
         source_chain: bcs.String,
@@ -138,6 +139,28 @@ function getGatewayStructs() {
         payload: bcs.vector(bcs.U8),
     });
 
+    const AxelarSigners = bcs.struct('AxelarSigners', {
+        epoch: bcs.U64,
+        epoch_by_signers_hash: Table,
+        domain_separator: Bytes32,
+        minimum_rotation_delay: bcs.U64,
+        last_rotation_timestamp: bcs.U64,
+        previous_signers_retention: bcs.U64,
+    });
+
+    const GatewayV0 = bcs.struct('GatewayV0', {
+        operator: bcs.Address,
+        messages: Table,
+        signers: AxelarSigners,
+        version_control: VersionControl,
+    });
+
+    const Gateway = bcs.struct('Gateway', {
+        id: UID,
+        name: bcs.U64,
+        value: GatewayV0,
+    });
+
     return {
         Bytes32,
         Message,
@@ -154,6 +177,7 @@ function getGatewayStructs() {
         Operators,
         ExecuteData,
         ApprovedMessage,
+        Gateway,
     };
 }
 
@@ -251,9 +275,17 @@ function getGMPStructs() {
 }
 
 function getGasServiceStructs() {
+    const { VersionControl } = getVersionControlStructs();
+
+    const GasServiceV0 = bcs.struct('GasServiceV0', {
+        balance: bcs.U64,
+        version_control: VersionControl,
+    });
+
     const GasService = bcs.struct('GasService', {
         id: UID,
-        balance: bcs.U64,
+        name: bcs.U64,
+        value: GasServiceV0,
     });
 
     return {
