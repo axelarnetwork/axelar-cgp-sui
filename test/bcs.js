@@ -11,6 +11,8 @@ const hexData = {
         'c15879de64dc6678674e5ad1a32c47319a1e9100bf21408173590455d01f9d160000000000000000196e295da7fe769ff56d2627c38252ee603f90829ea777bce36ce676b5e3d9d5a7f4b2d4c193987e5f01122bc9cce22a791447d10bc58299ced9e4e18db4c2c503000000000000000100000000000000537d294cfaa7dc649e43cab6a2d829674ea9c11c86517fec9e3984cdedaee42501000000000000000e59feaeb543924fabfbeb667efe707290cf4de9e667796b132260f33a84c26ee803000000000000b23c626b920100000f00000000000000010610617070726f76655f6d657373616765730e726f746174655f7369676e6572731369735f6d6573736167655f617070726f7665641369735f6d6573736167655f65786563757465641574616b655f617070726f7665645f6d6573736167650c73656e645f6d657373616765',
     GasServiceV0:
         '0178ed64520e2e76bfbfc5551ac9b60acc59b00d6148c9db446a9d7462a96eba000000000000000000000000000000000104077061795f676173076164645f6761730b636f6c6c6563745f67617306726566756e64',
+    RelayerDiscoveryV0:
+        '5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b87100000000000000005339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58010000000000000001031472656769737465725f7472616e73616374696f6e1272656d6f76655f7472616e73616374696f6e0f6765745f7472616e73616374696f6e',
 };
 
 describe.only('BCS', () => {
@@ -90,6 +92,18 @@ describe.only('BCS', () => {
             .to.be.an('array')
             .with.lengthOf(4)
             .that.includes('pay_gas', 'add_gas', 'collect_gas', 'refund');
+    });
+
+    it('should decode RelayerDiscoveryV0 object successfully', async () => {
+        const relayerDiscoveryV0 = bcsStructs.relayerDiscovery.RelayerDiscovery.parse(fromHEX(hexData.RelayerDiscoveryV0));
+
+        expect(relayerDiscoveryV0.id).to.equal('5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b871');
+        expect(relayerDiscoveryV0.name).to.equal('0');
+        checkIdAndSize(relayerDiscoveryV0.value.configurations, '5339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58', '1');
+        expect(relayerDiscoveryV0.value.version_control.allowed_functions[0].contents)
+            .to.be.an('array')
+            .with.lengthOf(3)
+            .that.includes('register_transaction', 'remove_transaction', 'get_transaction');
     });
 });
 
