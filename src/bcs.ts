@@ -26,9 +26,17 @@ function getCommonStructs() {
         fields: DiscoveryTable,
     });
 
+    const VecSet = bcs.struct('VecSet', {
+        contents: bcs.vector(bcs.string()),
+    });
+
     const Table = bcs.struct('Table', {
         id: UID,
         size: bcs.U64,
+    });
+
+    const VersionControl = bcs.struct('VersionControl', {
+        allowed_functions: bcs.vector(VecSet),
     });
 
     return {
@@ -39,6 +47,8 @@ function getCommonStructs() {
         DiscoveryTable,
         Discovery,
         Table,
+        VersionControl,
+        VecSet,
     };
 }
 
@@ -187,7 +197,7 @@ function getSquidStructs() {
 }
 
 function getITSStructs() {
-    const { Table, Bag, Channel } = getCommonStructs();
+    const { Table, Bag, Channel, VersionControl } = getCommonStructs();
 
     const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
         trusted_addresses: Table,
@@ -198,14 +208,21 @@ function getITSStructs() {
         trusted_addresses: bcs.vector(bcs.string()),
     });
 
-    const ITS = bcs.struct('ITS', {
-        id: UID,
+    const ITSV0 = bcs.struct('ITSV0', {
         channel: Channel,
         address_tracker: InterchainAddressTracker,
         unregistered_coin_types: Table,
-        unregistered_coin_info: Bag,
+        unregistered_coins: Bag,
         registered_coin_types: Table,
         registered_coins: Bag,
+        relayer_discovery_id: bcs.Address,
+        version_control: VersionControl,
+    });
+
+    const ITS = bcs.struct('ITS', {
+        id: UID,
+        name: bcs.u64(),
+        value: ITSV0,
     });
 
     return {
