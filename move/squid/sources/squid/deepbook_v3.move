@@ -253,7 +253,7 @@ public(package) fun get_swap_move_call(
     )
 }
 
-fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
+public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
     let mut bcs = bcs::new(data);
     DeepbookV3SwapData {
         swap_type: bcs.peel_u8(),
