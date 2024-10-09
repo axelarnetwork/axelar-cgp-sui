@@ -130,6 +130,7 @@ public fun its_transfer<T>(
     let value = squid.value!(b"its_transfer");
 
     let (data, fallback) = swap_info.data_swapping();
+    
     if (data.length() == 0) return;
     let swap_data = new_its_transfer_swap_data(data);
 
