@@ -1,24 +1,30 @@
 module squid::deepbook_v3;
 
-use deepbook::pool::Pool;
-use relayer_discovery::transaction::{Self, MoveCall};
-use squid::squid::Squid;
-use squid::swap_info::SwapInfo;
 use std::ascii::{Self, String};
 use std::type_name;
+
 use sui::bcs::{Self, BCS};
 use sui::clock::Clock;
+
+use deepbook::pool::Pool;
+
+use relayer_discovery::transaction::{Self, MoveCall};
+
+use squid::squid::Squid;
+use squid::swap_info::SwapInfo;
+use squid::swap_type::{Self, SwapType};
+
 use token::deep::DEEP;
+
 
 const EWrongSwapType: u64 = 0;
 const EWrongPool: u64 = 1;
 const EWrongCoinType: u64 = 2;
 
-const SWAP_TYPE: u8 = 1;
 const FLOAT_SCALING: u128 = 1_000_000_000;
 
 public struct DeepbookV3SwapData has drop {
-    swap_type: u8,
+    swap_type: SwapType,
     pool_id: address,
     has_base: bool,
     min_output: u64,
@@ -36,11 +42,11 @@ public fun estimate<B, Q>(
     pool: &Pool<B, Q>,
     clock: &Clock,
 ) {
-    let data = self.get_data_estimating();
-    if (data.length() == 0) return;
+    let (data, fallback) = self.data_estimating();
+    if (fallback) return;
     let swap_data = peel_swap_data(data);
 
-    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
+    assert!(swap_data.swap_type == swap_type::deepbook_v3(), EWrongSwapType);
     assert!(swap_data.pool_id == object::id_address(pool), EWrongPool);
     assert!(
         &swap_data.base_type == &type_name::get<B>().into_string(),
@@ -54,7 +60,7 @@ public fun estimate<B, Q>(
     let (taker_fee, _, _) = pool.pool_trade_params();
 
     if (swap_data.has_base) {
-        let base_quantity = self.coin_bag().get_estimate<B>();
+        let base_quantity = self.coin_bag().estimate<B>();
         let base_fee = mul_scaled(base_quantity, taker_fee);
         let base_in = base_quantity - base_fee;
 
@@ -71,7 +77,7 @@ public fun estimate<B, Q>(
         };
         self.coin_bag().store_estimate<Q>(quote_out);
     } else {
-        let quote_quantity = self.coin_bag().get_estimate<Q>();
+        let quote_quantity = self.coin_bag().estimate<Q>();
         let quote_fee = mul_scaled(quote_quantity, taker_fee);
         let quote_in = quote_quantity - quote_fee;
 
@@ -104,11 +110,11 @@ public fun swap<B, Q>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let data = self.get_data_swapping();
-    if (data.length() == 0) return;
+    let (data, fallback) = self.data_swapping();
+    if (fallback) return;
     let swap_data = peel_swap_data(data);
 
-    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
+    assert!(swap_data.swap_type == swap_type::deepbook_v3(), EWrongSwapType);
     assert!(swap_data.pool_id == object::id_address(pool), EWrongPool);
     assert!(
         &swap_data.base_type == &type_name::get<B>().into_string(),
@@ -127,7 +133,7 @@ public fun swap<B, Q>(
         // Get base coin, split away taker fees and store it in Squid.
         let mut base_in = self
             .coin_bag()
-            .get_balance<B>()
+            .balance<B>()
             .destroy_some()
             .into_coin(ctx);
         let base_fee_amount = mul_scaled(base_in.value(), taker_fee);
@@ -140,7 +146,7 @@ public fun swap<B, Q>(
             clock,
         );
         let deep_in = squid_coin_bag
-            .get_exact_balance<DEEP>(deep_required)
+            .exact_balance<DEEP>(deep_required)
             .into_coin(ctx);
 
         let (base_out, quote_out, deep_out) = pool.swap_exact_base_for_quote<
@@ -165,7 +171,7 @@ public fun swap<B, Q>(
         // Get quote coin, split away taker fees and store it in Squid.
         let mut quote_in = self
             .coin_bag()
-            .get_balance<Q>()
+            .balance<Q>()
             .destroy_some()
             .into_coin(ctx);
         let quote_fee_amount = mul_scaled(quote_in.value(), taker_fee);
@@ -178,7 +184,7 @@ public fun swap<B, Q>(
             clock,
         );
         let deep_in = squid_coin_bag
-            .get_exact_balance<DEEP>(deep_required)
+            .exact_balance<DEEP>(deep_required)
             .into_coin(ctx);
 
         let (quote_out, base_out, deep_out) = pool.swap_exact_quote_for_base<
@@ -202,7 +208,7 @@ public fun swap<B, Q>(
     }
 }
 
-public(package) fun get_estimate_move_call(
+public(package) fun estimate_move_call(
     package_id: address,
     mut bcs: BCS,
     swap_info_arg: vector<u8>,
@@ -227,7 +233,7 @@ public(package) fun get_estimate_move_call(
     )
 }
 
-public(package) fun get_swap_move_call(
+public(package) fun swap_move_call(
     package_id: address,
     mut bcs: BCS,
     swap_info_arg: vector<u8>,
@@ -256,7 +262,7 @@ public(package) fun get_swap_move_call(
 public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
     let mut bcs = bcs::new(data);
     DeepbookV3SwapData {
-        swap_type: bcs.peel_u8(),
+        swap_type: swap_type::peel(&mut bcs),
         pool_id: bcs.peel_address(),
         has_base: bcs.peel_bool(),
         min_output: bcs.peel_u64(),
@@ -278,7 +284,7 @@ fun mul_scaled(x: u64, y: u64): u64 {
 
 #[test_only]
 public(package) fun new_swap_data(
-    swap_type: u8,
+    swap_type: SwapType,
     pool_id: address,
     has_base: bool,
     min_output: u64,

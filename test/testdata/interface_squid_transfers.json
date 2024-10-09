@@ -8,7 +8,7 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8"
+          "type": "SwapType"
         },
         {
           "name": "coin_type",
@@ -17,6 +17,10 @@
         {
           "name": "recipient",
           "type": "address"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     },
@@ -28,7 +32,7 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8"
+          "type": "SwapType"
         },
         {
           "name": "coin_type",
@@ -49,6 +53,10 @@
         {
           "name": "metadata",
           "type": "vector<u8>"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     }
