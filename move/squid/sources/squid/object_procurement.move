@@ -14,13 +14,13 @@ const SWAP_TYPE: u8 = 4;
 // Errors
 // ------
 #[error]
-const EWrongObject: vector<u8> = b"The object passed did not match the requested object";
+const EWrongObject: vector<u8> = b"object passed did not match the requested object";
 #[error]
-const ERemainingData: vector<u8> = b"Remaining bcs data unexpected.";
+const ERemainingData: vector<u8> = b"remaining bcs data unexpected.";
 #[error]
-const EWrongCoinType: vector<u8> = b"Coin type mismatch.";
+const EWrongCoinType: vector<u8> = b"coin type mismatch.";
 #[error]
-const EWrongSwapType: vector<u8> = b"Swap type mismatch.";
+const EWrongSwapType: vector<u8> = b"swap type mismatch.";
 
 // -----
 // Types

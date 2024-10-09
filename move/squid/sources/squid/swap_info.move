@@ -16,21 +16,21 @@ public struct SwapInfo {
 }
 
 #[error]
-const EOutOfEstimates: vector<u8> = b"Trying to get make an estimate but there are none left.";
+const EOutOfEstimates: vector<u8> = b"trying to get make an estimate but there are none left.";
 #[error]
-const EOutOfSwaps: vector<u8> = b"Trying to get make a swap but there are none left.";
+const EOutOfSwaps: vector<u8> = b"trying to get make a swap but there are none left.";
 #[error]
-const ENotEstimating: vector<u8> = b"Trying to get an estimate but estimating is done.";
+const ENotEstimating: vector<u8> = b"trying to get an estimate but estimating is done.";
 #[error]
-const ENotDoneEstimating: vector<u8> = b"Trying to swap while still swapping.";
+const ENotDoneEstimating: vector<u8> = b"trying to swap while still swapping.";
 #[error]
-const EDoneSwapping: vector<u8> = b"Trying to swap but swapping is finished.";
+const EDoneSwapping: vector<u8> = b"trying to swap but swapping is finished.";
 #[error]
-const EAlreadySkippingSwaps: vector<u8> = b"Trying to skip swaps while swaps are skipped.";
+const EAlreadySkippingSwaps: vector<u8> = b"trying to skip swaps while swaps are skipped.";
 #[error]
-const ENotDone: vector<u8> = b"Trying to finalize but SwapInfo is not Done yet.";
+const ENotDone: vector<u8> = b"trying to finalize but SwapInfo is not Done yet.";
 #[error]
-const EDoneEstimating: vector<u8> = b"Trying to estimate but estimating is finished.";
+const EDoneEstimating: vector<u8> = b"trying to estimate but estimating is finished.";
 
 
 
