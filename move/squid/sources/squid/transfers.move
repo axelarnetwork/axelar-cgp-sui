@@ -1,21 +1,17 @@
 module squid::transfers;
 
-use std::ascii::{Self, String};
-use std::type_name;
-
-use sui::bcs::{Self, BCS};
-use sui::coin;
-use sui::clock::Clock;
-
 use axelar_gateway::gateway::Gateway;
-
-use relayer_discovery::transaction::{Self, MoveCall};
-
 use its::its::{Self, ITS};
 use its::token_id::{Self, TokenId};
-
+use relayer_discovery::transaction::{Self, MoveCall};
 use squid::squid::Squid;
 use squid::swap_info::SwapInfo;
+use std::ascii::{Self, String};
+use std::type_name;
+use sui::bcs::{Self, BCS};
+use sui::clock::Clock;
+use sui::coin;
+
 const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
 const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
 
@@ -123,7 +119,7 @@ public fun its_transfer<T>(
     ctx: &mut TxContext,
 ) {
     let value = squid.value!(b"its_transfer");
-    
+
     let data = swap_info.get_data_swapping();
     if (data.length() == 0) return;
     let swap_data = new_its_transfer_swap_data(data);
@@ -141,8 +137,7 @@ public fun its_transfer<T>(
         return
     };
 
-    let interchain_transfer_ticket = 
-    its::prepare_interchain_transfer(
+    let interchain_transfer_ticket = its::prepare_interchain_transfer(
         swap_data.token_id,
         coin::from_balance(option.destroy_some(), ctx),
         swap_data.destination_chain,
@@ -151,7 +146,10 @@ public fun its_transfer<T>(
         value.channel(),
     );
 
-    let message_ticket = its.send_interchain_transfer(interchain_transfer_ticket, clock);
+    let message_ticket = its.send_interchain_transfer(
+        interchain_transfer_ticket,
+        clock,
+    );
     gateway.send_message(message_ticket);
 }
 
