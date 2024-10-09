@@ -1,14 +1,11 @@
 module squid::object_procurement;
 
+use relayer_discovery::transaction::{Self, MoveCall};
+use squid::swap_info::SwapInfo;
 use std::ascii::{Self, String};
 use std::type_name;
-
-use sui::coin::Coin;
 use sui::bcs::{Self, BCS};
-
-use relayer_discovery::transaction::{Self, MoveCall};
-
-use squid::swap_info::SwapInfo;
+use sui::coin::Coin;
 
 const SWAP_TYPE: u8 = 4;
 
@@ -16,7 +13,8 @@ const SWAP_TYPE: u8 = 4;
 // Errors
 // ------
 #[error]
-const EWrongObject: vector<u8> = b"object passed did not match the requested object";
+const EWrongObject: vector<u8> =
+    b"object passed did not match the requested object";
 #[error]
 const ERemainingData: vector<u8> = b"remaining bcs data unexpected.";
 #[error]
@@ -37,19 +35,17 @@ public struct ObjectProcurementSwapData {
     fallback: bool,
 }
 
-public fun estimate<T>(
-    swap_info: &mut SwapInfo,
-) {
+public fun estimate<T>(swap_info: &mut SwapInfo) {
     let (data, fallback) = swap_info.get_data_estimating();
 
     let swap_data = peel_swap_data(data, fallback);
-    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);    
+    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
     assert!(
         &swap_data.coin_type == &type_name::get<T>().into_string(),
         EWrongCoinType,
     );
 
-    if (!fallback) { 
+    if (!fallback) {
         swap_info.coin_bag().get_exact_estimate<T>(swap_data.price);
     };
 
@@ -60,10 +56,10 @@ public fun loan_coins<T>(
     swap_info: &mut SwapInfo,
     ctx: &mut TxContext,
 ): (ObjectProcurementSwapData, Option<Coin<T>>) {
-    let (data, fallback) = swap_info.get_data_swapping();    
-    
+    let (data, fallback) = swap_info.get_data_swapping();
+
     let swap_data = peel_swap_data(data, fallback);
-    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);    
+    assert!(swap_data.swap_type == SWAP_TYPE, EWrongSwapType);
     assert!(
         &swap_data.coin_type == &type_name::get<T>().into_string(),
         EWrongCoinType,
@@ -80,7 +76,7 @@ public fun return_object<T: key + store>(
     swap_data: ObjectProcurementSwapData,
     object_option: Option<T>,
 ) {
-    if(swap_data.fallback) { 
+    if (swap_data.fallback) {
         object_option.destroy_none();
     } else {
         let object = object_option.destroy_some();
@@ -89,7 +85,6 @@ public fun return_object<T: key + store>(
     };
     swap_data.destroy();
 }
-
 
 public(package) fun get_estimate_move_call(
     package_id: address,
@@ -113,7 +108,7 @@ public(package) fun get_procure_move_call(
     package_id: address,
     mut bcs: BCS,
     swap_info_arg: vector<u8>,
-    index: u8
+    index: u8,
 ): vector<MoveCall> {
     let coin_type = ascii::string(bcs.peel_vec_u8());
     let object_type = ascii::string(bcs.peel_vec_u8());
@@ -152,7 +147,10 @@ public(package) fun get_procure_move_call(
 }
 
 // Store the fallback here too to be able to retreive in the `give_object`
-fun peel_swap_data(data: vector<u8>, fallback: bool): ObjectProcurementSwapData {
+fun peel_swap_data(
+    data: vector<u8>,
+    fallback: bool,
+): ObjectProcurementSwapData {
     let mut bcs = bcs::new(data);
     let swap_data = ObjectProcurementSwapData {
         swap_type: bcs.peel_u8(),
