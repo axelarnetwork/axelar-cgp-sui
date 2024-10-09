@@ -1,7 +1,8 @@
 /// Channels
 ///
 /// Channels allow sending and receiving messages between Sui and other chains.
-/// A channel has a unique id and is treated as the destination address by the Axelar protocol.
+/// A channel has a unique id and is treated as the destination address by the
+/// Axelar protocol.
 /// Apps can create a channel and hold on to it for cross-chain messaging.
 module axelar_gateway::channel;
 
@@ -13,20 +14,23 @@ use std::ascii::String;
 // -----
 
 /// The Channel object. Acts as a destination for the messages sent through
-/// the bridge. The `destination_id` is compared against the `id` of the `Channel`
+/// the bridge. The `destination_id` is compared against the `id` of the
+/// `Channel`
 /// when the message is consumed
 public struct Channel has key, store {
     /// Unique ID of the channel
     id: UID,
 }
 
-/// A HotPotato - this should be received by the application contract and consumed
+/// A HotPotato - this should be received by the application contract and
+/// consumed
 public struct ApprovedMessage {
     /// Source chain axelar-registered name
     source_chain: String,
     /// Unique ID of the message
     message_id: String,
-    /// Address of the source chain, encoded as a string (e.g. EVM address will be hex string 0x1234...abcd)
+    /// Address of the source chain, encoded as a string (e.g. EVM address will
+    /// be hex string 0x1234...abcd)
     source_address: String,
     /// The destination Channel's UID
     destination_id: address,
@@ -48,7 +52,8 @@ const EInvalidDestination: vector<u8> = b"invalid destination";
 
 /// Create new `Channel` object.
 /// Anyone can create their own `Channel` to receive cross-chain messages.
-/// In most use cases, a package should create this on init, and hold on to it forever.
+/// In most use cases, a package should create this on init, and hold on to it
+/// forever.
 public fun new(ctx: &mut TxContext): Channel {
     let id = object::new(ctx);
 
@@ -59,7 +64,8 @@ public fun new(ctx: &mut TxContext): Channel {
     }
 }
 
-/// Destroy a `Channel`. Allows apps to destroy the `Channel` object when it's no longer needed.
+/// Destroy a `Channel`. Allows apps to destroy the `Channel` object when it's
+/// no longer needed.
 public fun destroy(self: Channel) {
     let Channel { id } = self;
 
