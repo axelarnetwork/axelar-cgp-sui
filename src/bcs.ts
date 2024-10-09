@@ -183,6 +183,7 @@ function getGatewayStructs() {
 
 function getSquidStructs() {
     const { Channel, CoinBag } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
         swap_type: bcs.U8,
@@ -210,10 +211,16 @@ function getSquidStructs() {
         metadata: bcs.vector(bcs.U8),
     });
 
-    const Squid = bcs.struct('Squid', {
-        id: UID,
+    const SquidV0 = bcs.struct('SquidV0', {
         channel: Channel,
         coin_bag: CoinBag,
+        version_control: VersionControl,
+    });
+
+    const Squid = bcs.struct('Squid', {
+        id: UID,
+        name: bcs.U64,
+        value: SquidV0,
     });
 
     return {
