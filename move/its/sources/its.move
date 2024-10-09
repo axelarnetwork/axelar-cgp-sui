@@ -8,10 +8,10 @@ use its::coin_info::{Self, CoinInfo};
 use its::coin_management::{Self, CoinManagement};
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use its::its_v0::{Self, ITS_v0};
+use its::owner_cap::{Self, OwnerCap};
 use its::token_id::{Self, TokenId};
 use its::trusted_addresses::TrustedAddresses;
 use its::utils as its_utils;
-use its::owner_cap::{Self, OwnerCap};
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::Transaction;
 use std::ascii::{Self, String};
@@ -448,11 +448,11 @@ public fun set_trusted_addresses(
 public fun remove_trusted_addresses(
     self: &mut ITS,
     _owner_cap: &OwnerCap,
-    trusted_addresses: TrustedAddresses,
+    chain_names: vector<String>,
 ) {
-    let value = self.value_mut!(b"set_trusted_addresses");
+    let value = self.value_mut!(b"remove_trusted_addresses");
 
-    value.remove_trusted_addresses(trusted_addresses);
+    value.remove_trusted_addresses(chain_names);
 }
 
 // === Getters ===
@@ -1602,17 +1602,19 @@ fun test_set_trusted_address() {
         ctx,
     );
 
-    let trusted_chains = vector[b"Ethereum".to_ascii_string(), b"Avalance".to_ascii_string(), b"Axelar".to_ascii_string()];
+    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"].map!(
+        |chain| chain.to_ascii_string(),
+    );
     let trusted_addresses = vector[
-        b"ethereum address".to_ascii_string(),
-        ITS_HUB_ROUTING_IDENTIFIER.to_ascii_string(),
-        b"hub address".to_ascii_string(),
-    ];
+        b"ethereum address",
+        ITS_HUB_ROUTING_IDENTIFIER,
+        b"hub address",
+    ].map!(|chain| chain.to_ascii_string());
     let trusted_addresses = its::trusted_addresses::new(
         trusted_chains,
         trusted_addresses,
     );
-    
+
     set_trusted_addresses(&mut its, &owner_cap, trusted_addresses);
 
     sui::test_utils::destroy(its);

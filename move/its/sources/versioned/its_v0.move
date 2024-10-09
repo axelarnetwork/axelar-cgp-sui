@@ -22,8 +22,6 @@ use version_control::version_control::VersionControl;
 // ------
 #[error]
 const EUnregisteredCoin: vector<u8> = b"Trying to find a coin that doesn't exist.";
-#[error]
-const ENotTrustedAddress: vector<u8> = b"Trying to remove an untrusted address.";
 
 public struct ITS_v0 has store {
     channel: Channel,
@@ -155,9 +153,7 @@ public(package) fun set_trusted_address(
 public(package) fun remove_trusted_address(
     self: &mut ITS_v0,
     chain_name: String,
-    trusted_address: String,
 ) { 
-    assert!(self.address_tracker.trusted_address(chain_name) == trusted_address, ENotTrustedAddress);
     self.address_tracker.remove_trusted_address(chain_name);
 }
 
@@ -166,6 +162,7 @@ public(package) fun set_trusted_addresses(
     trusted_addresses: TrustedAddresses,
 ) {
     let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
+
     let length = chain_names.length();
     let mut i = 0;
     while (i < length) {
@@ -179,18 +176,11 @@ public(package) fun set_trusted_addresses(
 
 public(package) fun remove_trusted_addresses(
     self: &mut ITS_v0,
-    trusted_addresses: TrustedAddresses,
+    chain_names: vector<String>,
 ) {
-    let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
-    let length = chain_names.length();
-    let mut i = 0;
-    while (i < length) {
-        self.remove_trusted_address(
-            chain_names.pop_back(),
-            trusted_addresses.pop_back(),
-        );
-        i = i + 1;
-    }
+    chain_names.do!(|chain_name| self.remove_trusted_address(
+            chain_name,
+    ));
 }
 
 public(package) fun coin_data_mut<T>(
