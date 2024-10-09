@@ -3,15 +3,21 @@ module squid::transfers;
 use axelar_gateway::gateway::Gateway;
 use its::its::{Self, ITS};
 use its::token_id::{Self, TokenId};
-
+use relayer_discovery::transaction::{Self, MoveCall};
 use squid::squid::Squid;
 use squid::swap_info::SwapInfo;
 use squid::swap_type::{Self, SwapType};
+use std::ascii::{Self, String};
+use std::type_name;
+use sui::bcs::{Self, BCS};
+use sui::clock::Clock;
+use sui::coin;
 
 const EWrongSwapType: u64 = 0;
 const EWrongCoinType: u64 = 1;
 
-/// fallback states whether this transfer happens normally or only on fallback mode.
+/// fallback states whether this transfer happens normally or only on fallback
+/// mode.
 public struct SuiTransferSwapData has drop {
     swap_type: SwapType,
     coin_type: String,
@@ -19,7 +25,8 @@ public struct SuiTransferSwapData has drop {
     fallback: bool,
 }
 
-/// fallback states whether this transfer happens normally or only on fallback mode.
+/// fallback states whether this transfer happens normally or only on fallback
+/// mode.
 public struct ItsTransferSwapData has drop {
     swap_type: SwapType,
     coin_type: String,
@@ -87,7 +94,8 @@ public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
     let (data, fallback) = swap_info.data_swapping();
     let swap_data = new_sui_transfer_swap_data(data);
 
-    // This check allows to skip the transfer if the `fallback` state does not match the state of the transaction here.
+    // This check allows to skip the transfer if the `fallback` state does not
+    // match the state of the transaction here.
     if (fallback != swap_data.fallback) return;
 
     assert!(swap_data.swap_type == swap_type::sui_transfer(), EWrongSwapType);
@@ -121,12 +129,13 @@ public fun its_transfer<T>(
 ) {
     let value = squid.value!(b"its_transfer");
 
-    let data = swap_info.get_data_swapping();
+    let (data, fallback) = swap_info.data_swapping();
     if (data.length() == 0) return;
     let swap_data = new_its_transfer_swap_data(data);
 
-    // This check allows to skip the transfer if the `fallback` state does not match the state of the transaction here.
-    if (fallback != swap_data.fallback) return option::none<InterchainTransferTicket<T>>();
+    // This check allows to skip the transfer if the `fallback` state does not
+    // match the state of the transaction here.
+    if (fallback != swap_data.fallback) return;
 
     assert!(swap_data.swap_type == swap_type::its_transfer(), EWrongSwapType);
 
