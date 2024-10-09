@@ -20,7 +20,7 @@ describe('BCS', () => {
         expect(obj).to.deep.include({ id: expectedId, size });
     };
 
-    it('should decode ITS_V0 object successfully', () => {
+    it('should decode ITS_v0 object successfully', () => {
         const its = bcsStructs.its.ITS.parse(fromHEX(hexData.ITSV0)).value;
 
         checkIdAndSize(its.address_tracker.trusted_addresses, '270c7f8b9757b05777d3cbf98fa1bb197e1f5a18c8ff7a8ef16e80bedf39a67f');
@@ -46,7 +46,7 @@ describe('BCS', () => {
         expect(allowedFunctions).to.have.lengthOf(12);
     });
 
-    it('should decode GatewayV0 object successfully', () => {
+    it('should decode Gateway_v0 object successfully', () => {
         const gatewayV0 = bcsStructs.gateway.Gateway.parse(fromHEX(hexData.GatewayV0));
 
         expect(gatewayV0.id).to.equal('c15879de64dc6678674e5ad1a32c47319a1e9100bf21408173590455d01f9d16');
@@ -82,7 +82,7 @@ describe('BCS', () => {
             );
     });
 
-    it('should decode GasServiceV0 object successfully', () => {
+    it('should decode GasService_v0 object successfully', () => {
         const gasServiceV0 = bcsStructs.gasService.GasService.parse(fromHEX(hexData.GasServiceV0));
 
         expect(gasServiceV0.id).to.equal('0178ed64520e2e76bfbfc5551ac9b60acc59b00d6148c9db446a9d7462a96eba');
@@ -94,13 +94,13 @@ describe('BCS', () => {
             .that.includes('pay_gas', 'add_gas', 'collect_gas', 'refund');
     });
 
-    it('should decode RelayerDiscoveryV0 object successfully', async () => {
-        const relayerDiscoveryV0 = bcsStructs.relayerDiscovery.RelayerDiscovery.parse(fromHEX(hexData.RelayerDiscoveryV0));
+    it('should decode RelayerDiscovery_v0 object successfully', async () => {
+        const RelayerDiscoveryV0 = bcsStructs.relayerDiscovery.RelayerDiscovery.parse(fromHEX(hexData.RelayerDiscoveryV0));
 
-        expect(relayerDiscoveryV0.id).to.equal('5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b871');
-        expect(relayerDiscoveryV0.name).to.equal('0');
-        checkIdAndSize(relayerDiscoveryV0.value.configurations, '5339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58', '1');
-        expect(relayerDiscoveryV0.value.version_control.allowed_functions[0].contents)
+        expect(RelayerDiscoveryV0.id).to.equal('5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b871');
+        expect(RelayerDiscoveryV0.name).to.equal('0');
+        checkIdAndSize(RelayerDiscoveryV0.value.configurations, '5339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58', '1');
+        expect(RelayerDiscoveryV0.value.version_control.allowed_functions[0].contents)
             .to.be.an('array')
             .with.lengthOf(3)
             .that.includes('register_transaction', 'remove_transaction', 'get_transaction');
