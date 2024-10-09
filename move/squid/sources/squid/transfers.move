@@ -1,15 +1,7 @@
 module squid::transfers;
 
-use std::ascii::{Self, String};
-use std::type_name;
-
-use sui::bcs::{Self, BCS};
-use sui::coin;
-
-use relayer_discovery::transaction::{Self, MoveCall};
-
-use its::interchain_transfer_ticket::InterchainTransferTicket;
-use its::its;
+use axelar_gateway::gateway::Gateway;
+use its::its::{Self, ITS};
 use its::token_id::{Self, TokenId};
 
 use squid::squid::Squid;
@@ -122,9 +114,15 @@ public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
 public fun its_transfer<T>(
     swap_info: &mut SwapInfo,
     squid: &Squid,
+    its: &mut ITS,
+    gateway: &Gateway,
+    clock: &Clock,
     ctx: &mut TxContext,
-): Option<InterchainTransferTicket<T>> {
-    let (data, fallback) = swap_info.data_swapping();
+) {
+    let value = squid.value!(b"its_transfer");
+
+    let data = swap_info.get_data_swapping();
+    if (data.length() == 0) return;
     let swap_data = new_its_transfer_swap_data(data);
 
     // This check allows to skip the transfer if the `fallback` state does not match the state of the transaction here.
@@ -140,19 +138,23 @@ public fun its_transfer<T>(
     let option = swap_info.coin_bag().balance<T>();
     if (option.is_none()) {
         option.destroy_none();
-        return option::none<InterchainTransferTicket<T>>()
+        return
     };
 
-    option::some(
-        its::prepare_interchain_transfer(
-            swap_data.token_id,
-            coin::from_balance(option.destroy_some(), ctx),
-            swap_data.destination_chain,
-            swap_data.destination_address,
-            swap_data.metadata,
-            squid.value!(b"its_transfer").channel(),
-        ),
-    )
+    let interchain_transfer_ticket = its::prepare_interchain_transfer(
+        swap_data.token_id,
+        coin::from_balance(option.destroy_some(), ctx),
+        swap_data.destination_chain,
+        swap_data.destination_address,
+        swap_data.metadata,
+        value.channel(),
+    );
+
+    let message_ticket = its.send_interchain_transfer(
+        interchain_transfer_ticket,
+        clock,
+    );
+    gateway.send_message(message_ticket);
 }
 
 public(package) fun sui_estimate_move_call(
@@ -212,6 +214,7 @@ public(package) fun its_transfer_move_call(
     swap_info_arg: vector<u8>,
     squid_arg: vector<u8>,
     its_arg: vector<u8>,
+    gateway_arg: vector<u8>,
 ): MoveCall {
     let type_arg = ascii::string(bcs.peel_vec_u8());
     transaction::new_move_call(
@@ -220,7 +223,7 @@ public(package) fun its_transfer_move_call(
             ascii::string(b"transfers"),
             ascii::string(b"its_transfer"),
         ),
-        vector[swap_info_arg, squid_arg, its_arg, vector[0, 6]],
+        vector[swap_info_arg, squid_arg, its_arg, gateway_arg, vector[0, 6]],
         vector[type_arg],
     )
 }

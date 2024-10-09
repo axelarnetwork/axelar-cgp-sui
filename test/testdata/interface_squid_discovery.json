@@ -7,6 +7,7 @@
       "params": {
         "squid#0#0": "&Squid",
         "its#0#0": "&ITS",
+        "gateway#0#0": "&Gateway",
         "payload#0#0": "vector<u8>"
       },
       "returnType": "Transaction"

@@ -61,16 +61,5 @@
       ]
     }
   },
-  "publicFunctions": {
-    "its_transfer<T>": {
-      "name": "its_transfer<T>",
-      "visibility": "public",
-      "params": {
-        "swap_info#0#0": "&mut SwapInfo",
-        "squid#0#0": "&Squid",
-        "ctx#0#0": "&mut TxContext"
-      },
-      "returnType": "Option<InterchainTransferTicket<T>>"
-    }
-  }
+  "publicFunctions": {}
 }

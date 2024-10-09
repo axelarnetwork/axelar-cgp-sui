@@ -1,16 +1,16 @@
 module its::its;
 
 use abi::abi;
-use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
+use axelar_gateway::channel::{ApprovedMessage, Channel};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
-use governance::governance::{Self, Governance};
 use its::coin_info::{Self, CoinInfo};
 use its::coin_management::{Self, CoinManagement};
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use its::its_v0::{Self, ITS_v0};
+use its::owner_cap::{Self, OwnerCap};
 use its::token_id::{Self, TokenId};
-use its::trusted_addresses;
+use its::trusted_addresses::TrustedAddresses;
 use its::utils as its_utils;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::Transaction;
@@ -18,7 +18,6 @@ use std::ascii::{Self, String};
 use std::string;
 use std::type_name::{Self, TypeName};
 use sui::address;
-use sui::bcs;
 use sui::clock::Clock;
 use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 use sui::event;
@@ -38,8 +37,6 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 // address::to_u256(address::from_bytes(keccak256(b"sui-set-trusted-addresses")));
-const MESSAGE_TYPE_SET_TRUSTED_ADDRESSES: u256 =
-    0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68;
 
 // === HUB CONSTANTS ===
 // Chain name for Axelar. This is used for routing ITS calls via ITS hub on
@@ -57,37 +54,34 @@ const DECIMALS_CAP: u8 = 9;
 // ------
 #[error]
 const EUntrustedAddress: vector<u8> =
-    b"The sender that sent this message is not trusted.";
+    b"the sender that sent this message is not trusted.";
 #[error]
 const EInvalidMessageType: vector<u8> =
-    b"The message type received is not supported.";
+    b"the message type received is not supported.";
 #[error]
 const EWrongDestination: vector<u8> =
-    b"The channel trying to receive this call is not the destination.";
+    b"the channel trying to receive this call is not the destination.";
 #[error]
 const EInterchainTransferHasData: vector<u8> =
-    b"Interchain transfer with data trying to be processed as an interchain transfer.";
+    b"interchain transfer with data trying to be processed as an interchain transfer.";
 #[error]
 const EInterchainTransferHasNoData: vector<u8> =
-    b"Interchain transfer trying to be proccessed as an interchain transfer";
+    b"interchain transfer trying to be proccessed as an interchain transfer";
 #[error]
 const EModuleNameDoesNotMatchSymbol: vector<u8> =
-    b"The module name does not match the symbol.";
+    b"the module name does not match the symbol.";
 #[error]
-const ENotDistributor: vector<u8> = b"Only the distributor can mint.";
+const ENotDistributor: vector<u8> = b"only the distributor can mint.";
 #[error]
 const ENonZeroTotalSupply: vector<u8> =
-    b"Trying to give a token that has had some supply already minted.";
+    b"trying to give a token that has had some supply already minted.";
 #[error]
 const EUnregisteredCoinHasUrl: vector<u8> =
-    b"The interchain token that is being registered has a URL.";
+    b"the interchain token that is being registered has a URL.";
 #[error]
-const EUntrustedChain: vector<u8> = b"The chain is not trusted.";
+const EUntrustedChain: vector<u8> = b"the chain is not trusted.";
 #[error]
-const ERemainingData: vector<u8> =
-    b"There should not be any remaining data when BCS decoding.";
-#[error]
-const ENewerTicket: vector<u8> = b"Cannot proccess newer tickets.";
+const ENewerTicket: vector<u8> = b"cannot proccess newer tickets.";
 
 // ------
 // Events
@@ -122,6 +116,11 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         inner,
     });
+
+    transfer::public_transfer(
+        owner_cap::create(ctx),
+        ctx.sender(),
+    )
 }
 
 // ------
@@ -433,42 +432,27 @@ public fun burn_as_distributor<T>(
     coin_management.burn(coin.into_balance());
 }
 
-// === Special Call Receiving
+// ---------------
+// Owner Functions
+// ---------------
 public fun set_trusted_addresses(
     self: &mut ITS,
-    governance: &Governance,
-    approved_message: ApprovedMessage,
+    _owner_cap: &OwnerCap,
+    trusted_addresses: TrustedAddresses,
 ) {
     let value = self.value_mut!(b"set_trusted_addresses");
 
-    let (
-        source_chain,
-        _,
-        source_address,
-        payload,
-    ) = channel::consume_approved_message(
-        value.channel(),
-        approved_message,
-    );
-
-    assert!(
-        governance::is_governance(governance, source_chain, source_address),
-        EUntrustedAddress,
-    );
-
-    let mut reader = abi::new_reader(payload);
-    let message_type = reader.read_u256();
-    assert!(
-        message_type == MESSAGE_TYPE_SET_TRUSTED_ADDRESSES,
-        EInvalidMessageType,
-    );
-
-    let mut bcs = bcs::new(reader.read_bytes());
-    let trusted_addresses = trusted_addresses::peel(&mut bcs);
-
-    assert!(bcs.into_remainder_bytes().length() == 0, ERemainingData);
-
     value.set_trusted_addresses(trusted_addresses);
+}
+
+public fun remove_trusted_addresses(
+    self: &mut ITS,
+    _owner_cap: &OwnerCap,
+    chain_names: vector<String>,
+) {
+    let value = self.value_mut!(b"remove_trusted_addresses");
+
+    value.remove_trusted_addresses(chain_names);
 }
 
 // === Getters ===
@@ -606,6 +590,8 @@ fun version_control(): VersionControl {
 // ---------
 #[test_only]
 use its::coin::COIN;
+#[test_only]
+use axelar_gateway::channel;
 
 #[test_only]
 public fun create_for_testing(ctx: &mut TxContext): ITS {
@@ -1612,229 +1598,27 @@ fun test_set_trusted_address() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
-    let trusted_source_chain = ascii::string(b"Axelar");
-    let trusted_source_address = ascii::string(b"Trusted Address");
-    let message_type = (123 as u256);
-    let message_id = ascii::string(b"message_id");
-
-    let governance = governance::new_for_testing(
-        trusted_source_chain,
-        trusted_source_address,
-        message_type,
+    let owner_cap = owner_cap::create(
         ctx,
     );
 
-    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"];
+    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"].map!(
+        |chain| chain.to_ascii_string(),
+    );
     let trusted_addresses = vector[
         b"ethereum address",
         ITS_HUB_ROUTING_IDENTIFIER,
         b"hub address",
-    ];
-    let trusted_addresses_data = bcs::to_bytes(
-        &its::trusted_addresses::new_for_testing(
-            trusted_chains,
-            trusted_addresses,
-        ),
+    ].map!(|chain| chain.to_ascii_string());
+    let trusted_addresses = its::trusted_addresses::new(
+        trusted_chains,
+        trusted_addresses,
     );
 
-    let mut writer = abi::new_writer(2);
-    writer
-        .write_u256(MESSAGE_TYPE_SET_TRUSTED_ADDRESSES)
-        .write_bytes(trusted_addresses_data);
-    let payload = writer.into_bytes();
-
-    let approved_message = channel::new_approved_message(
-        trusted_source_chain,
-        message_id,
-        trusted_source_address,
-        its.value!(b"").channel().to_address(),
-        payload,
-    );
-
-    set_trusted_addresses(&mut its, &governance, approved_message);
+    set_trusted_addresses(&mut its, &owner_cap, trusted_addresses);
 
     sui::test_utils::destroy(its);
-    sui::test_utils::destroy(governance);
-}
-
-#[test]
-#[expected_failure(abort_code = EUntrustedAddress)]
-fun test_set_trusted_address_untrusted_address() {
-    let ctx = &mut tx_context::dummy();
-    let mut its = create_for_testing(ctx);
-
-    let trusted_source_chain = ascii::string(b"Axelar");
-    let trusted_source_address = ascii::string(b"Trusted Address");
-    let untrusted_source_address = ascii::string(b"Untrusted Address");
-    let message_type = (123 as u256);
-    let message_id = ascii::string(b"message_id");
-
-    let governance = governance::new_for_testing(
-        trusted_source_chain,
-        trusted_source_address,
-        message_type,
-        ctx,
-    );
-
-    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"];
-    let trusted_addresses = vector[
-        b"ethereum address",
-        ITS_HUB_ROUTING_IDENTIFIER,
-        b"hub address",
-    ];
-    let trusted_addresses_data = bcs::to_bytes(
-        &its::trusted_addresses::new_for_testing(
-            trusted_chains,
-            trusted_addresses,
-        ),
-    );
-
-    let mut writer = abi::new_writer(2);
-    writer
-        .write_u256(MESSAGE_TYPE_SET_TRUSTED_ADDRESSES)
-        .write_bytes(trusted_addresses_data);
-    let payload = writer.into_bytes();
-
-    let approved_message = channel::new_approved_message(
-        trusted_source_chain,
-        message_id,
-        untrusted_source_address,
-        its.value!(b"").channel().to_address(),
-        payload,
-    );
-
-    set_trusted_addresses(&mut its, &governance, approved_message);
-
-    sui::test_utils::destroy(its);
-    sui::test_utils::destroy(governance);
-}
-
-#[test]
-#[expected_failure(abort_code = EInvalidMessageType)]
-fun test_set_trusted_address_invalid_message_type() {
-    let ctx = &mut tx_context::dummy();
-    let mut its = create_for_testing(ctx);
-
-    let trusted_source_chain = ascii::string(b"Axelar");
-    let trusted_source_address = ascii::string(b"Trusted Address");
-    let message_type = (123 as u256);
-    let message_id = ascii::string(b"message_id");
-
-    let governance = governance::new_for_testing(
-        trusted_source_chain,
-        trusted_source_address,
-        message_type,
-        ctx,
-    );
-
-    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"];
-    let trusted_addresses = vector[
-        b"ethereum address",
-        ITS_HUB_ROUTING_IDENTIFIER,
-        b"hub address",
-    ];
-    let trusted_addresses_data = bcs::to_bytes(
-        &its::trusted_addresses::new_for_testing(
-            trusted_chains,
-            trusted_addresses,
-        ),
-    );
-
-    let mut writer = abi::new_writer(2);
-    writer
-        .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
-        .write_bytes(trusted_addresses_data);
-    let payload = writer.into_bytes();
-
-    let approved_message = channel::new_approved_message(
-        trusted_source_chain,
-        message_id,
-        trusted_source_address,
-        its.value!(b"").channel().to_address(),
-        payload,
-    );
-
-    set_trusted_addresses(&mut its, &governance, approved_message);
-
-    sui::test_utils::destroy(its);
-    sui::test_utils::destroy(governance);
-}
-
-#[test]
-#[expected_failure(abort_code = ERemainingData)]
-fun test_set_trusted_address_remaining_data() {
-    let ctx = &mut tx_context::dummy();
-
-    let mut its = create_for_testing(ctx);
-    let trusted_source_chain = ascii::string(b"Axelar");
-    let trusted_source_address = ascii::string(b"Trusted Address");
-    let message_type = (123 as u256);
-    let message_id = ascii::string(b"message_id");
-
-    let governance = governance::new_for_testing(
-        trusted_source_chain,
-        trusted_source_address,
-        message_type,
-        ctx,
-    );
-
-    let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"];
-    let trusted_addresses = vector[
-        b"ethereum address",
-        ITS_HUB_ROUTING_IDENTIFIER,
-        b"hub address",
-    ];
-    let mut trusted_addresses_data = bcs::to_bytes(
-        &its::trusted_addresses::new_for_testing(
-            trusted_chains,
-            trusted_addresses,
-        ),
-    );
-    trusted_addresses_data.push_back(0);
-
-    let mut writer = abi::new_writer(2);
-    writer
-        .write_u256(MESSAGE_TYPE_SET_TRUSTED_ADDRESSES)
-        .write_bytes(trusted_addresses_data);
-    let payload = writer.into_bytes();
-
-    let approved_message = channel::new_approved_message(
-        trusted_source_chain,
-        message_id,
-        trusted_source_address,
-        its.value!(b"").channel().to_address(),
-        payload,
-    );
-
-    set_trusted_addresses(&mut its, &governance, approved_message);
-
-    sui::test_utils::destroy(its);
-    sui::test_utils::destroy(governance);
-}
-
-#[test]
-#[expected_failure(abort_code = EUntrustedAddress)]
-fun test_decode_approved_message_untrusted_address() {
-    let ctx = &mut tx_context::dummy();
-    let mut its = create_for_testing(ctx);
-
-    let source_chain = ascii::string(b"Chain Name");
-    let source_address = ascii::string(b"Untusted Address");
-    let message_id = ascii::string(b"message_id");
-
-    let payload = b"payload";
-
-    let approved_message = channel::new_approved_message(
-        source_chain,
-        message_id,
-        source_address,
-        its.value!(b"").channel().to_address(),
-        payload,
-    );
-
-    decode_approved_message(its.value_mut!(b""), approved_message);
-
-    sui::test_utils::destroy(its);
+    sui::test_utils::destroy(owner_cap);
 }
 
 #[test]
