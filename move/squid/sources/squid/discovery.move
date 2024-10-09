@@ -47,7 +47,7 @@ public fun register_transaction(
     )
 }
 
-public fun get_transaction(
+public fun transaction(
     squid: &Squid,
     its: &ITS,
     payload: vector<u8>,
@@ -77,7 +77,7 @@ public fun get_transaction(
 
         if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
             move_calls.push_back(
-                deepbook_v3::get_estimate_move_call(
+                deepbook_v3::estimate_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -85,7 +85,7 @@ public fun get_transaction(
             );
         } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
             move_calls.push_back(
-                transfers::get_sui_estimate_move_call(
+                transfers::sui_estimate_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -94,7 +94,7 @@ public fun get_transaction(
         } else {
             assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
             move_calls.push_back(
-                transfers::get_its_estimate_move_call(
+                transfers::its_estimate_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -112,7 +112,7 @@ public fun get_transaction(
 
         if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
             move_calls.push_back(
-                deepbook_v3::get_swap_move_call(
+                deepbook_v3::swap_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -121,7 +121,7 @@ public fun get_transaction(
             );
         } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
             move_calls.push_back(
-                transfers::get_sui_transfer_move_call(
+                transfers::sui_transfer_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -130,7 +130,7 @@ public fun get_transaction(
         } else {
             assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
             move_calls.push_back(
-                transfers::get_its_transfer_move_call(
+                transfers::its_transfer_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
@@ -172,7 +172,7 @@ fun finalize(package_id: address, swap_info_arg: vector<u8>): MoveCall {
     transaction::new_move_call(
         transaction::new_function(
             package_id,
-            ascii::string(b"swap_info"),
+            ascii::string(b"squid"),
             ascii::string(b"finalize"),
         ),
         vector[swap_info_arg],

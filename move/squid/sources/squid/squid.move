@@ -1,18 +1,13 @@
 module squid::squid;
 
-use std::ascii;
-
-use sui::clock::Clock;
-use sui::versioned::{Self, Versioned};
-
-use version_control::version_control::{Self, VersionControl};
-
 use axelar_gateway::channel::ApprovedMessage;
-
 use its::its::ITS;
-
 use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
+use std::ascii;
+use sui::clock::Clock;
+use sui::versioned::{Self, Versioned};
+use version_control::version_control::{Self, VersionControl};
 
 // -------
 // Version
@@ -76,6 +71,10 @@ public fun start_swap<T>(
     self
         .value_mut!(b"start_swap")
         .start_swap<T>(its, approved_message, clock, ctx)
+}
+
+public fun finalize(swap_info: SwapInfo) {
+    swap_info.finalize();
 }
 
 // -----------------
