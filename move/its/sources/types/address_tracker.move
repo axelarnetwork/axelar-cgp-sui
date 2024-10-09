@@ -8,8 +8,12 @@ use sui::table::{Self, Table};
 // ------
 // Errors
 // ------
-/// Attempt to borrow a trusted address but it's not registered.
-const ENoAddress: u64 = 0;
+#[error]
+const ENoAddress: vector<u8> = b"attempt to borrow a trusted address but it's not registered.";
+#[error]
+const EEmptyChainName: vector<u8> = b"empty trusted chain name is unsupported.";
+#[error]
+const EEmptyTrustedAddress: vector<u8> = b"empty trusted address is unsupported.";
 
 /// The interchain address tracker stores the trusted addresses for each chain.
 public struct InterchainAddressTracker has store {
@@ -53,17 +57,22 @@ public(package) fun set_trusted_address(
     chain_name: String,
     trusted_address: String,
 ) {
+    assert!(chain_name.length() > 0, EEmptyChainName);
+    assert!(trusted_address.length() > 0, EEmptyTrustedAddress);
+
     if (self.trusted_addresses.contains(chain_name)) {
-        if (trusted_address.length() == 0) {
-            self.trusted_addresses.remove(chain_name);
-        } else {
-            *&mut self.trusted_addresses[chain_name] = trusted_address;
-        }
+        *&mut self.trusted_addresses[chain_name] = trusted_address;
     } else {
-        if (trusted_address.length() > 0) {
-            self.trusted_addresses.add(chain_name, trusted_address);
-        }
+        self.trusted_addresses.add(chain_name, trusted_address);
     }
+}
+
+public(package) fun remove_trusted_address(
+    self: &mut InterchainAddressTracker,
+    chain_name: String,
+) {
+    assert!(chain_name.length() > 0, EEmptyChainName);
+    self.trusted_addresses.remove(chain_name);
 }
 
 // -----
@@ -103,49 +112,58 @@ fun test_address_tracker() {
     assert!(self.trusted_addresses.contains(chain1));
     assert!(self.trusted_addresses.contains(chain2));
 
-    self.set_trusted_address(chain1, std::ascii::string(b""));
-    self.set_trusted_address(chain2, std::ascii::string(b""));
+    sui::test_utils::destroy(self);
+}
 
-    assert!(!self.trusted_addresses.contains(chain1));
-    assert!(!self.trusted_addresses.contains(chain2));
+#[test]
+#[expected_failure(abort_code = EEmptyChainName)]
+fun test_set_trusted_address_empty_chain_name() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new(ctx);
+    let chain = std::ascii::string(b"");
+    let address = std::ascii::string(b"address");
 
-    self.set_trusted_address(chain1, std::ascii::string(b""));
-    self.set_trusted_address(chain2, std::ascii::string(b""));
-
-    assert!(!self.trusted_addresses.contains(chain1));
-    assert!(!self.trusted_addresses.contains(chain2));
+    self.set_trusted_address(chain, address);
 
     sui::test_utils::destroy(self);
 }
 
 #[test]
-#[expected_failure(abort_code = ENoAddress)]
-fun test_address_tracker_no_address() {
+#[expected_failure(abort_code = EEmptyTrustedAddress)]
+fun test_set_trusted_address_empty_trusted_address() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
-    let chain1 = std::ascii::string(b"chain1");
-    let address1 = std::ascii::string(b"address1");
+    let chain = std::ascii::string(b"chain");
+    let address = std::ascii::string(b"");
 
-    self.set_trusted_address(chain1, address1);
-    self.set_trusted_address(chain1, std::ascii::string(b""));
-
-    self.trusted_address(chain1);
+    self.set_trusted_address(chain, address);
 
     sui::test_utils::destroy(self);
 }
 
+
 #[test]
-#[expected_failure(abort_code = ENoAddress)]
-fun test_address_tracker_check_no_address() {
+fun test_remove_trusted_address() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
-    let chain1 = std::ascii::string(b"chain1");
-    let address1 = std::ascii::string(b"address1");
+    let chain = std::ascii::string(b"chain");
+    let address = std::ascii::string(b"address");
 
-    self.set_trusted_address(chain1, address1);
-    self.set_trusted_address(chain1, std::ascii::string(b""));
+    self.set_trusted_address(chain, address);
+    self.remove_trusted_address(chain);
 
-    self.is_trusted_address(chain1, address1);
+    sui::test_utils::destroy(self);
+}
+
+
+#[test]
+#[expected_failure(abort_code = EEmptyChainName)]
+fun test_remove_trusted_address_empty_chain_name() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new(ctx);
+    let chain = std::ascii::string(b"");
+
+    self.remove_trusted_address(chain);
 
     sui::test_utils::destroy(self);
 }

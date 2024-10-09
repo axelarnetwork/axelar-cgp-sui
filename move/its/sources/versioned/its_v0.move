@@ -9,7 +9,7 @@ use its::token_id::{Self, TokenId, UnregisteredTokenId};
 use its::trusted_addresses::TrustedAddresses;
 use its::unregistered_coin_data::{Self, UnregisteredCoinData};
 use relayer_discovery::discovery::RelayerDiscovery;
-use std::ascii::{Self, String};
+use std::ascii::String;
 use std::string;
 use std::type_name::{Self, TypeName};
 use sui::bag::{Self, Bag};
@@ -20,8 +20,8 @@ use version_control::version_control::VersionControl;
 // ------
 // Errors
 // ------
-/// Trying to find a coin that doesn't exist.
-const EUnregisteredCoin: u64 = 0;
+#[error]
+const EUnregisteredCoin: vector<u8> = b"Trying to find a coin that doesn't exist.";
 
 public struct ITS_v0 has store {
     channel: Channel,
@@ -150,20 +150,32 @@ public(package) fun set_trusted_address(
     self.address_tracker.set_trusted_address(chain_name, trusted_address);
 }
 
+public(package) fun remove_trusted_address(
+    self: &mut ITS_v0,
+    chain_name: String,
+) { 
+    self.address_tracker.remove_trusted_address(chain_name);
+}
+
 public(package) fun set_trusted_addresses(
     self: &mut ITS_v0,
     trusted_addresses: TrustedAddresses,
 ) {
-    let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
-    let length = chain_names.length();
-    let mut i = 0;
-    while (i < length) {
-        self.set_trusted_address(
-            ascii::string(chain_names.pop_back()),
-            ascii::string(trusted_addresses.pop_back()),
-        );
-        i = i + 1;
-    }
+    let (chain_names, trusted_addresses) = trusted_addresses.destroy();
+
+    chain_names.zip_do!(trusted_addresses, |chain_name, trusted_address| self.set_trusted_address(
+            chain_name,
+            trusted_address,
+    ));
+}
+
+public(package) fun remove_trusted_addresses(
+    self: &mut ITS_v0,
+    chain_names: vector<String>,
+) {
+    chain_names.do!(|chain_name| self.remove_trusted_address(
+            chain_name,
+    ));
 }
 
 public(package) fun coin_data_mut<T>(

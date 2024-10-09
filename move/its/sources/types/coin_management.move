@@ -9,10 +9,11 @@ use sui::coin::{Self, TreasuryCap, Coin};
 // ------
 // Errors
 // ------
-/// Trying to add a distributor to a `CoinManagement` that does not
-/// have a `TreasuryCap`.
-const EDistributorNeedsTreasuryCap: u64 = 0;
-const ENotOperator: u64 = 1;
+#[error]
+const EDistributorNeedsTreasuryCap: vector<u8> =
+    b"trying to add a distributor to a `CoinManagement` that does not have a `TreasuryCap`";
+#[error]
+const ENotOperator: vector<u8> = b"channel provided is not the operator";
 
 /// Struct that stores information about the ITS Coin.
 public struct CoinManagement<phantom T> has store {
