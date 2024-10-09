@@ -10,7 +10,7 @@ use version_control::version_control::VersionControl;
 /// A central shared object that stores discovery configuration for the
 /// Relayer. The Relayer will use this object to discover and execute the
 /// transactions when a message is targeted at specific channel.
-public struct RelayerDiscoveryV0 has store {
+public struct RelayerDiscovery_v0 has store {
     /// A map of channel IDs to the target that needs to be executed by the
     /// relayer. There can be only one configuration per channel.
     configurations: Table<ID, Transaction>,
@@ -30,15 +30,15 @@ const EChannelNotFound: vector<u8> = b"channel not found";
 public(package) fun new(
     version_control: VersionControl,
     ctx: &mut TxContext,
-): RelayerDiscoveryV0 {
-    RelayerDiscoveryV0 {
+): RelayerDiscovery_v0 {
+    RelayerDiscovery_v0 {
         configurations: table::new<ID, Transaction>(ctx),
         version_control,
     }
 }
 
 public(package) fun set_transaction(
-    self: &mut RelayerDiscoveryV0,
+    self: &mut RelayerDiscovery_v0,
     id: ID,
     transaction: Transaction,
 ) {
@@ -49,7 +49,7 @@ public(package) fun set_transaction(
 }
 
 public(package) fun remove_transaction(
-    self: &mut RelayerDiscoveryV0,
+    self: &mut RelayerDiscovery_v0,
     id: ID,
 ): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
@@ -57,7 +57,7 @@ public(package) fun remove_transaction(
 }
 
 public(package) fun get_transaction(
-    self: &RelayerDiscoveryV0,
+    self: &RelayerDiscovery_v0,
     id: ID,
 ): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
@@ -65,7 +65,7 @@ public(package) fun get_transaction(
 }
 
 public(package) fun version_control(
-    self: &RelayerDiscoveryV0,
+    self: &RelayerDiscovery_v0,
 ): &VersionControl {
     &self.version_control
 }
@@ -74,13 +74,13 @@ public(package) fun version_control(
 // Test Only
 // ---------
 #[test_only]
-public(package) fun destroy_for_testing(self: RelayerDiscoveryV0) {
+public(package) fun destroy_for_testing(self: RelayerDiscovery_v0) {
     sui::test_utils::destroy(self);
 }
 
 #[test_only]
-fun dummy(ctx: &mut TxContext): RelayerDiscoveryV0 {
-    RelayerDiscoveryV0 {
+fun dummy(ctx: &mut TxContext): RelayerDiscovery_v0 {
+    RelayerDiscovery_v0 {
         configurations: table::new<ID, Transaction>(ctx),
         version_control: version_control::version_control::new(vector[]),
     }

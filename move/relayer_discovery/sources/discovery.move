@@ -7,7 +7,7 @@
 module relayer_discovery::discovery;
 
 use axelar_gateway::channel::Channel;
-use relayer_discovery::relayer_discovery_v0::{Self, RelayerDiscoveryV0};
+use relayer_discovery::relayer_discovery_v0::{Self, RelayerDiscovery_v0};
 use relayer_discovery::transaction::Transaction;
 use std::ascii;
 use sui::versioned::{Self, Versioned};
@@ -18,7 +18,7 @@ use version_control::version_control::{Self, VersionControl};
 /// -------
 /// This is the version of the package that should change every package upgrade.
 const VERSION: u64 = 0;
-/// This is the version of the data that should change when we need to migrate `Versioned` type (e.g. from `RelayerDiscoveryV0` to `RelayerDiscoveryV1`)
+/// This is the version of the data that should change when we need to migrate `Versioned` type (e.g. from `RelayerDiscovery_v0` to `RelayerDiscoveryV1`)
 const DATA_VERSION: u64 = 0;
 
 /// -------
@@ -50,9 +50,9 @@ fun init(ctx: &mut TxContext) {
 macro fun value(
     $self: &RelayerDiscovery,
     $function_name: vector<u8>,
-): &RelayerDiscoveryV0 {
+): &RelayerDiscovery_v0 {
     let relayer_discovery = $self;
-    let value = relayer_discovery.inner.load_value<RelayerDiscoveryV0>();
+    let value = relayer_discovery.inner.load_value<RelayerDiscovery_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -60,9 +60,9 @@ macro fun value(
 macro fun value_mut(
     $self: &mut RelayerDiscovery,
     $function_name: vector<u8>,
-): &mut RelayerDiscoveryV0 {
+): &mut RelayerDiscovery_v0 {
     let relayer_discovery = $self;
-    let value = relayer_discovery.inner.load_value_mut<RelayerDiscoveryV0>();
+    let value = relayer_discovery.inner.load_value_mut<RelayerDiscovery_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
