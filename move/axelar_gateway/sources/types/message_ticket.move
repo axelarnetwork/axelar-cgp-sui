@@ -5,10 +5,15 @@ use std::ascii::String;
 // -----
 // Types
 // -----
-/// This hot potato object is created to capture all the information about a remote contract call.
+/// This hot potato object is created to capture all the information about a
+/// remote contract call.
 /// In can then be submitted to the gateway to send the Message.
-/// It is advised that modules return this Message ticket to be submitted by the frontend, so that when the gateway package is upgraded, the app doesn't need to upgrade as well, ensuring forward compatibility.
-/// The version is captured to ensure that future packages can restrict which messages they can send, and to ensure that no future messages are sent from earlier versions.
+/// It is advised that modules return this Message ticket to be submitted by the
+/// frontend, so that when the gateway package is upgraded, the app doesn't need
+/// to upgrade as well, ensuring forward compatibility.
+/// The version is captured to ensure that future packages can restrict which
+/// messages they can send, and to ensure that no future messages are sent from
+/// earlier versions.
 public struct MessageTicket {
     source_id: address,
     destination_chain: String,

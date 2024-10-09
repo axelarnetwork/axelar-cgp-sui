@@ -140,7 +140,7 @@ describe('Axelar Gateway', () => {
                 data_hash: hashed,
             }).toBytes();
 
-            const signatures = signMessage(proofKeys, message);
+            const signatures = signMessage(proofKeys.slice(0, proofSigners.threshold), message);
             const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,

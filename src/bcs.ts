@@ -42,8 +42,23 @@ function getCommonStructs() {
     };
 }
 
+function getVersionControlStructs() {
+    const VecSet = bcs.struct('VecSet', {
+        contents: bcs.vector(bcs.string()),
+    });
+
+    const VersionControl = bcs.struct('VersionControl', {
+        allowed_functions: bcs.vector(VecSet),
+    });
+
+    return {
+        VersionControl,
+    };
+}
+
 function getGatewayStructs() {
-    const { Bytes32, Bag } = getCommonStructs();
+    const { Bytes32, Bag, Table } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const Message = bcs.struct('Message', {
         source_chain: bcs.String,
@@ -124,6 +139,28 @@ function getGatewayStructs() {
         payload: bcs.vector(bcs.U8),
     });
 
+    const AxelarSigners = bcs.struct('AxelarSigners', {
+        epoch: bcs.U64,
+        epoch_by_signers_hash: Table,
+        domain_separator: Bytes32,
+        minimum_rotation_delay: bcs.U64,
+        last_rotation_timestamp: bcs.U64,
+        previous_signers_retention: bcs.U64,
+    });
+
+    const GatewayV0 = bcs.struct('Gateway_v0', {
+        operator: bcs.Address,
+        messages: Table,
+        signers: AxelarSigners,
+        version_control: VersionControl,
+    });
+
+    const Gateway = bcs.struct('Gateway', {
+        id: UID,
+        name: bcs.U64,
+        value: GatewayV0,
+    });
+
     return {
         Bytes32,
         Message,
@@ -140,11 +177,13 @@ function getGatewayStructs() {
         Operators,
         ExecuteData,
         ApprovedMessage,
+        Gateway,
     };
 }
 
 function getSquidStructs() {
     const { Channel, CoinBag } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
         swap_type: bcs.U8,
@@ -172,10 +211,16 @@ function getSquidStructs() {
         metadata: bcs.vector(bcs.U8),
     });
 
-    const Squid = bcs.struct('Squid', {
-        id: UID,
+    const SquidV0 = bcs.struct('Squid_v0', {
         channel: Channel,
         coin_bag: CoinBag,
+        version_control: VersionControl,
+    });
+
+    const Squid = bcs.struct('Squid', {
+        id: UID,
+        name: bcs.U64,
+        value: SquidV0,
     });
 
     return {
@@ -186,8 +231,29 @@ function getSquidStructs() {
     };
 }
 
+function getRelayerDiscoveryStructs() {
+    const { Table } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
+
+    const RelayerDiscoveryV0 = bcs.struct('RelayerDiscovery_v0', {
+        configurations: Table,
+        version_control: VersionControl,
+    });
+
+    const RelayerDiscovery = bcs.struct('RelayerDiscovery', {
+        id: UID,
+        name: bcs.U64,
+        value: RelayerDiscoveryV0,
+    });
+
+    return {
+        RelayerDiscovery,
+    };
+}
+
 function getITSStructs() {
     const { Table, Bag, Channel } = getCommonStructs();
+    const { VersionControl } = getVersionControlStructs();
 
     const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
         trusted_addresses: Table,
@@ -198,14 +264,21 @@ function getITSStructs() {
         trusted_addresses: bcs.vector(bcs.string()),
     });
 
-    const ITS = bcs.struct('ITS', {
-        id: UID,
+    const ITSv0 = bcs.struct('ITS_v0', {
         channel: Channel,
         address_tracker: InterchainAddressTracker,
         unregistered_coin_types: Table,
-        unregistered_coin_info: Bag,
+        unregistered_coins: Bag,
         registered_coin_types: Table,
         registered_coins: Bag,
+        relayer_discovery_id: bcs.Address,
+        version_control: VersionControl,
+    });
+
+    const ITS = bcs.struct('ITS', {
+        id: UID,
+        name: bcs.u64(),
+        value: ITSv0,
     });
 
     return {
@@ -229,9 +302,17 @@ function getGMPStructs() {
 }
 
 function getGasServiceStructs() {
+    const { VersionControl } = getVersionControlStructs();
+
+    const GasServiceV0 = bcs.struct('GasService_v0', {
+        balance: bcs.U64,
+        version_control: VersionControl,
+    });
+
     const GasService = bcs.struct('GasService', {
         id: UID,
-        balance: bcs.U64,
+        name: bcs.U64,
+        value: GasServiceV0,
     });
 
     return {
@@ -244,6 +325,8 @@ export const bcsStructs = {
     gateway: getGatewayStructs(),
     squid: getSquidStructs(),
     gmp: getGMPStructs(),
+    versionControl: getVersionControlStructs(),
     gasService: getGasServiceStructs(),
     its: getITSStructs(),
+    relayerDiscovery: getRelayerDiscoveryStructs(),
 };

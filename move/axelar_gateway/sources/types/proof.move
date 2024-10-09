@@ -37,6 +37,10 @@ const ELowSignaturesWeight: vector<u8> = b"insufficient signatures weight";
 const ESignerNotFound: vector<u8> =
     b"no signer found with the specified public key in the given range";
 
+#[error]
+const ERedundantSignaturesProvided: vector<u8> =
+    b"redundant signatures provided";
+
 // ----------------
 // Public Functions
 // ----------------
@@ -61,7 +65,8 @@ public(package) fun new_signature(bytes: vector<u8>): Signature {
     }
 }
 
-/// Recover the public key from an EVM recoverable signature, using keccak256 as the hash function
+/// Recover the public key from an EVM recoverable signature, using keccak256 as
+/// the hash function
 public(package) fun recover_pub_key(
     self: &Signature,
     message: &vector<u8>,
@@ -70,7 +75,8 @@ public(package) fun recover_pub_key(
 }
 
 /// Validates the signatures of a message against the signers.
-/// The total weight of the signatures must be greater than or equal to the threshold.
+/// The total weight of the signatures must be greater than or equal to the
+/// threshold.
 /// Otherwise, the error `ELowSignaturesWeight` is raised.
 public(package) fun validate(self: &Proof, message: vector<u8>) {
     let signers = &self.signers;
@@ -94,7 +100,13 @@ public(package) fun validate(self: &Proof, message: vector<u8>) {
 
         total_weight = total_weight + weight;
 
-        if (total_weight >= threshold) return;
+        if (total_weight >= threshold) {
+            if (i + 1 == signatures_length) {
+                return
+            };
+
+            abort ERedundantSignaturesProvided
+        };
 
         i = i + 1;
         signer_index = index + 1;
@@ -236,6 +248,31 @@ fun test_validate() {
         nonce,
     );
     keypairs.remove(1);
+    let proof = generate(weighted_signers, &message, &keypairs);
+    proof.validate(message);
+}
+
+#[test]
+#[expected_failure(abort_code = ERedundantSignaturesProvided)]
+fun test_validate_redundant_signatures() {
+    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(
+        |seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()),
+    );
+    let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
+    let weights = vector[123, 234, 456];
+    let message = @0x5678.to_bytes();
+    let nonce = axelar_gateway::bytes32::new(@0x0123);
+
+    let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
+        vector[0, 1, 2].map!(
+            |index| axelar_gateway::weighted_signer::new(
+                pub_keys[index],
+                weights[index],
+            ),
+        ),
+        weights[0] + weights[1],
+        nonce,
+    );
     let proof = generate(weighted_signers, &message, &keypairs);
     proof.validate(message);
 }
