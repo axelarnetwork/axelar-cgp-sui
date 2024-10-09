@@ -161,17 +161,12 @@ public(package) fun set_trusted_addresses(
     self: &mut ITS_v0,
     trusted_addresses: TrustedAddresses,
 ) {
-    let (mut chain_names, mut trusted_addresses) = trusted_addresses.destroy();
+    let (chain_names, trusted_addresses) = trusted_addresses.destroy();
 
-    let length = chain_names.length();
-    let mut i = 0;
-    while (i < length) {
-        self.set_trusted_address(
-            chain_names.pop_back(),
-            trusted_addresses.pop_back(),
-        );
-        i = i + 1;
-    }
+    chain_names.zip_do!(trusted_addresses, |chain_name, trusted_address| self.set_trusted_address(
+            chain_name,
+            trusted_address,
+    ));
 }
 
 public(package) fun remove_trusted_addresses(
