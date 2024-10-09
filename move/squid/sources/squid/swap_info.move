@@ -4,7 +4,7 @@ use squid::coin_bag::{Self, CoinBag};
 use sui::bcs;
 
 // -----
-// Types
+// Enums
 // -----
 /// Swapping: Curently performing swaps, should happen only after all estimation is finished.
 /// Estimating: Currently performing estimates. Once all estimates are done and the output is satisfactory then we can swap.
@@ -21,6 +21,9 @@ public enum SwapStatus has copy, drop, store {
     Done,
 }
 
+// -----
+// Types
+// -----
 public struct SwapInfo {
     status: SwapStatus,
     swap_data: vector<vector<u8>>,
