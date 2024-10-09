@@ -122,6 +122,8 @@ public fun its_transfer<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
+    let value = squid.value!(b"its_transfer");
+    
     let data = swap_info.get_data_swapping();
     if (data.length() == 0) return;
     let swap_data = new_its_transfer_swap_data(data);
@@ -146,7 +148,7 @@ public fun its_transfer<T>(
         swap_data.destination_chain,
         swap_data.destination_address,
         swap_data.metadata,
-        squid.value!(b"its_transfer").channel(),
+        value.channel(),
     );
 
     let message_ticket = its.send_interchain_transfer(interchain_transfer_ticket, clock);
