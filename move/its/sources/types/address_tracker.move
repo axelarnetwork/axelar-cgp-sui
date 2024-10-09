@@ -9,11 +9,11 @@ use sui::table::{Self, Table};
 // Errors
 // ------
 #[error]
-const ENoAddress: vector<u8> = b"Attempt to borrow a trusted address but it's not registered.";
+const ENoAddress: vector<u8> = b"attempt to borrow a trusted address but it's not registered.";
 #[error]
-const EEmptyChainName: vector<u8> = b"Empty trusted chain name is unsupported.";
+const EEmptyChainName: vector<u8> = b"empty trusted chain name is unsupported.";
 #[error]
-const EEmptyTrustedAddress: vector<u8> = b"Empty trusted address is unsupported.";
+const EEmptyTrustedAddress: vector<u8> = b"empty trusted address is unsupported.";
 
 /// The interchain address tracker stores the trusted addresses for each chain.
 public struct InterchainAddressTracker has store {
