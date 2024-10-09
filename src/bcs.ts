@@ -148,7 +148,7 @@ function getGatewayStructs() {
         previous_signers_retention: bcs.U64,
     });
 
-    const GatewayV0 = bcs.struct('GatewayV0', {
+    const GatewayV0 = bcs.struct('Gateway_v0', {
         operator: bcs.Address,
         messages: Table,
         signers: AxelarSigners,
@@ -211,7 +211,7 @@ function getSquidStructs() {
         metadata: bcs.vector(bcs.U8),
     });
 
-    const SquidV0 = bcs.struct('SquidV0', {
+    const SquidV0 = bcs.struct('Squid_v0', {
         channel: Channel,
         coin_bag: CoinBag,
         version_control: VersionControl,
@@ -235,7 +235,7 @@ function getRelayerDiscoveryStructs() {
     const { Table } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
 
-    const RelayerDiscoveryV0 = bcs.struct('RelayerDiscoveryV0', {
+    const RelayerDiscoveryV0 = bcs.struct('RelayerDiscovery_v0', {
         configurations: Table,
         version_control: VersionControl,
     });
@@ -264,7 +264,7 @@ function getITSStructs() {
         trusted_addresses: bcs.vector(bcs.string()),
     });
 
-    const ITSV0 = bcs.struct('ITSV0', {
+    const ITSv0 = bcs.struct('ITS_v0', {
         channel: Channel,
         address_tracker: InterchainAddressTracker,
         unregistered_coin_types: Table,
@@ -278,7 +278,7 @@ function getITSStructs() {
     const ITS = bcs.struct('ITS', {
         id: UID,
         name: bcs.u64(),
-        value: ITSV0,
+        value: ITSv0,
     });
 
     return {
@@ -304,7 +304,7 @@ function getGMPStructs() {
 function getGasServiceStructs() {
     const { VersionControl } = getVersionControlStructs();
 
-    const GasServiceV0 = bcs.struct('GasServiceV0', {
+    const GasServiceV0 = bcs.struct('GasService_v0', {
         balance: bcs.U64,
         version_control: VersionControl,
     });
