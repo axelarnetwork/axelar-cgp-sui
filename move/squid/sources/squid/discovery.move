@@ -1,19 +1,25 @@
 module squid::discovery;
 
-use its::its::ITS;
+use std::ascii::{Self, String};
+
+use sui::bcs;
+
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
+
+use its::its::ITS;
+
 use squid::deepbook_v3;
 use squid::squid::Squid;
 use squid::transfers;
-use std::ascii::{Self, String};
-use sui::bcs;
+use squid::object_procurement;
 
 const EInvalidSwapType: u64 = 0;
 
 const SWAP_TYPE_DEEPBOOK_V3: u8 = 1;
 const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
 const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
+const SWAP_TYPE_OBJECT_PROCUREMENT: u8 = 4;
 
 public fun register_transaction(
     squid: &Squid,
@@ -91,8 +97,7 @@ public fun get_transaction(
                     swap_info_arg,
                 ),
             );
-        } else {
-            assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
+        } else if (swap_type == SWAP_TYPE_ITS_TRANSFER) {
             move_calls.push_back(
                 transfers::get_its_estimate_move_call(
                     package_id,
@@ -100,6 +105,16 @@ public fun get_transaction(
                     swap_info_arg,
                 ),
             );
+        } else if (swap_type == SWAP_TYPE_OBJECT_PROCUREMENT) {
+            move_calls.push_back(
+                object_procurement::get_estimate_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg,
+                ),
+            );
+        } else {
+            abort(EInvalidSwapType)
         };
 
         i = i + 1;

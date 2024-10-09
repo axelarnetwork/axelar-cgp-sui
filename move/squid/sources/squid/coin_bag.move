@@ -98,6 +98,16 @@ public(package) fun get_estimate<T>(self: &mut CoinBag): u64 {
     }
 }
 
+public(package) fun get_exact_estimate<T>(self: &mut CoinBag, amount: u64) {
+    let key = get_estimate_key<T>();
+
+    assert!(self.bag.contains(key), EKeyNotExist);
+    let estimate = self.bag.borrow_mut<address, u64>(key);
+    assert!(*estimate >= amount, ENotEnoughBalance);
+
+    *estimate = *estimate - amount;
+}
+
 public(package) fun get_estimate_amount<T>(self: &CoinBag): u64 {
     let key = get_estimate_key<T>();
 

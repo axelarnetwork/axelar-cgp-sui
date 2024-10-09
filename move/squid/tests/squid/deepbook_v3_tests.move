@@ -37,7 +37,7 @@ fun test_serialize() {
     let swap_data_vec = std::bcs::to_bytes(&swap_data);
     let data = std::bcs::to_bytes(&vector[swap_data_vec]);
     let mut swap_info = swap_info::new(data, test.ctx());
-    let data2 = swap_info.get_data_estimating();
+    let (data2, _) = swap_info.get_data_estimating();
     let swap_data2 = deepbook_v3::peel_swap_data(data2);
     assert_eq(swap_data, swap_data2);
 
