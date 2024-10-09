@@ -19,6 +19,7 @@ use squid::swap_type::{Self, SwapType};
 const EWrongSwapType: u64 = 0;
 const EWrongCoinType: u64 = 1;
 
+/// fallback states whether this transfer happens normally or only on fallback mode.
 public struct SuiTransferSwapData has drop {
     swap_type: SwapType,
     coin_type: String,
@@ -26,6 +27,7 @@ public struct SuiTransferSwapData has drop {
     fallback: bool,
 }
 
+/// fallback states whether this transfer happens normally or only on fallback mode.
 public struct ItsTransferSwapData has drop {
     swap_type: SwapType,
     coin_type: String,
