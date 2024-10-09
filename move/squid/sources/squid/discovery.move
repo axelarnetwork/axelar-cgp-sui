@@ -1,13 +1,19 @@
 module squid::discovery;
 
-use its::its::ITS;
+use std::ascii::{Self, String};
+
+use sui::bcs;
+
+use axelar_gateway::gateway::Gateway;
+
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
+
+use its::its::ITS;
+
 use squid::deepbook_v3;
 use squid::squid::Squid;
 use squid::transfers;
-use std::ascii::{Self, String};
-use sui::bcs;
 
 const EInvalidSwapType: u64 = 0;
 
@@ -18,6 +24,7 @@ const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
 public fun register_transaction(
     squid: &Squid,
     its: &ITS,
+    gateway: &Gateway,
     relayer_discovery: &mut RelayerDiscovery,
 ) {
     let mut squid_arg = vector[0];
@@ -25,6 +32,9 @@ public fun register_transaction(
 
     let mut its_arg = vector[0];
     its_arg.append(object::id(its).id_to_bytes());
+
+    let mut gateway_arg = vector[0];
+    gateway_arg.append(object::id(gateway).id_to_bytes());
 
     let transaction = transaction::new_transaction(
         false,
@@ -35,7 +45,7 @@ public fun register_transaction(
                     ascii::string(b"discovery"),
                     ascii::string(b"get_transaction"),
                 ),
-                vector[squid_arg, its_arg, vector[3]],
+                vector[squid_arg, its_arg, gateway_arg, vector[3]],
                 vector[],
             ),
         ],
@@ -50,6 +60,7 @@ public fun register_transaction(
 public fun get_transaction(
     squid: &Squid,
     its: &ITS,
+    gateway: &Gateway,
     payload: vector<u8>,
 ): Transaction {
     let (token_id, _, _, data) = its::discovery::interchain_transfer_info(
@@ -64,6 +75,10 @@ public fun get_transaction(
 
     let mut its_arg = vector[0];
     its_arg.append(object::id(its).id_to_bytes());
+
+    let mut gateway_arg = vector[0];
+    gateway_arg.append(object::id(gateway).id_to_bytes());
+
     let swap_info_arg = vector[4, 0, 0];
 
     let mut move_calls = vector[
@@ -135,6 +150,7 @@ public fun get_transaction(
                     bcs,
                     swap_info_arg,
                     squid_arg,
+                    gateway_arg,
                     its_arg,
                 ),
             );
