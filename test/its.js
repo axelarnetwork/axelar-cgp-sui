@@ -247,7 +247,6 @@ describe('ITS', () => {
                         message.destination_id,
                         payload,
                     ],
-                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.moveCall({
