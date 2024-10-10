@@ -30,37 +30,37 @@ use version_control::version_control::VersionControl;
 // ------
 #[error]
 const EUnregisteredCoin: vector<u8> =
-    b"Trying to find a coin that doesn't exist.";
+    b"trying to find a coin that doesn't exist";
 #[error]
 const EUntrustedAddress: vector<u8> =
-    b"the sender that sent this message is not trusted.";
+    b"the sender that sent this message is not trusted";
 #[error]
 const EInvalidMessageType: vector<u8> =
-    b"the message type received is not supported.";
+    b"the message type received is not supported";
 #[error]
 const EWrongDestination: vector<u8> =
-    b"the channel trying to receive this call is not the destination.";
+    b"the channel trying to receive this call is not the destination";
 #[error]
 const EInterchainTransferHasData: vector<u8> =
-    b"interchain transfer with data trying to be processed as an interchain transfer.";
+    b"interchain transfer with data trying to be processed as an interchain transfer";
 #[error]
 const EInterchainTransferHasNoData: vector<u8> =
     b"interchain transfer trying to be proccessed as an interchain transfer";
 #[error]
 const EModuleNameDoesNotMatchSymbol: vector<u8> =
-    b"the module name does not match the symbol.";
+    b"the module name does not match the symbol";
 #[error]
-const ENotDistributor: vector<u8> = b"only the distributor can mint.";
+const ENotDistributor: vector<u8> = b"only the distributor can mint";
 #[error]
 const ENonZeroTotalSupply: vector<u8> =
-    b"trying to give a token that has had some supply already minted.";
+    b"trying to give a token that has had some supply already minted";
 #[error]
 const EUnregisteredCoinHasUrl: vector<u8> =
-    b"the interchain token that is being registered has a URL.";
+    b"the interchain token that is being registered has a URL";
 #[error]
-const EUntrustedChain: vector<u8> = b"the chain is not trusted.";
+const EUntrustedChain: vector<u8> = b"the chain is not trusted";
 #[error]
-const ENewerTicket: vector<u8> = b"cannot proccess newer tickets.";
+const ENewerTicket: vector<u8> = b"cannot proccess newer tickets";
 
 // === MESSAGE TYPES ===
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
