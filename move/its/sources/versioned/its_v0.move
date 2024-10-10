@@ -247,6 +247,14 @@ public(package) fun deploy_remote_interchain_token<T>(
         .write_u256((decimals as u256))
         .write_bytes(vector::empty());
 
+    events::interchain_token_deployment_started<T>(
+        token_id,
+        name,
+        symbol,
+        decimals,
+        destination_chain,
+    );
+
     prepare_message(self, destination_chain, writer.into_bytes())
 }
 
@@ -281,6 +289,15 @@ public(package) fun send_interchain_transfer<T>(
         .write_u256(amount)
         .write_bytes(data);
 
+    events::interchain_transfer<T>(
+        token_id,
+        source_address,
+        destination_chain,
+        destination_address,
+        amount,
+        &data,
+    );
+
     self.prepare_message(destination_chain, writer.into_bytes())
 }
 
@@ -290,7 +307,9 @@ public(package) fun receive_interchain_transfer<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let (_, payload) = self.decode_approved_message(approved_message);
+    let (source_chain, payload, message_id) = self.decode_approved_message(
+        approved_message,
+    );
     let mut reader = abi::new_reader(payload);
     assert!(
         reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER,
@@ -298,7 +317,7 @@ public(package) fun receive_interchain_transfer<T>(
     );
 
     let token_id = token_id::from_u256(reader.read_u256());
-    reader.skip_slot(); // skip source_address
+    let source_address = reader.read_bytes();
     let destination_address = address::from_bytes(reader.read_bytes());
     let amount = reader.read_u256();
     let data = reader.read_bytes();
@@ -309,7 +328,17 @@ public(package) fun receive_interchain_transfer<T>(
         .coin_management_mut(token_id)
         .give_coin<T>(amount, clock, ctx);
 
-    transfer::public_transfer(coin, destination_address)
+    transfer::public_transfer(coin, destination_address);
+
+    events::interchain_transfer_received<T>(
+        message_id,
+        token_id,
+        source_chain,
+        source_address,
+        destination_address,
+        amount,
+        &b"",
+    );
 }
 
 public(package) fun receive_interchain_transfer_with_data<T>(
@@ -319,7 +348,7 @@ public(package) fun receive_interchain_transfer_with_data<T>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (String, vector<u8>, vector<u8>, Coin<T>) {
-    let (source_chain, payload) = self.decode_approved_message(
+    let (source_chain, payload, message_id) = self.decode_approved_message(
         approved_message,
     );
     let mut reader = abi::new_reader(payload);
@@ -331,17 +360,24 @@ public(package) fun receive_interchain_transfer_with_data<T>(
     let token_id = token_id::from_u256(reader.read_u256());
 
     let source_address = reader.read_bytes();
-    let destination_address = reader.read_bytes();
+    let destination_address = address::from_bytes(reader.read_bytes());
     let amount = reader.read_u256();
     let data = reader.read_bytes();
 
-    assert!(
-        address::from_bytes(destination_address) == channel.to_address(),
-        EWrongDestination,
-    );
+    assert!(destination_address == channel.to_address(), EWrongDestination);
     assert!(!data.is_empty(), EInterchainTransferHasNoData);
 
     let coin = self.coin_management_mut(token_id).give_coin(amount, clock, ctx);
+
+    events::interchain_transfer_received<T>(
+        message_id,
+        token_id,
+        source_chain,
+        source_address,
+        destination_address,
+        amount,
+        &data,
+    );
 
     (source_chain, source_address, data, coin)
 }
@@ -350,7 +386,7 @@ public(package) fun receive_deploy_interchain_token<T>(
     self: &mut ITS_v0,
     approved_message: ApprovedMessage,
 ) {
-    let (_, payload) = self.decode_approved_message(approved_message);
+    let (_, payload, _) = self.decode_approved_message(approved_message);
     let mut reader = abi::new_reader(payload);
     assert!(
         reader.read_u256() == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
@@ -406,6 +442,12 @@ public(package) fun give_unregistered_coin<T>(
     let token_id = token_id::unregistered_token_id(&symbol, decimals);
 
     self.add_unregistered_coin<T>(token_id, treasury_cap, coin_metadata);
+
+    events::unregistered_coin_received<T>(
+        token_id,
+        symbol,
+        decimals,
+    );
 }
 
 public(package) fun mint_as_distributor<T>(
@@ -605,8 +647,8 @@ fun prepare_message(
 fun decode_approved_message(
     self: &ITS_v0,
     approved_message: ApprovedMessage,
-): (String, vector<u8>) {
-    let (mut source_chain, _, source_address, mut payload) = self
+): (String, vector<u8>, String) {
+    let (mut source_chain, message_id, source_address, mut payload) = self
         .channel
         .consume_approved_message(approved_message);
 
@@ -636,7 +678,7 @@ fun decode_approved_message(
         );
     };
 
-    (source_chain, payload)
+    (source_chain, payload, message_id)
 }
 // ---------
 // Test Only
