@@ -149,6 +149,7 @@ describe('ITS', () => {
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its::register_coin`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata],
+            typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer, {
@@ -199,6 +200,7 @@ describe('ITS', () => {
                         '0x', // gas params
                         CLOCK_PACKAGE_ID,
                     ],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.signAndExecute(deployer);
@@ -245,11 +247,13 @@ describe('ITS', () => {
                         message.destination_id,
                         payload,
                     ],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.moveCall({
                     target: `${deployments.example.packageId}::its::receive_interchain_transfer`,
                     arguments: [approvedMessage, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.signAndExecute(deployer);
@@ -280,6 +284,7 @@ describe('ITS', () => {
                         '0x',
                         deployer.toSuiAddress(),
                     ],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.signAndExecute(deployer);
