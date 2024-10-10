@@ -32,7 +32,7 @@
       "name": "deploy_remote_interchain_token<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut ITS",
+        "self#0#0": "&ITS",
         "token_id#0#0": "TokenId",
         "destination_chain#0#0": "String"
       },
