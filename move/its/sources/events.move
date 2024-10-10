@@ -10,8 +10,6 @@ public struct CoinRegistered<phantom T> has copy, drop {
     token_id: TokenId,
 }
 
-public struct 
-
 // -----------------
 // Package Functions
 // -----------------
