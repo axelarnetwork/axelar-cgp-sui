@@ -3,7 +3,6 @@ module example::its;
 use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use example::token::TOKEN;
 use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
@@ -95,7 +94,7 @@ public fun register_transaction(
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
-public fun register_coin(
+public fun register_coin<TOKEN>(
     its: &mut ITS,
     coin_metadata: &CoinMetadata<TOKEN>,
 ): TokenId {
@@ -113,7 +112,7 @@ public fun register_coin(
     )
 }
 
-public fun deploy_remote_interchain_token(
+public fun deploy_remote_interchain_token<TOKEN>(
     its: &mut ITS,
     gateway: &mut Gateway,
     gas_service: &mut GasService,
@@ -139,7 +138,7 @@ public fun deploy_remote_interchain_token(
 }
 
 /// This should trigger an interchain trasnfer.
-public fun send_interchain_transfer_call(
+public fun send_interchain_transfer_call<TOKEN>(
     singleton: &Singleton,
     its: &mut ITS,
     gateway: &mut Gateway,
@@ -181,7 +180,7 @@ public fun send_interchain_transfer_call(
 /// This should receive some coins, give them to the executor, and emit and
 /// event with all the relevant info.
 #[allow(lint(self_transfer))]
-public fun receive_interchain_transfer(
+public fun receive_interchain_transfer<TOKEN>(
     approved_message: ApprovedMessage,
     singleton: &Singleton,
     its: &mut ITS,
