@@ -32,7 +32,8 @@ public struct AxelarSigners has store {
     minimum_rotation_delay: u64,
     /// Timestamp of the last rotation.
     last_rotation_timestamp: u64,
-    /// Number of previous signers retained (latest signer isn't included in the count).
+    /// Number of previous signers retained (latest signer isn't included in the
+    /// count).
     previous_signers_retention: u64,
 }
 
@@ -142,7 +143,8 @@ fun update_rotation_timestamp(
 ) {
     let current_timestamp = clock.timestamp_ms();
 
-    // If the rotation delay is enforced, the current timestamp should be greater than the last rotation timestamp plus the minimum rotation delay.
+    // If the rotation delay is enforced, the current timestamp should be
+    // greater than the last rotation timestamp plus the minimum rotation delay.
     assert!(
         !enforce_rotation_delay ||
         current_timestamp >=

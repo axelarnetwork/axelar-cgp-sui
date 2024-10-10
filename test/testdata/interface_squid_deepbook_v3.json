@@ -8,7 +8,7 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8"
+          "type": "SwapType"
         },
         {
           "name": "pool_id",

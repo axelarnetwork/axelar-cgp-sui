@@ -5,6 +5,7 @@ use deepbook::pool::Pool;
 use deepbook::pool_tests;
 use squid::deepbook_v3;
 use squid::swap_info;
+use squid::swap_type;
 use std::type_name;
 use sui::clock::Clock;
 use sui::coin::mint_for_testing;
@@ -25,7 +26,7 @@ fun test_serialize() {
 
     test.next_tx(OWNER);
     let swap_data = deepbook_v3::new_swap_data(
-        1,
+        swap_type::deepbook_v3(),
         id_to_address(&pool_id),
         true,
         100,
@@ -37,7 +38,7 @@ fun test_serialize() {
     let swap_data_vec = std::bcs::to_bytes(&swap_data);
     let data = std::bcs::to_bytes(&vector[swap_data_vec]);
     let mut swap_info = swap_info::new(data, test.ctx());
-    let data2 = swap_info.get_data_estimating();
+    let (data2, _) = swap_info.data_estimating();
     let swap_data2 = deepbook_v3::peel_swap_data(data2);
     assert_eq(swap_data, swap_data2);
 
@@ -59,7 +60,7 @@ fun test_estimate() {
 
     test.next_tx(OWNER);
     let swap_data = deepbook_v3::new_swap_data(
-        1,
+        swap_type::deepbook_v3(),
         id_to_address(&pool_id),
         true,
         100,
@@ -84,7 +85,7 @@ fun test_estimate() {
     // This will call DeepBook's pool with base_in of 99.9 SUI. Since there is a
     // bid at $1
     // It will output 99.9 worth of USDC can be obtained.
-    let estimate = swap_info.coin_bag().get_estimate<USDC>();
+    let estimate = swap_info.coin_bag().estimate<USDC>();
     assert!(estimate == 99_900_000_000);
 
     // Create Squid and load it with DEEP. Load swap_info with 100 SUI.
@@ -112,12 +113,12 @@ fun test_estimate() {
 
     // swap_info should have a balance of 99.9 USDC
     // squid should have a balance of 100 DEEP
-    let quote_balance = swap_info.coin_bag().get_balance<USDC>().destroy_some();
+    let quote_balance = swap_info.coin_bag().balance<USDC>().destroy_some();
     assert!(quote_balance.value() == 99_900_000_000);
     let deep_balance = squid
         .value_mut!(b"")
         .coin_bag_mut()
-        .get_balance<DEEP>()
+        .balance<DEEP>()
         .destroy_some();
     assert!(deep_balance.value() == 100_000_000_000 - 999_000);
 

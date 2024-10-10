@@ -9,21 +9,22 @@
       "fields": [
         {
           "name": "trusted_chains",
-          "type": "vector<vector<u8>>"
+          "type": "vector<String>"
         },
         {
           "name": "trusted_addresses",
-          "type": "vector<vector<u8>>"
+          "type": "vector<String>"
         }
       ]
     }
   },
   "publicFunctions": {
-    "peel": {
-      "name": "peel",
+    "new": {
+      "name": "new",
       "visibility": "public",
       "params": {
-        "bcs#0#0": "&mut BCS"
+        "trusted_chains#0#0": "vector<String>",
+        "trusted_addresses#0#0": "vector<String>"
       },
       "returnType": "TrustedAddresses"
     },
@@ -33,7 +34,7 @@
       "params": {
         "self#0#0": "TrustedAddresses"
       },
-      "returnType": "vector<vector<u8>> * vector<vector<u8>>"
+      "returnType": "vector<String> * vector<String>"
     }
   }
 }

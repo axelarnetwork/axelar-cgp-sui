@@ -73,6 +73,10 @@ public fun start_swap<T>(
         .start_swap<T>(its, approved_message, clock, ctx)
 }
 
+public fun finalize(swap_info: SwapInfo) {
+    swap_info.finalize();
+}
+
 // -----------------
 // Package Functions
 // -----------------
