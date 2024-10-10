@@ -10,7 +10,12 @@ public struct CoinRegistered<phantom T> has copy, drop {
     token_id: TokenId,
 }
 
-public struct 
+public struct InterchainTransfer<phantom T> has copy, drop {
+    token_id: TokenId,
+    destination_chain: String,
+    amount: u64,
+    metadata: vector<u8>,
+}
 
 // -----------------
 // Package Functions
