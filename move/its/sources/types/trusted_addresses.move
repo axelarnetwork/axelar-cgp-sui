@@ -9,7 +9,10 @@ public struct TrustedAddresses has copy, drop {
     trusted_addresses: vector<String>,
 }
 
-public fun new(trusted_chains: vector<String>, trusted_addresses: vector<String>): TrustedAddresses {
+public fun new(
+    trusted_chains: vector<String>,
+    trusted_addresses: vector<String>,
+): TrustedAddresses {
     let length = trusted_chains.length();
 
     assert!(length == trusted_addresses.length(), EMalformedTrustedAddresses);
@@ -20,9 +23,7 @@ public fun new(trusted_chains: vector<String>, trusted_addresses: vector<String>
     }
 }
 
-public fun destroy(
-    self: TrustedAddresses,
-): (vector<String>, vector<String>) {
+public fun destroy(self: TrustedAddresses): (vector<String>, vector<String>) {
     let TrustedAddresses { trusted_chains, trusted_addresses } = self;
     (trusted_chains, trusted_addresses)
 }
