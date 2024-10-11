@@ -1,5 +1,24 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.7.0
+
+### Minor Changes
+
+-   ab20e4b: rename versioned gateway module to Gateway_v0
+-   3d82969: format all packages with Move Prettier
+-   3ea77b1: Add missing its events
+-   1893cea: Added Versioned support to the gas_service.
+-   c1cddc5: change set_trusted_addresses to remove goverance dep on its.
+-   aeb5fff: Added versioned to the discovery module, and moved some of its functionality to a different module.
+-   62ea830: Added events file and move all logic to versioned.
+-   eb544af: Move relayer discovery to its own package.
+-   bbed403: Making ITS into a versioned contract, and changing the layout
+
+### Patch Changes
+
+-   ff8caeb: feat: added structs for versioned contracts
+-   4fbb9ee: add gateway proof redundant signature check
+
 ## 0.6.4
 
 ### Patch Changes
