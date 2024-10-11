@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.7.1
+
+### Patch Changes
+
+-   e2c7319: create an npm task for snapshot release and cleanup workflow names
+
 ## 0.7.0
 
 ### Minor Changes
