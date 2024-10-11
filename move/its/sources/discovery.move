@@ -211,7 +211,9 @@ fun test_discovery_initial() {
     register_transaction(&mut its, &mut discovery);
 
     let value = its.package_value();
-    assert!(discovery.get_transaction(value.channel_id()) == initial_tx(&its));
+    assert!(
+        discovery.get_transaction(object::id_from_address(value.channel_address())) == initial_tx(&its),
+    );
     assert!(value.relayer_discovery_id() == object::id(&discovery));
 
     sui::test_utils::destroy(its);
@@ -283,7 +285,7 @@ fun test_discovery_interchain_transfer_with_data() {
     register_transaction(&mut its, &mut discovery);
 
     assert!(
-        discovery.get_transaction(its.package_value().channel_id()) == initial_tx(&its),
+        discovery.get_transaction(object::id_from_address(its.package_value().channel_address())) == initial_tx(&its),
     );
 
     let token_id = @0x1234;
