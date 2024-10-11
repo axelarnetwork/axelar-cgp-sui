@@ -63,7 +63,7 @@ public fun register_transaction(
         vector[2u8],
         concat(vector[0u8], object::id_address(singleton).to_bytes()),
         concat(vector[0u8], object::id_address(its).to_bytes()),
-        concat(vector[1u8], object::id_address(clock).to_bytes()),
+        concat(vector[1u8], object::id_bytes(clock)),
     ];
 
     let transaction = transaction::new_transaction(
