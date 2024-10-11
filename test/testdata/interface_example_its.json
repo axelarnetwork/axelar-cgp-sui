@@ -43,8 +43,8 @@
     }
   },
   "publicFunctions": {
-    "register_coin": {
-      "name": "register_coin",
+    "register_coin<TOKEN>": {
+      "name": "register_coin<TOKEN>",
       "visibility": "public",
       "params": {
         "its#0#0": "&mut ITS",
