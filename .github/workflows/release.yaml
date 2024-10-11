@@ -25,7 +25,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup the required tools (sui, nodejs)
+      - name: Setup tools
         uses: ./.github/actions/setup-tools
         with:
           install-sui: 'true'
@@ -33,7 +33,7 @@ jobs:
 
       # Publishes a release in case the release isn't published
       - name: Publish release
-        uses: changesets/action@v1
+        uses: changesets/action@aba318e9165b45b7948c60273e0b72fce0a64eb9 # v1.4.7
         with:
           publish: npm run release
           createGithubReleases: true
