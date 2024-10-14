@@ -11,10 +11,35 @@ jobs:
     name: Create Release PR
     runs-on: ubuntu-latest
     steps:
+      - name: Check if a branch is whitelisted and maintained
+        id: branch-check
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          WHITELISTED_BRANCHES=("main" "release/*")
+
+          IS_WHITELISTED=false
+          # Check the branch against the whitelist using wildcard matching
+          for BRANCH in "${WHITELISTED_BRANCHES[@]}"; do
+            if [[ "$BRANCH_NAME" == $BRANCH ]]; then
+              IS_WHITELISTED=true;
+              break;
+            fi
+          done
+
+          if [ "$IS_WHITELISTED" == true ]; then
+            echo "Branch is whitelisted: $BRANCH_NAME"
+          else
+            echo "Branch $BRANCH_NAME is not whitelisted."
+            exit 1
+          fi
+
+          echo "branch_name=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ steps.branch-check.outputs.branch_name }}
 
       - name: Check for changeset files
         run: |
@@ -35,8 +60,8 @@ jobs:
         id: release-pr
         uses: changesets/action@aba318e9165b45b7948c60273e0b72fce0a64eb9 # v1.4.7
         with:
-          branch: 'main'
-          title: 'chore(release): bump version and update changelog'
-          commit: 'chore(release): bump version and update changelog'
+          branch: ${{ steps.branch-check.outputs.branch_name }} # This branch context is ignored in this step: `https://github.com/changesets/action/blob/50750fa876cc1e54c7cb972db5e2f7271fc53d99/src/run.ts#L328`, therefore the usage of `branch`
+          title: 'chore(release): bump version and update changelog from `${{ steps.branch-check.outputs.branch_name }}`'
+          commit: 'chore(release): bump version and update changelog from `${{ steps.branch-check.outputs.branch_name }}`'
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
