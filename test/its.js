@@ -130,12 +130,33 @@ describe('ITS', () => {
         };
     });
 
-    it('should call register_transaction successfully', async () => {
+    it('should call register_transfer_transaction successfully', async () => {
         const txBuilder = new TxBuilder(client);
 
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::its::register_transaction`,
+            target: `${deployments.example.packageId}::its::register_transfer_transaction`,
             arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
+        });
+
+        const txResult = await txBuilder.signAndExecute(deployer);
+
+        const discoveryTx = findObjectId(txResult, 'discovery::Transaction');
+        expect(discoveryTx).to.be.not.null;
+    });
+
+    it('should call register_deploy_transaction successfully', async () => {
+        const txBuilder = new TxBuilder(client);
+
+        await txBuilder.moveCall({
+            target: `${deployments.example.packageId}::its::register_deploy_transaction`,
+            arguments: [
+                objectIds.relayerDiscovery,
+                objectIds.singleton,
+                objectIds.its,
+                objectIds.tokenTreasuryCap,
+                objectIds.tokenCoinMetadata,
+            ],
+            typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer);

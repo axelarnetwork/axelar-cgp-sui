@@ -15,7 +15,7 @@ use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
 use sui::clock::Clock;
-use sui::coin::{CoinMetadata, Coin};
+use sui::coin::{CoinMetadata, TreasuryCap, Coin};
 use sui::event;
 use sui::hex;
 use sui::sui::SUI;
@@ -53,20 +53,20 @@ fun init(ctx: &mut TxContext) {
 
 /// This needs to be called to register the transaction so that the relayer
 /// knows to call this to fulfill calls.
-public fun register_transaction(
+public fun register_transfer_transaction(
     discovery: &mut RelayerDiscovery,
     singleton: &Singleton,
     its: &ITS,
     clock: &Clock,
 ) {
-    let arguments = vector[
+    let transfer_args = vector[
         vector[2u8],
         concat(vector[0u8], object::id_address(singleton).to_bytes()),
         concat(vector[0u8], object::id_address(its).to_bytes()),
         concat(vector[0u8], object::id_address(clock).to_bytes()),
     ];
 
-    let transaction = transaction::new_transaction(
+    let receive_transfer_transaction = transaction::new_transaction(
         true,
         vector[
             transaction::new_move_call(
@@ -83,13 +83,53 @@ public fun register_transaction(
                     ascii::string(b"its"),
                     ascii::string(b"receive_interchain_transfer"),
                 ),
-                arguments,
+                transfer_args,
                 vector[],
             ),
         ],
     );
 
-    discovery.register_transaction(&singleton.channel, transaction);
+    discovery.register_transaction(&singleton.channel, receive_transfer_transaction);
+}
+
+public fun register_deploy_transaction<TOKEN>(
+    discovery: &mut RelayerDiscovery,
+	singleton: &Singleton,
+    its: &ITS,
+	treasury_cap: &TreasuryCap<TOKEN>,
+	metadata: &CoinMetadata<TOKEN>,
+) {
+	let args = vector[
+		vector[2u8],
+		concat(vector[0u8], object::id_address(its).to_bytes()),
+		concat(vector[0u8], object::id_address(treasury_cap).to_bytes()),
+		concat(vector[0u8], object::id_address(metadata).to_bytes()),
+	];
+
+	let transaction = transaction::new_transaction(
+		true,
+		vector[
+			transaction::new_move_call(
+				transaction::new_function(
+					address::from_bytes(
+						hex::decode(
+							*ascii::as_bytes(
+								&type_name::get_address(
+									&type_name::get<Singleton>(),
+								),
+							),
+						),
+					),
+					ascii::string(b"its"),
+					ascii::string(b"receive_interchain_deployment"),
+				),
+				args,
+				vector[type_name::get<TOKEN>().into_string()],
+			),
+		],
+	);
+
+	discovery.register_transaction(&singleton.channel, transaction);
 }
 
 /// This function needs to be called first to register the coin for either of
@@ -208,6 +248,22 @@ public fun receive_interchain_transfer<TOKEN>(
 
     // give the coin to the caller
     transfer::public_transfer(coin, ctx.sender());
+}
+
+public fun receive_interchain_deployment<TOKEN>(
+	approved_message: ApprovedMessage,
+	its: &mut ITS,
+	treasury_cap: TreasuryCap<TOKEN>,
+	metadata: CoinMetadata<TOKEN>,
+) {
+	its.give_unregistered_coin<TOKEN>(
+		treasury_cap,
+		metadata,
+	);
+
+	its.receive_deploy_interchain_token<TOKEN>(
+		approved_message,
+	);
 }
 
 // -----
