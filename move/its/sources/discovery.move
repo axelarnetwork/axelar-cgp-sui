@@ -110,7 +110,7 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
                 transaction::new_move_call(
                     transaction::new_function(
                         package_id<ITS>(),
-                        ascii::string(b"service"),
+                        ascii::string(b"its"),
                         ascii::string(b"receive_interchain_transfer"),
                     ),
                     arguments,
@@ -163,7 +163,7 @@ fun deploy_interchain_token_tx(its: &ITS, reader: &mut AbiReader): Transaction {
     let move_call = transaction::new_move_call(
         transaction::new_function(
             package_id<ITS>(),
-            ascii::string(b"service"),
+            ascii::string(b"its"),
             ascii::string(b"receive_deploy_interchain_token"),
         ),
         arguments,
@@ -261,7 +261,7 @@ fun test_discovery_interchain_transfer() {
     assert!(
         call_info.function().package_id_from_function() == package_id<ITS>(),
     );
-    assert!(call_info.function().module_name() == ascii::string(b"service"));
+    assert!(call_info.function().module_name() == ascii::string(b"its"));
     assert!(
         call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
     );
@@ -368,7 +368,7 @@ fun test_discovery_deploy_token() {
     assert!(
         call_info.function().package_id_from_function() == package_id<ITS>(),
     );
-    assert!(call_info.function().module_name() == ascii::string(b"service"));
+    assert!(call_info.function().module_name() == ascii::string(b"its"));
     assert!(
         call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"),
     );
