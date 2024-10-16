@@ -61,7 +61,6 @@ public fun register_transaction(
     clock: &Clock,
 ) {
     let arguments = vector[
-        concat(vector[0u8], object::id_address(discovery).to_bytes()),
         concat(vector[0u8], object::id_address(singleton).to_bytes()),
         concat(vector[0u8], object::id_address(its).to_bytes()),
         vector[3u8],
@@ -95,7 +94,6 @@ public fun register_transaction(
 }
 
 public fun get_final_transaction(
-    discovery: &mut RelayerDiscovery,
     singleton: &Singleton,
     its: &ITS,
     payload: vector<u8>,
