@@ -48,7 +48,7 @@ public fun register_transaction(
     let function = transaction::new_function(
         package_id<ITS>(),
         ascii::string(b"discovery"),
-        ascii::string(b"get_call_info"),
+        ascii::string(b"call_info"),
     );
 
     let move_call = transaction::new_move_call(
@@ -137,7 +137,7 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
                         ascii::string(b"discovery"),
                         ascii::string(b"get_transaction"),
                     ),
-                    vector[discovery_arg, channel_id_arg, vector[0, 6]],
+                    vector[discovery_arg, channel_id_arg ],
                     vector[],
                 ),
             ],

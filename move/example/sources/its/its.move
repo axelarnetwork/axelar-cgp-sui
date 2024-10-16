@@ -9,8 +9,9 @@ use its::coin_info;
 use its::coin_management;
 use its::its::{Self, ITS};
 use its::token_id::TokenId;
+use its::discovery as its_discovery;
 use relayer_discovery::discovery::RelayerDiscovery;
-use relayer_discovery::transaction;
+use relayer_discovery::transaction::{Self, Transaction};
 use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
@@ -60,11 +61,58 @@ public fun register_transaction(
     clock: &Clock,
 ) {
     let arguments = vector[
+        concat(vector[0u8], object::id_address(discovery).to_bytes()),
+        concat(vector[0u8], object::id_address(singleton).to_bytes()),
+        concat(vector[0u8], object::id_address(its).to_bytes()),
+        vector[3u8],
+        concat(vector[0u8], object::id_address(clock).to_bytes()),
+    ];
+
+    let transaction = transaction::new_transaction(
+        false,
+        vector[
+            transaction::new_move_call(
+                transaction::new_function(
+                    address::from_bytes(
+                        hex::decode(
+                            *ascii::as_bytes(
+                                &type_name::get_address(
+                                    &type_name::get<Singleton>(),
+                                ),
+                            ),
+                        ),
+                    ),
+                    ascii::string(b"its"),
+                    ascii::string(b"get_final_transaction"),
+                ),
+                arguments,
+                vector[],
+            ),
+        ],
+    );
+
+    discovery.register_transaction(&singleton.channel, transaction);
+}
+
+public fun get_final_transaction(
+    discovery: &mut RelayerDiscovery,
+    singleton: &Singleton,
+    its: &ITS,
+    payload: vector<u8>,
+    clock: &Clock,
+): Transaction {
+    let arguments = vector[
         vector[2u8],
         concat(vector[0u8], object::id_address(singleton).to_bytes()),
         concat(vector[0u8], object::id_address(its).to_bytes()),
         concat(vector[0u8], object::id_address(clock).to_bytes()),
     ];
+
+    // Get the coin type from its
+    let (token_id, _, _, _) = its_discovery::interchain_transfer_info(
+        payload,
+    );
+    let coin_type = (*its.registered_coin_type(token_id)).into_string();
 
     let transaction = transaction::new_transaction(
         true,
@@ -84,12 +132,12 @@ public fun register_transaction(
                     ascii::string(b"receive_interchain_transfer"),
                 ),
                 arguments,
-                vector[],
+                vector[coin_type],
             ),
         ],
     );
 
-    discovery.register_transaction(&singleton.channel, transaction);
+    transaction
 }
 
 /// This function needs to be called first to register the coin for either of
