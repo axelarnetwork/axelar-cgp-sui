@@ -121,11 +121,11 @@ async function inspectTransaction(builder: TxBuilder, keypair: Keypair) {
     return Transaction.parse(new Uint8Array(txData));
 }
 
-function createApprovedMessageCall(builder: TxBuilder, axelarPackageId: string, gateway: string, messageInfo: MessageInfo) {
+function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo, messageInfo: MessageInfo) {
     return builder.moveCall({
-        target: `${axelarPackageId}::gateway::take_approved_message`,
+        target: `${gatewayInfo.packageId}::gateway::take_approved_message`,
         arguments: [
-            gateway,
+            gatewayInfo.gateway,
             messageInfo.source_chain,
             messageInfo.message_id,
             messageInfo.source_address,
@@ -193,7 +193,7 @@ export async function executeDiscoveredTransaction(
     }
 
     const finalBuilder = new TxBuilder(client);
-    const ApprovedMessage = createApprovedMessageCall(finalBuilder, gatewayInfo.packageId, gatewayInfo.gateway, messageInfo);
+    const ApprovedMessage = createApprovedMessageCall(finalBuilder, gatewayInfo, messageInfo);
     makeCalls(finalBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
 
     await finalBuilder.signAndExecute(keypair, {
