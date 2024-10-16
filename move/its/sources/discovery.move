@@ -187,7 +187,7 @@ fun initial_tx(its: &ITS): Transaction {
     let function = transaction::new_function(
         package_id<ITS>(),
         ascii::string(b"discovery"),
-        ascii::string(b"get_call_info"),
+        ascii::string(b"call_info"),
     );
 
     let move_call = transaction::new_move_call(

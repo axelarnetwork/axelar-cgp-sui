@@ -15,7 +15,6 @@ const {
     findObjectId,
     getRandomBytes32,
     calculateNextSigners,
-    approveMessage,
     getSingletonChannelId,
     getITSChannelId,
     setupTrustedAddresses,
@@ -87,16 +86,12 @@ describe('ITS', () => {
         gatewayInfo.discovery = objectIds.relayerDiscovery;
     }
 
-
     async function registerItsTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
         await registerTransactionBuilder.moveCall({
             target: `${deployments.its.packageId}::discovery::register_transaction`,
-            arguments: [
-                objectIds.its,
-                objectIds.relayerDiscovery,
-            ],
+            arguments: [objectIds.its, objectIds.relayerDiscovery],
         });
 
         await registerTransactionBuilder.signAndExecute(deployer);
@@ -249,7 +244,7 @@ describe('ITS', () => {
                     message_id: hexlify(randomBytes(32)),
                     source_address: trustedSourceAddress,
                     destination_id: destinationAddress,
-                    payload: payload,
+                    payload,
                     payload_hash: keccak256(payload),
                 };
 
@@ -339,7 +334,6 @@ describe('ITS', () => {
                 };
 
                 await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
-
             });
         });
     });
