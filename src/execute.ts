@@ -33,6 +33,21 @@ export type GatewayInfo = {
     domainSeparator: string;
 };
 
+export type DiscoveryInfo = {
+    packageId: string;
+    discovery: string;
+};
+
+export type MoveCall = {
+    function: {
+        package_id: string;
+        module_name: string;
+        name: string;
+    };
+    arguments: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    type_arguments: string[];
+};
+
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 const {
     gateway: { WeightedSigners, MessageToSign, Proof, Message },
