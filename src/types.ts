@@ -80,3 +80,11 @@ export type MoveCall = {
     arguments: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     type_arguments: string[];
 };
+
+export enum MoveCallType {
+    Object = 0,
+    Pure = 1,
+    ApproveMessage = 2,
+    Payload = 3,
+    HotPotato = 4,
+}

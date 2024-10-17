@@ -5,7 +5,7 @@ import { Keypair } from '@mysten/sui/cryptography';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
-import { DiscoveryInfo, GatewayApprovalInfo, GatewayInfo, GatewayMessageType, MessageInfo, MoveCall } from './types';
+import { DiscoveryInfo, GatewayApprovalInfo, GatewayInfo, GatewayMessageType, MessageInfo, MoveCall, MoveCallType } from './types';
 import { hashMessage, signMessage } from './utils';
 
 const {
@@ -58,13 +58,10 @@ export async function approve(
     await txBuilder.signAndExecute(keypair, options);
 }
 
-function createDiscoveryArguments(discovery: string, destinationId: string): [number[], number[]] {
-    const discoveryArg = [0, ...arrayify(discovery)];
-    const targetIdArg = [1, ...arrayify(destinationId)];
-    return [discoveryArg, targetIdArg];
-}
+function createInitialMoveCall(discoveryPackageId: string, discovery: string, destinationId: string): MoveCall {
+    const discoveryArg = [MoveCallType.Object, ...arrayify(discovery)];
+    const targetIdArg = [MoveCallType.Pure, ...arrayify(destinationId)];
 
-function createInitialMoveCall(discoveryPackageId: string, discoveryArg: number[], targetIdArg: number[]): MoveCall {
     return {
         function: {
             package_id: discoveryPackageId,
@@ -114,15 +111,15 @@ function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: stri
     const decodeArgs = (args: any[]): unknown[] =>
         args.map(([argType, ...arg]) => {
             switch (argType) {
-                case 0:
+                case MoveCallType.Object:
                     return builder.tx.object(hexlify(arg));
-                case 1:
+                case MoveCallType.Pure:
                     return builder.tx.pure(arrayify(arg));
-                case 2:
+                case MoveCallType.ApproveMessage:
                     return ApprovedMessage;
-                case 3:
+                case MoveCallType.Payload:
                     return builder.tx.pure(bcs.vector(bcs.U8).serialize(arrayify(payload)));
-                case 4:
+                case MoveCallType.HotPotato:
                     return previousReturns[arg[1]][arg[2]];
                 default:
                     throw new Error(`Invalid argument prefix: ${argType}`);
@@ -144,8 +141,7 @@ export async function execute(
     messageInfo: MessageInfo,
     options: SuiTransactionBlockResponseOptions,
 ): Promise<SuiTransactionBlockResponse> {
-    const [discoveryArg, targetIdArg] = createDiscoveryArguments(discoveryInfo.discovery, messageInfo.destination_id);
-    let moveCalls = [createInitialMoveCall(discoveryInfo.packageId, discoveryArg, targetIdArg)];
+    let moveCalls = [createInitialMoveCall(discoveryInfo.packageId, discoveryInfo.discovery, messageInfo.destination_id)];
 
     let isFinal = false;
 
