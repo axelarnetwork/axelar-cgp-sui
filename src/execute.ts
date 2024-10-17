@@ -2,6 +2,7 @@ import { fromHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
+import { Transaction as SuiTransaction } from '@mysten/sui/transactions';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
@@ -58,13 +59,14 @@ export async function approve(
     await txBuilder.signAndExecute(keypair, options);
 }
 
-function createInitialMoveCall(discoveryPackageId: string, discovery: string, destinationId: string): MoveCall {
+function createInitialMoveCall(discoveryInfo: DiscoveryInfo, destinationId: string): MoveCall {
+    const { packageId, discovery } = discoveryInfo;
     const discoveryArg = [MoveCallType.Object, ...arrayify(discovery)];
     const targetIdArg = [MoveCallType.Pure, ...arrayify(destinationId)];
 
     return {
         function: {
-            package_id: discoveryPackageId,
+            package_id: packageId,
             module_name: 'discovery',
             name: 'get_transaction',
         },
@@ -96,29 +98,29 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function makeCalls(builder: TxBuilder, moveCalls: MoveCall[], payload: string, ApprovedMessage?: any) {
+async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: string, ApprovedMessage?: any) {
     const returns: any[][] = [];
 
     for (const call of moveCalls) {
-        const moveCall = buildMoveCall(builder, call, payload, returns, ApprovedMessage);
-        const result = builder.tx.moveCall(moveCall);
+        const moveCall = buildMoveCall(tx, call, payload, returns, ApprovedMessage);
+        const result = tx.moveCall(moveCall);
         returns.push(Array.isArray(result) ? result : [result]);
     }
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: string, previousReturns: any[][], ApprovedMessage?: any): any {
+function buildMoveCall(tx: SuiTransaction, moveCallInfo: MoveCall, payload: string, previousReturns: any[][], ApprovedMessage?: any): any {
     const decodeArgs = (args: any[]): unknown[] =>
         args.map(([argType, ...arg]) => {
             switch (argType) {
                 case MoveCallType.Object:
-                    return builder.tx.object(hexlify(arg));
+                    return tx.object(hexlify(arg));
                 case MoveCallType.Pure:
-                    return builder.tx.pure(arrayify(arg));
+                    return tx.pure(arrayify(arg));
                 case MoveCallType.ApproveMessage:
                     return ApprovedMessage;
                 case MoveCallType.Payload:
-                    return builder.tx.pure(bcs.vector(bcs.U8).serialize(arrayify(payload)));
+                    return tx.pure(bcs.vector(bcs.U8).serialize(arrayify(payload)));
                 case MoveCallType.HotPotato:
                     return previousReturns[arg[1]][arg[2]];
                 default:
@@ -141,14 +143,14 @@ export async function execute(
     messageInfo: MessageInfo,
     options: SuiTransactionBlockResponseOptions,
 ): Promise<SuiTransactionBlockResponse> {
-    let moveCalls = [createInitialMoveCall(discoveryInfo.packageId, discoveryInfo.discovery, messageInfo.destination_id)];
+    let moveCalls = [createInitialMoveCall(discoveryInfo, messageInfo.destination_id)];
 
     let isFinal = false;
 
     while (!isFinal) {
         const builder = new TxBuilder(client);
 
-        await makeCalls(builder, moveCalls, messageInfo.payload);
+        await makeCalls(builder.tx, moveCalls, messageInfo.payload);
 
         const nextTx = await inspectTransaction(builder, keypair);
 
@@ -160,7 +162,7 @@ export async function execute(
 
     const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
 
-    await makeCalls(txBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
+    await makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
 
     return txBuilder.signAndExecute(keypair, options);
 }
