@@ -45,6 +45,7 @@ describe('ITS', () => {
 
     // Parameters for Gateway Setup
     const gatewayInfo = {};
+    const discoveryInfo = {};
     const domainSeparator = getRandomBytes32();
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
     const minimumRotationDelay = 1000;
@@ -81,8 +82,8 @@ describe('ITS', () => {
         gatewayInfo.gateway = objectIds.gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
-        gatewayInfo.discoveryPackageId = deployments.relayer_discovery.packageId;
-        gatewayInfo.discovery = objectIds.relayerDiscovery;
+        discoveryInfo.packageId = deployments.relayer_discovery.packageId;
+        discoveryInfo.discovery = objectIds.relayerDiscovery;
     }
 
     async function registerItsTransaction() {
@@ -327,11 +328,6 @@ describe('ITS', () => {
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
-
-                const discoveryInfo = {
-                    packageId: deployments.relayer_discovery.packageId,
-                    discovery: objectIds.relayerDiscovery,
-                };
 
                 const message = {
                     source_chain: trustedSourceChain,
