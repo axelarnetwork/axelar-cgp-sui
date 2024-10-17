@@ -111,12 +111,12 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function makeCalls(tx: SuiTransaction, moveCalls: RawMoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
-    const returns: any[][] = [];
+    const txResults: any[][] = [];
 
     for (const call of moveCalls) {
-        const moveCall = buildMoveCall(tx, call, payload, returns, ApprovedMessage);
-        const result = tx.moveCall(moveCall);
-        returns.push(Array.isArray(result) ? result : [result]);
+        const moveCall = buildMoveCall(tx, call, payload, txResults, ApprovedMessage);
+        const txResult = tx.moveCall(moveCall);
+        txResults.push(Array.isArray(txResult) ? txResult : [txResult]);
     }
 }
 
