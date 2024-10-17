@@ -2,7 +2,7 @@ import { fromHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
-import { Transaction as SuiTransaction, TransactionObjectInput } from '@mysten/sui/transactions';
+import { Transaction as SuiTransaction } from '@mysten/sui/transactions';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
@@ -79,13 +79,12 @@ export async function execute(
     options: SuiTransactionBlockResponseOptions,
 ): Promise<SuiTransactionBlockResponse> {
     let moveCalls = [createInitialMoveCall(discoveryInfo, messageInfo.destination_id)];
-
     let isFinal = false;
 
     while (!isFinal) {
         const builder = new TxBuilder(client);
 
-        makeCalls(builder.tx, moveCalls, messageInfo.payload);
+        doMoveCalls(builder.tx, moveCalls, messageInfo.payload);
 
         const nextTx = await inspectTransaction(builder, keypair);
 
@@ -97,7 +96,7 @@ export async function execute(
 
     const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
 
-    makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
+    doMoveCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
 
     return txBuilder.signAndExecute(keypair, options);
 }
@@ -156,7 +155,7 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function makeCalls(tx: SuiTransaction, moveCalls: RawMoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
+function doMoveCalls(tx: SuiTransaction, moveCalls: RawMoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
     const txResults: any[][] = [];
 
     for (const call of moveCalls) {
