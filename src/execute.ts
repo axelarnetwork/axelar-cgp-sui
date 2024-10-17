@@ -5,53 +5,9 @@ import { Keypair } from '@mysten/sui/cryptography';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
+import { DiscoveryInfo, GatewayApprovalInfo, GatewayInfo, GatewayMessageType, MessageInfo, MoveCall } from './types';
 import { hashMessage, signMessage } from './utils';
 
-export type Signer = {
-    pub_key: Uint8Array;
-    weight: number;
-};
-
-export type MessageInfo = {
-    source_chain: string;
-    message_id: string;
-    source_address: string;
-    destination_id: string;
-    payload_hash: string;
-    payload: string;
-};
-
-export type GatewayInfo = {
-    packageId: string;
-    gateway: string;
-};
-
-export type GatewayApprovalInfo = GatewayInfo & {
-    signers: {
-        signers: Signer[];
-        threshold: number;
-        nonce: string;
-    };
-    signerKeys: string[];
-    domainSeparator: string;
-};
-
-export type DiscoveryInfo = {
-    packageId: string;
-    discovery: string;
-};
-
-export type MoveCall = {
-    function: {
-        package_id: string;
-        module_name: string;
-        name: string;
-    };
-    arguments: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    type_arguments: string[];
-};
-
-const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 const {
     gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
 } = bcsStructs;
@@ -66,7 +22,7 @@ export async function approve(
     const { packageId, gateway, signers, signerKeys, domainSeparator } = gatewayApprovalInfo;
 
     const messageData = bcs.vector(Message).serialize([messageInfo]).toBytes();
-    const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
+    const hashed = hashMessage(messageData, GatewayMessageType.ApproveMessages);
 
     const message = MessageToSign.serialize({
         domain_separator: fromHEX(domainSeparator),

@@ -23,6 +23,11 @@ export enum ITSMessageType {
     InterchainTokenDeployment = 1,
 }
 
+export enum GatewayMessageType {
+    ApproveMessages = 0,
+    RotateSigners = 1,
+}
+
 export interface DependencyNode extends Dependency {
     dependencies: string[];
 }
@@ -31,3 +36,47 @@ export const UID = bcs.fixedArray(32, bcs.u8()).transform({
     input: (id: string) => fromHEX(id),
     output: (id: number[]) => toHEX(Uint8Array.from(id)),
 });
+
+export type Signer = {
+    pub_key: Uint8Array;
+    weight: number;
+};
+
+export type MessageInfo = {
+    source_chain: string;
+    message_id: string;
+    source_address: string;
+    destination_id: string;
+    payload_hash: string;
+    payload: string;
+};
+
+export type GatewayInfo = {
+    packageId: string;
+    gateway: string;
+};
+
+export type GatewayApprovalInfo = GatewayInfo & {
+    signers: {
+        signers: Signer[];
+        threshold: number;
+        nonce: string;
+    };
+    signerKeys: string[];
+    domainSeparator: string;
+};
+
+export type DiscoveryInfo = {
+    packageId: string;
+    discovery: string;
+};
+
+export type MoveCall = {
+    function: {
+        package_id: string;
+        module_name: string;
+        name: string;
+    };
+    arguments: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    type_arguments: string[];
+};
