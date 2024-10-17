@@ -2,7 +2,7 @@ import { fromHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
-import { Transaction as SuiTransaction } from '@mysten/sui/transactions';
+import { Transaction as SuiTransaction, TransactionObjectInput } from '@mysten/sui/transactions';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
@@ -14,7 +14,9 @@ import {
     GatewayMessageType,
     MessageInfo,
     MoveCall,
+    MoveCallArgument,
     MoveCallType,
+    RawMoveCall,
 } from './types';
 import { hashMessage, signMessage } from './utils';
 
@@ -68,7 +70,7 @@ export async function approve(
     await txBuilder.signAndExecute(keypair, options);
 }
 
-function createInitialMoveCall(discoveryInfo: DiscoveryInfo, destinationId: string): MoveCall {
+function createInitialMoveCall(discoveryInfo: DiscoveryInfo, destinationId: string): RawMoveCall {
     const { packageId, discovery } = discoveryInfo;
     const discoveryArg = [MoveCallType.Object, ...arrayify(discovery)];
     const targetIdArg = [MoveCallType.Pure, ...arrayify(destinationId)];
@@ -108,7 +110,7 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
+function makeCalls(tx: SuiTransaction, moveCalls: RawMoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
     const returns: any[][] = [];
 
     for (const call of moveCalls) {
@@ -121,12 +123,12 @@ async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: str
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function buildMoveCall(
     tx: SuiTransaction,
-    moveCallInfo: MoveCall,
+    moveCallInfo: RawMoveCall,
     payload: string,
     previousReturns: any[][],
     ApprovedMessage?: ApprovedMessage,
-): any {
-    const decodeArgs = (args: any[]): unknown[] =>
+): MoveCall {
+    const decodeArgs = (args: any[]): MoveCallArgument[] =>
         args.map(([argType, ...arg]) => {
             switch (argType) {
                 case MoveCallType.Object:
@@ -144,8 +146,10 @@ function buildMoveCall(
             }
         });
 
+    const { package_id: packageId, module_name: moduleName, name } = moveCallInfo.function;
+
     return {
-        target: `${moveCallInfo.function.package_id}::${moveCallInfo.function.module_name}::${moveCallInfo.function.name}`,
+        target: `${packageId}::${moduleName}::${name}`,
         arguments: decodeArgs(moveCallInfo.arguments),
         typeArguments: moveCallInfo.type_arguments,
     };
@@ -166,7 +170,7 @@ export async function execute(
     while (!isFinal) {
         const builder = new TxBuilder(client);
 
-        await makeCalls(builder.tx, moveCalls, messageInfo.payload);
+        makeCalls(builder.tx, moveCalls, messageInfo.payload);
 
         const nextTx = await inspectTransaction(builder, keypair);
 
@@ -178,7 +182,7 @@ export async function execute(
 
     const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
 
-    await makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
+    makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
 
     return txBuilder.signAndExecute(keypair, options);
 }

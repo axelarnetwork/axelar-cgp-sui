@@ -1,5 +1,7 @@
-const { bcs } = require('@mysten/sui/bcs');
-const { fromHEX, toHEX } = require('@mysten/bcs');
+import { fromHEX, toHEX } from '@mysten/bcs';
+import type { SerializedBcs } from '@mysten/bcs';
+import { bcs } from '@mysten/sui/bcs';
+import { TransactionArgument, TransactionObjectInput } from '@mysten/sui/transactions';
 
 export const SUI_PACKAGE_ID = '0x2';
 export const STD_PACKAGE_ID = '0x1';
@@ -71,7 +73,7 @@ export type DiscoveryInfo = {
     discovery: string;
 };
 
-export type MoveCall = {
+export type RawMoveCall = {
     function: {
         package_id: string;
         module_name: string;
@@ -81,10 +83,18 @@ export type MoveCall = {
     type_arguments: string[];
 };
 
+export type MoveCallArgument = TransactionArgument | SerializedBcs<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+export type MoveCall = {
+    arguments?: MoveCallArgument[];
+    typeArguments?: string[];
+    target: string;
+};
+
 export type ApprovedMessage = {
-    '$kind': string;
+    $kind: string;
     Result: number;
-}
+};
 
 export enum MoveCallType {
     Object = 0,
