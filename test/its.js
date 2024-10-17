@@ -18,11 +18,11 @@ const {
     getSingletonChannelId,
     getITSChannelId,
     setupTrustedAddresses,
-    approveAndExecuteMessage,
 } = require('./testutils');
 const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
 const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
+const { approveAndExecute } = require('../dist/execute');
 const { bcsStructs } = require('../dist/bcs');
 const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
