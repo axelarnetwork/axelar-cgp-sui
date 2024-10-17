@@ -1,7 +1,7 @@
 import { fromHEX, toHEX } from '@mysten/bcs';
 import type { SerializedBcs } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
-import { TransactionArgument } from '@mysten/sui/transactions';
+import type { TransactionArgument } from '@mysten/sui/transactions';
 
 export const SUI_PACKAGE_ID = '0x2';
 export const STD_PACKAGE_ID = '0x1';
