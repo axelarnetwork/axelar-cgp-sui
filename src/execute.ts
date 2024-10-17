@@ -70,6 +70,52 @@ export async function approve(
     await txBuilder.signAndExecute(keypair, options);
 }
 
+export async function execute(
+    client: SuiClient,
+    keypair: Keypair,
+    discoveryInfo: DiscoveryInfo,
+    gatewayInfo: GatewayInfo,
+    messageInfo: MessageInfo,
+    options: SuiTransactionBlockResponseOptions,
+): Promise<SuiTransactionBlockResponse> {
+    let moveCalls = [createInitialMoveCall(discoveryInfo, messageInfo.destination_id)];
+
+    let isFinal = false;
+
+    while (!isFinal) {
+        const builder = new TxBuilder(client);
+
+        makeCalls(builder.tx, moveCalls, messageInfo.payload);
+
+        const nextTx = await inspectTransaction(builder, keypair);
+
+        isFinal = nextTx.is_final;
+        moveCalls = nextTx.move_calls;
+    }
+
+    const txBuilder = new TxBuilder(client);
+
+    const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
+
+    makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
+
+    return txBuilder.signAndExecute(keypair, options);
+}
+
+export async function approveAndExecute(
+    client: SuiClient,
+    keypair: Keypair,
+    gatewayApprovalInfo: GatewayApprovalInfo,
+    discoveryInfo: DiscoveryInfo,
+    messageInfo: MessageInfo,
+    options: SuiTransactionBlockResponseOptions = {
+        showEvents: true,
+    },
+): Promise<SuiTransactionBlockResponse> {
+    await approve(client, keypair, gatewayApprovalInfo, messageInfo, options);
+    return execute(client, keypair, discoveryInfo, gatewayApprovalInfo, messageInfo, options);
+}
+
 function createInitialMoveCall(discoveryInfo: DiscoveryInfo, destinationId: string): RawMoveCall {
     const { packageId, discovery } = discoveryInfo;
     const discoveryArg = [MoveCallType.Object, ...arrayify(discovery)];
@@ -153,50 +199,4 @@ function buildMoveCall(
         arguments: decodeArgs(moveCallInfo.arguments),
         typeArguments: moveCallInfo.type_arguments,
     };
-}
-
-export async function execute(
-    client: SuiClient,
-    keypair: Keypair,
-    discoveryInfo: DiscoveryInfo,
-    gatewayInfo: GatewayInfo,
-    messageInfo: MessageInfo,
-    options: SuiTransactionBlockResponseOptions,
-): Promise<SuiTransactionBlockResponse> {
-    let moveCalls = [createInitialMoveCall(discoveryInfo, messageInfo.destination_id)];
-
-    let isFinal = false;
-
-    while (!isFinal) {
-        const builder = new TxBuilder(client);
-
-        makeCalls(builder.tx, moveCalls, messageInfo.payload);
-
-        const nextTx = await inspectTransaction(builder, keypair);
-
-        isFinal = nextTx.is_final;
-        moveCalls = nextTx.move_calls;
-    }
-
-    const txBuilder = new TxBuilder(client);
-
-    const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
-
-    makeCalls(txBuilder.tx, moveCalls, messageInfo.payload, ApprovedMessage);
-
-    return txBuilder.signAndExecute(keypair, options);
-}
-
-export async function approveAndExecute(
-    client: SuiClient,
-    keypair: Keypair,
-    gatewayApprovalInfo: GatewayApprovalInfo,
-    discoveryInfo: DiscoveryInfo,
-    messageInfo: MessageInfo,
-    options: SuiTransactionBlockResponseOptions = {
-        showEvents: true,
-    },
-): Promise<SuiTransactionBlockResponse> {
-    await approve(client, keypair, gatewayApprovalInfo, messageInfo, options);
-    return execute(client, keypair, discoveryInfo, gatewayApprovalInfo, messageInfo, options);
 }
