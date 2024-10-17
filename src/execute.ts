@@ -6,7 +6,16 @@ import { Transaction as SuiTransaction } from '@mysten/sui/transactions';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
 import { TxBuilder } from './tx-builder';
-import { DiscoveryInfo, GatewayApprovalInfo, GatewayInfo, GatewayMessageType, MessageInfo, MoveCall, MoveCallType } from './types';
+import {
+    ApprovedMessage,
+    DiscoveryInfo,
+    GatewayApprovalInfo,
+    GatewayInfo,
+    GatewayMessageType,
+    MessageInfo,
+    MoveCall,
+    MoveCallType,
+} from './types';
 import { hashMessage, signMessage } from './utils';
 
 const {
@@ -80,6 +89,7 @@ async function inspectTransaction(builder: TxBuilder, keypair: Keypair) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const txData: any = resp.results?.[0]?.returnValues?.[0]?.[0];
+
     return Transaction.parse(new Uint8Array(txData));
 }
 
@@ -98,7 +108,7 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: string, ApprovedMessage?: any) {
+async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: string, ApprovedMessage?: ApprovedMessage) {
     const returns: any[][] = [];
 
     for (const call of moveCalls) {
@@ -109,7 +119,13 @@ async function makeCalls(tx: SuiTransaction, moveCalls: MoveCall[], payload: str
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function buildMoveCall(tx: SuiTransaction, moveCallInfo: MoveCall, payload: string, previousReturns: any[][], ApprovedMessage?: any): any {
+function buildMoveCall(
+    tx: SuiTransaction,
+    moveCallInfo: MoveCall,
+    payload: string,
+    previousReturns: any[][],
+    ApprovedMessage?: ApprovedMessage,
+): any {
     const decodeArgs = (args: any[]): unknown[] =>
         args.map(([argType, ...arg]) => {
             switch (argType) {

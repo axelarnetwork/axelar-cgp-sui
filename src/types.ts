@@ -81,6 +81,11 @@ export type MoveCall = {
     type_arguments: string[];
 };
 
+export type ApprovedMessage = {
+    '$kind': string;
+    Result: number;
+}
+
 export enum MoveCallType {
     Object = 0,
     Pure = 1,

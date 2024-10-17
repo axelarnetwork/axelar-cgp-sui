@@ -81,7 +81,6 @@ describe('ITS', () => {
         gatewayInfo.gateway = objectIds.gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
-        gatewayInfo.discoveryPackageId;
         gatewayInfo.discoveryPackageId = deployments.relayer_discovery.packageId;
         gatewayInfo.discovery = objectIds.relayerDiscovery;
     }
@@ -231,6 +230,11 @@ describe('ITS', () => {
                 const amount = 1e9;
                 const data = '0x1234';
 
+                const discoveryInfo = {
+                    packageId: deployments.relayer_discovery.packageId,
+                    discovery: objectIds.relayerDiscovery,
+                };
+
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
                 // ITS transfer payload from Ethereum to Sui
@@ -248,7 +252,7 @@ describe('ITS', () => {
                     payload_hash: keccak256(payload),
                 };
 
-                await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
 
@@ -324,6 +328,11 @@ describe('ITS', () => {
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
 
+                const discoveryInfo = {
+                    packageId: deployments.relayer_discovery.packageId,
+                    discovery: objectIds.relayerDiscovery,
+                };
+
                 const message = {
                     source_chain: trustedSourceChain,
                     message_id: hexlify(randomBytes(32)),
@@ -333,7 +342,7 @@ describe('ITS', () => {
                     payload_hash: keccak256(payload),
                 };
 
-                await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
     });
