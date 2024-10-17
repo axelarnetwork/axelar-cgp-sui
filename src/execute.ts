@@ -1,6 +1,6 @@
 import { fromHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
-import { SuiClient } from '@mysten/sui/client';
+import { SuiClient, SuiTransactionBlockResponse } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
@@ -116,6 +116,7 @@ function createInitialMoveCall(discoveryPackageId: string, discoveryArg: number[
 
 async function inspectTransaction(builder: TxBuilder, keypair: Keypair) {
     const resp = await builder.devInspect(keypair.toSuiAddress());
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const txData: any = resp.results?.[0]?.returnValues?.[0]?.[0];
     return Transaction.parse(new Uint8Array(txData));
@@ -136,11 +137,12 @@ function createApprovedMessageCall(builder: TxBuilder, gatewayInfo: GatewayInfo,
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function makeCalls(builder: TxBuilder, moveCalls: MoveCall[], payload: string, ApprovedMessage?: any) {
+async function makeCalls(builder: TxBuilder, moveCalls: MoveCall[], payload: string, ApprovedMessage?: any) {
     const returns: any[][] = [];
 
     for (const call of moveCalls) {
-        const result = builder.moveCall(buildMoveCall(builder, call, payload, ApprovedMessage, returns));
+        const moveCall = buildMoveCall(builder, call, payload, ApprovedMessage, returns);
+        const result = await builder.moveCall(moveCall);
         returns.push(Array.isArray(result) ? result : [result]);
     }
 }
@@ -148,7 +150,21 @@ function makeCalls(builder: TxBuilder, moveCalls: MoveCall[], payload: string, A
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: string, ApprovedMessage?: any, previousReturns?: any[][]): any {
     const decodeArgs = (args: any[]): unknown[] =>
-        args.map((arg) => {
+        args.map(([argType, ...arg]) => {
+            switch (argType) {
+                case 0:
+                case 1:
+                    return '0x' + Buffer.from(arg).toString('hex');
+                case 2:
+                    return ApprovedMessage;
+                case 3:
+                    return payload;
+                case 4:
+                    return previousReturns![arg[0]][arg[1]];
+                default:
+                    throw new Error(`Invalid argument prefix: ${argType}`);
+            }
+
             if (arg[0] === 0) {
                 return builder.tx.object(arg.slice(1));
             } else if (arg[0] === 1) {
@@ -177,7 +193,7 @@ export async function executeDiscoveredTransaction(
     discoveryInfo: DiscoveryInfo,
     gatewayInfo: GatewayInfo,
     messageInfo: MessageInfo,
-): Promise<void> {
+): Promise<SuiTransactionBlockResponse> {
     const [discoveryArg, targetIdArg] = createDiscoveryArguments(discoveryInfo.discovery, messageInfo.destination_id);
     let moveCalls = [createInitialMoveCall(discoveryInfo.packageId, discoveryArg, targetIdArg)];
 
@@ -185,18 +201,22 @@ export async function executeDiscoveredTransaction(
 
     while (!isFinal) {
         const builder = new TxBuilder(client);
-        makeCalls(builder, moveCalls, messageInfo.payload);
+
+        await makeCalls(builder, moveCalls, messageInfo.payload);
 
         const nextTx = await inspectTransaction(builder, keypair);
+
         isFinal = nextTx.is_final;
         moveCalls = nextTx.move_calls;
     }
 
     const finalBuilder = new TxBuilder(client);
-    const ApprovedMessage = createApprovedMessageCall(finalBuilder, gatewayInfo, messageInfo);
-    makeCalls(finalBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
 
-    await finalBuilder.signAndExecute(keypair, {
+    const ApprovedMessage = createApprovedMessageCall(finalBuilder, gatewayInfo, messageInfo);
+
+    await makeCalls(finalBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
+
+    return finalBuilder.signAndExecute(keypair, {
         showEvents: true,
     });
 }
