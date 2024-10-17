@@ -1,6 +1,6 @@
 import { fromHEX } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
-import { SuiClient, SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { SuiClient, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
@@ -56,7 +56,13 @@ const {
     gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
 } = bcsStructs;
 
-export async function approveTx(client: SuiClient, gatewayApprovalInfo: GatewayApprovalInfo, messageInfo: MessageInfo): Promise<TxBuilder> {
+export async function approve(
+    client: SuiClient,
+    keypair: Keypair,
+    gatewayApprovalInfo: GatewayApprovalInfo,
+    messageInfo: MessageInfo,
+    options: SuiTransactionBlockResponseOptions,
+) {
     const { packageId, gateway, signers, signerKeys, domainSeparator } = gatewayApprovalInfo;
 
     const messageData = bcs.vector(Message).serialize([messageInfo]).toBytes();
@@ -86,14 +92,14 @@ export async function approveTx(client: SuiClient, gatewayApprovalInfo: GatewayA
         signatures,
     }).toBytes();
 
-    const tx = new TxBuilder(client);
+    const txBuilder = new TxBuilder(client);
 
-    await tx.moveCall({
+    await txBuilder.moveCall({
         target: `${packageId}::gateway::approve_messages`,
         arguments: [gateway, hexlify(messageData), hexlify(encodedProof)],
     });
 
-    return tx;
+    await txBuilder.signAndExecute(keypair, options);
 }
 
 function createDiscoveryArguments(discovery: string, destinationId: string): [number[], number[]] {
@@ -141,43 +147,30 @@ async function makeCalls(builder: TxBuilder, moveCalls: MoveCall[], payload: str
     const returns: any[][] = [];
 
     for (const call of moveCalls) {
-        const moveCall = buildMoveCall(builder, call, payload, ApprovedMessage, returns);
-        const result = await builder.moveCall(moveCall);
+        const moveCall = buildMoveCall(builder, call, payload, returns, ApprovedMessage);
+        const result = builder.tx.moveCall(moveCall);
         returns.push(Array.isArray(result) ? result : [result]);
     }
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: string, ApprovedMessage?: any, previousReturns?: any[][]): any {
+function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: string, previousReturns: any[][], ApprovedMessage?: any): any {
     const decodeArgs = (args: any[]): unknown[] =>
         args.map(([argType, ...arg]) => {
             switch (argType) {
                 case 0:
+                    return builder.tx.object(hexlify(arg));
                 case 1:
-                    return '0x' + Buffer.from(arg).toString('hex');
+                    return builder.tx.pure(arrayify(arg));
                 case 2:
                     return ApprovedMessage;
                 case 3:
-                    return payload;
+                    return builder.tx.pure(bcs.vector(bcs.U8).serialize(arrayify(payload)));
                 case 4:
-                    return previousReturns![arg[0]][arg[1]];
+                    return previousReturns[arg[1]][arg[2]];
                 default:
                     throw new Error(`Invalid argument prefix: ${argType}`);
             }
-
-            if (arg[0] === 0) {
-                return builder.tx.object(arg.slice(1));
-            } else if (arg[0] === 1) {
-                return arg.slice(1);
-            } else if (arg[0] === 2) {
-                return ApprovedMessage;
-            } else if (arg[0] === 3) {
-                return arrayify(payload);
-            } else if (arg[0] === 4) {
-                return previousReturns![arg[1]][arg[2]];
-            }
-
-            throw new Error(`Invalid argument prefix: ${arg[0]}`);
         });
 
     return {
@@ -187,12 +180,13 @@ function buildMoveCall(builder: TxBuilder, moveCallInfo: MoveCall, payload: stri
     };
 }
 
-export async function executeDiscoveredTransaction(
+export async function execute(
     client: SuiClient,
     keypair: Keypair,
     discoveryInfo: DiscoveryInfo,
     gatewayInfo: GatewayInfo,
     messageInfo: MessageInfo,
+    options: SuiTransactionBlockResponseOptions,
 ): Promise<SuiTransactionBlockResponse> {
     const [discoveryArg, targetIdArg] = createDiscoveryArguments(discoveryInfo.discovery, messageInfo.destination_id);
     let moveCalls = [createInitialMoveCall(discoveryInfo.packageId, discoveryArg, targetIdArg)];
@@ -210,13 +204,25 @@ export async function executeDiscoveredTransaction(
         moveCalls = nextTx.move_calls;
     }
 
-    const finalBuilder = new TxBuilder(client);
+    const txBuilder = new TxBuilder(client);
 
-    const ApprovedMessage = createApprovedMessageCall(finalBuilder, gatewayInfo, messageInfo);
+    const ApprovedMessage = await createApprovedMessageCall(txBuilder, gatewayInfo, messageInfo);
 
-    await makeCalls(finalBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
+    await makeCalls(txBuilder, moveCalls, messageInfo.payload, ApprovedMessage);
 
-    return finalBuilder.signAndExecute(keypair, {
+    return txBuilder.signAndExecute(keypair, options);
+}
+
+export async function approveAndExecute(
+    client: SuiClient,
+    keypair: Keypair,
+    gatewayApprovalInfo: GatewayApprovalInfo,
+    discoveryInfo: DiscoveryInfo,
+    messageInfo: MessageInfo,
+    options: SuiTransactionBlockResponseOptions = {
         showEvents: true,
-    });
+    },
+): Promise<SuiTransactionBlockResponse> {
+    await approve(client, keypair, gatewayApprovalInfo, messageInfo, options);
+    return execute(client, keypair, discoveryInfo, gatewayApprovalInfo, messageInfo, options);
 }
