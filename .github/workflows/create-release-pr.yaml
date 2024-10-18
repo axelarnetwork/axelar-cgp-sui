@@ -40,7 +40,6 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ steps.branch-check.outputs.branch_name }}
-          fetch-depth: 0 # Needed for comparison in `extract-package-versions` step.
 
       - name: Check for changeset files
         run: |
@@ -59,12 +58,13 @@ jobs:
       - name: Extract the old and new versions of the package
         id: extract-package-versions
         run: |
-          # https://github.com/changesets/changesets/issues/1055#issuecomment-1602572294
-          npm run cs -- status --output=release.json --since=origin/main
+          # Using `--since` flag in the `status` step on the same branch returns empty release file and doesn't reflect the upcoming changes, hence we override the `baseBranch` in the config file.
+          jq '.baseBranch = "${{ steps.branch-check.outputs.branch_name }}"' ./.changeset/config.json > temp.json && mv temp.json ./.changeset/config.json
+          npm run cs -- status --output=release.json
 
           NEW_PACKAGE_VERSION=$(jq -r '.releases[0].newVersion' release.json)
           OLD_PACKAGE_VERSION=$(jq -r '.releases[0].oldVersion' release.json)
-          rm release.json          
+          rm release.json
 
           echo "new_package_version=${NEW_PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
           echo "old_package_version=${OLD_PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
@@ -76,7 +76,7 @@ jobs:
         with:
           # This branch context is ignored in this step: `https://github.com/changesets/action/blob/50750fa876cc1e54c7cb972db5e2f7271fc53d99/src/run.ts#L328`, therefore the usage of `branch` selection in the workflow trigger.
           branch: ${{ steps.branch-check.outputs.branch_name }}
-          title: 'chore(release): bump version and update changelog for the release from `${{ steps.extract-package-versions.outputs.old_package_version }}` to `${{ steps.extract-package-versions.outputs.new_package_version }}`'
-          commit: 'chore(release): bump version and update changelog from `${{ steps.extract-package-versions.outputs.old_package_version }}` to `${{ steps.extract-package-versions.outputs.new_package_version }}`'
+          title: 'chore(release): bump version from `${{ steps.extract-package-versions.outputs.old_package_version }}` to `${{ steps.extract-package-versions.outputs.new_package_version }}`'
+          commit: 'chore(release): bump version from `${{ steps.extract-package-versions.outputs.old_package_version }}` to `${{ steps.extract-package-versions.outputs.new_package_version }}`'
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
