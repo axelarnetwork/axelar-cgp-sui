@@ -37,6 +37,26 @@ async function publishPackage(client, keypair, packageName) {
     return { packageId, publishTxn };
 }
 
+async function publishExternalPackage(client, keypair, packageName, packageDir) {
+    const compileDir = `${__dirname}/../move_compile`;
+    //copyMovePackage(packageName, packageDir, compileDir);
+    updateMoveToml(packageName, '0x0', compileDir, {
+        dependencies: {
+            Sui: {
+                rev: 'mainnet-v1.32.2'
+            }
+        }
+    });
+    let builder = new TxBuilder(client);
+    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
+    let publishTxn = await builder.signAndExecute(keypair);    
+
+    let packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
+    updateMoveToml(packageName, packageId, compileDir);
+    return { packageId, publishTxn };
+}
+
+
 async function publishInterchainToken(client, keypair, options) {
     const templateFilePath = `${__dirname}/../move/interchain_token/sources/interchain_token.move`;
 
@@ -353,8 +373,8 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
     };
 }
 
-function findObjectId(tx, objectType, type = 'created') {
-    return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType))?.objectId;
+function findObjectId(tx, objectType, type = 'created', excludes) {
+    return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType) && !(excludes && change.objectType.includes(excludes)))?.objectId;
 }
 
 const getBcsBytesByObjectId = async (client, objectId) => {
@@ -408,6 +428,7 @@ async function getITSChannelId(client, itsVersionedObjectId) {
 
 module.exports = {
     publishPackage,
+    publishExternalPackage,
     findObjectId,
     getRandomBytes32,
     expectRevert,

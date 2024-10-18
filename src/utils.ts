@@ -6,7 +6,34 @@ import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
 import toml from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from './types';
 
-export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`) {
+function isObject(item: any): boolean {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+  
+/**
+ * Deep merge two objects.
+ * @param target
+ * @param ...sources
+ */
+function mergeDeep(target: any, ...sources: [any]) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+  
+    if (isObject(target) && isObject(source)) {
+      for (const key in source) {
+        if (isObject(source[key])) {
+          if (!target[key]) Object.assign(target, { [key]: {} });
+          mergeDeep(target[key], source[key]);
+        } else {
+          Object.assign(target, { [key]: source[key] });
+        }
+      }
+    }
+  
+    return mergeDeep(target, ...sources);
+}
+
+export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../move`, substitutions: undefined | object = undefined) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
 
@@ -20,13 +47,17 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const moveJson = toml.parse(moveRaw) as any;
+    let moveJson = toml.parse(moveRaw) as any;
 
     // Update the published-at field under the package section e.g. published-at = "0x01"
     moveJson.package['published-at'] = packageId;
 
     // Update the package address under the addresses section e.g. gas_service = "0x1"
     moveJson.addresses[packageName] = packageId;
+
+    if(substitutions) {
+        moveJson = mergeDeep(moveJson, substitutions);
+    }
 
     fs.writeFileSync(movePath, toml.stringify(moveJson));
 }
