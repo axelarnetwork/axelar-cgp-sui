@@ -3,10 +3,11 @@
 name: Release
 
 on:
-  # Once the PR gets merged to `main`
+  # Once the PR gets merged to `main` or `release` branches
   pull_request:
     branches:
       - main
+      - releases/**
     types: [closed]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
