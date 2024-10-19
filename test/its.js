@@ -18,11 +18,11 @@ const {
     getSingletonChannelId,
     getITSChannelId,
     setupTrustedAddresses,
-    approveAndExecuteMessage,
 } = require('./testutils');
 const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
 const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
+const { approveAndExecute } = require('../dist/execute');
 const { bcsStructs } = require('../dist/bcs');
 const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
@@ -45,6 +45,7 @@ describe('ITS', () => {
 
     // Parameters for Gateway Setup
     const gatewayInfo = {};
+    const discoveryInfo = {};
     const domainSeparator = getRandomBytes32();
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
     const minimumRotationDelay = 1000;
@@ -81,9 +82,8 @@ describe('ITS', () => {
         gatewayInfo.gateway = objectIds.gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
-        gatewayInfo.discoveryPackageId;
-        gatewayInfo.discoveryPackageId = deployments.relayer_discovery.packageId;
-        gatewayInfo.discovery = objectIds.relayerDiscovery;
+        discoveryInfo.packageId = deployments.relayer_discovery.packageId;
+        discoveryInfo.discovery = objectIds.relayerDiscovery;
     }
 
     async function registerItsTransaction() {
@@ -231,6 +231,11 @@ describe('ITS', () => {
                 const amount = 1e9;
                 const data = '0x1234';
 
+                const discoveryInfo = {
+                    packageId: deployments.relayer_discovery.packageId,
+                    discovery: objectIds.relayerDiscovery,
+                };
+
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
                 // ITS transfer payload from Ethereum to Sui
@@ -248,7 +253,7 @@ describe('ITS', () => {
                     payload_hash: keccak256(payload),
                 };
 
-                await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
 
@@ -333,7 +338,7 @@ describe('ITS', () => {
                     payload_hash: keccak256(payload),
                 };
 
-                await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
     });
