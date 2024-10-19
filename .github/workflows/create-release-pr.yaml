@@ -59,7 +59,8 @@ jobs:
         id: extract-package-versions
         run: |
           # Using `--since` flag in the `status` step on the same branch returns empty release file and doesn't reflect the upcoming changes, hence we override the `baseBranch` in the config file.
-          jq '.baseBranch = "${{ steps.branch-check.outputs.branch_name }}"' ./.changeset/config.json > temp.json && mv temp.json ./.changeset/config.json
+          jq '.baseBranch = "${{ steps.branch-check.outputs.branch_name }}"' ./.changeset/config.json > temp.json
+          mv temp.json ./.changeset/config.json
           npm run cs -- status --output=release.json
 
           NEW_PACKAGE_VERSION=$(jq -r '.releases[0].newVersion' release.json)
