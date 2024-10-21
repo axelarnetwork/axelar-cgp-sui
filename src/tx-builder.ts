@@ -11,6 +11,7 @@ import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
 import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
+import { NODE_ERROR_MESSAGE } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -207,7 +208,6 @@ export type TxBuilderOptions = {
 };
 
 export class TxBuilder {
-    readonly NODE_ERROR_MESSAGE = 'This operation is only supported in a Node.js environment';
 
     client: SuiClient;
     tx: Transaction;
@@ -267,15 +267,15 @@ export class TxBuilder {
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
     ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        if (!nodeUtils) throw new Error(this.NODE_ERROR_MESSAGE);
+        if (!nodeUtils) throw new Error(NODE_ERROR_MESSAGE);
 
         return nodeUtils.getContractBuild(packageName, moveDir);
     }
 
     async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
-        if (!nodeUtils) throw new Error(this.NODE_ERROR_MESSAGE);
+        if (!nodeUtils) throw new Error(NODE_ERROR_MESSAGE);
 
-        const filePath = nodeUtils.writeInterchainToken(moveDir, options);
+        const filePath = await nodeUtils.writeInterchainToken(moveDir, options);
 
         const publishReceipt = await this.publishPackage('interchain_token', moveDir);
 
