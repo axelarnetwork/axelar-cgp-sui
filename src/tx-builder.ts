@@ -284,8 +284,7 @@ export class TxBuilder {
         const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
-        const { execSync } = await import('child_process');
-        const path = await import('path');
+        const [path, execSync] = await Promise.all([import('path'), import('child_process').then((m) => m.execSync)]);
 
         const { tmpdir, rmTmpDir } = await this.prepareMoveBuild();
 
@@ -304,8 +303,9 @@ export class TxBuilder {
     }
 
     async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
-        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
         const fs = await import('fs');
+
+        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
 
         const { filePath, content } = newInterchainToken(templateFilePath, options);
 
