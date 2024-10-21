@@ -11,7 +11,6 @@ import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
 import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
-import { newInterchainToken, updateMoveToml } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -194,12 +193,22 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
 
 const isNode = !!process?.versions?.node;
 
+let nodeUtils: typeof import('./node-utils') | undefined;
+
+if (isNode) {
+    import('./node-utils').then((module) => {
+        nodeUtils = module;
+    });
+}
+
 export type TxBuilderOptions = {
     tmpDir?: string;
     moveDir?: string;
 };
 
 export class TxBuilder {
+    readonly NODE_ERROR_MESSAGE = 'This operation is only supported in a Node.js environment';
+
     client: SuiClient;
     tx: Transaction;
     // this dir will be used to create temporary build directory
@@ -254,66 +263,23 @@ export class TxBuilder {
         });
     }
 
-    /**
-     * Prepare a move build by creating a temporary directory to store the compiled move code
-     * @returns {tmpdir: string, rmTmpDir: () => void}
-     * - tmpdir is the path to the temporary directory
-     * - rmTmpDir is a function to remove the temporary directory
-     */
-    private async prepareMoveBuild() {
-        if (!isNode || !this.tmpDir) {
-            throw new Error('This operation is only supported in a Node.js environment');
-        }
-
-        // Dynamically import fs and path modules
-        const [fs, path] = await Promise.all([import('fs'), import('path')]);
-
-        const tmpdir = fs.mkdtempSync(path.join(this.tmpDir, '.move-build-'));
-        const rmTmpDir = () => fs.rmSync(tmpdir, { recursive: true });
-
-        return {
-            tmpdir,
-            rmTmpDir,
-        };
-    }
-
     async getContractBuild(
         packageName: string,
         moveDir: string = `${__dirname}/../move`,
     ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        const emptyPackageId = '0x0';
-        updateMoveToml(packageName, emptyPackageId, moveDir);
+        if (!nodeUtils) throw new Error(this.NODE_ERROR_MESSAGE);
 
-        const [path, execSync] = await Promise.all([import('path'), import('child_process').then((m) => m.execSync)]);
-
-        const { tmpdir, rmTmpDir } = await this.prepareMoveBuild();
-
-        try {
-            const { modules, dependencies, digest } = JSON.parse(
-                execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                }),
-            );
-
-            return { modules, dependencies, digest };
-        } finally {
-            rmTmpDir();
-        }
+        return nodeUtils.getContractBuild(packageName, moveDir);
     }
 
     async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
-        const fs = await import('fs');
+        if (!nodeUtils) throw new Error(this.NODE_ERROR_MESSAGE);
 
-        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
-
-        const { filePath, content } = newInterchainToken(templateFilePath, options);
-
-        fs.writeFileSync(filePath, content, 'utf8');
+        const filePath = nodeUtils.writeInterchainToken(moveDir, options);
 
         const publishReceipt = await this.publishPackage('interchain_token', moveDir);
 
-        fs.rmSync(filePath);
+        nodeUtils.removeFile(filePath);
 
         return publishReceipt;
     }
