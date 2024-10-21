@@ -1,6 +1,3 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
 import { bcs, BcsType } from '@mysten/bcs';
 import {
     DevInspectResults,
@@ -195,12 +192,25 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     return isAsciiString || isStringString;
 }
 
+const isNode = !!process?.versions?.node;
+
+export type TxBuilderOptions = {
+    tmpDir?: string;
+    moveDir?: string;
+};
+
 export class TxBuilder {
     client: SuiClient;
     tx: Transaction;
-    constructor(client: SuiClient) {
-        this.client = client;
+    // this dir will be used to create temporary build directory
+    tmpDir?: string;
+    moveDir?: string;
+
+    constructor(client: SuiClient, options?: TxBuilderOptions) {
         this.tx = new Transaction();
+        this.client = client;
+        this.tmpDir = options?.tmpDir ?? isNode ? __dirname : undefined;
+        this.moveDir = options?.moveDir ?? isNode ? `${__dirname}/../move` : undefined;
     }
 
     async moveCall(moveCallInfo: {
@@ -250,8 +260,15 @@ export class TxBuilder {
      * - tmpdir is the path to the temporary directory
      * - rmTmpDir is a function to remove the temporary directory
      */
-    private prepareMoveBuild() {
-        const tmpdir = fs.mkdtempSync(`${__dirname}/.move-build-`);
+    private async prepareMoveBuild() {
+        if (!isNode || !this.tmpDir) {
+            throw new Error('This operation is only supported in a Node.js environment');
+        }
+
+        // Dynamically import fs and path modules
+        const [fs, path] = await Promise.all([import('fs'), import('path')]);
+
+        const tmpdir = fs.mkdtempSync(path.join(this.tmpDir, '.move-build-'));
         const rmTmpDir = () => fs.rmSync(tmpdir, { recursive: true });
 
         return {
@@ -267,7 +284,10 @@ export class TxBuilder {
         const emptyPackageId = '0x0';
         updateMoveToml(packageName, emptyPackageId, moveDir);
 
-        const { tmpdir, rmTmpDir } = this.prepareMoveBuild();
+        const { execSync } = await import('child_process');
+        const path = await import('path');
+
+        const { tmpdir, rmTmpDir } = await this.prepareMoveBuild();
 
         try {
             const { modules, dependencies, digest } = JSON.parse(
@@ -285,6 +305,7 @@ export class TxBuilder {
 
     async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
         const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
+        const fs = await import('fs');
 
         const { filePath, content } = newInterchainToken(templateFilePath, options);
 
