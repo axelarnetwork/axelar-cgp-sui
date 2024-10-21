@@ -8,31 +8,28 @@ This is a short spec for what there is to be done. You can check https://github.
 [x] Use the ITS example for end to end tests.
 */
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
+const { bcs } = require('@mysten/sui/bcs');
 const {
     publishPackage,
-    publishInterchainToken,
     generateEd25519Keypairs,
     findObjectId,
     getRandomBytes32,
     calculateNextSigners,
-    getSingletonChannelId,
-    getITSChannelId,
+    getVersionedChannelId,
     setupTrustedAddresses,
     approveAndExecuteMessage,
     publishExternalPackage,
 } = require('./testutils');
-const { expect } = require('chai');
 const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder, fundAccountsFromFaucet, updateMoveToml } = require('../dist/utils');
+const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
 const { bcsStructs } = require('../dist/bcs');
 const { ITSMessageType } = require('../dist/types');
 const { TxBuilder } = require('../dist/tx-builder');
-const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib/utils');
 
 const SUI = '0x2';
-const STD = '0x1'
 
-describe.only('Squid', () => {
+describe('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -103,9 +100,36 @@ describe.only('Squid', () => {
         await registerTransactionBuilder.signAndExecute(deployer);
     }
 
+    async function registerSquidTransaction() {
+        const registerTransactionBuilder = new TxBuilder(client);
+
+        await registerTransactionBuilder.moveCall({
+            target: `${deployments.squid.packageId}::discovery::register_transaction`,
+            arguments: [objectIds.squid, objectIds.its, objectIds.gateway, objectIds.relayerDiscovery],
+        });
+
+        await registerTransactionBuilder.signAndExecute(deployer);
+    }
+
     async function deployDeepbook() {
         deployments.token = await publishExternalPackage(client, deployer, 'token', `${__dirname}/../node_modules/deepbookv3/packages`);
-        deployments.deepbook = await publishExternalPackage(client, deployer, 'deepbook', `${__dirname}/../node_modules/deepbookv3/packages`);
+        deployments.deepbook = await publishExternalPackage(
+            client,
+            deployer,
+            'deepbook',
+            `${__dirname}/../node_modules/deepbookv3/packages`,
+        );
+    }
+
+    async function giveDeepToSquid() {
+        const giveDeepBuilder = new TxBuilder(client);
+
+        await giveDeepBuilder.moveCall({
+            target: `${deployments.squid.packageId}::squid::give_deep`,
+            arguments: [objectIds.squid, objectIds.deepCoin],
+        });
+
+        await giveDeepBuilder.signAndExecute(deployer);
     }
 
     async function createBalanceManager(keypair = deployer) {
@@ -116,40 +140,41 @@ describe.only('Squid', () => {
             arguments: [],
             typeArguments: [],
         });
-        
+
         builder.tx.transferObjects([balanceManager], keypair.toSuiAddress());
         const executeTxn = await builder.signAndExecute(deployer);
         return findObjectId(executeTxn, `BalanceManager`);
     }
 
-    async function createPool(coin1, coin2, tickSize = 100, lotSize = 100, minSize = 100, whitelistedPool = false, stablePool = false) {
+    async function createPool(coin1, coin2, tickSize = 100, lotSize = 100, minSize = 100, whitelistedPool = true, stablePool = false) {
         const builder = new TxBuilder(client);
 
         await builder.moveCall({
             target: `${deployments.deepbook.packageId}::pool::create_pool_admin`,
-            arguments: [
-                objectIds.deepbookRegistry,
-                tickSize,
-                lotSize,
-                minSize,
-                whitelistedPool,
-                stablePool,
-                objectIds.deepbookAdminCap,
-            ],
+            arguments: [objectIds.deepbookRegistry, tickSize, lotSize, minSize, whitelistedPool, stablePool, objectIds.deepbookAdminCap],
             typeArguments: [coins[coin1].type, coins[coin2].type],
         });
         const executeTxn = await builder.signAndExecute(deployer);
-        return findObjectId(executeTxn, `Pool`);
+
+        return findObjectId(executeTxn, `pool::Pool`, 'created', 'PoolInner');
     }
 
     async function fundPool(coin1, coin2, amount, price = 10000000) {
         const builder = new TxBuilder(client);
         const tradeProof = await builder.moveCall({
             target: `${deployments.deepbook.packageId}::balance_manager::generate_proof_as_owner`,
-            arguments: [
-                objectIds.balanceManager,
-            ],
+            arguments: [objectIds.balanceManager],
             typeArguments: [],
+        });
+        const input = await builder.moveCall({
+            target: `${SUI}::coin::mint`,
+            arguments: [coins[coin2].treasuryCap, amount],
+            typeArguments: [coins[coin2].type],
+        });
+        await builder.moveCall({
+            target: `${deployments.deepbook.packageId}::balance_manager::deposit`,
+            arguments: [objectIds.balanceManager, input],
+            typeArguments: [coins[coin2].type],
         });
         await builder.moveCall({
             target: `${deployments.deepbook.packageId}::pool::place_limit_order`,
@@ -164,11 +189,14 @@ describe.only('Squid', () => {
                 amount,
                 true,
                 true,
-                
+                1000000000000000,
+                CLOCK_PACKAGE_ID,
             ],
             typeArguments: [coins[coin1].type, coins[coin2].type],
         });
-        /*place_limit_order<BaseAsset, QuoteAsset>(
+
+        await builder.signAndExecute(deployer);
+        /* place_limit_order<BaseAsset, QuoteAsset>(
             self: &mut Pool<BaseAsset, QuoteAsset>,
             balance_manager: &mut BalanceManager,
             trade_proof: &TradeProof,
@@ -182,7 +210,31 @@ describe.only('Squid', () => {
             expire_timestamp: u64,
             clock: &Clock,
             ctx: &TxContext,
-        )*/
+        ) */
+    }
+
+    async function registerCoin(coin) {
+        const builder = new TxBuilder(client);
+
+        const coinInfo = await builder.moveCall({
+            target: `${deployments.its.packageId}::coin_info::from_metadata`,
+            arguments: [coins[coin].coinMetadata, 9],
+            typeArguments: [coins[coin].type],
+        });
+        const coinManagment = await builder.moveCall({
+            target: `${deployments.its.packageId}::coin_management::new_with_cap`,
+            arguments: [coins[coin].treasuryCap],
+            typeArguments: [coins[coin].type],
+        });
+        await builder.moveCall({
+            target: `${deployments.its.packageId}::its::register_coin`,
+            arguments: [objectIds.its, coinInfo, coinManagment],
+            typeArguments: [coins[coin].type],
+        });
+
+        const registerTxn = await builder.signAndExecute(deployer, { showEvents: true });
+
+        objectIds.tokenId = registerTxn.events[0].parsedJson.token_id.id;
     }
 
     before(async () => {
@@ -199,18 +251,21 @@ describe.only('Squid', () => {
             deepCoin: findObjectId(deployments.token.publishTxn, 'Coin'),
             deepbookAdminCap: findObjectId(deployments.deepbook.publishTxn, 'DeepbookAdminCap'),
             deepbookRegistry: findObjectId(deployments.deepbook.publishTxn, 'Registry', 'created', 'RegistryInner'),
-        }
+        };
 
         dependencies.push('gas_service', 'example');
+
         // Publish all packages
-        for (const packageDir of dependencies) {console.log(packageDir);
-            const publishedReceipt = await publishPackage(client, deployer, packageDir);
+        for (const packageDir of dependencies) {
+            const publishedReceipt = await publishPackage(client, deployer, packageDir, { showEvents: true });
 
             deployments[packageDir] = publishedReceipt;
         }
+
         objectIds = {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
+            squidV0: findObjectId(deployments.squid.publishTxn, 'squid_v0::Squid_v0'),
             its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
             itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
@@ -221,29 +276,29 @@ describe.only('Squid', () => {
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
             itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
         };
-        let type = `${deployments.example.packageId}::a::A`
+        // Find the object ids from the publish transactions
+        objectIds = {
+            ...objectIds,
+            itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
+            squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
+        };
+        let type = `${deployments.example.packageId}::a::A`;
         coins.a = {
             treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
             coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
             type,
         };
-        type = `${deployments.example.packageId}::b::B`
+        type = `${deployments.example.packageId}::b::B`;
         coins.b = {
             treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
             coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
             type,
         };
-        type = `${deployments.example.packageId}::c::C`
+        type = `${deployments.example.packageId}::c::C`;
         coins.c = {
             treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
             coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
             type,
-        };
-
-        // Find the object ids from the publish transactions
-        objectIds = {
-            ...objectIds,
-            itsChannel: await getITSChannelId(client, objectIds.itsV0),
         };
 
         pools.ab = await createPool('a', 'b');
@@ -252,10 +307,72 @@ describe.only('Squid', () => {
 
         await setupGateway();
         await registerItsTransaction();
+        await registerSquidTransaction();
         await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await registerCoin('a');
+        await giveDeepToSquid();
     });
 
     it('should call register_transaction successfully', async () => {
+        console.log(
+            await client.getAllCoins({
+                owner: keypair.toSuiAddress(),
+            }),
+        );
+        const swap = bcsStructs.squid.DeepbookV3SwapData.serialize({
+            swap_type: { DeepbookV3: null },
+            pool_id: pools.ab,
+            has_base: true,
+            min_output: 1,
+            base_type: coins.a.type.slice(2),
+            quote_type: coins.b.type.slice(2),
+            lot_size: 100,
+            should_sweep: true,
+        }).toBytes();
+        const transfer = bcsStructs.squid.SuiTransferSwapData.serialize({
+            swap_type: { SuiTransfer: null },
+            coin_type: coins.b.type.slice(2),
+            recipient: keypair.toSuiAddress(),
+            fallback: false,
+        }).toBytes();
+        const fallback = bcsStructs.squid.SuiTransferSwapData.serialize({
+            swap_type: { SuiTransfer: null },
+            coin_type: coins.a.type.slice(2),
+            recipient: keypair.toSuiAddress(),
+            fallback: true,
+        }).toBytes();
+        console.log(swap, transfer);
+        const swapData = bcs.vector(bcs.vector(bcs.U8)).serialize([swap, transfer, fallback]).toBytes();
 
+        const messageType = ITSMessageType.InterchainTokenTransfer;
+        const tokenId = objectIds.tokenId;
+        const sourceAddress = trustedSourceAddress;
+        const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
+        const amount = 1e6;
+        const data = swapData;
+        // Channel ID for Squid. This will be encoded in the payload
+        const squidChannelId = objectIds.squidChannel;
+        // ITS transfer payload from Ethereum to Sui
+        const payload = defaultAbiCoder.encode(
+            ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+            [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
+        );
+
+        const message = {
+            source_chain: trustedSourceChain,
+            message_id: hexlify(randomBytes(32)),
+            source_address: trustedSourceAddress,
+            destination_id: destinationAddress,
+            payload,
+            payload_hash: keccak256(payload),
+        };
+
+        await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+
+        console.log(
+            await client.getAllCoins({
+                owner: keypair.toSuiAddress(),
+            }),
+        );
     });
 });

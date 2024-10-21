@@ -271,10 +271,13 @@ export class TxBuilder {
 
         try {
             const { modules, dependencies, digest } = JSON.parse(
-                execSync(`sui move build --dev --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                }),
+                execSync(
+                    `sui move build --dev --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`,
+                    {
+                        encoding: 'utf-8',
+                        stdio: 'pipe', // silent the output
+                    },
+                ),
             );
 
             return { modules, dependencies, digest };

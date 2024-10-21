@@ -12,6 +12,7 @@ use std::type_name;
 use sui::bcs::{Self, BCS};
 use sui::clock::Clock;
 use sui::coin;
+use utils::utils::peel;
 
 const EWrongSwapType: u64 = 0;
 const EWrongCoinType: u64 = 1;
@@ -37,20 +38,18 @@ public struct ItsTransferSwapData has drop {
     fallback: bool,
 }
 
-fun new_sui_transfer_swap_data(data: vector<u8>): SuiTransferSwapData {
-    let mut bcs = bcs::new(data);
+fun new_sui_transfer_swap_data(bcs: &mut BCS): SuiTransferSwapData {
     SuiTransferSwapData {
-        swap_type: swap_type::peel(&mut bcs),
+        swap_type: swap_type::peel(bcs),
         coin_type: ascii::string(bcs.peel_vec_u8()),
         recipient: bcs.peel_address(),
         fallback: bcs.peel_bool(),
     }
 }
 
-fun new_its_transfer_swap_data(data: vector<u8>): ItsTransferSwapData {
-    let mut bcs = bcs::new(data);
+fun new_its_transfer_swap_data(bcs: &mut BCS): ItsTransferSwapData {
     ItsTransferSwapData {
-        swap_type: swap_type::peel(&mut bcs),
+        swap_type: swap_type::peel(bcs),
         coin_type: ascii::string(bcs.peel_vec_u8()),
         token_id: token_id::from_address(bcs.peel_address()),
         destination_chain: ascii::string(bcs.peel_vec_u8()),
@@ -63,7 +62,7 @@ fun new_its_transfer_swap_data(data: vector<u8>): ItsTransferSwapData {
 public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
     let (data, fallback) = swap_info.data_estimating();
     if (fallback) return;
-    let swap_data = new_sui_transfer_swap_data(data);
+    let swap_data = peel!(data, |data| new_sui_transfer_swap_data(data));
 
     assert!(swap_data.swap_type == swap_type::sui_transfer(), EWrongSwapType);
 
@@ -78,7 +77,7 @@ public fun sui_estimate<T>(swap_info: &mut SwapInfo) {
 public fun its_estimate<T>(swap_info: &mut SwapInfo) {
     let (data, fallback) = swap_info.data_estimating();
     if (fallback) return;
-    let swap_data = new_its_transfer_swap_data(data);
+    let swap_data = peel!(data, |data| new_its_transfer_swap_data(data));
 
     assert!(swap_data.swap_type == swap_type::its_transfer(), EWrongSwapType);
 
@@ -92,7 +91,7 @@ public fun its_estimate<T>(swap_info: &mut SwapInfo) {
 
 public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
     let (data, fallback) = swap_info.data_swapping();
-    let swap_data = new_sui_transfer_swap_data(data);
+    let swap_data = peel!(data, |data| new_sui_transfer_swap_data(data));
 
     // This check allows to skip the transfer if the `fallback` state does not
     // match the state of the transaction here.
@@ -130,9 +129,9 @@ public fun its_transfer<T>(
     let value = squid.value!(b"its_transfer");
 
     let (data, fallback) = swap_info.data_swapping();
-    
+
     if (data.length() == 0) return;
-    let swap_data = new_its_transfer_swap_data(data);
+    let swap_data = peel!(data, |data| new_its_transfer_swap_data(data));
 
     // This check allows to skip the transfer if the `fallback` state does not
     // match the state of the transaction here.

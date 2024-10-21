@@ -5,6 +5,8 @@ use its::its::ITS;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
 use sui::clock::Clock;
+use sui::coin::Coin;
+use token::deep::DEEP;
 use version_control::version_control::VersionControl;
 
 // -----
@@ -59,6 +61,10 @@ public(package) fun start_swap<T>(
     swap_info.coin_bag().store_estimate<T>(coin.value());
     swap_info.coin_bag().store_balance(coin.into_balance());
     swap_info
+}
+
+public(package) fun give_deep(self: &mut Squid_v0, deep: Coin<DEEP>) {
+    self.coin_bag.store_balance(deep.into_balance());
 }
 
 #[test_only]
