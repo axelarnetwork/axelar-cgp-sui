@@ -37,6 +37,7 @@ public fun from_info<T>(
     name: &String,
     symbol: &ascii::String,
     decimals: &u8,
+    remote_decimals: &u8,
     has_metadata: &bool,
     has_treasury: &bool,
 ): TokenId {
@@ -45,6 +46,7 @@ public fun from_info<T>(
     vec.append(bcs::to_bytes(name));
     vec.append(bcs::to_bytes(symbol));
     vec.append(bcs::to_bytes(decimals));
+    vec.append(bcs::to_bytes(remote_decimals));
     vec.append(bcs::to_bytes(has_metadata));
     vec.append(bcs::to_bytes(has_treasury));
     TokenId { id: address::from_bytes(keccak256(&vec)) }
@@ -58,6 +60,7 @@ public(package) fun from_coin_data<T>(
         &coin_info.name(),
         &coin_info.symbol(),
         &coin_info.decimals(),
+        &coin_info.remote_decimals(),
         &option::is_some(coin_info.metadata()),
         &coin_management.has_capability(),
     )
