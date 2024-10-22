@@ -3,14 +3,12 @@ const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
 const { publishPackage, getRandomBytes32, expectRevert, expectEvent, approveMessage, hashMessage, signMessage } = require('./testutils');
-const { approveAndExecute } = require('../dist/cjs/execute');
-const { TxBuilder } = require('../dist/cjs/tx-builder');
+const { approveAndExecute, TxBuilder, CLOCK_PACKAGE_ID } = require('../dist/cjs');
 const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof },
     },
 } = require('../dist/cjs/bcs');
-const { CLOCK_PACKAGE_ID } = require('../dist/cjs/types');
 const { bcs } = require('@mysten/sui/bcs');
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { expect } = require('chai');
