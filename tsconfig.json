@@ -27,10 +27,6 @@
         /* Completeness */
         "skipDefaultLibCheck": true,
         "skipLibCheck": true,
-
-        "paths": {
-           "@common/*": ["src/common/*"]
-        },
     },
     "exclude": ["node_modules", "dist", "test"]
 }
