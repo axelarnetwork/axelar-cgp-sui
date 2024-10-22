@@ -53,6 +53,7 @@
     "@changesets/cli": "^2.27.6",
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "@types/node": "^20.14.11",
+    "@types/secp256k1": "^4.0.6",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "chai": "^4.3.7",
