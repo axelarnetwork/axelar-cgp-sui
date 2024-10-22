@@ -7,11 +7,11 @@ import {
     SuiTransactionBlockResponse,
     SuiTransactionBlockResponseOptions,
 } from '@mysten/sui/client';
-import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
+import { Keypair } from '@mysten/sui/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { Bytes, utils as ethersUtils } from 'ethers';
-import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
-import { NODE_ERROR_MESSAGE } from './utils';
+import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from '../common/types';
+import { getContractBuild as getMoveContractBuild, removeFile, writeInterchainToken } from './node-utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -192,34 +192,13 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     return isAsciiString || isStringString;
 }
 
-const isNode = !!process?.versions?.node;
-
-let nodeUtils: typeof import('./node-utils') | undefined;
-
-if (isNode) {
-    import('./node-utils').then((module) => {
-        nodeUtils = module;
-    });
-}
-
-export type TxBuilderOptions = {
-    tmpDir?: string;
-    moveDir?: string;
-};
-
 export class TxBuilder {
-
     client: SuiClient;
     tx: Transaction;
-    // this dir will be used to create temporary build directory
-    tmpDir?: string;
-    moveDir?: string;
 
-    constructor(client: SuiClient, options?: TxBuilderOptions) {
+    constructor(client: SuiClient) {
         this.tx = new Transaction();
         this.client = client;
-        this.tmpDir = options?.tmpDir ?? isNode ? __dirname : undefined;
-        this.moveDir = options?.moveDir ?? isNode ? `${__dirname}/../move` : undefined;
     }
 
     async moveCall(moveCallInfo: {
@@ -263,29 +242,25 @@ export class TxBuilder {
         });
     }
 
-    async getContractBuild(
+    getContractBuild(
         packageName: string,
-        moveDir: string = `${__dirname}/../move`,
-    ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        if (!nodeUtils) throw new Error(NODE_ERROR_MESSAGE);
-
-        return nodeUtils.getContractBuild(packageName, moveDir);
+        moveDir: string = `${__dirname}/../../move`,
+    ): { modules: string[]; dependencies: string[]; digest: Bytes } {
+        return getMoveContractBuild(packageName, moveDir);
     }
 
     async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
-        if (!nodeUtils) throw new Error(NODE_ERROR_MESSAGE);
-
-        const filePath = await nodeUtils.writeInterchainToken(moveDir, options);
+        const filePath = writeInterchainToken(moveDir, options);
 
         const publishReceipt = await this.publishPackage('interchain_token', moveDir);
 
-        nodeUtils.removeFile(filePath);
+        removeFile(filePath);
 
         return publishReceipt;
     }
 
-    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
-        const { modules, dependencies } = await this.getContractBuild(packageName, moveDir);
+    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../../move`): Promise<TransactionResult> {
+        const { modules, dependencies } = this.getContractBuild(packageName, moveDir);
 
         return this.tx.publish({
             modules,
@@ -293,7 +268,7 @@ export class TxBuilder {
         });
     }
 
-    async publishPackageAndTransferCap(packageName: string, to: string, moveDir = `${__dirname}/../move`) {
+    async publishPackageAndTransferCap(packageName: string, to: string, moveDir = `${__dirname}/../../move`) {
         const cap = await this.publishPackage(packageName, moveDir);
 
         this.tx.transferObjects([cap], to);
