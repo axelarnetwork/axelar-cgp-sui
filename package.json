@@ -49,7 +49,7 @@
     "release": "npm run build && changeset publish",
     "release-snapshot": "npm run build && npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false && npm publish --no-git-checks --tag snapshot --access public",
     "cs": "changeset",
-    "lint": "eslint --fix './src/*.ts' './test/*.js'",
+    "lint": "eslint --fix './src/**/*.ts' './test/*.js'",
     "prettier": "prettier --write './src/*.ts' './test/*.js'",
     "docs": "./scripts/docs.sh"
   },
