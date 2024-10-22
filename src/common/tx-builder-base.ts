@@ -191,12 +191,7 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     return isAsciiString || isStringString;
 }
 
-export type TxBuilderOptions = {
-    tmpDir?: string;
-    moveDir?: string;
-};
-
-export class TxBuilder {
+export class TxBuilderBase {
     client: SuiClient;
     tx: Transaction;
 

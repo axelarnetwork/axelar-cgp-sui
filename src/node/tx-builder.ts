@@ -1,14 +1,10 @@
-import { SuiClient } from '@mysten/sui/client';
-import { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import { TransactionResult } from '@mysten/sui/transactions';
 import { Bytes } from 'ethers';
-import { TxBuilder as TxBuilderBase } from '../common/tx-builder';
+import { TxBuilderBase } from '../common/tx-builder-base';
 import { InterchainTokenOptions } from '../common/types';
 import { getContractBuild as getMoveContractBuild, removeFile, writeInterchainToken } from './node-utils';
 
 export class TxBuilder extends TxBuilderBase {
-    client: SuiClient;
-    tx: Transaction;
-
     getContractBuild(
         packageName: string,
         moveDir: string = `${__dirname}/../../move`,
