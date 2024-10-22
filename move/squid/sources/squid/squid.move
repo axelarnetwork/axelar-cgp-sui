@@ -6,7 +6,9 @@ use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
 use std::ascii;
 use sui::clock::Clock;
+use sui::coin::Coin;
 use sui::versioned::{Self, Versioned};
+use token::deep::DEEP;
 use version_control::version_control::{Self, VersionControl};
 
 // -------
@@ -77,6 +79,10 @@ public fun finalize(swap_info: SwapInfo) {
     swap_info.finalize();
 }
 
+entry fun give_deep(self: &mut Squid, deep: Coin<DEEP>) {
+    self.value_mut!(b"give_deep").give_deep(deep);
+}
+
 // -----------------
 // Package Functions
 // -----------------
@@ -103,6 +109,7 @@ fun new_version_control(): VersionControl {
             b"its_transfer",
             b"deepbook_v3_swap",
             b"register_transaction",
+            b"give_deep",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }

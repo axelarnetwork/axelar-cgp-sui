@@ -185,8 +185,14 @@ function getSquidStructs() {
     const { Channel, CoinBag } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
 
-    const DeepbookV2SwapData = bcs.struct('DeepbookV2SwapData', {
-        swap_type: bcs.U8,
+    const SwapType = bcs.enum('SwapType', {
+        DeepbookV3: null,
+        SuiTransfer: null,
+        ItsTransfer: null,
+    });
+
+    const DeepbookV3SwapData = bcs.struct('DeepbookV3SwapData', {
+        swap_type: SwapType,
         pool_id: bcs.Address,
         has_base: bcs.Bool,
         min_output: bcs.U64,
@@ -197,18 +203,20 @@ function getSquidStructs() {
     });
 
     const SuiTransferSwapData = bcs.struct('SuiTransferSwapData', {
-        swap_type: bcs.U8,
+        swap_type: SwapType,
         coin_type: bcs.String,
         recipient: bcs.Address,
+        fallback: bcs.Bool,
     });
 
     const ItsTransferSwapData = bcs.struct('ItsTransferSwapData', {
-        swap_type: bcs.U8,
+        swap_type: SwapType,
         coin_type: bcs.String,
         token_id: bcs.Address,
         destination_chain: bcs.String,
         destination_address: bcs.vector(bcs.U8),
         metadata: bcs.vector(bcs.U8),
+        fallback: bcs.Bool,
     });
 
     const SquidV0 = bcs.struct('Squid_v0', {
@@ -224,7 +232,8 @@ function getSquidStructs() {
     });
 
     return {
-        DeepbookV2SwapData,
+        SwapType,
+        DeepbookV3SwapData,
         SuiTransferSwapData,
         ItsTransferSwapData,
         Squid,

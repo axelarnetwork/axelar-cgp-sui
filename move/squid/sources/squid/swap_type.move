@@ -34,11 +34,11 @@ public(package) fun its_transfer(): SwapType {
 
 public(package) fun peel(bcs: &mut BCS): SwapType {
     let swap_type = bcs.peel_u8();
-    if(swap_type == 0) {   
+    if (swap_type == 0) {
         SwapType::DeepbookV3
-    } else if(swap_type == 1) {
-        SwapType::SuiTransfer   
-    } else if(swap_type == 2) {
+    } else if (swap_type == 1) {
+        SwapType::SuiTransfer
+    } else if (swap_type == 2) {
         SwapType::ItsTransfer
     } else {
         abort (EInvalidSwapType)

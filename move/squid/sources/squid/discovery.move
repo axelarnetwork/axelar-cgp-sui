@@ -1,19 +1,15 @@
 module squid::discovery;
 
-use std::ascii::{Self, String};
-
-use sui::bcs;
-
 use axelar_gateway::gateway::Gateway;
-
+use its::its::ITS;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
-
-use its::its::ITS;
-
 use squid::deepbook_v3;
 use squid::squid::Squid;
+use squid::swap_type::{Self, SwapType};
 use squid::transfers;
+use std::ascii::{Self, String};
+use sui::bcs;
 
 const EInvalidSwapType: u64 = 0;
 
@@ -43,7 +39,7 @@ public fun register_transaction(
                 transaction::new_function(
                     transaction::package_id<Squid>(),
                     ascii::string(b"discovery"),
-                    ascii::string(b"get_transaction"),
+                    ascii::string(b"transaction"),
                 ),
                 vector[squid_arg, its_arg, gateway_arg, vector[3]],
                 vector[],
@@ -84,80 +80,63 @@ public fun transaction(
     let mut move_calls = vector[
         start_swap(package_id, squid_arg, its_arg, type_in),
     ];
+    swap_data.do_ref!(|data| {
+        let mut bcs = bcs::new(*data);
+        let swap_type = swap_type::peel(&mut bcs);
 
-    let mut i = 0;
-    while (i < swap_data.length()) {
-        let mut bcs = bcs::new(swap_data[i]);
-        let swap_type = bcs.peel_u8();
-
-        if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
-            move_calls.push_back(
-                deepbook_v3::estimate_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                ),
-            );
-        } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
-            move_calls.push_back(
-                transfers::sui_estimate_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                ),
-            );
+        let call = if (swap_type == swap_type::deepbook_v3()) {
+            deepbook_v3::estimate_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+            )
+        } else if (swap_type == swap_type::sui_transfer()) {
+            transfers::sui_estimate_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+            )
         } else {
-            assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
-            move_calls.push_back(
-                transfers::its_estimate_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                ),
-            );
+            assert!(swap_type == swap_type::its_transfer(), EInvalidSwapType);
+            transfers::its_estimate_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+            )
         };
+        move_calls.push_back(call);
+    });
 
-        i = i + 1;
-    };
+    swap_data.do_ref!(|data| {
+        let mut bcs = bcs::new(*data);
+        let swap_type = swap_type::peel(&mut bcs);
 
-    i = 0;
-    while (i < swap_data.length()) {
-        let mut bcs = bcs::new(swap_data[i]);
-        let swap_type = bcs.peel_u8();
-
-        if (swap_type == SWAP_TYPE_DEEPBOOK_V3) {
-            move_calls.push_back(
-                deepbook_v3::swap_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                    squid_arg,
-                ),
-            );
-        } else if (swap_type == SWAP_TYPE_SUI_TRANSFER) {
-            move_calls.push_back(
-                transfers::sui_transfer_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                ),
-            );
+        let call = if (swap_type == swap_type::deepbook_v3()) {
+            deepbook_v3::swap_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+                squid_arg,
+            )
+        } else if (swap_type == swap_type::sui_transfer()) {
+            transfers::sui_transfer_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+            )
         } else {
-            assert!(swap_type == SWAP_TYPE_ITS_TRANSFER, EInvalidSwapType);
-            move_calls.push_back(
-                transfers::its_transfer_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                    squid_arg,
-                    gateway_arg,
-                    its_arg,
-                ),
-            );
+            assert!(swap_type == swap_type::its_transfer(), EInvalidSwapType);
+            transfers::its_transfer_move_call(
+                package_id,
+                bcs,
+                swap_info_arg,
+                squid_arg,
+                gateway_arg,
+                its_arg,
+            )
         };
-
-        i = i + 1;
-    };
+        move_calls.push_back(call);
+    });
 
     move_calls.push_back(finalize(package_id, swap_info_arg));
 

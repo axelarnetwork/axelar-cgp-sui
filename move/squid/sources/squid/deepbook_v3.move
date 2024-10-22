@@ -1,21 +1,16 @@
 module squid::deepbook_v3;
 
-use std::ascii::{Self, String};
-use std::type_name;
-
-use sui::bcs::{Self, BCS};
-use sui::clock::Clock;
-
 use deepbook::pool::Pool;
-
 use relayer_discovery::transaction::{Self, MoveCall};
-
 use squid::squid::Squid;
 use squid::swap_info::SwapInfo;
 use squid::swap_type::{Self, SwapType};
-
+use std::ascii::{Self, String};
+use std::type_name;
+use sui::bcs::{Self, BCS};
+use sui::clock::Clock;
 use token::deep::DEEP;
-
+use utils::utils::peel;
 
 const EWrongSwapType: u64 = 0;
 const EWrongPool: u64 = 1;
@@ -44,10 +39,11 @@ public fun estimate<B, Q>(
 ) {
     let (data, fallback) = self.data_estimating();
     if (fallback) return;
-    let swap_data = peel_swap_data(data);
+    let swap_data = peel!(data, |data| peel_swap_data(data));
 
     assert!(swap_data.swap_type == swap_type::deepbook_v3(), EWrongSwapType);
     assert!(swap_data.pool_id == object::id_address(pool), EWrongPool);
+
     assert!(
         &swap_data.base_type == &type_name::get<B>().into_string(),
         EWrongCoinType,
@@ -112,7 +108,7 @@ public fun swap<B, Q>(
 ) {
     let (data, fallback) = self.data_swapping();
     if (fallback) return;
-    let swap_data = peel_swap_data(data);
+    let swap_data = peel!(data, |data| peel_swap_data(data));
 
     assert!(swap_data.swap_type == swap_type::deepbook_v3(), EWrongSwapType);
     assert!(swap_data.pool_id == object::id_address(pool), EWrongPool);
@@ -259,10 +255,9 @@ public(package) fun swap_move_call(
     )
 }
 
-public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
-    let mut bcs = bcs::new(data);
-    DeepbookV3SwapData {
-        swap_type: swap_type::peel(&mut bcs),
+public(package) fun peel_swap_data(bcs: &mut BCS): DeepbookV3SwapData {
+    let data = DeepbookV3SwapData {
+        swap_type: swap_type::peel(bcs),
         pool_id: bcs.peel_address(),
         has_base: bcs.peel_bool(),
         min_output: bcs.peel_u64(),
@@ -270,7 +265,8 @@ public(package) fun peel_swap_data(data: vector<u8>): DeepbookV3SwapData {
         quote_type: ascii::string(bcs.peel_vec_u8()),
         lot_size: bcs.peel_u64(),
         should_sweep: bcs.peel_bool(),
-    }
+    };
+    data
 }
 
 /// Multiply two u64 numbers and divide by FLOAT_SCALING. Rounded down.
