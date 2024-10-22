@@ -1,4 +1,4 @@
-const { bcsStructs } = require('../dist/bcs');
+const { bcsStructs } = require('../dist/cjs/bcs');
 const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { fromHEX, toHEX } = require('@mysten/bcs');
 const { getBcsBytesByObjectId } = require('./testutils');

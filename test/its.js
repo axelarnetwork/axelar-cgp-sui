@@ -20,15 +20,16 @@ const {
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
-const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
-const { approveAndExecute } = require('../dist/execute');
-const { bcsStructs } = require('../dist/bcs');
-const { ITSMessageType } = require('../dist/types');
-const { TxBuilder } = require('../dist/tx-builder');
+const { CLOCK_PACKAGE_ID } = require('../dist/cjs/types');
+const { fundAccountsFromFaucet } = require('../dist/cjs/utils');
+const { getDeploymentOrder } = require('../dist/cjs/node-utils');
+const { approveAndExecute } = require('../dist/cjs/execute');
+const { bcsStructs } = require('../dist/cjs/bcs');
+const { ITSMessageType } = require('../dist/cjs/types');
+const { TxBuilder } = require('../dist/cjs/tx-builder');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';

@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const toml = require('smol-toml');
 const fs = require('fs');
 const path = require('path');
-const { updateMoveToml, getLocalDependencies, copyMovePackage } = require('../dist/utils');
+const { updateMoveToml, getLocalDependencies, copyMovePackage } = require('../dist/cjs/node-utils');
 
 describe('Utils', () => {
     describe('updateMoveToml', () => {
