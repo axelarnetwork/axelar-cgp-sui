@@ -13,14 +13,7 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "rootDirs": [
-            "src/common",
-            "src/node",
-            "src/web"
-        ],
-
-        
-
+       
         "baseUrl": ".",
 
         /* Interop Constraints */
