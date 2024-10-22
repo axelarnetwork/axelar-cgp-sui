@@ -3,10 +3,6 @@ import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
 import { arrayify, keccak256 } from 'ethers/lib/utils';
 import secp256k1 from 'secp256k1';
 
-export const isNode = !!process?.versions?.node;
-
-export const NODE_ERROR_MESSAGE = 'This operation is only supported in a Node.js environment';
-
 export const fundAccountsFromFaucet = async (addresses: string[]) => {
     const promises = addresses.map(async (address) => {
         const network = process.env.NETWORK || 'localnet';
