@@ -40,7 +40,7 @@
     "build-ts": "npm run build-ts:cjs && npm run build-ts:esm && npm run build-ts:web",
     "build-ts:cjs": "tsc -p tsconfig.cjs.json && node scripts/flatten.js dist/cjs",
     "build-ts:esm": "tsc -p tsconfig.esm.json && node scripts/flatten.js dist/esm",
-    "build-ts:web": "tsc -p tsconfig.web.json && node scripts/flatten.js dist/web",
+    "build-ts:web": "tsc -p tsconfig.web.json && node scripts/flatten.js dist/web && node scripts/verify-web-build.js",
     "build": "npm run build-move && npm run build-ts",
     "test-move": "./scripts/run.sh test",
     "test-js": "npx mocha",
