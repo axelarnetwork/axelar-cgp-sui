@@ -14,11 +14,11 @@
         },
         {
           "name": "flow_in",
-          "type": "u64"
+          "type": "u128"
         },
         {
           "name": "flow_out",
-          "type": "u64"
+          "type": "u128"
         },
         {
           "name": "current_epoch",

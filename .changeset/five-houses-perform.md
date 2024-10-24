@@ -2,4 +2,4 @@
 '@axelar-network/axelar-cgp-sui': minor
 ---
 
-Move relayer discovery to its own package.
+Fix ITS discovery and verify it in tests.

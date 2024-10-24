@@ -8,7 +8,7 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8"
+          "type": "SwapType"
         },
         {
           "name": "coin_type",
@@ -17,6 +17,10 @@
         {
           "name": "recipient",
           "type": "address"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     },
@@ -28,7 +32,7 @@
       "fields": [
         {
           "name": "swap_type",
-          "type": "u8"
+          "type": "SwapType"
         },
         {
           "name": "coin_type",
@@ -49,20 +53,13 @@
         {
           "name": "metadata",
           "type": "vector<u8>"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
         }
       ]
     }
   },
-  "publicFunctions": {
-    "its_transfer<T>": {
-      "name": "its_transfer<T>",
-      "visibility": "public",
-      "params": {
-        "swap_info#0#0": "&mut SwapInfo",
-        "squid#0#0": "&Squid",
-        "ctx#0#0": "&mut TxContext"
-      },
-      "returnType": "Option<InterchainTransferTicket<T>>"
-    }
-  }
+  "publicFunctions": {}
 }

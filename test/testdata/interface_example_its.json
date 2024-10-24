@@ -43,8 +43,19 @@
     }
   },
   "publicFunctions": {
-    "register_coin": {
-      "name": "register_coin",
+    "get_final_transaction": {
+      "name": "get_final_transaction",
+      "visibility": "public",
+      "params": {
+        "singleton#0#0": "&Singleton",
+        "its#0#0": "&ITS",
+        "payload#0#0": "vector<u8>",
+        "clock#0#0": "&Clock"
+      },
+      "returnType": "Transaction"
+    },
+    "register_coin<TOKEN>": {
+      "name": "register_coin<TOKEN>",
       "visibility": "public",
       "params": {
         "its#0#0": "&mut ITS",

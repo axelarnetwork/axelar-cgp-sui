@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.6.4",
+  "version": "0.7.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
@@ -12,19 +12,46 @@
     "tsconfig.json",
     "!move/**/build"
   ],
-  "main": "dist/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "browser": "dist/web/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "react-server": {
+        "import": "./dist/esm/index.js",
+        "types": "./dist/esm/index.d.ts"
+      },
+      "node": {
+        "types": "./dist/cjs/index.d.ts",
+        "require": "./dist/cjs/index.js",
+        "import": "./dist/esm/index.js"
+      },
+      "browser": {
+        "import": "./dist/web/index.js",
+        "types": "./dist/web/types.d.ts"
+      },
+      "default": "./dist/cjs/index.js",
+      "types": "./dist/cjs/index.d.ts"
+    }
+  },
   "scripts": {
     "build-move": "./scripts/run.sh build",
-    "build-ts": "tsc",
+    "build-ts": "npm run build-ts:cjs && npm run build-ts:esm && npm run build-ts:web",
+    "build-ts:cjs": "tsc -p tsconfig.cjs.json && node scripts/flatten.js dist/cjs",
+    "build-ts:esm": "tsc -p tsconfig.esm.json && node scripts/flatten.js dist/esm",
+    "build-ts:web": "tsc -p tsconfig.web.json && node scripts/flatten.js dist/web && node scripts/verify-web-build.js",
     "build": "npm run build-move && npm run build-ts",
     "test-move": "./scripts/run.sh test",
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
     "coverage": "./scripts/coverage.sh",
     "release": "npm run build && changeset publish",
+    "release-snapshot": "npm run build && npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false && npm publish --no-git-checks --tag snapshot --access public",
     "cs": "changeset",
-    "lint": "eslint --fix './src/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/*.ts' './test/*.js'",
+    "verify-web-build": "node scripts/verify-web-build.js",
+    "lint": "eslint --fix './src/**/*.ts' './test/*.js'",
+    "prettier": "prettier --write './src/**/*.ts' './test/*.js'",
     "docs": "./scripts/docs.sh"
   },
   "keywords": [
@@ -51,6 +78,7 @@
     "@changesets/cli": "^2.27.6",
     "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "@types/node": "^20.14.11",
+    "@types/secp256k1": "^4.0.6",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "chai": "^4.3.7",

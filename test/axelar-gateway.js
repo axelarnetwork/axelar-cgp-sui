@@ -2,23 +2,13 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const {
-    publishPackage,
-    getRandomBytes32,
-    expectRevert,
-    expectEvent,
-    approveMessage,
-    hashMessage,
-    signMessage,
-    approveAndExecuteMessage,
-} = require('./testutils');
-const { TxBuilder } = require('../dist/tx-builder');
+const { publishPackage, getRandomBytes32, expectRevert, expectEvent, approveMessage, hashMessage, signMessage } = require('./testutils');
+const { approveAndExecute, TxBuilder, CLOCK_PACKAGE_ID } = require('../dist/cjs');
 const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof },
     },
-} = require('../dist/bcs');
-const { CLOCK_PACKAGE_ID } = require('../dist/types');
+} = require('../dist/cjs/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { expect } = require('chai');
@@ -37,6 +27,7 @@ describe('Axelar Gateway', () => {
     let gateway;
     let discovery;
     const gatewayInfo = {};
+    const discoveryInfo = {};
 
     function calculateNextSigners() {
         const signerKeys = [getRandomBytes32(), getRandomBytes32(), getRandomBytes32()];
@@ -119,8 +110,8 @@ describe('Axelar Gateway', () => {
         gatewayInfo.gateway = gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = packageId;
-        gatewayInfo.discovery = discovery;
-        gatewayInfo.discoveryPackageId = discoveryPackageId;
+        discoveryInfo.packageId = discoveryPackageId;
+        discoveryInfo.discovery = discovery;
     });
 
     describe('Signer Rotation', () => {
@@ -140,7 +131,7 @@ describe('Axelar Gateway', () => {
                 data_hash: hashed,
             }).toBytes();
 
-            const signatures = signMessage(proofKeys, message);
+            const signatures = signMessage(proofKeys.slice(0, proofSigners.threshold), message);
             const encodedProof = Proof.serialize({
                 signers: proofSigners,
                 signatures,
@@ -316,7 +307,7 @@ describe('Axelar Gateway', () => {
                 payload_hash: keccak256(payload),
             };
 
-            let resp = await approveAndExecuteMessage(client, keypair, gatewayInfo, message, { showEvents: true });
+            let resp = await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message, { showEvents: true });
 
             const event = resp.events.find((event) => event.type === `${testId}::gmp::Executed`);
 

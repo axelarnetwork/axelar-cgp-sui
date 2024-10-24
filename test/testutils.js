@@ -1,8 +1,7 @@
 'use strict';
 
-const { keccak256, defaultAbiCoder, randomBytes, arrayify, hexlify } = require('ethers/lib/utils');
-const { TxBuilder } = require('../dist/tx-builder');
-const { updateMoveToml, copyMovePackage } = require('../dist/utils');
+const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
+const { TxBuilder, updateMoveToml, copyMovePackage, newInterchainToken } = require('../dist/cjs');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { fromB64 } = require('@mysten/bcs');
@@ -12,10 +11,8 @@ const {
     bcsStructs: {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
-        its: { TrustedAddresses },
     },
-} = require('../dist/bcs');
-const { newInterchainToken } = require('../dist/utils');
+} = require('../dist/cjs/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
 const chalk = require('chalk');
@@ -218,7 +215,20 @@ async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
         data_hash: hashed,
     }).toBytes();
 
-    const signatures = signMessage(signerKeys, message);
+    let minSigners = 0;
+    let totalWeight = 0;
+
+    for (let i = 0; i < signers.signers.length; i++) {
+        totalWeight += signers.signers[i].weight;
+
+        if (totalWeight >= signers.threshold) {
+            minSigners = i + 1;
+            break;
+        }
+    }
+
+    const signatures = signMessage(signerKeys.slice(0, minSigners), message);
+
     const encodedProof = Proof.serialize({
         signers,
         signatures,
@@ -362,54 +372,36 @@ const getSingletonChannelId = async (client, singletonObjectId) => {
     return '0x' + data.channel.id;
 };
 
-async function setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
-    const governanceInfo = {
-        trustedSourceChain: 'Axelar',
-        trustedSourceAddress: 'Governance Source Address',
-        messageType: BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68'),
-    };
-
-    // The payload is abi encoded, the trusted address data is bcs encoded.
-    const trustedAddressesData = TrustedAddresses.serialize({
-        trusted_chains: trustedChains,
-        trusted_addresses: trustedAddresses,
-    }).toBytes();
-
-    const payload = defaultAbiCoder.encode(['uint256', 'bytes'], [governanceInfo.messageType, trustedAddressesData]);
-
-    const trustedAddressMessage = {
-        message_id: hexlify(randomBytes(32)),
-        destination_id: objectIds.itsChannel,
-        source_chain: governanceInfo.trustedSourceChain,
-        source_address: governanceInfo.trustedSourceAddress,
-        payload_hash: keccak256(payload),
-    };
-
-    await approveMessage(client, keypair, gatewayInfo, trustedAddressMessage);
-
+async function setupTrustedAddresses(client, keypair, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
 
-    const approvedMessage = await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
-        arguments: [
-            objectIds.gateway,
-            trustedAddressMessage.source_chain,
-            trustedAddressMessage.message_id,
-            trustedAddressMessage.source_address,
-            trustedAddressMessage.destination_id,
-            hexlify(payload),
-        ],
+    const trustedAddressesObject = await trustedAddressTxBuilder.moveCall({
+        target: `${deployments.its.packageId}::trusted_addresses::new`,
+        arguments: [trustedChains, trustedAddresses],
     });
 
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::service::set_trusted_addresses`,
-        arguments: [objectIds.its, objectIds.governance, approvedMessage],
+        target: `${deployments.its.packageId}::its::set_trusted_addresses`,
+        arguments: [objectIds.its, objectIds.itsOwnerCap, trustedAddressesObject],
     });
 
     const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);
 
     return trustedAddressResult;
+}
+
+async function getITSChannelId(client, itsVersionedObjectId) {
+    const response = await client.getObject({
+        id: itsVersionedObjectId,
+        options: {
+            showContent: true,
+        },
+    });
+
+    const channelId = response.data.content.fields.value.fields.channel.fields.id.id;
+
+    return channelId;
 }
 
 module.exports = {
@@ -428,5 +420,6 @@ module.exports = {
     getSingletonChannelId,
     setupTrustedAddresses,
     publishInterchainToken,
+    getITSChannelId,
     goldenTest,
 };

@@ -3,16 +3,15 @@ module example::its;
 use axelar_gateway::channel::{Self, ApprovedMessage, Channel};
 use axelar_gateway::gateway::{Self, Gateway};
 use axelar_gateway::message_ticket::MessageTicket;
-use example::token::TOKEN;
 use example::utils::concat;
 use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
-use its::its::ITS;
-use its::service;
+use its::its::{Self, ITS};
 use its::token_id::TokenId;
+use its::discovery as its_discovery;
 use relayer_discovery::discovery::RelayerDiscovery;
-use relayer_discovery::transaction;
+use relayer_discovery::transaction::{Self, Transaction};
 use std::ascii::{Self, String};
 use std::type_name;
 use sui::address;
@@ -62,11 +61,56 @@ public fun register_transaction(
     clock: &Clock,
 ) {
     let arguments = vector[
+        concat(vector[0u8], object::id_address(singleton).to_bytes()),
+        concat(vector[0u8], object::id_address(its).to_bytes()),
+        vector[3u8],
+        concat(vector[0u8], object::id_address(clock).to_bytes()),
+    ];
+
+    let transaction = transaction::new_transaction(
+        false,
+        vector[
+            transaction::new_move_call(
+                transaction::new_function(
+                    address::from_bytes(
+                        hex::decode(
+                            *ascii::as_bytes(
+                                &type_name::get_address(
+                                    &type_name::get<Singleton>(),
+                                ),
+                            ),
+                        ),
+                    ),
+                    ascii::string(b"its"),
+                    ascii::string(b"get_final_transaction"),
+                ),
+                arguments,
+                vector[],
+            ),
+        ],
+    );
+
+    discovery.register_transaction(&singleton.channel, transaction);
+}
+
+public fun get_final_transaction(
+    singleton: &Singleton,
+    its: &ITS,
+    payload: vector<u8>,
+    clock: &Clock,
+): Transaction {
+    let arguments = vector[
         vector[2u8],
         concat(vector[0u8], object::id_address(singleton).to_bytes()),
         concat(vector[0u8], object::id_address(its).to_bytes()),
         concat(vector[0u8], object::id_address(clock).to_bytes()),
     ];
+
+    // Get the coin type from its
+    let (token_id, _, _, _) = its_discovery::interchain_transfer_info(
+        payload,
+    );
+    let coin_type = (*its.registered_coin_type(token_id)).into_string();
 
     let transaction = transaction::new_transaction(
         true,
@@ -86,17 +130,17 @@ public fun register_transaction(
                     ascii::string(b"receive_interchain_transfer"),
                 ),
                 arguments,
-                vector[],
+                vector[coin_type],
             ),
         ],
     );
 
-    discovery.register_transaction(&singleton.channel, transaction);
+    transaction
 }
 
 /// This function needs to be called first to register the coin for either of
 /// the other two functions to work.
-public fun register_coin(
+public fun register_coin<TOKEN>(
     its: &mut ITS,
     coin_metadata: &CoinMetadata<TOKEN>,
 ): TokenId {
@@ -108,14 +152,13 @@ public fun register_coin(
     );
     let coin_management = coin_management::new_locked();
 
-    service::register_coin(
-        its,
+    its.register_coin(
         coin_info,
         coin_management,
     )
 }
 
-public fun deploy_remote_interchain_token(
+public fun deploy_remote_interchain_token<TOKEN>(
     its: &mut ITS,
     gateway: &mut Gateway,
     gas_service: &mut GasService,
@@ -125,8 +168,7 @@ public fun deploy_remote_interchain_token(
     gas_params: vector<u8>,
     refund_address: address,
 ) {
-    let message_ticket = service::deploy_remote_interchain_token<TOKEN>(
-        its,
+    let message_ticket = its.deploy_remote_interchain_token<TOKEN>(
         token_id,
         destination_chain,
     );
@@ -142,7 +184,7 @@ public fun deploy_remote_interchain_token(
 }
 
 /// This should trigger an interchain trasnfer.
-public fun send_interchain_transfer_call(
+public fun send_interchain_transfer_call<TOKEN>(
     singleton: &Singleton,
     its: &mut ITS,
     gateway: &mut Gateway,
@@ -157,9 +199,7 @@ public fun send_interchain_transfer_call(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let interchain_transfer_ticket = service::prepare_interchain_transfer<
-        TOKEN,
-    >(
+    let interchain_transfer_ticket = its::prepare_interchain_transfer<TOKEN>(
         token_id,
         coin,
         destination_chain,
@@ -168,8 +208,7 @@ public fun send_interchain_transfer_call(
         &singleton.channel,
     );
 
-    let message_ticket = service::send_interchain_transfer<TOKEN>(
-        its,
+    let message_ticket = its.send_interchain_transfer<TOKEN>(
         interchain_transfer_ticket,
         clock,
     );
@@ -187,7 +226,7 @@ public fun send_interchain_transfer_call(
 /// This should receive some coins, give them to the executor, and emit and
 /// event with all the relevant info.
 #[allow(lint(self_transfer))]
-public fun receive_interchain_transfer(
+public fun receive_interchain_transfer<TOKEN>(
     approved_message: ApprovedMessage,
     singleton: &Singleton,
     its: &mut ITS,
@@ -199,8 +238,7 @@ public fun receive_interchain_transfer(
         source_address,
         data,
         coin,
-    ) = service::receive_interchain_transfer_with_data<TOKEN>(
-        its,
+    ) = its.receive_interchain_transfer_with_data<TOKEN>(
         approved_message,
         &singleton.channel,
         clock,

@@ -2,11 +2,11 @@
 
 [move]
 version = 2
-manifest_digest = "82177724589701880CC04411BEB432C6AD49CDA2414D116028343446BFCB1FBF"
+manifest_digest = "103D781F6FF1A37F2C3D7151E07CFC9094BE8E967192864546A7DA6F3A44BB86"
 deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
 dependencies = [
+  { name = "Abi" },
   { name = "AxelarGateway" },
-  { name = "Governance" },
   { name = "RelayerDiscovery" },
   { name = "Sui" },
   { name = "Utils" },
@@ -26,18 +26,6 @@ name = "AxelarGateway"
 source = { local = "../axelar_gateway" }
 
 dependencies = [
-  { name = "Sui" },
-  { name = "Utils" },
-  { name = "VersionControl" },
-]
-
-[[move.package]]
-name = "Governance"
-source = { local = "../governance" }
-
-dependencies = [
-  { name = "Abi" },
-  { name = "AxelarGateway" },
   { name = "Sui" },
   { name = "Utils" },
   { name = "VersionControl" },

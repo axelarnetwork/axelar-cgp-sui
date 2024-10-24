@@ -9,10 +9,11 @@ use sui::coin::{Self, TreasuryCap, Coin};
 // ------
 // Errors
 // ------
-/// Trying to add a distributor to a `CoinManagement` that does not
-/// have a `TreasuryCap`.
-const EDistributorNeedsTreasuryCap: u64 = 0;
-const ENotOperator: u64 = 1;
+#[error]
+const EDistributorNeedsTreasuryCap: vector<u8> =
+    b"trying to add a distributor to a `CoinManagement` that does not have a `TreasuryCap`";
+#[error]
+const ENotOperator: vector<u8> = b"channel provided is not the operator";
 
 /// Struct that stores information about the ITS Coin.
 public struct CoinManagement<phantom T> has store {
@@ -76,7 +77,8 @@ public fun add_operator<T>(self: &mut CoinManagement<T>, operator: address) {
 }
 
 /// Adds a rate limit to the `CoinManagement`.
-/// Note that this rate limit will be calculated for the remote decimals of the token, not for the native decimals.
+/// Note that this rate limit will be calculated for the remote decimals of the
+/// token, not for the native decimals.
 /// To be used by the designated operator of the contract.
 public fun set_flow_limit<T>(
     self: &mut CoinManagement<T>,
@@ -89,7 +91,8 @@ public fun set_flow_limit<T>(
 
 // === Protected Methods ===
 
-/// Takes the given amount of Coins from user. Returns the amount that the ITS is supposed to give on other chains.
+/// Takes the given amount of Coins from user. Returns the amount that the ITS
+/// is supposed to give on other chains.
 public(package) fun take_balance<T>(
     self: &mut CoinManagement<T>,
     to_take: Balance<T>,
@@ -105,7 +108,8 @@ public(package) fun take_balance<T>(
     amount
 }
 
-/// Withdraws or mints the given amount of coins. Any leftover amount from previous transfers is added to the coin here.
+/// Withdraws or mints the given amount of coins. Any leftover amount from
+/// previous transfers is added to the coin here.
 public(package) fun give_coin<T>(
     self: &mut CoinManagement<T>,
     mut amount: u256,
@@ -115,7 +119,7 @@ public(package) fun give_coin<T>(
     amount = amount + self.dust;
     self.dust = amount % self.scaling;
     let sui_amount = (amount / self.scaling as u64);
-    self.flow_limit.add_flow_out(sui_amount, clock);
+    self.flow_limit.add_flow_in(sui_amount, clock);
     if (has_capability(self)) {
         self.mint(sui_amount, ctx)
     } else {

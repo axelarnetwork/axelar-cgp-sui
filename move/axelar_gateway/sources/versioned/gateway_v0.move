@@ -34,35 +34,36 @@ const ENotLatestSigners: vector<u8> = b"not latest signers";
 const ENewerMessage: vector<u8> =
     b"message ticket created from newer versions cannot be sent here";
 
-// ---------
-// CONSTANTS
-// ---------
-const COMMAND_TYPE_APPROVE_MESSAGES: u8 = 0;
-const COMMAND_TYPE_ROTATE_SIGNERS: u8 = 1;
-
 // -----
 // Types
 // -----
 /// An object holding the state of the Axelar bridge.
-/// The central piece in managing call approval creation and signature verification.
-public struct GatewayV0 has store {
+/// The central piece in managing call approval creation and signature
+/// verification.
+public struct Gateway_v0 has store {
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
 }
 
+public enum CommandType {
+    ApproveMessages,
+    RotateSigners,
+}
+
 // -----------------
 // Package Functions
 // -----------------
-/// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
+/// Init the module by giving a CreatorCap to the sender to allow a full
+/// `setup`.
 public(package) fun new(
     operator: address,
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
-): GatewayV0 {
-    GatewayV0 {
+): Gateway_v0 {
+    Gateway_v0 {
         operator,
         messages,
         signers,
@@ -70,22 +71,12 @@ public(package) fun new(
     }
 }
 
-public(package) fun version_control(self: &GatewayV0): &VersionControl {
+public(package) fun version_control(self: &Gateway_v0): &VersionControl {
     &self.version_control
 }
 
-#[syntax(index)]
-fun borrow(self: &GatewayV0, command_id: Bytes32): &MessageStatus {
-    table::borrow(&self.messages, command_id)
-}
-
-#[syntax(index)]
-fun borrow_mut(self: &mut GatewayV0, command_id: Bytes32): &mut MessageStatus {
-    table::borrow_mut(&mut self.messages, command_id)
-}
-
 public(package) fun approve_messages(
-    self: &mut GatewayV0,
+    self: &mut Gateway_v0,
     message_data: vector<u8>,
     proof_data: vector<u8>,
 ) {
@@ -95,7 +86,7 @@ public(package) fun approve_messages(
     let _ = self
         .signers
         .validate_proof(
-            data_hash(COMMAND_TYPE_APPROVE_MESSAGES, message_data),
+            data_hash(CommandType::ApproveMessages, message_data),
             proof,
         );
 
@@ -103,7 +94,7 @@ public(package) fun approve_messages(
 }
 
 public(package) fun rotate_signers(
-    self: &mut GatewayV0,
+    self: &mut Gateway_v0,
     clock: &Clock,
     new_signers_data: vector<u8>,
     proof_data: vector<u8>,
@@ -120,7 +111,7 @@ public(package) fun rotate_signers(
     let is_latest_signers = self
         .signers
         .validate_proof(
-            data_hash(COMMAND_TYPE_ROTATE_SIGNERS, new_signers_data),
+            data_hash(CommandType::RotateSigners, new_signers_data),
             proof,
         );
     assert!(!enforce_rotation_delay || is_latest_signers, ENotLatestSigners);
@@ -132,7 +123,7 @@ public(package) fun rotate_signers(
 }
 
 public(package) fun is_message_approved(
-    self: &GatewayV0,
+    self: &Gateway_v0,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -152,7 +143,7 @@ public(package) fun is_message_approved(
 }
 
 public(package) fun is_message_executed(
-    self: &GatewayV0,
+    self: &Gateway_v0,
     source_chain: String,
     message_id: String,
 ): bool {
@@ -165,9 +156,10 @@ public(package) fun is_message_executed(
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
-/// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
+/// to get the hot potato `ApprovedMessage` object, and then trigger the app's
+/// package via discovery.
 public(package) fun take_approved_message(
-    self: &mut GatewayV0,
+    self: &mut Gateway_v0,
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -196,7 +188,6 @@ public(package) fun take_approved_message(
         message,
     );
 
-    // Friend only.
     channel::create_approved_message(
         source_chain,
         message_id,
@@ -207,7 +198,7 @@ public(package) fun take_approved_message(
 }
 
 public(package) fun send_message(
-    _self: &GatewayV0,
+    _self: &Gateway_v0,
     message: MessageTicket,
     current_version: u64,
 ) {
@@ -234,6 +225,16 @@ public(package) fun send_message(
 // Private Functions
 // -----------------
 
+#[syntax(index)]
+fun borrow(self: &Gateway_v0, command_id: Bytes32): &MessageStatus {
+    table::borrow(&self.messages, command_id)
+}
+
+#[syntax(index)]
+fun borrow_mut(self: &mut Gateway_v0, command_id: Bytes32): &mut MessageStatus {
+    table::borrow_mut(&mut self.messages, command_id)
+}
+
 fun peel_messages(message_data: vector<u8>): vector<Message> {
     utils::peel!(message_data, |bcs| {
         let messages = vector::tabulate!(
@@ -245,14 +246,14 @@ fun peel_messages(message_data: vector<u8>): vector<Message> {
     })
 }
 
-fun data_hash(command_type: u8, data: vector<u8>): Bytes32 {
-    let mut typed_data = vector::singleton(command_type);
+fun data_hash(command_type: CommandType, data: vector<u8>): Bytes32 {
+    let mut typed_data = vector::singleton(command_type.as_u8());
     typed_data.append(data);
 
     bytes32::from_bytes(hash::keccak256(&typed_data))
 }
 
-fun approve_message(self: &mut GatewayV0, message: message::Message) {
+fun approve_message(self: &mut Gateway_v0, message: message::Message) {
     let command_id = message.command_id();
 
     // If the message was already approved, ignore it.
@@ -272,6 +273,13 @@ fun approve_message(self: &mut GatewayV0, message: message::Message) {
     );
 }
 
+fun as_u8(self: CommandType): u8 {
+    match (self) {
+        CommandType::ApproveMessages => 0,
+        CommandType::RotateSigners => 1,
+    }
+}
+
 /// ---------
 /// Test Only
 /// ---------
@@ -282,21 +290,21 @@ use sui::bcs;
 
 #[test_only]
 public(package) fun messages_mut(
-    self: &mut GatewayV0,
+    self: &mut Gateway_v0,
 ): &mut Table<Bytes32, MessageStatus> {
     &mut self.messages
 }
 
 #[test_only]
-public(package) fun signers_mut(self: &mut GatewayV0): &mut AxelarSigners {
+public(package) fun signers_mut(self: &mut Gateway_v0): &mut AxelarSigners {
     &mut self.signers
 }
 
 #[test_only]
 public(package) fun destroy_for_testing(
-    self: GatewayV0,
+    self: Gateway_v0,
 ): (address, Table<Bytes32, MessageStatus>, AxelarSigners, VersionControl) {
-    let GatewayV0 {
+    let Gateway_v0 {
         operator,
         messages,
         signers,
@@ -306,7 +314,7 @@ public(package) fun destroy_for_testing(
 }
 
 #[test_only]
-fun dummy(ctx: &mut TxContext): GatewayV0 {
+fun dummy(ctx: &mut TxContext): Gateway_v0 {
     new(
         @0x0,
         sui::table::new(ctx),
@@ -319,19 +327,19 @@ fun dummy(ctx: &mut TxContext): GatewayV0 {
 public(package) fun approve_messages_data_hash(
     messages: vector<Message>,
 ): Bytes32 {
-    data_hash(COMMAND_TYPE_APPROVE_MESSAGES, bcs::to_bytes(&messages))
+    data_hash(CommandType::ApproveMessages, bcs::to_bytes(&messages))
 }
 
 #[test_only]
 public(package) fun rotate_signers_data_hash(
     weighted_signers: WeightedSigners,
 ): Bytes32 {
-    data_hash(COMMAND_TYPE_ROTATE_SIGNERS, bcs::to_bytes(&weighted_signers))
+    data_hash(CommandType::RotateSigners, bcs::to_bytes(&weighted_signers))
 }
 
 #[test_only]
 public(package) fun approve_message_for_testing(
-    self: &mut GatewayV0,
+    self: &mut Gateway_v0,
     message: Message,
 ) {
     self.approve_message(message);
@@ -467,14 +475,20 @@ fun test_peel_messages_no_remaining_data() {
 }
 
 #[test]
+fun test_command_type_as_u8() {
+    // Note: These must not be changed to avoid breaking Amplifier integration
+    assert!(CommandType::ApproveMessages.as_u8() == 0);
+    assert!(CommandType::RotateSigners.as_u8() == 1);
+}
+
+#[test]
 fun test_data_hash() {
-    let command_type = 5;
     let data = vector[0, 1, 2, 3];
-    let mut typed_data = vector::singleton(command_type);
+    let mut typed_data = vector::singleton(CommandType::ApproveMessages.as_u8());
     typed_data.append(data);
 
     assert!(
-        data_hash(command_type, data) ==
+        data_hash(CommandType::ApproveMessages, data) ==
         bytes32::from_bytes(hash::keccak256(&typed_data)),
         0,
     );

@@ -1,6 +1,6 @@
 module gas_service::gas_service;
 
-use gas_service::gas_service_v0::{Self, GasServiceV0};
+use gas_service::gas_service_v0::{Self, GasService_v0};
 use std::ascii::{Self, String};
 use sui::address;
 use sui::coin::Coin;
@@ -87,9 +87,9 @@ fun init(ctx: &mut TxContext) {
 macro fun value_mut(
     $self: &GasService,
     $function_name: vector<u8>,
-): &mut GasServiceV0 {
+): &mut GasService_v0 {
     let gas_service = $self;
-    let value = gas_service.inner.load_value_mut<GasServiceV0>();
+    let value = gas_service.inner.load_value_mut<GasService_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -204,9 +204,9 @@ fun version_control(): VersionControl {
 use sui::coin;
 
 #[test_only]
-macro fun value($self: &GasService): &GasServiceV0 {
+macro fun value($self: &GasService): &GasService_v0 {
     let gas_service = $self;
-    gas_service.inner.load_value<GasServiceV0>()
+    gas_service.inner.load_value<GasService_v0>()
 }
 
 #[test_only]
@@ -233,7 +233,7 @@ fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
 fun destroy(self: GasService) {
     let GasService { id, inner } = self;
     id.delete();
-    let data = inner.destroy<GasServiceV0>();
+    let data = inner.destroy<GasService_v0>();
     data.destroy_for_testing();
 }
 

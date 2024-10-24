@@ -15,16 +15,20 @@ const {
     findObjectId,
     getRandomBytes32,
     calculateNextSigners,
-    approveMessage,
     getSingletonChannelId,
+    getITSChannelId,
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
-const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
-const { bcsStructs } = require('../dist/bcs');
-const { ITSMessageType } = require('../dist/types');
-const { TxBuilder } = require('../dist/tx-builder');
+const {
+    CLOCK_PACKAGE_ID,
+    fundAccountsFromFaucet,
+    getDeploymentOrder,
+    approveAndExecute,
+    bcsStructs,
+    ITSMessageType,
+    TxBuilder,
+} = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
 describe('ITS', () => {
@@ -44,6 +48,7 @@ describe('ITS', () => {
 
     // Parameters for Gateway Setup
     const gatewayInfo = {};
+    const discoveryInfo = {};
     const domainSeparator = getRandomBytes32();
     const [operator, deployer, keypair] = generateEd25519Keypairs(3);
     const minimumRotationDelay = 1000;
@@ -53,22 +58,6 @@ describe('ITS', () => {
     // Parameters for Trusted Addresses
     const trustedSourceChain = 'Avalanche';
     const trustedSourceAddress = hexlify(randomBytes(20));
-
-    async function setupGovernance() {
-        // Parameters for Governance Setup
-        const governanceSourceChain = 'Axelar';
-        const governanceSourceAddress = 'Governance Source Address';
-        const governanceMessageType = BigInt('0x2af37a0d5d48850a855b1aaaf57f726c107eb99b40eabf4cc1ba30410cfa2f68');
-
-        const governanceSetupTxBuilder = new TxBuilder(client);
-        await governanceSetupTxBuilder.moveCall({
-            target: `${deployments.governance.packageId}::governance::new`,
-            arguments: [governanceSourceChain, governanceSourceAddress, governanceMessageType, objectIds.upgradeCap],
-        });
-        const receipt = await governanceSetupTxBuilder.signAndExecute(deployer);
-
-        objectIds.governance = findObjectId(receipt, 'governance::Governance');
-    }
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -96,6 +85,19 @@ describe('ITS', () => {
         gatewayInfo.gateway = objectIds.gateway;
         gatewayInfo.domainSeparator = domainSeparator;
         gatewayInfo.packageId = deployments.axelar_gateway.packageId;
+        discoveryInfo.packageId = deployments.relayer_discovery.packageId;
+        discoveryInfo.discovery = objectIds.relayerDiscovery;
+    }
+
+    async function registerItsTransaction() {
+        const registerTransactionBuilder = new TxBuilder(client);
+
+        await registerTransactionBuilder.moveCall({
+            target: `${deployments.its.packageId}::discovery::register_transaction`,
+            arguments: [objectIds.its, objectIds.relayerDiscovery],
+        });
+
+        await registerTransactionBuilder.signAndExecute(deployer);
     }
 
     before(async () => {
@@ -116,14 +118,15 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
-            its: findObjectId(deployments.its.publishTxn, 'ITS'),
+            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
-            upgradeCap: findObjectId(deployments.governance.publishTxn, 'UpgradeCap'),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
+            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
         };
 
         // Mint some coins for tests
@@ -139,7 +142,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: await getSingletonChannelId(client, objectIds.its),
+            itsChannel: await getITSChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
@@ -163,6 +166,7 @@ describe('ITS', () => {
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its::register_coin`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata],
+            typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer, {
@@ -178,8 +182,8 @@ describe('ITS', () => {
     describe('Two-way Calls', () => {
         before(async () => {
             await setupGateway();
-            await setupGovernance();
-            await setupTrustedAddresses(client, keypair, gatewayInfo, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            await registerItsTransaction();
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
         });
 
         describe('Interchain Token Transfer', () => {
@@ -214,6 +218,7 @@ describe('ITS', () => {
                         '0x', // gas params
                         CLOCK_PACKAGE_ID,
                     ],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.signAndExecute(deployer);
@@ -229,9 +234,13 @@ describe('ITS', () => {
                 const amount = 1e9;
                 const data = '0x1234';
 
+                const discoveryInfo = {
+                    packageId: deployments.relayer_discovery.packageId,
+                    discovery: objectIds.relayerDiscovery,
+                };
+
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
-
                 // ITS transfer payload from Ethereum to Sui
                 const payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
@@ -243,31 +252,11 @@ describe('ITS', () => {
                     message_id: hexlify(randomBytes(32)),
                     source_address: trustedSourceAddress,
                     destination_id: destinationAddress,
+                    payload,
                     payload_hash: keccak256(payload),
                 };
 
-                await approveMessage(client, keypair, gatewayInfo, message);
-
-                const txBuilder = new TxBuilder(client);
-
-                const approvedMessage = await txBuilder.moveCall({
-                    target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
-                    arguments: [
-                        objectIds.gateway,
-                        message.source_chain,
-                        message.message_id,
-                        message.source_address,
-                        message.destination_id,
-                        payload,
-                    ],
-                });
-
-                await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::its::receive_interchain_transfer`,
-                    arguments: [approvedMessage, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
-                });
-
-                await txBuilder.signAndExecute(deployer);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
 
@@ -295,6 +284,7 @@ describe('ITS', () => {
                         '0x',
                         deployer.toSuiAddress(),
                     ],
+                    typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
                 });
 
                 await txBuilder.signAndExecute(deployer);
@@ -318,6 +308,16 @@ describe('ITS', () => {
                 const treasuryCap = findObjectId(publishTxn, `TreasuryCap<${typeArg}>`);
                 const metadata = findObjectId(publishTxn, `CoinMetadata<${typeArg}>`);
 
+                const txBuilder = new TxBuilder(client);
+
+                await txBuilder.moveCall({
+                    target: `${deployments.its.packageId}::its::give_unregistered_coin`,
+                    arguments: [objectIds.its, treasuryCap, metadata],
+                    typeArguments: [typeArg],
+                });
+
+                await txBuilder.signAndExecute(deployer);
+
                 // Approve ITS transfer message
                 const messageType = ITSMessageType.InterchainTokenDeployment;
                 const tokenId = hexlify(randomBytes(32));
@@ -337,38 +337,11 @@ describe('ITS', () => {
                     message_id: hexlify(randomBytes(32)),
                     source_address: trustedSourceAddress,
                     destination_id: objectIds.itsChannel,
+                    payload,
                     payload_hash: keccak256(payload),
                 };
 
-                await approveMessage(client, keypair, gatewayInfo, message);
-
-                const txBuilder = new TxBuilder(client);
-
-                const approvedMessage = await txBuilder.moveCall({
-                    target: `${deployments.axelar_gateway.packageId}::gateway::take_approved_message`,
-                    arguments: [
-                        objectIds.gateway,
-                        message.source_chain,
-                        message.message_id,
-                        message.source_address,
-                        message.destination_id,
-                        payload,
-                    ],
-                });
-
-                await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::give_unregistered_coin`,
-                    arguments: [objectIds.its, treasuryCap, metadata],
-                    typeArguments: [typeArg],
-                });
-
-                await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::service::receive_deploy_interchain_token`,
-                    arguments: [objectIds.its, approvedMessage],
-                    typeArguments: [typeArg],
-                });
-
-                await txBuilder.signAndExecute(deployer);
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
     });
