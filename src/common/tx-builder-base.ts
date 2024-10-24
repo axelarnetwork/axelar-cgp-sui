@@ -1,6 +1,3 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
 import { bcs, BcsType } from '@mysten/bcs';
 import {
     DevInspectResults,
@@ -10,11 +7,10 @@ import {
     SuiTransactionBlockResponse,
     SuiTransactionBlockResponseOptions,
 } from '@mysten/sui/client';
-import { Keypair } from '@mysten/sui/dist/cjs/cryptography';
+import { Keypair } from '@mysten/sui/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
-import { Bytes, utils as ethersUtils } from 'ethers';
-import { InterchainTokenOptions, STD_PACKAGE_ID, SUI_PACKAGE_ID } from './types';
-import { newInterchainToken, updateMoveToml } from './utils';
+import { utils as ethersUtils } from 'ethers';
+import { STD_PACKAGE_ID, SUI_PACKAGE_ID } from '../common/types';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -195,12 +191,13 @@ function isString(parameter: SuiMoveNormalizedType): boolean {
     return isAsciiString || isStringString;
 }
 
-export class TxBuilder {
+export class TxBuilderBase {
     client: SuiClient;
     tx: Transaction;
+
     constructor(client: SuiClient) {
-        this.client = client;
         this.tx = new Transaction();
+        this.client = client;
     }
 
     async moveCall(moveCallInfo: {
@@ -242,74 +239,6 @@ export class TxBuilder {
             arguments: convertedArgs as any,
             typeArguments: moveCallInfo.typeArguments,
         });
-    }
-
-    /**
-     * Prepare a move build by creating a temporary directory to store the compiled move code
-     * @returns {tmpdir: string, rmTmpDir: () => void}
-     * - tmpdir is the path to the temporary directory
-     * - rmTmpDir is a function to remove the temporary directory
-     */
-    private prepareMoveBuild() {
-        const tmpdir = fs.mkdtempSync(`${__dirname}/.move-build-`);
-        const rmTmpDir = () => fs.rmSync(tmpdir, { recursive: true });
-
-        return {
-            tmpdir,
-            rmTmpDir,
-        };
-    }
-
-    async getContractBuild(
-        packageName: string,
-        moveDir: string = `${__dirname}/../move`,
-    ): Promise<{ modules: string[]; dependencies: string[]; digest: Bytes }> {
-        const emptyPackageId = '0x0';
-        updateMoveToml(packageName, emptyPackageId, moveDir);
-
-        const { tmpdir, rmTmpDir } = this.prepareMoveBuild();
-
-        try {
-            const { modules, dependencies, digest } = JSON.parse(
-                execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
-                    encoding: 'utf-8',
-                    stdio: 'pipe', // silent the output
-                }),
-            );
-
-            return { modules, dependencies, digest };
-        } finally {
-            rmTmpDir();
-        }
-    }
-
-    async publishInterchainToken(moveDir: string, options: InterchainTokenOptions) {
-        const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
-
-        const { filePath, content } = newInterchainToken(templateFilePath, options);
-
-        fs.writeFileSync(filePath, content, 'utf8');
-
-        const publishReceipt = await this.publishPackage('interchain_token', moveDir);
-
-        fs.rmSync(filePath);
-
-        return publishReceipt;
-    }
-
-    async publishPackage(packageName: string, moveDir: string = `${__dirname}/../move`): Promise<TransactionResult> {
-        const { modules, dependencies } = await this.getContractBuild(packageName, moveDir);
-
-        return this.tx.publish({
-            modules,
-            dependencies,
-        });
-    }
-
-    async publishPackageAndTransferCap(packageName: string, to: string, moveDir = `${__dirname}/../move`) {
-        const cap = await this.publishPackage(packageName, moveDir);
-
-        this.tx.transferObjects([cap], to);
     }
 
     async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions): Promise<SuiTransactionBlockResponse> {

@@ -20,12 +20,15 @@ const {
     setupTrustedAddresses,
 } = require('./testutils');
 const { expect } = require('chai');
-const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
-const { approveAndExecute } = require('../dist/execute');
-const { bcsStructs } = require('../dist/bcs');
-const { ITSMessageType } = require('../dist/types');
-const { TxBuilder } = require('../dist/tx-builder');
+const {
+    CLOCK_PACKAGE_ID,
+    fundAccountsFromFaucet,
+    getDeploymentOrder,
+    approveAndExecute,
+    bcsStructs,
+    ITSMessageType,
+    TxBuilder,
+} = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
 describe('ITS', () => {

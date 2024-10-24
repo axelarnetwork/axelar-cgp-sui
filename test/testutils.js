@@ -1,8 +1,7 @@
 'use strict';
 
 const { keccak256, defaultAbiCoder, arrayify, hexlify } = require('ethers/lib/utils');
-const { TxBuilder } = require('../dist/tx-builder');
-const { updateMoveToml, copyMovePackage } = require('../dist/utils');
+const { TxBuilder, updateMoveToml, copyMovePackage, newInterchainToken } = require('../dist/cjs');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { fromB64 } = require('@mysten/bcs');
@@ -13,8 +12,7 @@ const {
         gateway: { WeightedSigners, MessageToSign, Proof, Message, Transaction },
         gmp: { Singleton },
     },
-} = require('../dist/bcs');
-const { newInterchainToken } = require('../dist/utils');
+} = require('../dist/cjs/bcs');
 const { bcs } = require('@mysten/sui/bcs');
 const secp256k1 = require('secp256k1');
 const chalk = require('chalk');

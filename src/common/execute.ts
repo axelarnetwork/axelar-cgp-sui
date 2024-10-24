@@ -5,7 +5,7 @@ import { Keypair } from '@mysten/sui/cryptography';
 import { Transaction as SuiTransaction } from '@mysten/sui/transactions';
 import { arrayify, hexlify, keccak256 } from 'ethers/lib/utils';
 import { bcsStructs } from './bcs';
-import { TxBuilder } from './tx-builder';
+import { TxBuilderBase as TxBuilder } from './tx-builder-base';
 import {
     ApprovedMessage,
     DiscoveryInfo,
