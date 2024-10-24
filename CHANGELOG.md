@@ -1,5 +1,16 @@
 # @axelar-network/axelar-cgp-sui
 
+## 0.8.0
+
+### Minor Changes
+
+-   86cde3b: Fix ITS discovery and verify it in tests.
+
+### Patch Changes
+
+-   9d36662: feat: export approve and execute functions
+-   f9840b2: chore: split builds for CJS, ESM, and Web
+
 ## 0.7.1
 
 ### Patch Changes
