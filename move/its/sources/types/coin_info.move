@@ -72,6 +72,10 @@ public fun metadata<T>(self: &CoinInfo<T>): &Option<CoinMetadata<T>> {
 }
 
 // === Tests ===
+#[error]
+#[test_only]
+const EMetadataExists: vector<u8> = b"metadata was expected to be empty";
+
 #[test_only]
 public fun drop<T>(coin_info: CoinInfo<T>) {
     let CoinInfo {
@@ -82,7 +86,7 @@ public fun drop<T>(coin_info: CoinInfo<T>) {
         metadata,
     } = coin_info;
     if (metadata.is_some()) {
-        abort 0
+        abort EMetadataExists
     } else {
         metadata.destroy_none()
     }
