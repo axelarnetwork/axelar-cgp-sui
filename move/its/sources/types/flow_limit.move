@@ -8,8 +8,8 @@ const EFlowLimitExceeded: u64 = 0;
 
 public struct FlowLimit has store, copy, drop {
     flow_limit: u64,
-    flow_in: u64,
-    flow_out: u64,
+    flow_in: u128,
+    flow_out: u128,
     current_epoch: u64,
 }
 
@@ -40,10 +40,10 @@ public(package) fun add_flow_in(
 
     update_epoch(self, clock);
     assert!(
-        self.flow_in + amount < self.flow_limit + self.flow_out,
+        self.flow_in + (amount as u128) < (self.flow_limit as u128) + self.flow_out,
         EFlowLimitExceeded,
     );
-    self.flow_in = self.flow_in + amount;
+    self.flow_in = self.flow_in + (amount as u128);
 }
 
 public(package) fun add_flow_out(
@@ -55,10 +55,10 @@ public(package) fun add_flow_out(
 
     update_epoch(self, clock);
     assert!(
-        self.flow_out + amount < self.flow_limit + self.flow_in,
+        self.flow_out + (amount as u128) < (self.flow_limit as u128) + self.flow_in,
         EFlowLimitExceeded,
     );
-    self.flow_out = self.flow_out + amount;
+    self.flow_out = self.flow_out + (amount as u128);
 }
 
 public(package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: u64) {
