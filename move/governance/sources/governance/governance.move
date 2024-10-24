@@ -256,7 +256,7 @@ fun test_is_governance() {
 
     assert!(
         governance.is_governance(trusted_source_chain, trusted_source_address),
-        1,
+        EUntrustedAddress,
     );
 
     test_utils::destroy(governance);
@@ -283,7 +283,7 @@ fun test_is_governance_false_argument() {
             ascii::string(b"sui"),
             trusted_source_address,
         ),
-        1,
+        EUntrustedAddress,
     );
 
     test_utils::destroy(governance);
@@ -436,7 +436,7 @@ fun test_authorize_upgrade() {
     let upgrade_ticket = authorize_upgrade(&mut governance, approved_message);
     assert!(
         package::ticket_package(&upgrade_ticket) == object::uid_to_inner(&uid),
-        1,
+        EUntrustedAddress,
     );
     let policy = abi.read_u8();
     assert!(package::ticket_policy(&upgrade_ticket) == policy);
