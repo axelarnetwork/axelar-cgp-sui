@@ -27,7 +27,7 @@ export const getInstalledSuiVersion = () => {
 };
 
 export const getDefinedSuiVersion = () => {
-    const version = fs.readFileSync(`${__dirname}/../version.json`, 'utf8');
+    const version = fs.readFileSync(`${__dirname}/../../version.json`, 'utf8');
     const suiVersion = JSON.parse(version).SUI_VERSION;
     return parseVersion(suiVersion);
 };
