@@ -12,9 +12,12 @@ use sui::clock::Clock;
 use token::deep::DEEP;
 use utils::utils::peel;
 
-const EWrongSwapType: u64 = 0;
-const EWrongPool: u64 = 1;
-const EWrongCoinType: u64 = 2;
+#[error]
+const EWrongSwapType: vector<u8> = b"wrong swap type";
+#[error]
+const EWrongPool: vector<u8> = b"pool argument does not match required pool";
+#[error]
+const EWrongCoinType: vector<u8> = b"coin type expected does not match type argument";
 
 const FLOAT_SCALING: u128 = 1_000_000_000;
 

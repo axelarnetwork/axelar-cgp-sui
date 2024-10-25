@@ -11,7 +11,8 @@ use squid::transfers;
 use std::ascii::{Self, String};
 use sui::bcs;
 
-const EInvalidSwapType: u64 = 0;
+#[error]
+const EInvalidSwapType: vector<u8> = b"swap type does not exist";
 
 public fun register_transaction(
     squid: &Squid,

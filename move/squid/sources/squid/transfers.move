@@ -14,8 +14,10 @@ use sui::clock::Clock;
 use sui::coin;
 use utils::utils::peel;
 
-const EWrongSwapType: u64 = 0;
-const EWrongCoinType: u64 = 1;
+#[error]
+const EWrongSwapType: vector<u8> = b"wrong swap type";
+#[error]
+const EWrongCoinType: vector<u8> = b"expected coin type does not match type argument";
 
 /// fallback states whether this transfer happens normally or only on fallback
 /// mode.
