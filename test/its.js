@@ -18,6 +18,7 @@ const {
     getSingletonChannelId,
     getITSChannelId,
     setupTrustedAddresses,
+    getVersionedChannelId,
 } = require('./testutils');
 const { expect } = require('chai');
 const {
@@ -31,7 +32,7 @@ const {
 } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -113,11 +114,11 @@ describe('ITS', () => {
 
             deployments[packageDir] = publishedReceipt;
         }
-
+        const coinType = `${deployments.example.packageId}::token::TOKEN`;
         objectIds = {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
-            tokenTreasuryCap: findObjectId(deployments.example.publishTxn, 'TreasuryCap'),
-            tokenCoinMetadata: findObjectId(deployments.example.publishTxn, 'CoinMetadata'),
+            tokenTreasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${coinType}>`),
+            tokenCoinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${coinType}>`),
             its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
             itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
@@ -128,8 +129,7 @@ describe('ITS', () => {
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
             itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
         };
-
-        // Mint some coins for tests
+        // Mint some coins for tests 
         const tokenTxBuilder = new TxBuilder(client);
 
         await tokenTxBuilder.moveCall({
@@ -142,7 +142,7 @@ describe('ITS', () => {
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
-            itsChannel: await getITSChannelId(client, objectIds.itsV0),
+            itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
     });
@@ -254,8 +254,7 @@ describe('ITS', () => {
                     destination_id: destinationAddress,
                     payload,
                     payload_hash: keccak256(payload),
-                };
-
+                }; 
                 await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });
