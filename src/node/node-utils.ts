@@ -71,7 +71,7 @@ export function removeFile(filePath: string) {
     fs.rmSync(filePath);
 }
 
-export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../../move`) {
+export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../../move`, substitutions: object | undefined = undefined) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
 
