@@ -22,9 +22,12 @@ const path = require('path');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
-async function publishPackage(client, keypair, packageName, options) {
+async function publishPackage(client, keypair, packageName, options, prepToml) {
     const compileDir = `${__dirname}/../move_compile`;
     copyMovePackage(packageName, null, compileDir);
+    if (prepToml) {
+        updateMoveToml(packageName, '0x0', compileDir, prepToml);
+    }
     const builder = new TxBuilder(client);
     await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair, options);
@@ -35,16 +38,10 @@ async function publishPackage(client, keypair, packageName, options) {
     return { packageId, publishTxn };
 }
 
-async function publishExternalPackage(client, keypair, packageName, options) {
+async function publishExternalPackage(client, keypair, packageName, packageDir, options) {
     const compileDir = `${__dirname}/../move_compile`;
-    // copyMovePackage(packageName, packageDir, compileDir);
-    updateMoveToml(packageName, '0x0', compileDir, {
-        dependencies: {
-            Sui: {
-                rev: 'mainnet-v1.32.2',
-            },
-        },
-    });
+    copyMovePackage(packageName, packageDir, compileDir);
+    updateMoveToml(packageName, '0x0', compileDir);
     const builder = new TxBuilder(client);
     await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair, options);

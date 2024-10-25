@@ -13,9 +13,5 @@ ITS = { local = "../its" }
 VersionControl = { local = "../version_control" }
 RelayerDiscovery = { local = "../relayer_discovery" }
 
-[dev-dependencies]
-deepbook = { local = "../deepbook" }
-token = { local = "../token" }
-
 [addresses]
 squid = "0xa6"
