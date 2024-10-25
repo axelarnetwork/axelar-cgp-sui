@@ -277,7 +277,7 @@ describe('Squid', () => {
             itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
         };
-        for(token of ['a', 'b', 'c']) {  
+        for(const token of ['a', 'b', 'c']) {  
             const type = `${deployments.example.packageId}::${token}::${token.toUpperCase()}`;
             coins[token] = {
                 treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
