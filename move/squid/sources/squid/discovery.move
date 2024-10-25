@@ -6,16 +6,12 @@ use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 use squid::deepbook_v3;
 use squid::squid::Squid;
-use squid::swap_type::{Self, SwapType};
+use squid::swap_type::{Self};
 use squid::transfers;
 use std::ascii::{Self, String};
 use sui::bcs;
 
 const EInvalidSwapType: u64 = 0;
-
-const SWAP_TYPE_DEEPBOOK_V3: u8 = 1;
-const SWAP_TYPE_SUI_TRANSFER: u8 = 2;
-const SWAP_TYPE_ITS_TRANSFER: u8 = 3;
 
 public fun register_transaction(
     squid: &Squid,

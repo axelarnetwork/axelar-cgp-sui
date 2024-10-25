@@ -9,7 +9,7 @@ use squid::swap_info::SwapInfo;
 use squid::swap_type::{Self, SwapType};
 use std::ascii::{Self, String};
 use std::type_name;
-use sui::bcs::{Self, BCS};
+use sui::bcs::BCS;
 use sui::clock::Clock;
 use sui::coin;
 use utils::utils::peel;
