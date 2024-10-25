@@ -71,6 +71,30 @@ export function removeFile(filePath: string) {
     fs.rmSync(filePath);
 }
 
+/**
+ * Deep merge two objects.
+ * @param target the object to merge sources into.
+ * @param ...sources an array of objects to merge into target.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mergeDeep(target: any, ...sources: [any]) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+
+    if (isObject(target) && source && isObject(source)) {
+        for (const key in source) {
+            if (isObject(source[key])) {
+                if (!target[key]) Object.assign(target, { [key]: {} });
+                mergeDeep(target[key], source[key]);
+            } else {
+                Object.assign(target, { [key]: source[key] });
+            }
+        }
+    }
+
+    return mergeDeep(target, ...sources);
+}
+
 export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../../move`, substitutions: object | undefined = undefined) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
