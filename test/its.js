@@ -16,7 +16,6 @@ const {
     getRandomBytes32,
     calculateNextSigners,
     getSingletonChannelId,
-    getITSChannelId,
     setupTrustedAddresses,
     getVersionedChannelId,
 } = require('./testutils');
@@ -114,6 +113,7 @@ describe('ITS', () => {
 
             deployments[packageDir] = publishedReceipt;
         }
+
         const coinType = `${deployments.example.packageId}::token::TOKEN`;
         objectIds = {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
