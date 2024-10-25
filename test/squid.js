@@ -29,7 +29,7 @@ const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib
 
 const SUI = '0x2';
 
-describe.only('Squid', () => {
+describe('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -258,18 +258,13 @@ describe.only('Squid', () => {
         // Publish all packages
         for (const packageDir of dependencies) {
             let publishedReceipt;
+
             if (packageDir === 'squid') {
-                publishedReceipt = await publishPackage(
-                    client,
-                    deployer,
-                    packageDir,
-                    { showEvents: true },
-                    (moveJson) => {
-                        moveJson.dependencies.deepbook = {local: '../deepbook'};
-                        moveJson.dependencies.token = {local: '../token'};
-                        return moveJson;
-                    }
-                );
+                publishedReceipt = await publishPackage(client, deployer, packageDir, { showEvents: true }, (moveJson) => {
+                    moveJson.dependencies.deepbook = { local: '../deepbook' };
+                    moveJson.dependencies.token = { local: '../token' };
+                    return moveJson;
+                });
             } else {
                 publishedReceipt = await publishPackage(client, deployer, packageDir, { showEvents: true });
             }
