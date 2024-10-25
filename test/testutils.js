@@ -316,7 +316,6 @@ async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInf
         moveCalls = nextTx.move_calls;
     }
 
-    console.log(moveCalls);
     const builder = new TxBuilder(client);
     const ApprovedMessage = await builder.moveCall({
         target: `${axelarPackageId}::gateway::take_approved_message`,

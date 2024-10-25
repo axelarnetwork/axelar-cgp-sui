@@ -275,7 +275,8 @@ describe('Squid', () => {
         };
 
         for (const token of ['a', 'b', 'c']) {
-            const type = `${deployments.example.packageId}::${token}::${token.toUpperCase()}`;
+            const name = `token_${token}`;
+            const type = `${deployments.example.packageId}::${name}::${name.toUpperCase()}`;
             coins[token] = {
                 treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
                 coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
@@ -318,7 +319,6 @@ describe('Squid', () => {
             recipient: keypair.toSuiAddress(),
             fallback: true,
         }).toBytes();
-        console.log(swap, transfer);
         const swapData = bcs.vector(bcs.vector(bcs.U8)).serialize([swap, transfer, fallback]).toBytes();
 
         const messageType = ITSMessageType.InterchainTokenTransfer;

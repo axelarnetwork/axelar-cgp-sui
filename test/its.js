@@ -32,7 +32,7 @@ const {
 } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe.only('ITS', () => {
+describe('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
