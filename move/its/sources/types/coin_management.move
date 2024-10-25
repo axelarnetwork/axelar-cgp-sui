@@ -119,7 +119,7 @@ public(package) fun give_coin<T>(
     amount = amount + self.dust;
     self.dust = amount % self.scaling;
     let sui_amount = (amount / self.scaling as u64);
-    self.flow_limit.add_flow_out(sui_amount, clock);
+    self.flow_limit.add_flow_in(sui_amount, clock);
     if (has_capability(self)) {
         self.mint(sui_amount, ctx)
     } else {

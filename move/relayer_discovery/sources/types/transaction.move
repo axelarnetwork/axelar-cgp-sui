@@ -217,15 +217,22 @@ fun test_new_move_call_from_bcs() {
         ascii::string(b"type1"),
         ascii::string(b"type2"),
     ];
-    let input =
-        x"5f7809eb09754577387a816582ece609511d0262b2c52aa15306083ca3c85962066d6f64756c650866756e6374696f6e0202123402567802057479706531057479706532";
+    let input = bcs::to_bytes(&MoveCall{
+        function: Function {
+            package_id,
+            module_name,
+            name,
+        },
+        arguments,
+        type_arguments,
+    });
 
-    let transaction = new_move_call_from_bcs(&mut bcs::new(input));
-    assert!(transaction.function.package_id == package_id);
-    assert!(transaction.function.module_name == module_name);
-    assert!(transaction.function.name == name);
-    assert!(transaction.arguments == arguments);
-    assert!(transaction.type_arguments == type_arguments);
+    let move_call = new_move_call_from_bcs(&mut bcs::new(input));
+    assert!(move_call.function.package_id == package_id);
+    assert!(move_call.function.module_name == module_name);
+    assert!(move_call.function.name == name);
+    assert!(move_call.arguments == arguments);
+    assert!(move_call.type_arguments == type_arguments);
 }
 
 #[test]

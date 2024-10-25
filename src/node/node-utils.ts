@@ -1,52 +1,77 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { getFullnodeUrl } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
-import { arrayify, keccak256 } from 'ethers/lib/utils';
-import secp256k1 from 'secp256k1';
+import { Bytes } from 'ethers';
 import toml from 'smol-toml';
-import { Dependency, DependencyNode, InterchainTokenOptions } from './types';
+import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/types';
 
 /**
- * Find out if an item is an object.
- * @param item the item to inspect.
+ * Prepare a move build by creating a temporary directory to store the compiled move code
+ * @returns {tmpdir: string, rmTmpDir: () => void}
+ * - tmpdir is the path to the temporary directory
+ * - rmTmpDir is a function to remove the temporary directory
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isObject(item: any): boolean {
-    return item && typeof item === 'object' && !Array.isArray(item);
+export function prepareMoveBuild(tmpDir: string) {
+    const tmpdir = fs.mkdtempSync(path.join(tmpDir, '.move-build-'));
+    const rmTmpDir = () => fs.rmSync(tmpdir, { recursive: true });
+
+    return {
+        tmpdir,
+        rmTmpDir,
+    };
 }
 
-/**
- * Deep merge two objects.
- * @param target the object to merge sources into.
- * @param ...sources an array of objects to merge into target.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mergeDeep(target: any, ...sources: [any]) {
-    if (!sources.length) return target;
-    const source = sources.shift();
+export const getInstalledSuiVersion = () => {
+    const suiVersion = execSync('sui --version').toString().trim();
+    return parseVersion(suiVersion);
+};
 
-    if (isObject(target) && source && isObject(source)) {
-        for (const key in source) {
-            if (isObject(source[key])) {
-                if (!target[key]) Object.assign(target, { [key]: {} });
-                mergeDeep(target[key], source[key]);
-            } else {
-                Object.assign(target, { [key]: source[key] });
-            }
-        }
+export const getDefinedSuiVersion = () => {
+    const version = fs.readFileSync(`${__dirname}/../../version.json`, 'utf8');
+    const suiVersion = JSON.parse(version).SUI_VERSION;
+    return parseVersion(suiVersion);
+};
+
+const parseVersion = (version: string) => {
+    const versionMatch = version.match(/\d+\.\d+\.\d+/);
+    return versionMatch?.[0];
+};
+
+export function getContractBuild(packageName: string, moveDir: string): { modules: string[]; dependencies: string[]; digest: Bytes } {
+    const emptyPackageId = '0x0';
+    updateMoveToml(packageName, emptyPackageId, moveDir);
+
+    const { tmpdir, rmTmpDir } = prepareMoveBuild(path.dirname(moveDir));
+
+    try {
+        const { modules, dependencies, digest } = JSON.parse(
+            execSync(`sui move build --dump-bytecode-as-base64 --path ${path.join(moveDir, packageName)} --install-dir ${tmpdir}`, {
+                encoding: 'utf-8',
+                stdio: 'pipe',
+            }),
+        );
+
+        return { modules, dependencies, digest };
+    } finally {
+        rmTmpDir();
     }
-
-    return mergeDeep(target, ...sources);
 }
 
-export function updateMoveToml(
-    packageName: string,
-    packageId: string,
-    moveDir: string = `${__dirname}/../move`,
-    substitutions: undefined | object = undefined,
-) {
+export function writeInterchainToken(moveDir: string, options: InterchainTokenOptions) {
+    const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
+
+    const { filePath, content } = newInterchainToken(templateFilePath, options);
+
+    fs.writeFileSync(filePath, content, 'utf8');
+
+    return filePath;
+}
+
+export function removeFile(filePath: string) {
+    fs.rmSync(filePath);
+}
+
+export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../../move`) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
 
@@ -77,7 +102,7 @@ export function updateMoveToml(
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
     if (fromDir == null) {
-        fromDir = `${__dirname}/../move`;
+        fromDir = `${__dirname}/../../move`;
     }
 
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
@@ -216,64 +241,4 @@ export function getDeploymentOrder(packageDir: string, baseMoveDir: string): str
     }
 
     return sorted.map((dep) => dep.directory);
-}
-
-export const fundAccountsFromFaucet = async (addresses: string[]) => {
-    const promises = addresses.map(async (address) => {
-        const network = process.env.NETWORK || 'localnet';
-
-        return requestSuiFromFaucetV0({
-            host: getFaucetHost(network as 'localnet' | 'devnet' | 'testnet'),
-            recipient: address,
-        });
-    });
-
-    return Promise.all(promises);
-};
-
-export const getInstalledSuiVersion = () => {
-    const suiVersion = execSync('sui --version').toString().trim();
-    return parseVersion(suiVersion);
-};
-
-export const getDefinedSuiVersion = () => {
-    const version = fs.readFileSync(`${__dirname}/../version.json`, 'utf8');
-    const suiVersion = JSON.parse(version).SUI_VERSION;
-    return parseVersion(suiVersion);
-};
-
-const parseVersion = (version: string) => {
-    const versionMatch = version.match(/\d+\.\d+\.\d+/);
-    return versionMatch?.[0];
-};
-
-export function parseEnv(arg: string) {
-    switch (arg?.toLowerCase()) {
-        case 'localnet':
-        case 'devnet':
-        case 'testnet':
-        case 'mainnet':
-            return { alias: arg, url: getFullnodeUrl(arg as 'localnet' | 'devnet' | 'testnet' | 'mainnet') };
-        default:
-            return JSON.parse(arg);
-    }
-}
-
-export function hashMessage(data: Uint8Array, commandType: number) {
-    const toHash = new Uint8Array(data.length + 1);
-    toHash[0] = commandType;
-    toHash.set(data, 1);
-
-    return keccak256(toHash);
-}
-
-export function signMessage(privKeys: string[], messageToSign: Uint8Array) {
-    const signatures = [];
-
-    for (const privKey of privKeys) {
-        const { signature, recid } = secp256k1.ecdsaSign(arrayify(keccak256(messageToSign)), arrayify(privKey));
-        signatures.push(new Uint8Array([...signature, recid]));
-    }
-
-    return signatures;
 }
