@@ -295,12 +295,7 @@ describe('Squid', () => {
         await giveDeepToSquid();
     });
 
-    it('should call register_transaction successfully', async () => {
-        console.log(
-            await client.getAllCoins({
-                owner: keypair.toSuiAddress(),
-            }),
-        );
+    it('should succesfully perform a swap', async () => {
         const swap = bcsStructs.squid.DeepbookV3SwapData.serialize({
             swap_type: { DeepbookV3: null },
             pool_id: pools.ab,
