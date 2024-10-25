@@ -20,11 +20,7 @@ const {
     approveAndExecuteMessage,
     publishExternalPackage,
 } = require('./testutils');
-const { CLOCK_PACKAGE_ID } = require('../dist/types');
-const { getDeploymentOrder, fundAccountsFromFaucet } = require('../dist/utils');
-const { bcsStructs } = require('../dist/bcs');
-const { ITSMessageType } = require('../dist/types');
-const { TxBuilder } = require('../dist/tx-builder');
+const { CLOCK_PACKAGE_ID, getDeploymentOrder, fundAccountsFromFaucet, bcsStructs, ITSMessageType, TxBuilder } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib/utils');
 
 const SUI = '0x2';
@@ -277,7 +273,8 @@ describe('Squid', () => {
             itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
         };
-        for(const token of ['a', 'b', 'c']) {  
+
+        for (const token of ['a', 'b', 'c']) {
             const type = `${deployments.example.packageId}::${token}::${token.toUpperCase()}`;
             coins[token] = {
                 treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
