@@ -259,7 +259,7 @@ public(package) fun swap_move_call(
 }
 
 public(package) fun peel_swap_data(bcs: &mut BCS): DeepbookV3SwapData {
-    let data = DeepbookV3SwapData {
+    DeepbookV3SwapData {
         swap_type: swap_type::peel(bcs),
         pool_id: bcs.peel_address(),
         has_base: bcs.peel_bool(),
@@ -268,8 +268,7 @@ public(package) fun peel_swap_data(bcs: &mut BCS): DeepbookV3SwapData {
         quote_type: ascii::string(bcs.peel_vec_u8()),
         lot_size: bcs.peel_u64(),
         should_sweep: bcs.peel_bool(),
-    };
-    data
+    }
 }
 
 /// Multiply two u64 numbers and divide by FLOAT_SCALING. Rounded down.

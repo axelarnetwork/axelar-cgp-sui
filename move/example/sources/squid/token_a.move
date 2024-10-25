@@ -1,21 +1,21 @@
-module example::b;
+module example::token_a;
 
 use sui::coin;
 
 // ------------
 // Capabilities
 // ------------
-public struct B has drop {}
+public struct TOKEN_A has drop {}
 
 // -----
 // Setup
 // -----
-fun init(witness: B, ctx: &mut TxContext) {
+fun init(witness: TOKEN_A, ctx: &mut TxContext) {
     let (treasury_cap, coin_metadata) = coin::create_currency(
         witness,
         9,
-        b"ITS",
-        b"ITS Example Coin",
+        b"TOKEN1",
+        b"Token 1",
         b"",
         option::none(),
         ctx,

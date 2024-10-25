@@ -60,6 +60,13 @@ public(package) macro fun value_mut(
     value
 }
 
+// ---------------
+// Entry Functions
+// ---------------
+entry fun give_deep(self: &mut Squid, deep: Coin<DEEP>) {
+    self.value_mut!(b"give_deep").give_deep(deep);
+}
+
 // ----------------
 // Public Functions
 // ----------------
@@ -77,10 +84,6 @@ public fun start_swap<T>(
 
 public fun finalize(swap_info: SwapInfo) {
     swap_info.finalize();
-}
-
-entry fun give_deep(self: &mut Squid, deep: Coin<DEEP>) {
-    self.value_mut!(b"give_deep").give_deep(deep);
 }
 
 // -----------------

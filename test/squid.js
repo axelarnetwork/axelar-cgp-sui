@@ -29,7 +29,7 @@ const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib
 
 const SUI = '0x2';
 
-describe('Squid', () => {
+describe.only('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -196,21 +196,6 @@ describe('Squid', () => {
         });
 
         await builder.signAndExecute(deployer);
-        /* place_limit_order<BaseAsset, QuoteAsset>(
-            self: &mut Pool<BaseAsset, QuoteAsset>,
-            balance_manager: &mut BalanceManager,
-            trade_proof: &TradeProof,
-            client_order_id: u64,
-            order_type: u8,
-            self_matching_option: u8,
-            price: u64,
-            quantity: u64,
-            is_bid: bool,
-            pay_with_deep: bool,
-            expire_timestamp: u64,
-            clock: &Clock,
-            ctx: &TxContext,
-        ) */
     }
 
     async function registerCoin(coin) {
@@ -292,24 +277,14 @@ describe('Squid', () => {
             itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
         };
-        let type = `${deployments.example.packageId}::a::A`;
-        coins.a = {
-            treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
-            coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
-            type,
-        };
-        type = `${deployments.example.packageId}::b::B`;
-        coins.b = {
-            treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
-            coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
-            type,
-        };
-        type = `${deployments.example.packageId}::c::C`;
-        coins.c = {
-            treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
-            coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
-            type,
-        };
+        for(token of ['a', 'b', 'c']) {  
+            const type = `${deployments.example.packageId}::${token}::${token.toUpperCase()}`;
+            coins[token] = {
+                treasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${type}>`),
+                coinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${type}>`),
+                type,
+            };
+        }
 
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');

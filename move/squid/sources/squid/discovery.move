@@ -104,8 +104,8 @@ public fun transaction(
         move_calls.push_back(call);
     });
 
-    swap_data.do_ref!(|data| {
-        let mut bcs = bcs::new(*data);
+    swap_data.do!(|data| {
+        let mut bcs = bcs::new(data);
         let swap_type = swap_type::peel(&mut bcs);
 
         let call = if (swap_type == swap_type::deepbook_v3()) {
