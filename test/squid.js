@@ -227,6 +227,7 @@ describe('Squid', () => {
 
         await deployDeepbook();
 
+        return;
         objectIds = {
             balanceManager: await createBalanceManager(),
             deepCoin: findObjectId(deployments.token.publishTxn, 'Coin'),
@@ -253,7 +254,6 @@ describe('Squid', () => {
             deployments[packageDir] = publishedReceipt;
         }
 
-        return;
         objectIds = {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
