@@ -49,6 +49,7 @@ async function publishExternalPackage(client, keypair, packageName, packageDir, 
     const publishTxn = await builder.signAndExecute(keypair, options);
 
     const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
+    console.log(packageId);
     updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
 }
