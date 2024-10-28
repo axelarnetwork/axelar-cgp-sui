@@ -34,7 +34,7 @@ jobs:
         shell: bash
 
       - name: Switch to localnet
-        run: sui client switch --env mainnet
+        run: sui client switch --env localnet
 
       - name: Test
         run: npm run test-js
