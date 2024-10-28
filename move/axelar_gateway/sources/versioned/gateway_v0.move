@@ -25,7 +25,7 @@ const EMessageNotApproved: vector<u8> =
     b"trying to `take_approved_message` for a message that is not approved";
 
 #[error]
-const EZeroMessages: vector<u8> = b"no mesages found";
+const EZeroMessages: vector<u8> = b"no messages found";
 
 #[error]
 const ENotLatestSigners: vector<u8> = b"not latest signers";
@@ -390,7 +390,7 @@ fun test_approve_message() {
             payload_hash,
         ) ==
         true,
-        0,
+        EMessageNotApproved,
     );
 
     let approved_message = data.take_approved_message(
@@ -412,7 +412,7 @@ fun test_approve_message() {
             payload_hash,
         ) ==
         false,
-        1,
+        EMessageNotApproved,
     );
 
     assert!(
@@ -421,7 +421,7 @@ fun test_approve_message() {
             message_id,
         ) ==
         true,
-        2,
+        EMessageNotApproved,
     );
 
     data.messages.remove(message.command_id());
@@ -490,7 +490,7 @@ fun test_data_hash() {
     assert!(
         data_hash(CommandType::ApproveMessages, data) ==
         bytes32::from_bytes(hash::keccak256(&typed_data)),
-        0,
+        EMessageNotApproved,
     );
 }
 
