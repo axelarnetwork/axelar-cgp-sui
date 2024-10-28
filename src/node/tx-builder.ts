@@ -3,6 +3,7 @@ import { Bytes } from 'ethers';
 import { TxBuilderBase } from '../common/tx-builder-base';
 import { InterchainTokenOptions } from '../common/types';
 import { getContractBuild as getMoveContractBuild, removeFile, writeInterchainToken } from './node-utils';
+import { execSync } from 'child_process';
 
 export class TxBuilder extends TxBuilderBase {
     getContractBuild(
@@ -34,7 +35,10 @@ export class TxBuilder extends TxBuilderBase {
 
     async publishPackageAndTransferCap(packageName: string, to: string, moveDir = `${__dirname}/../../move`) {
         const cap = await this.publishPackage(packageName, moveDir);
-
+        console.log(execSync(`cat ${__dirname}/../../move_compile/${packageName}/Move.toml`, {
+            encoding: 'utf-8',
+            stdio: 'pipe',
+        }));
         this.tx.transferObjects([cap], to);
     }
 }

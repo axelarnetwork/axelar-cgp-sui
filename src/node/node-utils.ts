@@ -102,7 +102,6 @@ export function updateMoveToml(
     if (prepToml) {
         moveJson = prepToml(moveJson);
     }
-    console.log(moveJson);
     fs.writeFileSync(movePath, toml.stringify(moveJson));
 }
 
