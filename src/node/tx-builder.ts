@@ -23,6 +23,7 @@ export class TxBuilder extends TxBuilderBase {
     }
 
     async publishPackage(packageName: string, moveDir: string = `${__dirname}/../../move`): Promise<TransactionResult> {
+        console.log(packageName, moveDir);
         const { modules, dependencies } = this.getContractBuild(packageName, moveDir);
 
         return this.tx.publish({
