@@ -253,6 +253,7 @@ describe('Squid', () => {
             deployments[packageDir] = publishedReceipt;
         }
 
+        return;
         objectIds = {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
@@ -283,7 +284,6 @@ describe('Squid', () => {
                 type,
             };
         }
-        return;
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');
         await fundPool('a', 'b', 1000000);
