@@ -237,7 +237,7 @@ describe('Squid', () => {
         dependencies.push('gas_service', 'example');
 
         // Publish all packages
-        for (const packageDir of dependencies) {
+        for (const packageDir of dependencies) {console.log(packageDir);
             let publishedReceipt;
 
             if (packageDir === 'squid') {
@@ -274,7 +274,7 @@ describe('Squid', () => {
             squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
         };
 
-        for (const token of ['a', 'b', 'c']) {
+        for (const token of ['a', 'b', 'c']) {console.log(token);
             const name = `token_${token}`;
             const type = `${deployments.example.packageId}::${name}::${name.toUpperCase()}`;
             coins[token] = {
@@ -287,13 +287,19 @@ describe('Squid', () => {
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');
         await fundPool('a', 'b', 1000000);
-
+        console.log(1);
         await setupGateway();
+        console.log(2);
         await registerItsTransaction();
+        console.log(3);
         await registerSquidTransaction();
+        console.log(4);
         await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        console.log(5);
         await registerCoin('a');
+        console.log(6);
         await giveDeepToSquid();
+        console.log(7);
     });
 
     it('should succesfully perform a swap', async () => {
