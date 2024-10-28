@@ -24,7 +24,7 @@ jobs:
         run: npm run build
 
       - name: Initialize Sui Config
-        run: echo -e "y\n\n1" | sui client envs | sui client switch --env localnet
+        run: echo -e "y\n\n1" | sui client envs
 
       - name: Run Localnet
         run: nohup sh -c "RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis" > nohup.out 2> nohup.err < /dev/null &
@@ -32,6 +32,9 @@ jobs:
       - name: Sleep for 30 seconds
         run: sleep 30s
         shell: bash
+
+      - name: Switch to localnet
+        run: sui client switch --env mainnet
 
       - name: Test
         run: npm run test-js
