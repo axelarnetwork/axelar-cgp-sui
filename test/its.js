@@ -129,7 +129,7 @@ describe('ITS', () => {
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
             itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
         };
-        // Mint some coins for tests 
+        // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
 
         await tokenTxBuilder.moveCall({
@@ -254,7 +254,7 @@ describe('ITS', () => {
                     destination_id: destinationAddress,
                     payload,
                     payload_hash: keccak256(payload),
-                }; 
+                };
                 await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
             });
         });

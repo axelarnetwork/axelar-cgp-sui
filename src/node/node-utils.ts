@@ -77,7 +77,6 @@ export function updateMoveToml(
     moveDir: string = `${__dirname}/../../move`,
     prepToml: undefined | ((moveJson: Record<string, TomlPrimitive>) => Record<string, TomlPrimitive>) = undefined,
 ) {
-    console.log(packageName, packageId, moveDir);
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
 
@@ -102,6 +101,7 @@ export function updateMoveToml(
     if (prepToml) {
         moveJson = prepToml(moveJson);
     }
+
     fs.writeFileSync(movePath, toml.stringify(moveJson));
 }
 

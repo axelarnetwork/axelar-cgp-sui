@@ -25,7 +25,7 @@ const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib
 
 const SUI = '0x2';
 
-describe.only('Squid', () => {
+describe('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -283,6 +283,7 @@ describe.only('Squid', () => {
                 type,
             };
         }
+
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');
         await fundPool('a', 'b', 1000000);
@@ -296,7 +297,6 @@ describe.only('Squid', () => {
     });
 
     it('should succesfully perform a swap', async () => {
-        return;
         const swap = bcsStructs.squid.DeepbookV3SwapData.serialize({
             swap_type: { DeepbookV3: null },
             pool_id: pools.ab,
