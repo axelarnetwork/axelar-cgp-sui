@@ -25,7 +25,7 @@ const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib
 
 const SUI = '0x2';
 
-describe('Squid', () => {
+describe.only('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';

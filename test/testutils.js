@@ -43,7 +43,6 @@ async function publishPackage(client, keypair, packageName, options, prepToml) {
 async function publishExternalPackage(client, keypair, packageName, packageDir, options) {
     const compileDir = `${__dirname}/../move_compile`;
     copyMovePackage(packageName, packageDir, compileDir);
-    updateMoveToml(packageName, '0x0', compileDir);
     const builder = new TxBuilder(client);
     await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
     const publishTxn = await builder.signAndExecute(keypair, options);
