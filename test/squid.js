@@ -22,6 +22,7 @@ const {
 } = require('./testutils');
 const { CLOCK_PACKAGE_ID, getDeploymentOrder, fundAccountsFromFaucet, bcsStructs, ITSMessageType, TxBuilder } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib/utils');
+const { debug } = require('console');
 
 const SUI = '0x2';
 
@@ -237,7 +238,7 @@ describe('Squid', () => {
         dependencies.push('gas_service', 'example');
 
         // Publish all packages
-        for (const packageDir of dependencies) {console.log(packageDir);
+        for (const packageDir of dependencies) {debug(packageDir);
             let publishedReceipt;
 
             if (packageDir === 'squid') {
@@ -274,7 +275,7 @@ describe('Squid', () => {
             squidChannel: await getVersionedChannelId(client, objectIds.squidV0),
         };
 
-        for (const token of ['a', 'b', 'c']) {console.log(token);
+        for (const token of ['a', 'b', 'c']) {debug(token);
             const name = `token_${token}`;
             const type = `${deployments.example.packageId}::${name}::${name.toUpperCase()}`;
             coins[token] = {
@@ -287,19 +288,19 @@ describe('Squid', () => {
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');
         await fundPool('a', 'b', 1000000);
-        console.log(1);
+        debug(1);
         await setupGateway();
-        console.log(2);
+        debug(2);
         await registerItsTransaction();
-        console.log(3);
+        debug(3);
         await registerSquidTransaction();
-        console.log(4);
+        debug(4);
         await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
-        console.log(5);
+        debug(5);
         await registerCoin('a');
-        console.log(6);
+        debug(6);
         await giveDeepToSquid();
-        console.log(7);
+        debug(7);
     });
 
     it('should succesfully perform a swap', async () => {
@@ -352,7 +353,7 @@ describe('Squid', () => {
 
         await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
 
-        console.log(
+        debug(
             await client.getAllCoins({
                 owner: keypair.toSuiAddress(),
             }),
