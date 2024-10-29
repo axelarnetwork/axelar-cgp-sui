@@ -25,7 +25,7 @@ const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib
 
 const SUI = '0x2';
 
-describe('Squid', () => {
+describe.only('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -155,7 +155,7 @@ describe('Squid', () => {
         return findObjectId(executeTxn, `pool::Pool`, 'created', 'PoolInner');
     }
 
-    async function fundPool(coin1, coin2, amount, price = 10000000) {
+    async function fundPool(coin1, coin2, amount, price = 1000000) {
         const builder = new TxBuilder(client);
         const tradeProof = await builder.moveCall({
             target: `${deployments.deepbook.packageId}::balance_manager::generate_proof_as_owner`,
@@ -194,6 +194,73 @@ describe('Squid', () => {
         await builder.signAndExecute(deployer);
     }
 
+    async function fundIts(amount, coinName = 'a') {
+        const builder = new TxBuilder(client);
+
+        const input = await builder.moveCall({
+            target: `${SUI}::coin::mint`,
+            arguments: [coins[coinName].treasuryCap, amount],
+            typeArguments: [coins[coinName].type],
+        });
+
+        const channel = await builder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::channel::new`,
+            arguments: [],
+            typeArguments: [],
+        });
+
+        const tokenId = await builder.moveCall({
+            target: `${deployments.its.packageId}::token_id::from_address`,
+            arguments: [
+                objectIds.tokenId,
+            ],
+            typeArguments: [],
+        });
+
+        const interchainTransfer = await builder.moveCall({
+            target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
+            arguments: [
+                tokenId,
+                input,
+                trustedSourceChain,
+                '0xadd1',
+                '0x',
+                channel,
+            ],
+            typeArguments: [
+                coins[coinName].type
+            ],
+        });
+
+        const messageTicket = await builder.moveCall({
+            target: `${deployments.its.packageId}::its::send_interchain_transfer`,
+            arguments: [
+                objectIds.its,
+                interchainTransfer,
+                CLOCK_PACKAGE_ID,
+            ],
+            typeArguments: [
+                coins[coinName].type
+            ],
+        });
+
+        await builder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::gateway::send_message`,
+            arguments: [
+                objectIds.gateway,
+                messageTicket,
+            ],
+            typeArguments: [],
+        });
+
+        await builder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::channel::destroy`,
+            arguments: [channel],
+            typeArguments: [],
+        });
+        await builder.signAndExecute(deployer);
+    }
+
     async function registerCoin(coin) {
         const builder = new TxBuilder(client);
 
@@ -203,8 +270,8 @@ describe('Squid', () => {
             typeArguments: [coins[coin].type],
         });
         const coinManagment = await builder.moveCall({
-            target: `${deployments.its.packageId}::coin_management::new_with_cap`,
-            arguments: [coins[coin].treasuryCap],
+            target: `${deployments.its.packageId}::coin_management::new_locked`,
+            arguments: [],
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
@@ -216,6 +283,74 @@ describe('Squid', () => {
         const registerTxn = await builder.signAndExecute(deployer, { showEvents: true });
 
         objectIds.tokenId = registerTxn.events[0].parsedJson.token_id.id;
+    }
+
+    function getSwapData() {
+        const swap1 = bcsStructs.squid.DeepbookV3SwapData.serialize({
+            swap_type: { DeepbookV3: null },
+            pool_id: pools.ab,
+            has_base: true,
+            min_output: 1,
+            base_type: coins.a.type.slice(2),
+            quote_type: coins.b.type.slice(2),
+            lot_size: 100,
+            should_sweep: true,
+        }).toBytes();
+        const swap2 = bcsStructs.squid.DeepbookV3SwapData.serialize({
+            swap_type: { DeepbookV3: null },
+            pool_id: pools.bc,
+            has_base: true,
+            min_output: 1,
+            base_type: coins.b.type.slice(2),
+            quote_type: coins.c.type.slice(2),
+            lot_size: 100,
+            should_sweep: true,
+        }).toBytes();
+        const transfer = bcsStructs.squid.SuiTransferSwapData.serialize({
+            swap_type: { SuiTransfer: null },
+            coin_type: coins.c.type.slice(2),
+            recipient: keypair.toSuiAddress(),
+            fallback: false,
+        }).toBytes();
+        const fallback = bcsStructs.squid.SuiTransferSwapData.serialize({
+            swap_type: { SuiTransfer: null },
+            coin_type: coins.a.type.slice(2),
+            recipient: keypair.toSuiAddress(),
+            fallback: true,
+        }).toBytes();
+        const swapData = bcs.vector(bcs.vector(bcs.U8)).serialize([swap1, swap2, transfer, fallback]).toBytes();
+        return swapData;
+    }
+
+    async function getAndLoseCoins() {
+        const ownedCoins = await client.getAllCoins({
+            owner: keypair.toSuiAddress(),
+        });
+        const balances = {};
+        for(const coinName of ['a', 'b', 'c']) {
+            const coin = ownedCoins.data.find((coin) => coin.coinType === coins[coinName].type);
+            console.log(coinName, coin);
+            if(!coin) {
+                balances[coinName] = 0;
+                continue;
+            }
+
+            balances[coinName] = coin.balance;
+
+            const builder = new TxBuilder(client);
+            await builder.moveCall({
+                target: `${SUI}::transfer::public_transfer`,
+                arguments: [
+                    coin.coinObjectId,
+                    deployer.toSuiAddress(),
+                ],
+                typeArguments: [
+                    coins[coinName].type,
+                ],
+            });
+            await builder.signAndExecute(keypair);
+        }
+        return balances;
     }
 
     before(async () => {
@@ -266,6 +401,7 @@ describe('Squid', () => {
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
             itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
+            gateway: findObjectId(deployments.its.publishTxn, `${deployments.axelar_gateway.packageId}::gateway::Gateway`),
         };
         // Find the object ids from the publish transactions
         objectIds = {
@@ -286,8 +422,6 @@ describe('Squid', () => {
 
         pools.ab = await createPool('a', 'b');
         pools.bc = await createPool('b', 'c');
-        await fundPool('a', 'b', 1000000);
-
         await setupGateway();
         await registerItsTransaction();
         await registerSquidTransaction();
@@ -297,35 +431,17 @@ describe('Squid', () => {
     });
 
     it('should succesfully perform a swap', async () => {
-        const swap = bcsStructs.squid.DeepbookV3SwapData.serialize({
-            swap_type: { DeepbookV3: null },
-            pool_id: pools.ab,
-            has_base: true,
-            min_output: 1,
-            base_type: coins.a.type.slice(2),
-            quote_type: coins.b.type.slice(2),
-            lot_size: 100,
-            should_sweep: true,
-        }).toBytes();
-        const transfer = bcsStructs.squid.SuiTransferSwapData.serialize({
-            swap_type: { SuiTransfer: null },
-            coin_type: coins.b.type.slice(2),
-            recipient: keypair.toSuiAddress(),
-            fallback: false,
-        }).toBytes();
-        const fallback = bcsStructs.squid.SuiTransferSwapData.serialize({
-            swap_type: { SuiTransfer: null },
-            coin_type: coins.a.type.slice(2),
-            recipient: keypair.toSuiAddress(),
-            fallback: true,
-        }).toBytes();
-        const swapData = bcs.vector(bcs.vector(bcs.U8)).serialize([swap, transfer, fallback]).toBytes();
-
+        const swapData = getSwapData();
+        const amount = 1e6;
+        
+        await fundIts(amount);
+        await fundPool('a', 'b', amount);
+        await fundPool('b', 'c', amount);
+        
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
         const sourceAddress = trustedSourceAddress;
         const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
-        const amount = 1e6;
         const data = swapData;
         // Channel ID for Squid. This will be encoded in the payload
         const squidChannelId = objectIds.squidChannel;
@@ -345,5 +461,8 @@ describe('Squid', () => {
         };
 
         await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+
+        const balances = await getAndLoseCoins();
+        console.log(balances);
     });
 });
