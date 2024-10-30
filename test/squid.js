@@ -22,6 +22,8 @@ const {
 } = require('./testutils');
 const { CLOCK_PACKAGE_ID, getDeploymentOrder, fundAccountsFromFaucet, bcsStructs, ITSMessageType, TxBuilder } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, hexlify, randomBytes } = require('ethers/lib/utils');
+const chai = require('chai');
+const { expect } = chai;
 
 const SUI = '0x2';
 
@@ -155,7 +157,7 @@ describe.only('Squid', () => {
         return findObjectId(executeTxn, `pool::Pool`, 'created', 'PoolInner');
     }
 
-    async function fundPool(coin1, coin2, amount, price = 1000000) {
+    async function fundPool(coin1, coin2, amount, price = 1000000000) {
         const builder = new TxBuilder(client);
         const tradeProof = await builder.moveCall({
             target: `${deployments.deepbook.packageId}::balance_manager::generate_proof_as_owner`,
@@ -323,33 +325,25 @@ describe.only('Squid', () => {
     }
 
     async function getAndLoseCoins() {
+        // wait a bit since coins sometimes take a bit to load.
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const ownedCoins = await client.getAllCoins({
             owner: keypair.toSuiAddress(),
         });
         const balances = {};
+        const builder = new TxBuilder(client);
         for(const coinName of ['a', 'b', 'c']) {
             const coin = ownedCoins.data.find((coin) => coin.coinType === coins[coinName].type);
-            console.log(coinName, coin);
             if(!coin) {
                 balances[coinName] = 0;
                 continue;
             }
 
-            balances[coinName] = coin.balance;
+            balances[coinName] = Number(coin.balance);
 
-            const builder = new TxBuilder(client);
-            await builder.moveCall({
-                target: `${SUI}::transfer::public_transfer`,
-                arguments: [
-                    coin.coinObjectId,
-                    deployer.toSuiAddress(),
-                ],
-                typeArguments: [
-                    coins[coinName].type,
-                ],
-            });
-            await builder.signAndExecute(keypair);
+            builder.tx.transferObjects([coin.coinObjectId], deployer.toSuiAddress());
         }
+        await builder.signAndExecute(keypair);
         return balances;
     }
 
@@ -463,6 +457,46 @@ describe.only('Squid', () => {
         await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
 
         const balances = await getAndLoseCoins();
-        console.log(balances);
+        expect(balances.a).to.equal(0);
+        expect(balances.b).to.equal(0);
+        expect(balances.c).to.equal(amount);
+    });
+
+    it('should succesfully perform a swap', async () => {
+        const swapData = getSwapData();
+        const amount = 1e6;
+        
+        await fundIts(amount);
+        //await fundPool('a', 'b', amount);
+        await fundPool('b', 'c', amount);
+        
+        const messageType = ITSMessageType.InterchainTokenTransfer;
+        const tokenId = objectIds.tokenId;
+        const sourceAddress = trustedSourceAddress;
+        const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
+        const data = swapData;
+        // Channel ID for Squid. This will be encoded in the payload
+        const squidChannelId = objectIds.squidChannel;
+        // ITS transfer payload from Ethereum to Sui
+        const payload = defaultAbiCoder.encode(
+            ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
+            [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
+        );
+
+        const message = {
+            source_chain: trustedSourceChain,
+            message_id: hexlify(randomBytes(32)),
+            source_address: trustedSourceAddress,
+            destination_id: destinationAddress,
+            payload,
+            payload_hash: keccak256(payload),
+        };
+
+        await approveAndExecuteMessage(client, keypair, gatewayInfo, message);
+
+        const balances = await getAndLoseCoins();
+        expect(balances.a).to.equal(amount);
+        expect(balances.b).to.equal(0);
+        expect(balances.c).to.equal(0);
     });
 });

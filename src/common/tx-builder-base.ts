@@ -79,8 +79,7 @@ function getNestedStruct(tx: Transaction, type: SuiMoveNormalizedType, arg: Tran
     while ((inside as { Vector: SuiMoveNormalizedType }).Vector) {
         inside = inside.Vector;
     }
-
-    if (!inside.Struct && !inside.Reference && !inside.MutableReference) {
+    if (!inside.Struct && !inside.Reference && !inside.MutableReference && inside.TypeParameter === undefined) {
         return null;
     }
 
@@ -88,8 +87,7 @@ function getNestedStruct(tx: Transaction, type: SuiMoveNormalizedType, arg: Tran
         return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((type as any).Struct || (type as any).Reference || (type as any).MutableReference) {
+    if (inside.Struct || inside.Reference || inside.MutableReference || inside.TypeParameter !== undefined) {
         return getObject(tx, arg);
     }
 
