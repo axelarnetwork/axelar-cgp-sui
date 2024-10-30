@@ -22,7 +22,6 @@ public struct CoinManagement<phantom T> has store {
     distributor: Option<address>,
     operator: Option<address>,
     flow_limit: FlowLimit,
-    scaling: u256,
     dust: u256,
 }
 
@@ -38,7 +37,6 @@ public fun new_with_cap<T>(treasury_cap: TreasuryCap<T>): CoinManagement<T> {
         distributor: option::none(),
         operator: option::none(),
         flow_limit: flow_limit::new(),
-        scaling: 0, // placeholder, this gets edited when a coin is registered.
         dust: 0,
     }
 }
@@ -52,7 +50,6 @@ public fun new_locked<T>(): CoinManagement<T> {
         distributor: option::none(),
         operator: option::none(),
         flow_limit: flow_limit::new(),
-        scaling: 0, // placeholder, this gets edited when a coin is registered.
         dust: 0,
     }
 }
@@ -97,9 +94,9 @@ public(package) fun take_balance<T>(
     self: &mut CoinManagement<T>,
     to_take: Balance<T>,
     clock: &Clock,
-): u256 {
+): u64 {
     self.flow_limit.add_flow_out(to_take.value(), clock);
-    let amount = (to_take.value() as u256) * self.scaling;
+    let amount = to_take.value();
     if (has_capability(self)) {
         self.burn(to_take);
     } else {
@@ -112,26 +109,16 @@ public(package) fun take_balance<T>(
 /// previous transfers is added to the coin here.
 public(package) fun give_coin<T>(
     self: &mut CoinManagement<T>,
-    mut amount: u256,
+    amount: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<T> {
-    amount = amount + self.dust;
-    self.dust = amount % self.scaling;
-    let sui_amount = (amount / self.scaling as u64);
-    self.flow_limit.add_flow_in(sui_amount, clock);
+    self.flow_limit.add_flow_in(amount, clock);
     if (has_capability(self)) {
-        self.mint(sui_amount, ctx)
+        self.mint(amount, ctx)
     } else {
-        coin::take(self.balance.borrow_mut(), sui_amount, ctx)
+        coin::take(self.balance.borrow_mut(), amount, ctx)
     }
-}
-
-public(package) fun set_scaling<T>(
-    self: &mut CoinManagement<T>,
-    scaling: u256,
-) {
-    self.scaling = scaling;
 }
 
 // helper function to mint as a distributor.
@@ -214,10 +201,9 @@ fun test_give_coin() {
 
     let mut coin = cap.mint(amount1, ctx);
     let mut management1 = new_locked<COIN_MANAGEMENT>();
-    management1.scaling = 1;
     let clock = sui::clock::create_for_testing(ctx);
     management1.take_balance(coin.into_balance(), &clock);
-    coin = management1.give_coin((amount1 as u256), &clock, ctx);
+    coin = management1.give_coin(amount1, &clock, ctx);
 
     assert!(management1.balance.borrow().value() == 0);
     assert!(coin.value() == amount1);
@@ -225,8 +211,7 @@ fun test_give_coin() {
     sui::test_utils::destroy(coin);
 
     let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
-    management2.scaling = 1;
-    coin = management2.give_coin((amount2 as u256), &clock, ctx);
+    coin = management2.give_coin(amount2, &clock, ctx);
 
     assert!(coin.value() == amount2);
 

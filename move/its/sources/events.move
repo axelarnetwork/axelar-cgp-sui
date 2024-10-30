@@ -20,7 +20,7 @@ public struct InterchainTransfer<phantom T> has copy, drop {
     source_address: address,
     destination_chain: String,
     destination_address: vector<u8>,
-    amount: u256,
+    amount: u64,
     data_hash: Bytes32,
 }
 
@@ -38,7 +38,7 @@ public struct InterchainTransferReceived<phantom T> has copy, drop {
     source_chain: String,
     source_address: vector<u8>,
     destination_address: address,
-    amount: u256,
+    amount: u64,
     data_hash: Bytes32,
 }
 
@@ -62,7 +62,7 @@ public(package) fun interchain_transfer<T>(
     source_address: address,
     destination_chain: String,
     destination_address: vector<u8>,
-    amount: u256,
+    amount: u64,
     data: &vector<u8>,
 ) {
     let data_hash = bytes32::new(address::from_bytes(keccak256(data)));
@@ -98,7 +98,7 @@ public(package) fun interchain_transfer_received<T>(
     source_chain: String,
     source_address: vector<u8>,
     destination_address: address,
-    amount: u256,
+    amount: u64,
     data: &vector<u8>,
 ) {
     let data_hash = bytes32::new(address::from_bytes(keccak256(data)));
