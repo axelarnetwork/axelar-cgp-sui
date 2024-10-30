@@ -86,7 +86,6 @@ fun test_start_swap() {
         std::string::utf8(b"Name"),
         std::ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;

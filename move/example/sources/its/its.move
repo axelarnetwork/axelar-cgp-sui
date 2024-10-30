@@ -148,7 +148,6 @@ public fun register_coin<TOKEN>(
         coin_metadata.get_name(),
         coin_metadata.get_symbol(),
         coin_metadata.get_decimals(),
-        coin_metadata.get_decimals(),
     );
     let coin_management = coin_management::new_locked();
 
