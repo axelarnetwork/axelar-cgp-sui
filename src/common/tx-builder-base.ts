@@ -79,6 +79,7 @@ function getNestedStruct(tx: Transaction, type: SuiMoveNormalizedType, arg: Tran
     while ((inside as { Vector: SuiMoveNormalizedType }).Vector) {
         inside = inside.Vector;
     }
+
     if (!inside.Struct && !inside.Reference && !inside.MutableReference && inside.TypeParameter === undefined) {
         return null;
     }

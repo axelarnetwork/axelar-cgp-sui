@@ -27,7 +27,7 @@ const { expect } = chai;
 
 const SUI = '0x2';
 
-describe.only('Squid', () => {
+describe('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -213,45 +213,25 @@ describe.only('Squid', () => {
 
         const tokenId = await builder.moveCall({
             target: `${deployments.its.packageId}::token_id::from_address`,
-            arguments: [
-                objectIds.tokenId,
-            ],
+            arguments: [objectIds.tokenId],
             typeArguments: [],
         });
 
         const interchainTransfer = await builder.moveCall({
             target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
-            arguments: [
-                tokenId,
-                input,
-                trustedSourceChain,
-                '0xadd1',
-                '0x',
-                channel,
-            ],
-            typeArguments: [
-                coins[coinName].type
-            ],
+            arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
+            typeArguments: [coins[coinName].type],
         });
 
         const messageTicket = await builder.moveCall({
             target: `${deployments.its.packageId}::its::send_interchain_transfer`,
-            arguments: [
-                objectIds.its,
-                interchainTransfer,
-                CLOCK_PACKAGE_ID,
-            ],
-            typeArguments: [
-                coins[coinName].type
-            ],
+            arguments: [objectIds.its, interchainTransfer, CLOCK_PACKAGE_ID],
+            typeArguments: [coins[coinName].type],
         });
 
         await builder.moveCall({
             target: `${deployments.axelar_gateway.packageId}::gateway::send_message`,
-            arguments: [
-                objectIds.gateway,
-                messageTicket,
-            ],
+            arguments: [objectIds.gateway, messageTicket],
             typeArguments: [],
         });
 
@@ -326,15 +306,17 @@ describe.only('Squid', () => {
 
     async function getAndLoseCoins() {
         // wait a bit since coins sometimes take a bit to load.
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         const ownedCoins = await client.getAllCoins({
             owner: keypair.toSuiAddress(),
         });
         const balances = {};
         const builder = new TxBuilder(client);
-        for(const coinName of ['a', 'b', 'c']) {
+
+        for (const coinName of ['a', 'b', 'c']) {
             const coin = ownedCoins.data.find((coin) => coin.coinType === coins[coinName].type);
-            if(!coin) {
+
+            if (!coin) {
                 balances[coinName] = 0;
                 continue;
             }
@@ -343,6 +325,7 @@ describe.only('Squid', () => {
 
             builder.tx.transferObjects([coin.coinObjectId], deployer.toSuiAddress());
         }
+
         await builder.signAndExecute(keypair);
         return balances;
     }
@@ -427,11 +410,11 @@ describe.only('Squid', () => {
     it('should succesfully perform a swap', async () => {
         const swapData = getSwapData();
         const amount = 1e6;
-        
+
         await fundIts(amount);
         await fundPool('a', 'b', amount);
         await fundPool('b', 'c', amount);
-        
+
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
         const sourceAddress = trustedSourceAddress;
@@ -465,11 +448,11 @@ describe.only('Squid', () => {
     it('should succesfully perform a swap', async () => {
         const swapData = getSwapData();
         const amount = 1e6;
-        
+
         await fundIts(amount);
-        //await fundPool('a', 'b', amount);
+        // await fundPool('a', 'b', amount);
         await fundPool('b', 'c', amount);
-        
+
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
         const sourceAddress = trustedSourceAddress;
