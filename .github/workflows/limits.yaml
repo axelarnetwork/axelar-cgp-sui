@@ -1,0 +1,40 @@
+name: Find Limits
+
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
+        with:
+          install-sui: 'true'
+          install-nodejs: 'true'
+
+      - name: Create limits
+        run: node scripts/limits.js >> comment.md
+
+      - name: Find Code Coverage comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Code Coverage Summary
+
+      - name: Create or update Code Coverage comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: ./comment.md
+          edit-mode: replace
