@@ -72,7 +72,7 @@ const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 // === HUB CONSTANTS ===
 // Chain name for Axelar. This is used for routing ITS calls via ITS hub on
 // Axelar.
-const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelarnet";
 // Identifier to be used as destination address for chains that route to hub.
 // For Sui this will probably be every supported chain.
 const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
