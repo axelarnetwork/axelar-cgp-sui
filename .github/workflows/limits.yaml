@@ -7,7 +7,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage:
+  limits:
     runs-on: ubuntu-latest
 
     steps:

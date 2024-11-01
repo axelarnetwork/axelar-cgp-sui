@@ -194,7 +194,7 @@ async function prepare() {
     const maxSigenrs = await getMaxSigners();
     console.log("<details>");
     console.log("  <summary>Click to see the limis</summary>")
-    console.log(`Maximum possible approvals in a call: ${maxApprovals}`);
+    console.log(`Maximum possible approvals in a call: ${maxApprovals}\n`);
     console.log(`Maximum possible signers in a signer set: ${maxSigenrs}`);
     console.log("</details>");
 })();
