@@ -22,8 +22,18 @@ public fun interchain_transfer_info(
     payload: vector<u8>,
 ): (TokenId, address, u64, vector<u8>) {
     let mut reader = abi::new_reader(payload);
+    
+    let message_type = eader.read_u256();
+
+    if (message_type == MESSAGE_TYPE_RECEIVE_FROM_HUB) {
+        reader.skip_slot();
+        payload = reader.read_bytes();
+        reader = abi::new_reader(payload);
+        message_type = reader.read_u256();
+    };
+
     assert!(
-        reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER,
+        message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER,
         EInvalidMessageType,
     );
 
