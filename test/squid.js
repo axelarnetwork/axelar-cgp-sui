@@ -56,6 +56,7 @@ describe('Squid', () => {
     const coins = {};
     const pools = {};
 
+    // Initializes the gateway object.
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
         const encodedSigners = bcsStructs.gateway.WeightedSigners.serialize(gatewayInfo.signers).toBytes();
@@ -87,6 +88,7 @@ describe('Squid', () => {
         gatewayInfo.discovery = objectIds.relayerDiscovery;
     }
 
+    // Registers the ITS in relayer discovery
     async function registerItsTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
@@ -98,6 +100,7 @@ describe('Squid', () => {
         await registerTransactionBuilder.signAndExecute(deployer);
     }
 
+    // Registers Squid in relyaer discovery
     async function registerSquidTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
@@ -109,6 +112,7 @@ describe('Squid', () => {
         await registerTransactionBuilder.signAndExecute(deployer);
     }
 
+    // Deploys the deepbook package (and the DEEP token).
     async function deployDeepbook() {
         deployments.token = await publishExternalPackage(client, deployer, 'token', `${__dirname}/../node_modules/deepbookv3/packages`);
         deployments.deepbook = await publishExternalPackage(
@@ -119,6 +123,7 @@ describe('Squid', () => {
         );
     }
 
+    // Funds sui with some DEEP
     async function giveDeepToSquid() {
         const giveDeepBuilder = new TxBuilder(client);
 
@@ -130,6 +135,7 @@ describe('Squid', () => {
         await giveDeepBuilder.signAndExecute(deployer);
     }
 
+    // Creates a balance manager (used to fund deepbook pools)
     async function createBalanceManager(keypair = deployer) {
         const builder = new TxBuilder(client);
 
@@ -144,6 +150,7 @@ describe('Squid', () => {
         return findObjectId(executeTxn, `BalanceManager`);
     }
 
+    // Creates a deepbook pool
     async function createPool(coin1, coin2, tickSize = 100, lotSize = 100, minSize = 100, whitelistedPool = true, stablePool = false) {
         const builder = new TxBuilder(client);
 
@@ -157,6 +164,7 @@ describe('Squid', () => {
         return findObjectId(executeTxn, `pool::Pool`, 'created', 'PoolInner');
     }
 
+    // Funds a deepbook pool
     async function fundPool(coin1, coin2, amount, price = 1000000000) {
         const builder = new TxBuilder(client);
         const tradeProof = await builder.moveCall({
@@ -196,6 +204,7 @@ describe('Squid', () => {
         await builder.signAndExecute(deployer);
     }
 
+    // Funds an ITS lock/unlock token by sending a call.
     async function fundIts(amount, coinName = 'a') {
         const builder = new TxBuilder(client);
 
@@ -243,6 +252,7 @@ describe('Squid', () => {
         await builder.signAndExecute(deployer);
     }
 
+    // Registers a coin with ITS
     async function registerCoin(coin) {
         const builder = new TxBuilder(client);
 
@@ -267,6 +277,7 @@ describe('Squid', () => {
         objectIds.tokenId = registerTxn.events[0].parsedJson.token_id.id;
     }
 
+    // Get the swap data for the Squid transaction. We have these be consistent but test different scenarios.
     function getSwapData() {
         const swap1 = bcsStructs.squid.DeepbookV3SwapData.serialize({
             swap_type: { DeepbookV3: null },
@@ -278,6 +289,7 @@ describe('Squid', () => {
             lot_size: 100,
             should_sweep: true,
         }).toBytes();
+
         const swap2 = bcsStructs.squid.DeepbookV3SwapData.serialize({
             swap_type: { DeepbookV3: null },
             pool_id: pools.bc,
@@ -288,22 +300,26 @@ describe('Squid', () => {
             lot_size: 100,
             should_sweep: true,
         }).toBytes();
+
         const transfer = bcsStructs.squid.SuiTransferSwapData.serialize({
             swap_type: { SuiTransfer: null },
             coin_type: coins.c.type.slice(2),
             recipient: keypair.toSuiAddress(),
             fallback: false,
         }).toBytes();
+
         const fallback = bcsStructs.squid.SuiTransferSwapData.serialize({
             swap_type: { SuiTransfer: null },
             coin_type: coins.a.type.slice(2),
             recipient: keypair.toSuiAddress(),
             fallback: true,
         }).toBytes();
+
         const swapData = bcs.vector(bcs.vector(bcs.U8)).serialize([swap1, swap2, transfer, fallback]).toBytes();
         return swapData;
     }
 
+    // Query all the coins that `keypair` has, and then give them away so that future queries are informative still.
     async function getAndLoseCoins() {
         // wait a bit since coins sometimes take a bit to load.
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -445,13 +461,11 @@ describe('Squid', () => {
         expect(balances.c).to.equal(amount);
     });
 
-    it('should succesfully perform a swap', async () => {
+    it('should succesfully fallback whn pools are not funded properly', async () => {
         const swapData = getSwapData();
         const amount = 1e6;
 
         await fundIts(amount);
-        // await fundPool('a', 'b', amount);
-        await fundPool('b', 'c', amount);
 
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
