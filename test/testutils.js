@@ -22,15 +22,32 @@ const path = require('path');
 
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
-async function publishPackage(client, keypair, packageName) {
+async function publishPackage(client, keypair, packageName, options, prepToml) {
     const compileDir = `${__dirname}/../move_compile`;
     copyMovePackage(packageName, null, compileDir);
+
+    if (prepToml) {
+        updateMoveToml(packageName, '0x0', compileDir, prepToml);
+    }
+
     const builder = new TxBuilder(client);
     await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
-    const publishTxn = await builder.signAndExecute(keypair);
+    const publishTxn = await builder.signAndExecute(keypair, options);
 
     const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
 
+    updateMoveToml(packageName, packageId, compileDir);
+    return { packageId, publishTxn };
+}
+
+async function publishExternalPackage(client, keypair, packageName, packageDir, options) {
+    const compileDir = `${__dirname}/../move_compile`;
+    copyMovePackage(packageName, packageDir, compileDir);
+    const builder = new TxBuilder(client);
+    await builder.publishPackageAndTransferCap(packageName, keypair.toSuiAddress(), compileDir);
+    const publishTxn = await builder.signAndExecute(keypair, options);
+
+    const packageId = (publishTxn.objectChanges?.find((a) => a.type === 'published') ?? []).packageId;
     updateMoveToml(packageName, packageId, compileDir);
     return { packageId, publishTxn };
 }
@@ -292,7 +309,6 @@ async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInf
         const builder = new TxBuilder(client);
         makeCalls(builder.tx, moveCalls, messageInfo.payload);
         const resp = await builder.devInspect(keypair.toSuiAddress());
-
         const txData = resp.results[0].returnValues[0][0];
         const nextTx = Transaction.parse(new Uint8Array(txData));
         isFinal = nextTx.is_final;
@@ -351,8 +367,10 @@ function buildMoveCall(tx, moveCallInfo, payload, callContractObj, previousRetur
     };
 }
 
-function findObjectId(tx, objectType, type = 'created') {
-    return tx.objectChanges.find((change) => change.type === type && change.objectType.includes(objectType))?.objectId;
+function findObjectId(tx, objectType, type = 'created', excludes) {
+    return tx.objectChanges.find(
+        (change) => change.type === type && change.objectType.includes(objectType) && !(excludes && change.objectType.includes(excludes)),
+    )?.objectId;
 }
 
 const getBcsBytesByObjectId = async (client, objectId) => {
@@ -391,14 +409,13 @@ async function setupTrustedAddresses(client, keypair, objectIds, deployments, tr
     return trustedAddressResult;
 }
 
-async function getITSChannelId(client, itsVersionedObjectId) {
+async function getVersionedChannelId(client, versionedObjectId) {
     const response = await client.getObject({
-        id: itsVersionedObjectId,
+        id: versionedObjectId,
         options: {
             showContent: true,
         },
     });
-
     const channelId = response.data.content.fields.value.fields.channel.fields.id.id;
 
     return channelId;
@@ -406,6 +423,7 @@ async function getITSChannelId(client, itsVersionedObjectId) {
 
 module.exports = {
     publishPackage,
+    publishExternalPackage,
     findObjectId,
     getRandomBytes32,
     expectRevert,
@@ -420,6 +438,6 @@ module.exports = {
     getSingletonChannelId,
     setupTrustedAddresses,
     publishInterchainToken,
-    getITSChannelId,
+    getVersionedChannelId,
     goldenTest,
 };

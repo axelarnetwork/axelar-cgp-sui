@@ -39,7 +39,7 @@ fun test_serialize() {
     let data = std::bcs::to_bytes(&vector[swap_data_vec]);
     let mut swap_info = swap_info::new(data, test.ctx());
     let (data2, _) = swap_info.data_estimating();
-    let swap_data2 = deepbook_v3::peel_swap_data(data2);
+    let swap_data2 = deepbook_v3::peel_swap_data(&mut sui::bcs::new(data2));
     assert_eq(swap_data, swap_data2);
 
     let clock = test.take_shared<Clock>();
