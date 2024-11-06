@@ -33,5 +33,8 @@ jobs:
         run: sleep 30s
         shell: bash
 
+      - name: Switch to localnet
+        run: sui client new-env --alias localnet  --rpc http://0.0.0.0:9000 && sui client switch --env localnet
+
       - name: Test
         run: npm run test-js
