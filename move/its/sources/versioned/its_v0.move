@@ -1,6 +1,6 @@
 module its::its_v0;
 
-use abi::abi;
+use abi::abi::{Self, AbiReader};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
@@ -61,6 +61,8 @@ const EUnregisteredCoinHasUrl: vector<u8> =
 const EUntrustedChain: vector<u8> = b"the chain is not trusted";
 #[error]
 const ENewerTicket: vector<u8> = b"cannot proccess newer tickets";
+#[error]
+const EOverflow: vector<u8> = b"cannot receive more than 2^64-1 coins";
 
 // === MESSAGE TYPES ===
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -316,7 +318,7 @@ public(package) fun receive_interchain_transfer<T>(
     let token_id = token_id::from_u256(reader.read_u256());
     let source_address = reader.read_bytes();
     let destination_address = address::from_bytes(reader.read_bytes());
-    let amount = (reader.read_u256() as u64);
+    let amount = read_amount(&mut reader);
     let data = reader.read_bytes();
 
     assert!(data.is_empty(), EInterchainTransferHasData);
@@ -358,7 +360,7 @@ public(package) fun receive_interchain_transfer_with_data<T>(
 
     let source_address = reader.read_bytes();
     let destination_address = address::from_bytes(reader.read_bytes());
-    let amount = (reader.read_u256() as u64);
+    let amount = read_amount(&mut reader);
     let data = reader.read_bytes();
 
     assert!(destination_address == channel.to_address(), EWrongDestination);
@@ -674,6 +676,13 @@ fun decode_approved_message(
 
     (source_chain, payload, message_id)
 }
+
+fun read_amount(reader: &mut AbiReader): u64 {
+    let amount = std::macros::try_as_u64!(reader.read_u256());
+    assert!(amount.is_some(), EOverflow);
+    amount.destroy_some()
+}
+
 // ---------
 // Test Only
 // ---------
