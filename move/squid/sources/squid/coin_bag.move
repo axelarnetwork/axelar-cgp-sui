@@ -6,8 +6,10 @@ use sui::bag::{Self, Bag};
 use sui::balance::Balance;
 use sui::hash::keccak256;
 
-const EKeyNotExist: u64 = 0;
-const ENotEnoughBalance: u64 = 1;
+#[error]
+const EKeyNotExist: vector<u8> = b"key not found";
+#[error]
+const ENotEnoughBalance: vector<u8> = b"not enough balance";
 
 public struct CoinBag has store {
     bag: Bag,

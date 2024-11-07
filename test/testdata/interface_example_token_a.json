@@ -1,0 +1,17 @@
+{
+  "structs": {
+    "TOKEN_A": {
+      "name": "TOKEN_A",
+      "abilities": [
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "dummy_field",
+          "type": "bool"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

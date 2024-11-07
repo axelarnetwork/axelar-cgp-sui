@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { Bytes } from 'ethers';
-import toml from 'smol-toml';
+import toml, { TomlPrimitive } from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/types';
 
 /**
@@ -71,7 +71,12 @@ export function removeFile(filePath: string) {
     fs.rmSync(filePath);
 }
 
-export function updateMoveToml(packageName: string, packageId: string, moveDir: string = `${__dirname}/../../move`) {
+export function updateMoveToml(
+    packageName: string,
+    packageId: string,
+    moveDir: string = `${__dirname}/../../move`,
+    prepToml: undefined | ((moveJson: Record<string, TomlPrimitive>) => Record<string, TomlPrimitive>) = undefined,
+) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
 
@@ -85,13 +90,17 @@ export function updateMoveToml(packageName: string, packageId: string, moveDir: 
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const moveJson = toml.parse(moveRaw) as any;
+    let moveJson = toml.parse(moveRaw);
 
     // Update the published-at field under the package section e.g. published-at = "0x01"
-    moveJson.package['published-at'] = packageId;
+    (moveJson as Record<string, Record<string, string>>).package['published-at'] = packageId;
 
     // Update the package address under the addresses section e.g. gas_service = "0x1"
-    moveJson.addresses[packageName] = packageId;
+    (moveJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
+
+    if (prepToml) {
+        moveJson = prepToml(moveJson);
+    }
 
     fs.writeFileSync(movePath, toml.stringify(moveJson));
 }
