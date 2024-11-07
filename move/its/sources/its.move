@@ -336,10 +336,6 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 #[test_only]
 const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
-// === The maximum number of decimals allowed ===
-#[test_only]
-const DECIMALS_CAP: u8 = 9;
-
 #[test_only]
 public fun create_for_testing(ctx: &mut TxContext): ITS {
     let mut version_control = version_control();
@@ -416,7 +412,6 @@ fun test_register_coin() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
     let coin_management = its::coin_management::new_locked();
 
@@ -432,13 +427,11 @@ fun test_deploy_remote_interchain_token() {
     let token_name = string::utf8(b"Name");
     let token_symbol = ascii::string(b"Symbol");
     let token_decimals = 10;
-    let remote_decimals = 12;
 
     let coin_info = its::coin_info::from_info<COIN>(
         token_name,
         token_symbol,
         token_decimals,
-        remote_decimals,
     );
     let coin_management = its::coin_management::new_locked();
 
@@ -483,9 +476,7 @@ fun test_deploy_interchain_token() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
-    let scaling = coin_info.scaling();
     let coin_management = its::coin_management::new_locked();
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
@@ -517,7 +508,7 @@ fun test_deploy_interchain_token() {
         .write_u256(token_id.to_u256())
         .write_bytes(source_channel.to_address().to_bytes())
         .write_bytes(destination_address)
-        .write_u256((amount as u256) * scaling)
+        .write_u256((amount as u256))
         .write_bytes(b"");
 
     assert!(
@@ -546,7 +537,6 @@ fun test_receive_interchain_transfer() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -595,9 +585,7 @@ fun test_receive_interchain_transfer_with_data() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
-    let scaling = coin_info.scaling();
 
     let amount = 1234;
     let data = b"some_data";
@@ -646,7 +634,7 @@ fun test_receive_interchain_transfer_with_data() {
     assert!(received_source_chain == source_chain);
     assert!(received_source_address == its_source_address);
     assert!(received_data == data);
-    assert!(received_coin.value() == amount / (scaling as u64));
+    assert!(received_coin.value() == amount);
 
     clock.destroy_for_testing();
     channel.destroy();
@@ -665,9 +653,7 @@ fun test_receive_deploy_interchain_token() {
     let source_address = ascii::string(b"Address");
     let name = b"Token Name";
     let symbol = b"Symbol";
-    let remote_decimals = 12;
-    let decimals = if (remote_decimals > DECIMALS_CAP) DECIMALS_CAP
-    else remote_decimals;
+    let decimals = 9;
     let token_id: u256 = 1234;
 
     its.value_mut!(b"").create_unregistered_coin(symbol, decimals, ctx);
@@ -678,7 +664,7 @@ fun test_receive_deploy_interchain_token() {
         .write_u256(token_id)
         .write_bytes(name)
         .write_bytes(symbol)
-        .write_u256((remote_decimals as u256))
+        .write_u256((decimals as u256))
         .write_bytes(vector::empty());
     let payload = writer.into_bytes();
 
@@ -720,7 +706,6 @@ fun test_mint_as_distributor() {
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let remote_decimals = 18;
 
     let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
         symbol,
@@ -729,7 +714,6 @@ fun test_mint_as_distributor() {
     );
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
-        remote_decimals,
     );
     let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
 
@@ -759,7 +743,6 @@ fun test_mint_to_as_distributor() {
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let remote_decimals = 18;
 
     let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
         symbol,
@@ -768,7 +751,6 @@ fun test_mint_to_as_distributor() {
     );
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
-        remote_decimals,
     );
     let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
 
@@ -796,7 +778,6 @@ fun test_burn_as_distributor() {
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let remote_decimals = 18;
     let amount = 1234;
 
     let (
@@ -806,7 +787,6 @@ fun test_burn_as_distributor() {
     let coin = treasury_cap.mint(amount, ctx);
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
-        remote_decimals,
     );
     let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
 

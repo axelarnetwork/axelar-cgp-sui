@@ -7,8 +7,7 @@
       "params": {
         "name#0#0": "String",
         "symbol#0#0": "String",
-        "decimals#0#0": "u8",
-        "remote_decimals#0#0": "u8"
+        "decimals#0#0": "u8"
       },
       "returnType": "CoinInfo<T>"
     },
@@ -16,8 +15,7 @@
       "name": "from_metadata<T>",
       "visibility": "public",
       "params": {
-        "metadata#0#0": "CoinMetadata<T>",
-        "remote_decimals#0#0": "u8"
+        "metadata#0#0": "CoinMetadata<T>"
       },
       "returnType": "CoinInfo<T>"
     },
@@ -44,22 +42,6 @@
         "self#0#0": "&CoinInfo<T>"
       },
       "returnType": "u8"
-    },
-    "remote_decimals<T>": {
-      "name": "remote_decimals<T>",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&CoinInfo<T>"
-      },
-      "returnType": "u8"
-    },
-    "scaling<T>": {
-      "name": "scaling<T>",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&CoinInfo<T>"
-      },
-      "returnType": "u256"
     },
     "metadata<T>": {
       "name": "metadata<T>",

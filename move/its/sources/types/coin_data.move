@@ -33,7 +33,3 @@ public(package) fun coin_management_mut<T>(
 ): &mut CoinManagement<T> {
     &mut self.coin_management
 }
-
-public(package) fun coin_scaling<T>(self: &CoinData<T>): u256 {
-    self.coin_info.scaling()
-}

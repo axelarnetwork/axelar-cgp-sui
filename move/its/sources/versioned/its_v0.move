@@ -1,6 +1,6 @@
 module its::its_v0;
 
-use abi::abi;
+use abi::abi::{Self, AbiReader};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
@@ -61,6 +61,8 @@ const EUnregisteredCoinHasUrl: vector<u8> =
 const EUntrustedChain: vector<u8> = b"the chain is not trusted";
 #[error]
 const ENewerTicket: vector<u8> = b"cannot proccess newer tickets";
+#[error]
+const EOverflow: vector<u8> = b"cannot receive more than 2^64-1 coins";
 
 // === MESSAGE TYPES ===
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -76,9 +78,6 @@ const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 // Identifier to be used as destination address for chains that route to hub.
 // For Sui this will probably be every supported chain.
 const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
-
-// === The maximum number of decimals allowed ===
-const DECIMALS_CAP: u8 = 9;
 
 // -----
 // Types
@@ -286,7 +285,7 @@ public(package) fun send_interchain_transfer<T>(
         .write_u256(token_id.to_u256())
         .write_bytes(source_address.to_bytes())
         .write_bytes(destination_address)
-        .write_u256(amount)
+        .write_u256((amount as u256))
         .write_bytes(data);
 
     events::interchain_transfer<T>(
@@ -319,7 +318,7 @@ public(package) fun receive_interchain_transfer<T>(
     let token_id = token_id::from_u256(reader.read_u256());
     let source_address = reader.read_bytes();
     let destination_address = address::from_bytes(reader.read_bytes());
-    let amount = reader.read_u256();
+    let amount = read_amount(&mut reader);
     let data = reader.read_bytes();
 
     assert!(data.is_empty(), EInterchainTransferHasData);
@@ -361,7 +360,7 @@ public(package) fun receive_interchain_transfer_with_data<T>(
 
     let source_address = reader.read_bytes();
     let destination_address = address::from_bytes(reader.read_bytes());
-    let amount = reader.read_u256();
+    let amount = read_amount(&mut reader);
     let data = reader.read_bytes();
 
     assert!(destination_address == channel.to_address(), EWrongDestination);
@@ -396,10 +395,8 @@ public(package) fun receive_deploy_interchain_token<T>(
     let token_id = token_id::from_u256(reader.read_u256());
     let name = string::utf8(reader.read_bytes());
     let symbol = ascii::string(reader.read_bytes());
-    let remote_decimals = (reader.read_u256() as u8);
+    let decimals = (reader.read_u256() as u8);
     let distributor_bytes = reader.read_bytes();
-    let decimals = if (remote_decimals > DECIMALS_CAP) DECIMALS_CAP
-    else remote_decimals;
     let (treasury_cap, mut coin_metadata) = self.remove_unregistered_coin<T>(
         token_id::unregistered_token_id(&symbol, decimals),
     );
@@ -407,7 +404,7 @@ public(package) fun receive_deploy_interchain_token<T>(
     treasury_cap.update_name(&mut coin_metadata, name);
 
     let mut coin_management = coin_management::new_with_cap<T>(treasury_cap);
-    let coin_info = coin_info::from_metadata<T>(coin_metadata, remote_decimals);
+    let coin_info = coin_info::from_metadata<T>(coin_metadata);
 
     if (distributor_bytes.length() > 0) {
         let distributor = address::from_bytes(distributor_bytes);
@@ -589,10 +586,9 @@ fun add_registered_coin_type(
 fun add_registered_coin<T>(
     self: &mut ITS_v0,
     token_id: TokenId,
-    mut coin_management: CoinManagement<T>,
+    coin_management: CoinManagement<T>,
     coin_info: CoinInfo<T>,
 ) {
-    coin_management.set_scaling(coin_info.scaling());
     self
         .registered_coins
         .add(
@@ -680,6 +676,13 @@ fun decode_approved_message(
 
     (source_chain, payload, message_id)
 }
+
+fun read_amount(reader: &mut AbiReader): u64 {
+    let amount = std::macros::try_as_u64!(reader.read_u256());
+    assert!(amount.is_some(), EOverflow);
+    amount.destroy_some()
+}
+
 // ---------
 // Test Only
 // ---------
@@ -903,7 +906,6 @@ fun test_receive_interchain_transfer_invalid_message_type() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -953,7 +955,6 @@ fun test_receive_interchain_transfer_passed_data() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -1002,7 +1003,6 @@ fun test_receive_interchain_transfer_with_data_invalid_message_type() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -1062,7 +1062,6 @@ fun test_receive_interchain_transfer_with_data_wrong_destination() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -1122,7 +1121,6 @@ fun test_receive_interchain_transfer_with_data_no_data() {
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
-        12,
     );
 
     let amount = 1234;
@@ -1182,9 +1180,7 @@ fun test_receive_deploy_interchain_token_with_distributor() {
     let source_address = ascii::string(b"Address");
     let name = b"Token Name";
     let symbol = b"Symbol";
-    let remote_decimals = 8;
-    let decimals = if (remote_decimals > DECIMALS_CAP) DECIMALS_CAP
-    else remote_decimals;
+    let decimals = 9;
     let token_id: u256 = 1234;
     let distributor = @0x1;
 
@@ -1196,7 +1192,7 @@ fun test_receive_deploy_interchain_token_with_distributor() {
         .write_u256(token_id)
         .write_bytes(name)
         .write_bytes(symbol)
-        .write_u256((remote_decimals as u256))
+        .write_u256((decimals as u256))
         .write_bytes(distributor.to_bytes());
     let payload = writer.into_bytes();
 
@@ -1226,9 +1222,7 @@ fun test_receive_deploy_interchain_token_invalid_message_type() {
     let source_address = ascii::string(b"Address");
     let name = b"Token Name";
     let symbol = b"Symbol";
-    let remote_decimals = 8;
-    let decimals = if (remote_decimals > DECIMALS_CAP) DECIMALS_CAP
-    else remote_decimals;
+    let decimals = 9;
     let token_id: u256 = 1234;
 
     self.create_unregistered_coin(symbol, decimals, ctx);
@@ -1239,7 +1233,7 @@ fun test_receive_deploy_interchain_token_invalid_message_type() {
         .write_u256(token_id)
         .write_bytes(name)
         .write_bytes(symbol)
-        .write_u256((remote_decimals as u256))
+        .write_u256((decimals as u256))
         .write_bytes(b"");
     let payload = writer.into_bytes();
 
@@ -1290,7 +1284,6 @@ fun test_burn_as_distributor_not_distributor() {
     let mut self = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let remote_decimals = 18;
     let amount = 1234;
 
     let (
@@ -1300,7 +1293,6 @@ fun test_burn_as_distributor_not_distributor() {
     let coin = treasury_cap.mint(amount, ctx);
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
-        remote_decimals,
     );
     let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
 
@@ -1360,7 +1352,6 @@ fun test_mint_as_distributor_not_distributor() {
     let mut self = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let remote_decimals = 18;
 
     let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
         symbol,
@@ -1369,7 +1360,6 @@ fun test_mint_as_distributor_not_distributor() {
     );
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
-        remote_decimals,
     );
     let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
 
