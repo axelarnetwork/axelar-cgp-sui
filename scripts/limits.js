@@ -2,16 +2,18 @@ const { SuiClient, getFullnodeUrl } = require('@mysten/sui/client');
 const { Ed25519Keypair } = require('@mysten/sui/keypairs/ed25519');
 const { Secp256k1Keypair } = require('@mysten/sui/keypairs/secp256k1');
 const { requestSuiFromFaucetV0, getFaucetHost } = require('@mysten/sui/faucet');
-const { publishPackage, getRandomBytes32, approveMessage, hashMessage, signMessage } = require('../test/testutils');
+const { publishPackage, getRandomBytes32, approveMessage, hashMessage, signMessage, findObjectId } = require('../test/testutils');
 const { TxBuilder, CLOCK_PACKAGE_ID } = require('../dist/cjs');
 const {
     bcsStructs: {
-        gateway: { WeightedSigners, MessageToSign, Proof },
+        gateway: { WeightedSigners, MessageToSign, Proof, Message },
     },
 } = require('../dist/cjs/bcs');
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
+const { bcs } = require('@mysten/sui/bcs');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
+const COMMAND_TYPE_APPROVE_MESSAGES = 0;
 
 let client;
 const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
@@ -26,7 +28,7 @@ let discovery;
 let gatewayInfo = {};
 const discoveryInfo = {};
 
-function calculateNextSigners(n = 3) {
+function calculateNextSigners(n = 3, threshold = 2) {
     signerKeys = Array.from({length: n}, getRandomBytes32);
     const pubKeys = signerKeys.map((key) => Secp256k1Keypair.fromSecretKey(arrayify(key)).getPublicKey().toRawBytes());
     const keys = signerKeys.map((key, index) => {
@@ -46,10 +48,46 @@ function calculateNextSigners(n = 3) {
             signers: keys.map((key) => {
                 return { pub_key: key.pubKey, weight: 1 };
             }),
-            threshold: 2,
+            threshold,
             nonce: hexlify([++nonce]),
         },
     }
+}
+
+async function rotateSigners(n = 3, threshold = 2) {console.log(n, threshold);
+    let proofSigners = gatewayInfo.signers;
+    let proofKeys = gatewayInfo.signerKeys;
+    let nextSigners = calculateNextSigners(n, threshold);
+
+    const encodedSigners = WeightedSigners.serialize(nextSigners.signers).toBytes();
+
+    const hashed = hashMessage(encodedSigners, COMMAND_TYPE_ROTATE_SIGNERS);
+
+    const message = MessageToSign.serialize({
+        domain_separator: domainSeparator,
+        signers_hash: keccak256(WeightedSigners.serialize(proofSigners).toBytes()),
+        data_hash: hashed,
+    }).toBytes();
+
+    const signatures = signMessage(proofKeys.slice(0, proofSigners.threshold), message);
+    const encodedProof = Proof.serialize({
+        signers: proofSigners,
+        signatures,
+    }).toBytes();
+
+    const builder = new TxBuilder(client);
+
+    await builder.moveCall({
+        target: `${packageId}::gateway::rotate_signers`,
+        arguments: [gateway, CLOCK_PACKAGE_ID, encodedSigners, encodedProof],
+    });
+
+    await builder.signAndExecute(keypair);
+    gatewayInfo = {
+        ...gatewayInfo,
+        ...nextSigners,
+    };
+    console.log(gatewayInfo, nextSigners);
 }
 
 // Perform a binary search to find the maximum possible balue of n before testFn(n) fails.
@@ -59,8 +97,11 @@ async function binarySearch(testFn, min = 1, max = 10000) {
         const mid = Math.floor((min + max)/2);
         try {
             await testFn(mid);
+            console.log(`${mid}: success.`);
             min = mid;
         } catch(e) {
+            console.log(`${mid}: failure.`);
+            console.log(e);
             max = mid;
         }
     }
@@ -76,14 +117,29 @@ const previousSignersRetention = 15;
 
 async function getMaxSigners() {
     await sleep(2000);
-    const proofSigners = gatewayInfo.signers;
-    const proofKeys = gatewayInfo.signerKeys;
+    return await binarySearch(rotateSigners);
+}
+
+// This does not work properly because once you rotate to a signer set that cannot sign you are locked out of the gateway.
+async function getMaxSignatures() {
+    await sleep(2000);
+
     return await binarySearch(async (n) => {
-        let nextSigners = calculateNextSigners(n);
+        await rotateSigners(n, n);
+        let proofSigners = gatewayInfo.signers;
+        let proofKeys = gatewayInfo.signerKeys;
 
-        const encodedSigners = WeightedSigners.serialize(nextSigners.signers).toBytes();
+        const contractCallInfo = {
+            source_chain: 'Ethereum',
+            message_id: 'Message Id',
+            source_address: 'Source Address',
+            destination_id: keccak256(defaultAbiCoder.encode(['string'], ['destination'])),
+            payload_hash: keccak256(defaultAbiCoder.encode(['string'], ['payload hash'])),
+        };
 
-        const hashed = hashMessage(encodedSigners, COMMAND_TYPE_ROTATE_SIGNERS);
+        const messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
+
+        const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
 
         const message = MessageToSign.serialize({
             domain_separator: domainSeparator,
@@ -91,7 +147,7 @@ async function getMaxSigners() {
             data_hash: hashed,
         }).toBytes();
 
-        const signatures = signMessage(proofKeys.slice(0, proofSigners.threshold), message);
+        const signatures = signMessage(proofKeys, message);
         const encodedProof = Proof.serialize({
             signers: proofSigners,
             signatures,
@@ -100,16 +156,53 @@ async function getMaxSigners() {
         const builder = new TxBuilder(client);
 
         await builder.moveCall({
-            target: `${packageId}::gateway::rotate_signers`,
-            arguments: [gateway, CLOCK_PACKAGE_ID, encodedSigners, encodedProof],
+            target: `${packageId}::gateway::approve_messages`,
+            arguments: [gateway, messageData, encodedProof],
+        });
+        await builder.signAndExecute(keypair);
+    }, 2, 200);
+}
+
+async function getMaxMessageSize() {
+
+    const builder = new TxBuilder(client);
+
+    const channelObj = await builder.moveCall({
+        target: `${packageId}::channel::new`,
+        arguments: [],
+    });
+
+    builder.tx.transferObjects([channelObj], keypair.toSuiAddress());
+
+    const response = await builder.signAndExecute(keypair);
+
+    const channel = findObjectId(response, 'channel::Channel');
+
+    return await binarySearch(async (n) => {
+        const payload = new Uint8Array(n);
+
+        const builder = new TxBuilder(client);
+
+        const message = await builder.moveCall({
+            target: `${packageId}::gateway::prepare_message`,
+            arguments: [
+                channel,
+                'destination_chain',
+                'destination_address',
+                payload,
+            ]
+        });
+
+        await builder.moveCall({
+            target: `${packageId}::gateway::send_message`,
+            arguments: [
+                gateway,
+                message,
+            ]
         });
 
         await builder.signAndExecute(keypair);
-        gatewayInfo = {
-            ...nextSigners,
-            ...gatewayInfo,
-        };
-    });
+    }, 1000, 1000000);
 }
 
 async function getMaxApprovals() {
@@ -191,11 +284,15 @@ async function prepare() {
 (async() => {
     await prepare();
     const maxApprovals = await getMaxApprovals();
-    const maxSigenrs = await getMaxSigners();
+    const maxSigners = await getMaxSigners();
+    const messageSize = await getMaxMessageSize();
+    const maxSignatures = await getMaxSignatures();
     console.log("<details>");
     console.log("  <summary>Click to see the limis</summary>")
     console.log(`Maximum possible approvals in a call: ${maxApprovals}\n`);
-    console.log(`Maximum possible signers in a signer set: ${maxSigenrs}`);
+    console.log(`Maximum possible signers in a signer set: ${maxSigners}\n`);
+    console.log(`Maximum message size: ${messageSize}\n`);
+    console.log(`Maximum Signatures: ${maxSignatures}\n`);
     console.log("</details>");
 })();
 

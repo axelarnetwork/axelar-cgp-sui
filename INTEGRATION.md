@@ -4,6 +4,16 @@ Sui is a smart contract chain that offers some unique design parameters. For thi
 
 ## General Limitations
 
+| Limit | Minimum | Recommended | Sui Gateway |
+|-|-|-|-|
+| Cross-chain Message Size | 16 KB | 64 KB | 16 KB |
+| Chain Name Length | < 20 ASCII chars | - | - |
+| Signer Set Size | 40 signers | 100 signers | 313 |
+| Signature Verification | 27 signatures | 67 signatures | 140 |
+| Message Approval Batching | 1 | Configurable | > 105 |
+| Storage Limit for Messages | Practically unlimited (2^64) | Practically unlimited (2^64) | Practically unlimited |
+| Event Retention | 2 weeks | 2 months | Unlimited |
+
 ### Design Limitation
 
 There are quite a few differences between EVM and Sui.
@@ -106,126 +116,3 @@ public struct Transaction has store, copy, drop {
 ```
 
 As seen above there are some options to allow for dynamic objects to be referenced that could not be known on chain, since they do not exist on chain (the `ApprovedCall` object, the payload of the incoming call and the returned arguments of a previous `MoveCall`). 
-
-### Relayer
-
-First the relayer needs to get a contract call approved:
-
-```mermaid
-graph
-  process([axelar::gateway::process_commands])
-
-subgraph tx1[Get Approval]
-	subgraph pure1[pure]
-			input[/commands input: vector&lt;u8&gt;/]
-	end
-	subgraph public0[public]
-		gateway{Gateway}
-	end
-	input & gateway --> process
-end
-```
-
-Next, they need to figure out what to actually call to execute:
-
-```mermaid
-graph
-	getTransaction([axelar::discovery::get_transaction])
-
-	subgraph public1[pubic]
-		discovery{RelayerDiscovery}
-	end
-		transaction[/Transaction/]
-		channelId[/Channel Id/]
-	discovery & channelId --> getTransaction --> devInspect[Dev Inspect] --> transaction
-	
-	transaction --> |is_final == true| block[Ready to Execute]
-	transaction --> |is_final == false| devInspect[Dev Inspect]
-
-```
-
-Finally, they need to get the `ApprovedCall` object from the gateway and use it to execute:
-
-```mermaid
-graph
-	subgraph public
-		Gateway{Gateway}
-	end
-
-	subgraph pure
-		commandId[/command_id: vector&ltu8&gt/]
-    sourceChain[/source_chain: String/]
-    sourceAddress[/source_address: String/]
-		destinationAddress[/destination_channel_id: address/]
-		payload[/payload: vector&ltu8&gt/]
-	end
-	subgraph hotpotato[Hot Potato]
-		ApprovedCall((ApprovedCall))
-	end
-	takeCall([axelar::gateway::takeContractCall])
-	Gateway & commandId & sourceChain & sourceAddress & destinationAddress & payload --> takeCall --> ApprovedCall
-	ApprovedCall --> execute[Execute As Described by `Transaction` Above]
-
-```
-
-### Application
-
-Anyone can register a `Transaction` for their channel using `axelar::discovery::register_transaction`:
-
-```mermaid
-graph
-	register([axelar::discovery::register_transaction])
-	newFunction([axelar::discovery::new_function])
-	newMoveCall([axelar::discovery::new_move_call])
-	newTransaction([axelar::discovery::new_transaction])
-	
-	
-	function[/Function/]
-	moveCall[/MoveCall/]
-	transaction[/Transaction/]
-
-  subgraph pure1[pure]
-		packageId[/package id: address/]
-		moduleName[/module name: String/]
-		functionName[/function name: String/]
-	end
-	subgraph pure2[pure]
-		arguments[/arguments: vector&lt;vector&lt;u8&gt;&gt;/]
-		types[/type aguments: vector&lt;String&gt;/]
-	end
-	subgraph pure3[pure]
-		isFinal[is_final: bool]
-	end
-
-	subgraph public
-		discovery{RelayerDiscovery}
-	end
-
-	subgraph user
-		channel{{GatewayChannel}}
-	end
-
-	packageId & moduleName & functionName --> newFunction --> function
-	function & arguments & types --> newMoveCall --> moveCall
-	moveCall & isFinal --> newTransaction --> transaction
-	discovery & channel & transaction --> register	
-	
-```
-
-Note that `new_transaction` takes a vector of `Transaction` objects, so the above is slightly simplified. To allow for complicated call receiving, the `is_final` field of a `Transaction` tells the relayer what to do with a given `Transaction` .
-
-When a `Transaction` is final, the relayer will execute it. Note that during the transaction the application needs to consume the `ApprovedCall` object:
-
-```mermaid
-graph
-subgraph user
-	channel{{GatewayChannel}}
-end
-subgraph hotpotato[Hot Potato]
-	ApprovedCall((ApprovedCall))
-end
-
-consume([axelar::channel::consume_approved_call])
-channel & ApprovedCall --> consume --> source_chain[/source_chain: String/] & source_address[/source_address: String/] & payload[/payload: vector&ltu8&gt/]
-
-```
