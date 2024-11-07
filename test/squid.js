@@ -258,7 +258,7 @@ describe('Squid', () => {
 
         const coinInfo = await builder.moveCall({
             target: `${deployments.its.packageId}::coin_info::from_metadata`,
-            arguments: [coins[coin].coinMetadata, 9],
+            arguments: [coins[coin].coinMetadata],
             typeArguments: [coins[coin].type],
         });
         const coinManagment = await builder.moveCall({
