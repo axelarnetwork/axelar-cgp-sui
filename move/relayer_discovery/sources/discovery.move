@@ -18,7 +18,8 @@ use version_control::version_control::{Self, VersionControl};
 /// -------
 /// This is the version of the package that should change every package upgrade.
 const VERSION: u64 = 0;
-/// This is the version of the data that should change when we need to migrate `Versioned` type (e.g. from `RelayerDiscovery_v0` to `RelayerDiscoveryV1`)
+/// This is the version of the data that should change when we need to migrate
+/// `Versioned` type (e.g. from `RelayerDiscovery_v0` to `RelayerDiscoveryV1`)
 const DATA_VERSION: u64 = 0;
 
 /// -------
