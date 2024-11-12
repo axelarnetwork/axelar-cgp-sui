@@ -1459,7 +1459,7 @@ fun test_coin_data_not_registered() {
     let ctx = &mut tx_context::dummy();
     let self = create_for_testing(ctx);
     let token_id = token_id::from_address(@0x1);
-    
+
     self.coin_data<COIN>(token_id);
 
     sui::test_utils::destroy(self);
@@ -1501,16 +1501,13 @@ fun test_mint_to_as_distributor_not_distributor() {
     channel.destroy();
 }
 
-
 #[test]
 #[expected_failure(abort_code = EOverflow)]
 fun test_read_amount_overflow() {
     let mut writer = abi::new_writer(1);
     writer.write_u256(1u256 << 64);
 
-    let mut reader = abi::new_reader(
-        writer.into_bytes()
-    );
+    let mut reader = abi::new_reader(writer.into_bytes());
 
     read_amount(&mut reader);
 }
@@ -1589,7 +1586,7 @@ fun test_set_trusted_addresses_mismatch_lengths() {
         its::trusted_addresses::new_for_testing(
             vector[],
             vector[b"trusted address".to_ascii_string()],
-        )
+        ),
     );
 
     sui::test_utils::destroy(its);

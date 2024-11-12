@@ -6,7 +6,8 @@ use std::ascii::String;
 /// Errors
 /// ------
 #[error]
-const EMalformedTrustedAddresses: vector<u8> = b"trusted chains and addresses have mismatching length";
+const EMalformedTrustedAddresses: vector<u8> =
+    b"trusted chains and addresses have mismatching length";
 
 /// -----
 /// Types

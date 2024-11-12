@@ -849,7 +849,10 @@ fun test_registered_coin_type() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
     let token_id = its::token_id::from_address(@0x1);
-    its.add_registered_coin_type_for_testing(token_id, std::type_name::get<COIN>());
+    its.add_registered_coin_type_for_testing(
+        token_id,
+        std::type_name::get<COIN>(),
+    );
     its.registered_coin_type(token_id);
 
     sui::test_utils::destroy(its);

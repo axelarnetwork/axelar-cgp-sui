@@ -13,9 +13,11 @@ use sui::address;
 /// Errors
 /// ------
 #[error]
-const EUnsupportedMessageType: vector<u8> = b"the message type found is not supported";
+const EUnsupportedMessageType: vector<u8> =
+    b"the message type found is not supported";
 #[error]
-const EInvalidMessageType: vector<u8> = b"can only get interchain transfer info for interchain transfers";
+const EInvalidMessageType: vector<u8> =
+    b"can only get interchain transfer info for interchain transfers";
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -142,7 +144,7 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
                         ascii::string(b"discovery"),
                         ascii::string(b"get_transaction"),
                     ),
-                    vector[discovery_arg, channel_id_arg ],
+                    vector[discovery_arg, channel_id_arg],
                     vector[],
                 ),
             ],
@@ -406,7 +408,12 @@ fun test_interchain_transfer_info() {
         .write_u256(amount)
         .write_bytes(data);
 
-    let (resolved_token_id, resolved_destination, resolved_amount, resolved_data) = interchain_transfer_info(writer.into_bytes());
+    let (
+        resolved_token_id,
+        resolved_destination,
+        resolved_amount,
+        resolved_data,
+    ) = interchain_transfer_info(writer.into_bytes());
     assert!(resolved_token_id == token_id::from_u256(token_id));
     assert!(resolved_destination == address::from_bytes(destination));
     assert!(resolved_amount == (amount as u64));
@@ -457,7 +464,7 @@ fun test_discovery_hub_message() {
         .write_bytes(data);
     let inner = writer.into_bytes();
     writer = abi::new_writer(3);
-        writer
+    writer
         .write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB)
         .write_bytes(b"source_chain")
         .write_bytes(inner);
@@ -493,7 +500,6 @@ fun test_discovery_hub_message() {
     sui::test_utils::destroy(discovery);
 }
 
-
 #[test]
 #[expected_failure(abort_code = EUnsupportedMessageType)]
 fun test_call_info_unsupported_message_type() {
@@ -501,8 +507,7 @@ fun test_call_info_unsupported_message_type() {
     let its = its::its::create_for_testing(ctx);
 
     let mut writer = abi::new_writer(1);
-    writer
-        .write_u256(5);
+    writer.write_u256(5);
     let payload = writer.into_bytes();
 
     call_info(&its, payload);
