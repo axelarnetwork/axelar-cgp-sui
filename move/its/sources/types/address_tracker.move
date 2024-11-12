@@ -38,7 +38,7 @@ public fun is_trusted_address(
     chain_name: String,
     addr: String,
 ): bool {
-    trusted_address(self, chain_name) == &addr
+    self.trusted_addresses.contains(chain_name) && self.trusted_addresses[chain_name] == addr
 }
 
 // -----------------
@@ -164,6 +164,18 @@ fun test_remove_trusted_address_empty_chain_name() {
     let chain = std::ascii::string(b"");
 
     self.remove_trusted_address(chain);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = ENoAddress)]
+fun test_trusted_address_no_address() {
+    let ctx = &mut sui::tx_context::dummy();
+    let self = new(ctx);
+    let chain = std::ascii::string(b"");
+
+    self.trusted_address(chain);
 
     sui::test_utils::destroy(self);
 }
