@@ -2,9 +2,7 @@ module gas_service::gas_service;
 
 use gas_service::gas_service_v0::{Self, GasService_v0};
 use std::ascii::{Self, String};
-use sui::address;
 use sui::coin::Coin;
-use sui::event;
 use sui::hash::keccak256;
 use sui::sui::SUI;
 use sui::versioned::{Self, Versioned};
@@ -25,37 +23,6 @@ public struct GasService has key, store {
 
 public struct GasCollectorCap has key, store {
     id: UID,
-}
-
-// ------
-// Events
-// ------
-public struct GasPaid<phantom T> has copy, drop {
-    sender: address,
-    destination_chain: String,
-    destination_address: String,
-    payload_hash: address,
-    value: u64,
-    refund_address: address,
-    params: vector<u8>,
-}
-
-public struct GasAdded<phantom T> has copy, drop {
-    message_id: String,
-    value: u64,
-    refund_address: address,
-    params: vector<u8>,
-}
-
-public struct Refunded<phantom T> has copy, drop {
-    message_id: String,
-    value: u64,
-    refund_address: address,
-}
-
-public struct GasCollected<phantom T> has copy, drop {
-    receiver: address,
-    value: u64,
 }
 
 // -----
@@ -98,8 +65,10 @@ macro fun value_mut(
 // Public Functions
 // ----------------
 /// Pay gas for a contract call.
-/// This function is called by the channel that wants to pay gas for a contract call.
-/// It can also be called by the user to pay gas for a contract call, while setting the sender as the channel ID.
+/// This function is called by the channel that wants to pay gas for a contract
+/// call.
+/// It can also be called by the user to pay gas for a contract call, while
+/// setting the sender as the channel ID.
 public fun pay_gas(
     self: &mut GasService,
     coin: Coin<SUI>,
@@ -110,24 +79,22 @@ public fun pay_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let coin_value = coin.value();
-    self.value_mut!(b"pay_gas").put(coin);
-
-    let payload_hash = address::from_bytes(keccak256(&payload));
-
-    event::emit(GasPaid<SUI> {
-        sender,
-        destination_chain,
-        destination_address,
-        payload_hash,
-        value: coin_value,
-        refund_address,
-        params,
-    })
+    self
+        .value_mut!(b"pay_gas")
+        .pay_gas(
+            coin,
+            sender,
+            destination_chain,
+            destination_address,
+            payload,
+            refund_address,
+            params,
+        );
 }
 
 /// Add gas for an existing cross-chain contract call.
-/// This function can be called by a user who wants to add gas for a contract call with insufficient gas.
+/// This function can be called by a user who wants to add gas for a contract
+/// call with insufficient gas.
 public fun add_gas(
     self: &mut GasService,
     coin: Coin<SUI>,
@@ -135,15 +102,14 @@ public fun add_gas(
     refund_address: address,
     params: vector<u8>,
 ) {
-    let coin_value = coin.value();
-    self.value_mut!(b"add_gas").put(coin);
-
-    event::emit(GasAdded<SUI> {
-        message_id,
-        value: coin_value,
-        refund_address,
-        params,
-    });
+    self
+        .value_mut!(b"add_gas")
+        .add_gas(
+            coin,
+            message_id,
+            refund_address,
+            params,
+        );
 }
 
 public fun collect_gas(
@@ -153,15 +119,13 @@ public fun collect_gas(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    transfer::public_transfer(
-        self.value_mut!(b"collect_gas").take(amount, ctx),
-        receiver,
-    );
-
-    event::emit(GasCollected<SUI> {
-        receiver,
-        value: amount,
-    });
+    self
+        .value_mut!(b"collect_gas")
+        .collect_gas(
+            receiver,
+            amount,
+            ctx,
+        )
 }
 
 public fun refund(
@@ -172,29 +136,25 @@ public fun refund(
     amount: u64,
     ctx: &mut TxContext,
 ) {
-    transfer::public_transfer(
-        self.value_mut!(b"refund").take(amount, ctx),
-        receiver,
-    );
-
-    event::emit(Refunded<SUI> {
-        message_id,
-        value: amount,
-        refund_address: receiver,
-    });
+    self
+        .value_mut!(b"refund")
+        .refund(
+            message_id,
+            receiver,
+            amount,
+            ctx,
+        );
 }
 
 // -----------------
 // Private Functions
 // -----------------
 fun version_control(): VersionControl {
-    version_control::new(
-        vector[
-            vector[b"pay_gas", b"add_gas", b"collect_gas", b"refund"].map!(
-                |function_name| function_name.to_ascii_string(),
-            ),
-        ],
-    )
+    version_control::new(vector[
+        vector[b"pay_gas", b"add_gas", b"collect_gas", b"refund"].map!(
+            |function_name| function_name.to_ascii_string(),
+        ),
+    ])
 }
 
 // -----
