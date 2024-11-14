@@ -1,0 +1,17 @@
+[package]
+name = "Coral"
+version = "0.1.0"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.35.2" }
+deepbook = { git = "https://github.com/axelarnetwork/deepbookv3.git", subdir = "packages/deepbook", rev = "mainnet-v1.35.2" }
+token = { git = "https://github.com/axelarnetwork/deepbookv3.git", subdir = "packages/token", rev = "mainnet-v1.35.2" }
+Utils = { local = "../utils" }
+AxelarGateway = { local = "../axelar_gateway" }
+ITS = { local = "../its" }
+VersionControl = { local = "../version_control" }
+RelayerDiscovery = { local = "../relayer_discovery" }
+
+[addresses]
+coral = "0xa6"
