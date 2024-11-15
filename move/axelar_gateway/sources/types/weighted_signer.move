@@ -93,7 +93,8 @@ public(package) fun lt(self: &WeightedSigner, other: &WeightedSigner): bool {
 #[test]
 #[expected_failure(abort_code = EInvalidPubKeyLength)]
 fun test_new_incorrect_pubkey() {
-    new(vector[], 123u128);
+    let mut rng = sui::random::new_generator_for_testing();
+    new(vector[], rng.generate_u128());
 }
 
 #[test]
@@ -109,7 +110,8 @@ fun test_validate_invalid_weight() {
 
 #[test]
 fun test_pub_key() {
-    let pub_key = vector[1u8, 2u8, 3u8];
+    let mut rng = sui::random::new_generator_for_testing();
+    let pub_key = rng.generate_bytes(3);
     assert!(
         &WeightedSigner {
         pub_key,
