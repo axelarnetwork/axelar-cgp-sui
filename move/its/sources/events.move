@@ -65,7 +65,11 @@ public(package) fun interchain_transfer<T>(
     amount: u64,
     data: &vector<u8>,
 ) {
-    let data_hash = bytes32::new(address::from_bytes(keccak256(data)));
+    let data_hash = if (data.length() == 0) {
+        bytes32::new(@0x0)
+    } else {
+        bytes32::new(address::from_bytes(keccak256(data)))
+    };
     event::emit(InterchainTransfer<T> {
         token_id,
         source_address,
