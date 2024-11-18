@@ -12,8 +12,8 @@ const {
 const { arrayify, hexlify, keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { bcs } = require('@mysten/sui/bcs');
 
-const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 const COMMAND_TYPE_APPROVE_MESSAGES = 0;
+const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 
 let client;
 const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
