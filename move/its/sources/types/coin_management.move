@@ -73,19 +73,6 @@ public fun add_operator<T>(self: &mut CoinManagement<T>, operator: address) {
     self.operator.fill(operator);
 }
 
-/// Adds a rate limit to the `CoinManagement`.
-/// Note that this rate limit will be calculated for the remote decimals of the
-/// token, not for the native decimals.
-/// To be used by the designated operator of the contract.
-public fun set_flow_limit<T>(
-    self: &mut CoinManagement<T>,
-    channel: &Channel,
-    flow_limit: u64,
-) {
-    assert!(self.operator.contains(&channel.to_address()), ENotOperator);
-    self.flow_limit.set_flow_limit(flow_limit);
-}
-
 // === Protected Methods ===
 
 /// Takes the given amount of Coins from user. Returns the amount that the ITS
@@ -134,6 +121,17 @@ public(package) fun mint<T>(
 public(package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
     self.treasury_cap.borrow_mut().supply_mut().decrease_supply(balance);
 }
+
+/// Adds a rate limit to the `CoinManagement`.
+public(package) fun set_flow_limit<T>(
+    self: &mut CoinManagement<T>,
+    channel: &Channel,
+    flow_limit: u64,
+) {
+    assert!(self.operator.contains(&channel.to_address()), ENotOperator);
+    self.flow_limit.set_flow_limit(flow_limit);
+}
+
 // === Views ===
 
 /// Checks if the given address is a `distributor`.

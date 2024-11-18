@@ -232,6 +232,21 @@ public fun burn_as_distributor<T>(
     );
 }
 
+public fun set_flow_limit<T>(
+    self: &mut ITS,
+    channel: &Channel,
+    token_id: TokenId,
+    limit: u64,
+) {
+    let value = self.value_mut!(b"mint_to_as_distributor");
+
+    value.set_flow_limit<T>(
+        channel,
+        token_id,
+        limit,
+    );
+}
+
 // ---------------
 // Owner Functions
 // ---------------
@@ -307,6 +322,7 @@ fun version_control(): VersionControl {
             b"burn_as_distributor",
             b"set_trusted_addresses",
             b"register_transaction",
+            b"set_flow_limit",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -826,4 +842,31 @@ fun test_set_trusted_address() {
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(owner_cap);
+}
+
+#[test]
+fun test_set_flow_limit() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+    let symbol = b"COIN";
+    let decimals = 9;
+    let limit = 1234;
+
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = its::coin::create_treasury_and_metadata(symbol, decimals, ctx);
+    let coin_info = its::coin_info::from_metadata<COIN>(
+        coin_metadata,
+    );
+    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+
+    let channel = channel::new(ctx);
+    coin_management.add_operator(channel.to_address());
+
+    let token_id = register_coin(&mut its, coin_info, coin_management);
+    its.set_flow_limit<COIN>(&channel, token_id, limit);
+
+    sui::test_utils::destroy(its);
+    channel.destroy();
 }
