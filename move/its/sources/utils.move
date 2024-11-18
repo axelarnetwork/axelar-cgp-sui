@@ -1,8 +1,6 @@
 module its::utils;
 
 use std::ascii;
-use sui::address;
-use sui::hash::keccak256;
 
 const LOWERCASE_START: u8 = 97;
 const UPPERCASE_START: u8 = 65;
@@ -47,15 +45,6 @@ public(package) fun module_from_symbol(symbol: &ascii::String): ascii::String {
     ascii::string(moduleName)
 }
 
-public(package) fun hash_coin_info(
-    symbol: &ascii::String,
-    decimals: &u8,
-): address {
-    let mut v = vector[*decimals];
-    v.append(*symbol.as_bytes());
-    address::from_bytes(keccak256(&v))
-}
-
 public(package) fun decode_metadata(
     mut metadata: vector<u8>,
 ): (u32, vector<u8>) {
@@ -72,20 +61,6 @@ public(package) fun decode_metadata(
 
         (version, metadata)
     }
-}
-
-public(package) fun pow(mut base: u256, mut exponent: u8): u256 {
-    let mut res: u256 = 1;
-    while (exponent > 0) {
-        if (exponent % 2 == 0) {
-            base = base * base;
-            exponent = exponent / 2;
-        } else {
-            res = res * base;
-            exponent = exponent - 1;
-        }
-    };
-    res
 }
 
 // -----
