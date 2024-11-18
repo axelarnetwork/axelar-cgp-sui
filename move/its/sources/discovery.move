@@ -9,8 +9,10 @@ use std::ascii;
 use std::type_name;
 use sui::address;
 
-const EUnsupportedMessageType: u64 = 0;
-const EInvalidMessageType: u64 = 0;
+#[error]
+const EUnsupportedMessageType: vector<u8> = b"unsupported message type";
+#[error]
+const EInvalidMessageType: vector<u8> = b"invalid message type";
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;

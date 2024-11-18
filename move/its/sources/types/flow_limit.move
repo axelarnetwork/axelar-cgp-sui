@@ -4,7 +4,8 @@ use sui::clock::Clock;
 
 const EPOCH_TIME: u64 = 6 * 60 * 60 * 1000;
 
-const EFlowLimitExceeded: u64 = 0;
+#[error]
+const EFlowLimitExceeded: vector<u8> = b"flow limit exceeded";
 
 public struct FlowLimit has store, copy, drop {
     flow_limit: u64,

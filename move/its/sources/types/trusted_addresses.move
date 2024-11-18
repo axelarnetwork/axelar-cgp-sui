@@ -2,7 +2,8 @@ module its::trusted_addresses;
 
 use std::ascii::String;
 
-const EMalformedTrustedAddresses: u64 = 0;
+#[error]
+const EMalformedTrustedAddresses: vector<u8> = b"malformed trusted addresses";
 
 public struct TrustedAddresses has copy, drop {
     trusted_chains: vector<String>,
