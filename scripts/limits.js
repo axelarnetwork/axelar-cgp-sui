@@ -91,10 +91,10 @@ async function main() {
         console.log(gatewayInfo, nextSigners);
     }
 
-    // Perform a binary search to find the maximum possible balue of n before testFn(n) fails.
+    // Perform a binary search to find the maximum possible value of n before testFn(n) fails.
     async function binarySearch(testFn, min = 1, max = 10000) {
         if(max === min + 1) return min
-        while(max - min > 1) {
+        while (max - min > 1) {
             const mid = Math.floor((min + max)/2);
             try {
                 await testFn(mid);
@@ -165,7 +165,6 @@ async function main() {
     }
 
     async function getMaxMessageSize() {
-
         const builder = new TxBuilder(client);
 
         const channelObj = await builder.moveCall({
