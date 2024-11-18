@@ -64,3 +64,77 @@ public(package) fun add_flow_out(
 public(package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: u64) {
     self.flow_limit = flow_limit;
 }
+
+// -----
+// Tests
+// -----
+#[test]
+fun test_update_epoch() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let mut clock = sui::clock::create_for_testing(ctx);
+    flow_limit.update_epoch(&clock);
+    clock.increment_for_testing(EPOCH_TIME);
+    flow_limit.update_epoch(&clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+fun test_add_flow_in() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.set_flow_limit(2);
+    flow_limit.add_flow_in(1, &clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+fun test_add_flow_out() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.set_flow_limit(2);
+    flow_limit.add_flow_out(1, &clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+fun test_add_flow_in_zero_flow_limit() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.add_flow_in(1, &clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+fun test_add_flow_out_zero_flow_limit() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.add_flow_out(1, &clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+#[expected_failure(abort_code = EFlowLimitExceeded)]
+fun test_add_flow_in_limit_exceeded() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.set_flow_limit(1);
+    flow_limit.add_flow_in(1, &clock);
+    clock.destroy_for_testing();
+}
+
+#[test]
+#[expected_failure(abort_code = EFlowLimitExceeded)]
+fun test_add_flow_out_limit_exceeded() {
+    let ctx = &mut tx_context::dummy();
+    let mut flow_limit = new();
+    let clock = sui::clock::create_for_testing(ctx);
+    flow_limit.set_flow_limit(1);
+    flow_limit.add_flow_out(1, &clock);
+    clock.destroy_for_testing();
+}
