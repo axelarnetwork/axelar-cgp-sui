@@ -5,41 +5,49 @@
 /// - When call approvals is sent to Sui, it targets an object and not a module;
 /// - To support cross-chain messaging, a Channel object has to be created;
 /// - Channel can be either owned or shared but not frozen;
-/// - Module developer on the Sui side will have to implement a system to support messaging;
-/// - Checks for uniqueness of approvals should be done through `Channel`s to avoid big value storage;
+/// - Module developer on the Sui side will have to implement a system to
+/// support messaging;
+/// - Checks for uniqueness of approvals should be done through `Channel`s to
+/// avoid big value storage;
 ///
 /// I. Sending call approvals
 ///
-/// A approval is sent through the `send` function, a Channel is supplied to determine the source -> ID.
+/// A approval is sent through the `send` function, a Channel is supplied to
+/// determine the source -> ID.
 /// Event is then emitted and Axelar network can operate
 ///
 /// II. Receiving call approvals
 ///
-/// Approval bytes and signatures are passed into `create` function to generate a CallApproval object.
+/// Approval bytes and signatures are passed into `create` function to generate
+/// a CallApproval object.
 ///  - Signatures are checked against the known set of signers.
-///  - CallApproval bytes are parsed to determine: source, destination_chain, payload and destination_id
+///  - CallApproval bytes are parsed to determine: source, destination_chain,
+/// payload and destination_id
 ///  - `destination_id` points to a `Channel` object
 ///
-/// Once created, `CallApproval` needs to be consumed. And the only way to do it is by calling
-/// `consume_call_approval` function and pass a correct `Channel` instance alongside the `CallApproval`.
+/// Once created, `CallApproval` needs to be consumed. And the only way to do it
+/// is by calling
+/// `consume_call_approval` function and pass a correct `Channel` instance
+/// alongside the `CallApproval`.
 ///  - CallApproval is checked for uniqueness (for this channel)
 ///  - CallApproval is checked to match the `Channel`.id
 ///
-/// The Gateway object uses a versioned field to support upgradability. The current implementation uses Gateway_v0.
+/// The Gateway object uses a versioned field to support upgradability. The
+/// current implementation uses Gateway_v0.
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
-use axelar_gateway::weighted_signers;
-use axelar_gateway::message_ticket::{Self, MessageTicket};
 use axelar_gateway::gateway_v0::{Self, Gateway_v0};
+use axelar_gateway::message_ticket::{Self, MessageTicket};
+use axelar_gateway::weighted_signers;
 use std::ascii::{Self, String};
 use sui::clock::Clock;
-use sui::table::{Self};
+use sui::table;
 use sui::versioned::{Self, Versioned};
-use version_control::version_control::{Self, VersionControl};
 use utils::utils;
+use version_control::version_control::{Self, VersionControl};
 
 // -------
 // Version
@@ -65,7 +73,8 @@ public struct CreatorCap has key, store {
 // Setup
 // -----
 
-/// Init the module by giving a CreatorCap to the sender to allow a full `setup`.
+/// Init the module by giving a CreatorCap to the sender to allow a full
+/// `setup`.
 fun init(ctx: &mut TxContext) {
     let cap = CreatorCap {
         id: object::new(ctx),
@@ -128,7 +137,10 @@ macro fun value($self: &Gateway, $function_name: vector<u8>): &Gateway_v0 {
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut Gateway_v0 {
+macro fun value_mut(
+    $self: &mut Gateway,
+    $function_name: vector<u8>,
+): &mut Gateway_v0 {
     let gateway = $self;
     let value = gateway.inner.load_value_mut<Gateway_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -140,8 +152,10 @@ macro fun value_mut($self: &mut Gateway, $function_name: vector<u8>): &mut Gatew
 // -----------
 
 /// The main entrypoint for approving Axelar signed messages.
-/// If proof is valid, message approvals are stored in the Gateway object, if not already approved before.
-/// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
+/// If proof is valid, message approvals are stored in the Gateway object, if
+/// not already approved before.
+/// This method is only intended to be called via a Transaction Block, keeping
+/// more flexibility for upgrades.
 entry fun approve_messages(
     self: &mut Gateway,
     message_data: vector<u8>,
@@ -153,7 +167,8 @@ entry fun approve_messages(
 
 /// The main entrypoint for rotating Axelar signers.
 /// If proof is valid, signers stored on the Gateway object are rotated.
-/// This method is only intended to be called via a Transaction Block, keeping more flexibility for upgrades.
+/// This method is only intended to be called via a Transaction Block, keeping
+/// more flexibility for upgrades.
 entry fun rotate_signers(
     self: &mut Gateway,
     clock: &Clock,
@@ -190,12 +205,10 @@ public fun prepare_message(
     )
 }
 
-/// Submit the MessageTicket which causes a contract call by sending an event from an
+/// Submit the MessageTicket which causes a contract call by sending an event
+/// from an
 /// authorized Channel.
-public fun send_message(
-    self: &Gateway,
-    message: MessageTicket,
-) {
+public fun send_message(self: &Gateway, message: MessageTicket) {
     let value = self.value!(b"send_message");
     value.send_message(message, VERSION);
 }
@@ -228,7 +241,8 @@ public fun is_message_executed(
 }
 
 /// To execute a message, the relayer will call `take_approved_message`
-/// to get the hot potato `ApprovedMessage` object, and then trigger the app's package via discovery.
+/// to get the hot potato `ApprovedMessage` object, and then trigger the app's
+/// package via discovery.
 public fun take_approved_message(
     self: &mut Gateway,
     source_chain: String,
@@ -252,19 +266,16 @@ public fun take_approved_message(
 // -----------------
 
 fun version_control(): VersionControl {
-    version_control::new(
-        vector [
-            // Version 0
-            vector [
-                b"approve_messages",
-                b"rotate_signers",
-                b"is_message_approved",
-                b"is_message_executed",
-                b"take_approved_message",
-                b"send_message",
-            ].map!(|function_name| function_name.to_ascii_string())
-        ]
-    )
+    version_control::new(vector[
+        vector[
+            b"approve_messages",
+            b"rotate_signers",
+            b"is_message_approved",
+            b"is_message_executed",
+            b"take_approved_message",
+            b"send_message",
+        ].map!(|function_name| function_name.to_ascii_string()),
+    ])
 }
 
 // ---------
@@ -310,26 +321,24 @@ public fun create_for_testing(
 
 #[test_only]
 fun dummy(ctx: &mut TxContext): Gateway {
+    let mut rng = sui::random::new_generator_for_testing();
     let inner = versioned::create(
         VERSION,
         gateway_v0::new(
-            @0x0,
+            sui::address::from_bytes(rng.generate_bytes(32)),
             table::new(ctx),
             auth::dummy(ctx),
-            version_control::new(
-                vector [
-                    // Version 0
-                    vector [
-                        b"approve_messages",
-                        b"rotate_signers",
-                        b"is_message_approved",
-                        b"is_message_executed",
-                        b"take_approved_message",
-                        b"send_message",
-                        b"",
-                    ].map!(|function_name| function_name.to_ascii_string())
-                ]
-            )
+            version_control::new(vector[
+                vector[
+                    b"approve_messages",
+                    b"rotate_signers",
+                    b"is_message_approved",
+                    b"is_message_executed",
+                    b"take_approved_message",
+                    b"send_message",
+                    b"",
+                ].map!(|function_name| function_name.to_ascii_string()),
+            ]),
         ),
         ctx,
     );
@@ -348,12 +357,7 @@ public fun destroy_for_testing(self: Gateway) {
     id.delete();
 
     let value = inner.destroy<Gateway_v0>();
-    let (
-        _,
-        messages,
-        signers,
-        _,
-    ) = value.destroy_for_testing();
+    let (_, messages, signers, _) = value.destroy_for_testing();
 
     let (_, table, _, _, _, _) = signers.destroy_for_testing();
     table.destroy_empty();
@@ -377,14 +381,15 @@ fun test_init() {
 
 #[test]
 fun test_setup() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let operator = @123456;
-    let domain_separator = @789012;
-    let minimum_rotation_delay = 765;
-    let previous_signers_retention = 650;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = sui::address::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = axelar_gateway::weighted_signers::dummy();
     let mut clock = sui::clock::create_for_testing(ctx);
-    let timestamp = 1234;
+    let timestamp = rng.generate_u64();
     clock.increment_for_testing(timestamp);
 
     let creator_cap = CreatorCap {
@@ -417,12 +422,9 @@ fun test_setup() {
     } = gateway;
     id.delete();
 
-    let (
-        operator_result,
-        messages,
-        signers,
-        _,
-    ) = inner.destroy<Gateway_v0>().destroy_for_testing();
+    let (operator_result, messages, signers, _) = inner
+        .destroy<Gateway_v0>()
+        .destroy_for_testing();
 
     assert!(operator == operator_result);
     messages.destroy_empty();
@@ -453,14 +455,15 @@ fun test_setup() {
 #[test]
 #[expected_failure]
 fun test_setup_remaining_bytes() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let operator = @123456;
-    let domain_separator = @789012;
-    let minimum_rotation_delay = 765;
-    let previous_signers_retention = 650;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = sui::address::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = axelar_gateway::weighted_signers::dummy();
     let mut clock = sui::clock::create_for_testing(ctx);
-    let timestamp = 1234;
+    let timestamp = rng.generate_u64();
     clock.increment_for_testing(timestamp);
 
     let creator_cap = CreatorCap {
@@ -494,12 +497,9 @@ fun test_setup_remaining_bytes() {
     } = gateway;
     id.delete();
 
-    let (
-        operator_result,
-        messages,
-        signers,
-        _,
-    ) = inner.destroy<Gateway_v0>().destroy_for_testing();
+    let (operator_result, messages, signers, _) = inner
+        .destroy<Gateway_v0>()
+        .destroy_for_testing();
 
     assert!(operator == operator_result);
     messages.destroy_empty();
@@ -567,14 +567,15 @@ fun test_peel_proof_no_remaining_data() {
 
 #[test]
 fun test_take_approved_message() {
+    let mut rng = sui::random::new_generator_for_testing();
     let mut gateway = dummy(&mut sui::tx_context::dummy());
     let source_chain = std::ascii::string(b"Source Chain");
     let message_id = std::ascii::string(b"Message Id");
     let source_address = std::ascii::string(b"Source Address");
-    let destination_id = @0x1;
-    let payload = b"payload";
+    let destination_id = sui::address::from_bytes(rng.generate_bytes(32));
+    let payload = rng.generate_bytes(32);
     let payload_hash = axelar_gateway::bytes32::new(
-        sui::address::from_bytes(sui::hash::keccak256(&payload))
+        sui::address::from_bytes(sui::hash::keccak256(&payload)),
     );
     let message = axelar_gateway::message::new(
         source_chain,
@@ -584,13 +585,13 @@ fun test_take_approved_message() {
         payload_hash,
     );
 
-    gateway.value_mut!(b"")
+    gateway
+        .value_mut!(b"")
         .messages_mut()
         .add(
             message.command_id(),
             axelar_gateway::message_status::approved(message.hash()),
         );
-
 
     let approved_message = gateway.take_approved_message(
         source_chain,
@@ -608,7 +609,6 @@ fun test_take_approved_message() {
     );
     assert!(&approved_message == &expected_approved_message);
 
-
     gateway.value_mut!(b"").messages_mut().remove(message.command_id());
 
     approved_message.destroy_for_testing();
@@ -618,22 +618,25 @@ fun test_take_approved_message() {
 
 #[test]
 fun test_approve_messages() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -646,10 +649,15 @@ fun test_approve_messages() {
         ctx,
     );
     let messages = vector<axelar_gateway::message::Message>[
-        axelar_gateway::message::dummy()
+        axelar_gateway::message::dummy(),
     ];
     let data_hash = gateway_v0::approve_messages_data_hash(messages);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
 
     self.approve_messages(bcs::to_bytes(&messages), bcs::to_bytes(&proof));
 
@@ -660,22 +668,25 @@ fun test_approve_messages() {
 #[test]
 #[expected_failure]
 fun test_approve_messages_remaining_data() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -687,11 +698,14 @@ fun test_approve_messages_remaining_data() {
         &clock,
         ctx,
     );
-    let messages = vector[
-        axelar_gateway::message::dummy()
-    ];
+    let messages = vector[axelar_gateway::message::dummy()];
     let data_hash = gateway_v0::approve_messages_data_hash(messages);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
 
@@ -703,33 +717,38 @@ fun test_approve_messages_remaining_data() {
 
 #[test]
 fun test_rotate_signers() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
     let next_weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
-                *sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x5678.to_bytes()).public_key(),
+                *sui::ecdsa_k1::secp256k1_keypair_from_seed(
+                    &rng.generate_bytes(32),
+                ).public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x1),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
 
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let mut clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -743,10 +762,20 @@ fun test_rotate_signers() {
     );
 
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), bcs::to_bytes(&proof), ctx);
+    self.rotate_signers(
+        &clock,
+        bcs::to_bytes(&next_weighted_signers),
+        bcs::to_bytes(&proof),
+        ctx,
+    );
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
@@ -755,33 +784,38 @@ fun test_rotate_signers() {
 #[test]
 #[expected_failure]
 fun test_rotate_signers_remaining_data_message_data() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
     let next_weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
-                *sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x5678.to_bytes()).public_key(),
+                *sui::ecdsa_k1::secp256k1_keypair_from_seed(
+                    &rng.generate_bytes(32),
+                ).public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x1),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
 
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let mut clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -798,7 +832,12 @@ fun test_rotate_signers_remaining_data_message_data() {
     message_data.push_back(0);
 
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
 
     clock.increment_for_testing(minimum_rotation_delay);
     self.rotate_signers(&clock, message_data, bcs::to_bytes(&proof), ctx);
@@ -810,33 +849,38 @@ fun test_rotate_signers_remaining_data_message_data() {
 #[test]
 #[expected_failure]
 fun test_rotate_signers_remaining_data_proof_data() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
     let next_weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
-                *sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x5678.to_bytes()).public_key(),
+                *sui::ecdsa_k1::secp256k1_keypair_from_seed(
+                    &rng.generate_bytes(32),
+                ).public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x1),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
 
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let mut clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -850,12 +894,22 @@ fun test_rotate_signers_remaining_data_proof_data() {
     );
 
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
     let mut proof_data = bcs::to_bytes(&proof);
     proof_data.push_back(0);
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), proof_data, ctx);
+    self.rotate_signers(
+        &clock,
+        bcs::to_bytes(&next_weighted_signers),
+        proof_data,
+        ctx,
+    );
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
@@ -864,33 +918,38 @@ fun test_rotate_signers_remaining_data_proof_data() {
 #[test]
 #[expected_failure(abort_code = axelar_gateway::gateway_v0::ENotLatestSigners)]
 fun test_rotate_signers_not_latest_signers() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
-    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
+    let keypair = sui::ecdsa_k1::secp256k1_keypair_from_seed(
+        &rng.generate_bytes(32),
+    );
     let weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
                 *keypair.public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
     let next_weighted_signers = weighted_signers::create_for_testing(
         vector[
             axelar_gateway::weighted_signer::new(
-                *sui::ecdsa_k1::secp256k1_keypair_from_seed(&@0x5678.to_bytes()).public_key(),
+                *sui::ecdsa_k1::secp256k1_keypair_from_seed(
+                    &rng.generate_bytes(32),
+                ).public_key(),
                 1,
-            )
+            ),
         ],
         1,
-        bytes32::new(@0x2),
+        bytes32::from_bytes(rng.generate_bytes(32)),
     );
 
-    let operator = @0x1;
-    let domain_separator = bytes32::new(@0x2);
-    let minimum_rotation_delay = 1;
-    let previous_signers_retention = 10;
+    let operator = sui::address::from_bytes(rng.generate_bytes(32));
+    let domain_separator = bytes32::from_bytes(rng.generate_bytes(32));
+    let minimum_rotation_delay = rng.generate_u64();
+    let previous_signers_retention = rng.generate_u64();
     let initial_signers = weighted_signers;
     let mut clock = sui::clock::create_for_testing(ctx);
     let mut self = create_for_testing(
@@ -907,10 +966,20 @@ fun test_rotate_signers_not_latest_signers() {
     *epoch = *epoch + 1;
 
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
-    let proof = generate_proof(data_hash, domain_separator, weighted_signers, &vector[keypair]);
+    let proof = generate_proof(
+        data_hash,
+        domain_separator,
+        weighted_signers,
+        &vector[keypair],
+    );
 
     clock.increment_for_testing(minimum_rotation_delay);
-    self.rotate_signers(&clock, bcs::to_bytes(&next_weighted_signers), bcs::to_bytes(&proof), ctx);
+    self.rotate_signers(
+        &clock,
+        bcs::to_bytes(&next_weighted_signers),
+        bcs::to_bytes(&proof),
+        ctx,
+    );
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
@@ -918,13 +987,14 @@ fun test_rotate_signers_not_latest_signers() {
 
 #[test]
 fun test_is_message_approved() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
 
     let source_chain = ascii::string(b"Source Chain");
     let source_address = ascii::string(b"Source Address");
     let message_id = ascii::string(b"Message Id");
-    let destination_id = @0x4;
-    let payload_hash = bytes32::new(@0x5);
+    let destination_id = sui::address::from_bytes(rng.generate_bytes(32));
+    let payload_hash = bytes32::from_bytes(rng.generate_bytes(32));
     let message = axelar_gateway::message::new(
         source_chain,
         message_id,
@@ -935,28 +1005,33 @@ fun test_is_message_approved() {
 
     let mut gateway = dummy(ctx);
     gateway.value_mut!(b"").approve_message_for_testing(message);
-    assert!(gateway.is_message_approved(
-        source_chain,
-        message_id,
-        source_address,
-        destination_id,
-        payload_hash,
-    ));
-        assert!(!gateway.is_message_executed(
-        source_chain,
-        message_id,
-    ));
+    assert!(
+        gateway.is_message_approved(
+            source_chain,
+            message_id,
+            source_address,
+            destination_id,
+            payload_hash,
+        ),
+    );
+    assert!(
+        !gateway.is_message_executed(
+            source_chain,
+            message_id,
+        ),
+    );
 
     sui::test_utils::destroy(gateway);
 }
 
 #[test]
 fun test_send_message() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
     let channel = axelar_gateway::channel::new(ctx);
     let destination_chain = ascii::string(b"Destination Chain");
     let destination_address = ascii::string(b"Destination Address");
-    let payload = b"payload";
+    let payload = rng.generate_bytes(32);
     let message_ticket = prepare_message(
         &channel,
         destination_chain,
