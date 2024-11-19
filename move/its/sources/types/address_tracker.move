@@ -9,11 +9,13 @@ use sui::table::{Self, Table};
 // Errors
 // ------
 #[error]
-const ENoAddress: vector<u8> = b"attempt to borrow a trusted address but it's not registered";
+const ENoAddress: vector<u8> =
+    b"attempt to borrow a trusted address but it's not registered";
 #[error]
 const EEmptyChainName: vector<u8> = b"empty trusted chain name is unsupported";
 #[error]
-const EEmptyTrustedAddress: vector<u8> = b"empty trusted address is unsupported";
+const EEmptyTrustedAddress: vector<u8> =
+    b"empty trusted address is unsupported";
 
 /// The interchain address tracker stores the trusted addresses for each chain.
 public struct InterchainAddressTracker has store {
@@ -38,7 +40,7 @@ public fun is_trusted_address(
     chain_name: String,
     addr: String,
 ): bool {
-    trusted_address(self, chain_name) == &addr
+    self.trusted_addresses.contains(chain_name) && self.trusted_addresses[chain_name] == addr
 }
 
 // -----------------
@@ -141,7 +143,6 @@ fun test_set_trusted_address_empty_trusted_address() {
     sui::test_utils::destroy(self);
 }
 
-
 #[test]
 fun test_remove_trusted_address() {
     let ctx = &mut sui::tx_context::dummy();
@@ -155,7 +156,6 @@ fun test_remove_trusted_address() {
     sui::test_utils::destroy(self);
 }
 
-
 #[test]
 #[expected_failure(abort_code = EEmptyChainName)]
 fun test_remove_trusted_address_empty_chain_name() {
@@ -164,6 +164,18 @@ fun test_remove_trusted_address_empty_chain_name() {
     let chain = std::ascii::string(b"");
 
     self.remove_trusted_address(chain);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = ENoAddress)]
+fun test_trusted_address_no_address() {
+    let ctx = &mut sui::tx_context::dummy();
+    let self = new(ctx);
+    let chain = std::ascii::string(b"");
+
+    self.trusted_address(chain);
 
     sui::test_utils::destroy(self);
 }

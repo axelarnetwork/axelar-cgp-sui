@@ -9,10 +9,15 @@ use std::ascii;
 use std::type_name;
 use sui::address;
 
+/// ------
+/// Errors
+/// ------
 #[error]
-const EUnsupportedMessageType: vector<u8> = b"unsupported message type";
+const EUnsupportedMessageType: vector<u8> =
+    b"the message type found is not supported";
 #[error]
-const EInvalidMessageType: vector<u8> = b"invalid message type";
+const EInvalidMessageType: vector<u8> =
+    b"can only get interchain transfer info for interchain transfers";
 
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
@@ -139,7 +144,7 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
                         ascii::string(b"discovery"),
                         ascii::string(b"get_transaction"),
                     ),
-                    vector[discovery_arg, channel_id_arg ],
+                    vector[discovery_arg, channel_id_arg],
                     vector[],
                 ),
             ],
@@ -383,4 +388,129 @@ fun test_discovery_deploy_token() {
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(discovery);
+}
+
+#[test]
+fun test_interchain_transfer_info() {
+    let message_type = MESSAGE_TYPE_INTERCHAIN_TRANSFER;
+    let token_id = 1;
+    let source_address = b"source address";
+    let destination = @0x3.to_bytes();
+    let amount = 2;
+    let data = b"data";
+
+    let mut writer = abi::new_writer(6);
+    writer
+        .write_u256(message_type)
+        .write_u256(token_id)
+        .write_bytes(source_address)
+        .write_bytes(destination)
+        .write_u256(amount)
+        .write_bytes(data);
+
+    let (
+        resolved_token_id,
+        resolved_destination,
+        resolved_amount,
+        resolved_data,
+    ) = interchain_transfer_info(writer.into_bytes());
+    assert!(resolved_token_id == token_id::from_u256(token_id));
+    assert!(resolved_destination == address::from_bytes(destination));
+    assert!(resolved_amount == (amount as u64));
+    assert!(resolved_data == data);
+}
+
+#[test]
+#[expected_failure(abort_code = EInvalidMessageType)]
+fun test_interchain_transfer_info_invalid_message_type() {
+    let message_type = MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN;
+    let token_id = @0x1234;
+    let name = b"name";
+    let symbol = b"symbol";
+    let decimals = 15;
+    let distributor = @0x0325;
+    let mut writer = abi::new_writer(6);
+    writer
+        .write_u256(message_type)
+        .write_u256(address::to_u256(token_id))
+        .write_bytes(name)
+        .write_bytes(symbol)
+        .write_u256(decimals)
+        .write_bytes(distributor.to_bytes());
+
+    interchain_transfer_info(writer.into_bytes());
+}
+
+#[test]
+fun test_discovery_hub_message() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut its = its::its::create_for_testing(ctx);
+    let mut discovery = relayer_discovery::discovery::new(ctx);
+
+    register_transaction(&mut its, &mut discovery);
+
+    let token_id = @0x1234;
+    let source_address = b"source address";
+    let target_channel = @0x5678;
+    let amount = 1905;
+    let data = b"";
+    let mut writer = abi::new_writer(6);
+    writer
+        .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
+        .write_u256(address::to_u256(token_id))
+        .write_bytes(source_address)
+        .write_bytes(target_channel.to_bytes())
+        .write_u256(amount)
+        .write_bytes(data);
+    let inner = writer.into_bytes();
+    writer = abi::new_writer(3);
+    writer
+        .write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB)
+        .write_bytes(b"source_chain")
+        .write_bytes(inner);
+    let payload = writer.into_bytes();
+
+    let type_arg = std::type_name::get<RelayerDiscovery>();
+    its.add_registered_coin_type_for_testing(
+        its::token_id::from_address(token_id),
+        type_arg,
+    );
+    let tx_block = call_info(&its, payload);
+
+    assert!(tx_block == call_info(&its, payload));
+    assert!(tx_block.is_final() && tx_block.move_calls().length() == 1);
+
+    let call_info = tx_block.move_calls().pop_back();
+
+    assert!(
+        call_info.function().package_id_from_function() == package_id<ITS>(),
+    );
+    assert!(call_info.function().module_name() == ascii::string(b"its"));
+    assert!(
+        call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
+    );
+    let mut arg = vector[0];
+    arg.append(object::id_address(&its).to_bytes());
+
+    let arguments = vector[arg, vector[2], vector[0, 6]];
+    assert!(call_info.arguments() == arguments);
+    assert!(call_info.type_arguments() == vector[type_arg.into_string()]);
+
+    sui::test_utils::destroy(its);
+    sui::test_utils::destroy(discovery);
+}
+
+#[test]
+#[expected_failure(abort_code = EUnsupportedMessageType)]
+fun test_call_info_unsupported_message_type() {
+    let ctx = &mut sui::tx_context::dummy();
+    let its = its::its::create_for_testing(ctx);
+
+    let mut writer = abi::new_writer(1);
+    writer.write_u256(5);
+    let payload = writer.into_bytes();
+
+    call_info(&its, payload);
+
+    sui::test_utils::destroy(its);
 }
