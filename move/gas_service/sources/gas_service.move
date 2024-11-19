@@ -1,5 +1,6 @@
 module gas_service::gas_service;
 
+use axelar_gateway::message_ticket::MessageTicket;
 use gas_service::gas_service_v0::{Self, GasService_v0};
 use std::ascii::{Self, String};
 use sui::coin::Coin;
@@ -107,6 +108,23 @@ public fun add_gas(
         .add_gas(
             coin,
             message_id,
+            refund_address,
+            params,
+        );
+}
+
+public fun pay_gas_for_message_ticket(
+    self: &mut GasService,
+    message_ticket: &MessageTicket,
+    coin: Coin<SUI>,
+    refund_address: address,
+    params: vector<u8>,
+) {
+    self
+        .value_mut!(b"pay_gas_for_message_ticket")
+        .pay_gas_for_message_ticket(
+            message_ticket,
+            coin,
             refund_address,
             params,
         );
