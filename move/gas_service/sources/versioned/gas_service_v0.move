@@ -32,32 +32,6 @@ public(package) fun version_control(self: &GasService_v0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun pay_gas(
-    self: &mut GasService_v0,
-    coin: Coin<SUI>,
-    sender: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
-    refund_address: address,
-    params: vector<u8>,
-) {
-    let coin_value = coin.value();
-    self.put(coin);
-
-    let payload_hash = address::from_bytes(keccak256(&payload));
-
-    events::gas_paid<SUI>(
-        sender,
-        destination_chain,
-        destination_address,
-        payload_hash,
-        coin_value,
-        refund_address,
-        params,
-    );
-}
-
 public(package) fun add_gas(
     self: &mut GasService_v0,
     coin: Coin<SUI>,
@@ -76,7 +50,7 @@ public(package) fun add_gas(
     );
 }
 
-public(package) fun pay_gas_for_message_ticket(
+public(package) fun pay_gas(
     self: &mut GasService_v0,
     message_ticket: &MessageTicket,
     coin: Coin<SUI>,
