@@ -1,7 +1,7 @@
 module its::owner_cap;
- 
+
 // -----
-// Types 
+// Types
 // -----
 public struct OwnerCap has key, store {
     id: UID,
