@@ -132,7 +132,9 @@ public(package) fun unregistered_coin_received<T>(
 // ---------
 // Test Only 
 // ---------
+#[test-only]
 use its::coin::COIN;
+#[test-only]
 use its::token_id;
 
 // -----
