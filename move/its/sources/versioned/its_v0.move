@@ -206,10 +206,6 @@ public(package) fun register_coin<T>(
 
     self.add_registered_coin(token_id, coin_management, coin_info);
 
-    events::coin_registered<T>(
-        token_id,
-    );
-
     token_id
 }
 
@@ -589,6 +585,10 @@ fun add_registered_coin<T>(
 
     let type_name = type_name::get<T>();
     add_registered_coin_type(self, token_id, type_name);
+
+    events::coin_registered<T>(
+        token_id,
+    );
 }
 
 /// Send a payload to a destination chain. The destination chain needs to have a

@@ -128,3 +128,48 @@ public(package) fun unregistered_coin_received<T>(
         decimals,
     });
 }
+ 
+// ---------
+// Test Only 
+// ---------
+use its::coin::COIN;
+use its::token_id;
+
+// -----
+// Tests
+// -----
+#[test]
+fun test_interchain_transfer() {
+    let token_id = token_id::from_address(@0x1);
+    let source_address = @0x2;
+    let destination_chain = b"destination chain".to_ascii_string();
+    let destination_address = b"destination address";
+    let amount = 123;
+    let data1 = b"";
+    let data1_hash = bytes32::new(@0x0);
+    let data2 = b"data";
+    let data2_hash = bytes32::new(address::from_bytes(keccak256(&data2)));
+
+    interchain_transfer<COIN>(
+        token_id,
+        source_address,
+        destination_chain,
+        destination_address,
+        amount,
+        &data1,
+    );
+    interchain_transfer<COIN>(
+        token_id,
+        source_address,
+        destination_chain,
+        destination_address,
+        amount,
+        &data2,
+    );
+    let events = event::events_by_type<InterchainTransfer<COIN>>();
+
+    assert!(events.length() == 2);
+
+    assert!(events[0].data_hash == data1_hash);
+    assert!(events[1].data_hash == data2_hash);
+}
