@@ -55,8 +55,9 @@ public(package) fun remove_transaction(
     id: ID,
 ): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
+    let tx = self.configurations.remove(id);
     events::transaction_removed(id);
-    self.configurations.remove(id)
+    tx
 }
 
 public(package) fun get_transaction(
