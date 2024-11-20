@@ -55,6 +55,8 @@ public struct TrustedAddressSet has copy, drop {
 
 public struct TrustedAddressRemoved has copy, drop {
     chain_name: String,
+}
+
 public struct FlowLimitSet<phantom T> has copy, drop {
     token_id: TokenId,
     flow_limit: u64,
@@ -152,6 +154,9 @@ public(package) fun trusted_address_removed(
 ) {
     event::emit(TrustedAddressRemoved {
         chain_name,
+    });
+}
+
 public(package) fun flow_limit_set<T>(
     token_id: TokenId,
     flow_limit: u64,
