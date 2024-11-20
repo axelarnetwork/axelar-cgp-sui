@@ -1,7 +1,11 @@
 module gas_service::gas_service_v0;
 
+use gas_service::events;
+use std::ascii::String;
+use sui::address;
 use sui::balance::{Self, Balance};
 use sui::coin::{Self, Coin};
+use sui::hash::keccak256;
 use sui::sui::SUI;
 use version_control::version_control::VersionControl;
 
@@ -27,11 +31,94 @@ public(package) fun version_control(self: &GasService_v0): &VersionControl {
     &self.version_control
 }
 
-public(package) fun put(self: &mut GasService_v0, coin: Coin<SUI>) {
+public(package) fun pay_gas(
+    self: &mut GasService_v0,
+    coin: Coin<SUI>,
+    sender: address,
+    destination_chain: String,
+    destination_address: String,
+    payload: vector<u8>,
+    refund_address: address,
+    params: vector<u8>,
+) {
+    let coin_value = coin.value();
+    self.put(coin);
+
+    let payload_hash = address::from_bytes(keccak256(&payload));
+
+    events::gas_paid<SUI>(
+        sender,
+        destination_chain,
+        destination_address,
+        payload_hash,
+        coin_value,
+        refund_address,
+        params,
+    );
+}
+
+public(package) fun add_gas(
+    self: &mut GasService_v0,
+    coin: Coin<SUI>,
+    message_id: String,
+    refund_address: address,
+    params: vector<u8>,
+) {
+    let coin_value = coin.value();
+    self.put(coin);
+
+    events::gas_added<SUI>(
+        message_id,
+        coin_value,
+        refund_address,
+        params,
+    );
+}
+
+public(package) fun collect_gas(
+    self: &mut GasService_v0,
+    receiver: address,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    transfer::public_transfer(
+        self.take(amount, ctx),
+        receiver,
+    );
+
+    events::gas_collected<SUI>(
+        receiver,
+        amount,
+    );
+}
+
+public(package) fun refund(
+    self: &mut GasService_v0,
+    message_id: String,
+    receiver: address,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    transfer::public_transfer(
+        self.take(amount, ctx),
+        receiver,
+    );
+
+    events::refunded<SUI>(
+        message_id,
+        amount,
+        receiver,
+    );
+}
+
+// -----------------
+// Private Functions
+// -----------------
+fun put(self: &mut GasService_v0, coin: Coin<SUI>) {
     coin::put(&mut self.balance, coin);
 }
 
-public(package) fun take(
+fun take(
     self: &mut GasService_v0,
     amount: u64,
     ctx: &mut TxContext,
