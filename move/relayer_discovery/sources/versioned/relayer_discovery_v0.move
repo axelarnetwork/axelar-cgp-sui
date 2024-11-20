@@ -1,5 +1,6 @@
 module relayer_discovery::relayer_discovery_v0;
 
+use relayer_discovery::events;
 use relayer_discovery::transaction::Transaction;
 use sui::table::{Self, Table};
 use version_control::version_control::VersionControl;
@@ -46,6 +47,7 @@ public(package) fun set_transaction(
         self.configurations.remove(id);
     };
     self.configurations.add(id, transaction);
+    events::transaction_registered(id, transaction);
 }
 
 public(package) fun remove_transaction(
@@ -53,7 +55,9 @@ public(package) fun remove_transaction(
     id: ID,
 ): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
-    self.configurations.remove(id)
+    let tx = self.configurations.remove(id);
+    events::transaction_removed(id);
+    tx
 }
 
 public(package) fun get_transaction(
