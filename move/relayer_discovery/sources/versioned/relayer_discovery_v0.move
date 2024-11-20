@@ -55,8 +55,8 @@ public(package) fun remove_transaction(
     id: ID,
 ): Transaction {
     assert!(self.configurations.contains(id), EChannelNotFound);
-    events::transaction_removed(id);
     self.configurations.remove(id)
+    events::transaction_removed(id);
 }
 
 public(package) fun get_transaction(
