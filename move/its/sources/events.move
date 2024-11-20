@@ -79,7 +79,11 @@ public(package) fun interchain_transfer<T>(
     amount: u64,
     data: &vector<u8>,
 ) {
-    let data_hash = bytes32::new(address::from_bytes(keccak256(data)));
+    let data_hash = if (data.length() == 0) {
+        bytes32::new(@0x0)
+    } else {
+        bytes32::new(address::from_bytes(keccak256(data)))
+    };
     event::emit(InterchainTransfer<T> {
         token_id,
         source_address,
@@ -165,4 +169,72 @@ public(package) fun flow_limit_set<T>(
         token_id,
         flow_limit
     });
+}
+ 
+// ---------
+// Test Only 
+// ---------
+#[test_only]
+use its::coin::COIN;
+#[test_only]
+use its::token_id;
+#[test_only]
+use utils::utils;
+
+// -----
+// Tests
+// -----
+#[test]
+fun test_interchain_transfer_empty_data() {
+    let token_id = token_id::from_address(@0x1);
+    let source_address = @0x2;
+    let destination_chain = b"destination chain".to_ascii_string();
+    let destination_address = b"destination address";
+    let amount = 123;
+    let data = b"";
+    let data_hash = bytes32::new(@0x0);
+
+    interchain_transfer<COIN>(
+        token_id,
+        source_address,
+        destination_chain,
+        destination_address,
+        amount,
+        &data,
+    );
+    let event = utils::assert_single_event<InterchainTransfer<COIN>>();
+
+    assert!(event.data_hash == data_hash);
+    assert!(event.source_address == source_address);
+    assert!(event.destination_chain == destination_chain);
+    assert!(event.destination_address == destination_address);
+    assert!(event.amount == amount);
+}
+
+
+#[test]
+fun test_interchain_transfer_nonempty_data() {
+    let token_id = token_id::from_address(@0x1);
+    let source_address = @0x2;
+    let destination_chain = b"destination chain".to_ascii_string();
+    let destination_address = b"destination address";
+    let amount = 123;
+    let data = b"data";
+    let data_hash = bytes32::new(address::from_bytes(keccak256(&data)));
+
+    interchain_transfer<COIN>(
+        token_id,
+        source_address,
+        destination_chain,
+        destination_address,
+        amount,
+        &data,
+    );
+    let event = utils::assert_single_event<InterchainTransfer<COIN>>();
+
+    assert!(event.data_hash == data_hash);
+    assert!(event.source_address == source_address);
+    assert!(event.destination_chain == destination_chain);
+    assert!(event.destination_address == destination_address);
+    assert!(event.amount == amount);
 }

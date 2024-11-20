@@ -339,6 +339,8 @@ use axelar_gateway::channel;
 use std::string;
 #[test_only]
 use abi::abi;
+#[test_only]
+use utils::utils;
 
 // === MESSAGE TYPES ===
 #[test_only]
@@ -433,6 +435,7 @@ fun test_register_coin() {
     let coin_management = its::coin_management::new_locked();
 
     register_coin(&mut its, coin_info, coin_management);
+    utils::assert_single_event<its::events::CoinRegistered<COIN>>();
 
     sui::test_utils::destroy(its);
 }
@@ -459,6 +462,8 @@ fun test_deploy_remote_interchain_token() {
         token_id,
         destination_chain,
     );
+
+    utils::assert_single_event<its::events::InterchainTokenDeploymentStarted<COIN>>();
 
     let mut writer = abi::new_writer(6);
 
@@ -497,6 +502,9 @@ fun test_deploy_interchain_token() {
     let coin_management = its::coin_management::new_locked();
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
+
+    utils::assert_single_event<its::events::CoinRegistered<COIN>>();
+
     let amount = 1234;
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
     let destination_chain = ascii::string(b"Chain Name");
@@ -518,6 +526,9 @@ fun test_deploy_interchain_token() {
         interchain_transfer_ticket,
         &clock,
     );
+
+    utils::assert_single_event<its::events::InterchainTransfer<COIN>>();
+
     let mut writer = abi::new_writer(6);
 
     writer
@@ -588,6 +599,8 @@ fun test_receive_interchain_transfer() {
 
     receive_interchain_transfer<COIN>(&mut its, approved_message, &clock, ctx);
 
+    utils::assert_single_event<its::events::InterchainTransferReceived<COIN>>();
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
 }
@@ -648,6 +661,8 @@ fun test_receive_interchain_transfer_with_data() {
         ctx,
     );
 
+    utils::assert_single_event<its::events::InterchainTransferReceived<COIN>>();
+
     assert!(received_source_chain == source_chain);
     assert!(received_source_address == its_source_address);
     assert!(received_data == data);
@@ -694,7 +709,9 @@ fun test_receive_deploy_interchain_token() {
     );
 
     receive_deploy_interchain_token<COIN>(&mut its, approved_message);
-
+    
+    utils::assert_single_event<its::events::CoinRegistered<COIN>>();
+    
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
 }
