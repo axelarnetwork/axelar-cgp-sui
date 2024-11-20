@@ -267,11 +267,8 @@ fun pay_gas_and_send_message(
     gas_params: vector<u8>,
 ) {
     gas_service.pay_gas(
+        &message_ticket,
         gas,
-        message_ticket.source_id(),
-        message_ticket.destination_chain(),
-        message_ticket.destination_address(),
-        message_ticket.payload(),
         refund_address,
         gas_params,
     );

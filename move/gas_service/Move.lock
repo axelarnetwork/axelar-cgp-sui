@@ -2,10 +2,22 @@
 
 [move]
 version = 3
-manifest_digest = "C29AEC3A18805EA1C5A2FCA5811D6AAD6BE44E394A8FDF0B02FB34D3409F4D3E"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+manifest_digest = "C04CC08DC1212FBCB4F5A869F32A9607A3C3E3586BC3BEFC0C0F1DBD3CE563CE"
+deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
+  { id = "AxelarGateway", name = "AxelarGateway" },
   { id = "Sui", name = "Sui" },
+  { id = "VersionControl", name = "VersionControl" },
+]
+
+[[move.package]]
+id = "AxelarGateway"
+source = { local = "../axelar_gateway" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Sui", name = "Sui" },
+  { id = "Utils", name = "Utils" },
   { id = "VersionControl", name = "VersionControl" },
 ]
 
@@ -19,6 +31,14 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.35.2
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[[move.package]]
+id = "Utils"
+source = { local = "../utils" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
 ]
 
 [[move.package]]
