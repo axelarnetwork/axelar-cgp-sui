@@ -143,16 +143,14 @@ use utils::utils;
 // Tests
 // -----
 #[test]
-fun test_interchain_transfer() {
+fun test_interchain_transfer_empty_data() {
     let token_id = token_id::from_address(@0x1);
     let source_address = @0x2;
     let destination_chain = b"destination chain".to_ascii_string();
     let destination_address = b"destination address";
     let amount = 123;
-    let data1 = b"";
-    let data1_hash = bytes32::new(@0x0);
-    let data2 = b"data";
-    let data2_hash = bytes32::new(address::from_bytes(keccak256(&data2)));
+    let data = b"";
+    let data_hash = bytes32::new(@0x0);
 
     interchain_transfer<COIN>(
         token_id,
@@ -160,18 +158,41 @@ fun test_interchain_transfer() {
         destination_chain,
         destination_address,
         amount,
-        &data1,
+        &data,
     );
+    let event = utils::single_event<InterchainTransfer<COIN>>();
+
+    assert!(event.data_hash == data_hash);
+    assert!(event.source_address == source_address);
+    assert!(event.destination_chain == destination_chain);
+    assert!(event.destination_address == destination_address);
+    assert!(event.amount == amount);
+}
+
+
+#[test]
+fun test_interchain_transfer_nonempty_data() {
+    let token_id = token_id::from_address(@0x1);
+    let source_address = @0x2;
+    let destination_chain = b"destination chain".to_ascii_string();
+    let destination_address = b"destination address";
+    let amount = 123;
+    let data = b"data";
+    let data_hash = bytes32::new(address::from_bytes(keccak256(&data)));
+
     interchain_transfer<COIN>(
         token_id,
         source_address,
         destination_chain,
         destination_address,
         amount,
-        &data2,
+        &data,
     );
-    let events = utils::multiple_events<InterchainTransfer<COIN>>(2);
+    let event = utils::single_event<InterchainTransfer<COIN>>();
 
-    assert!(events[0].data_hash == data1_hash);
-    assert!(events[1].data_hash == data2_hash);
+    assert!(event.data_hash == data_hash);
+    assert!(event.source_address == source_address);
+    assert!(event.destination_chain == destination_chain);
+    assert!(event.destination_address == destination_address);
+    assert!(event.amount == amount);
 }
