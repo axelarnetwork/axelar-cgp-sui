@@ -202,7 +202,7 @@ fun test_interchain_transfer_empty_data() {
         amount,
         &data,
     );
-    let event = utils::single_event<InterchainTransfer<COIN>>();
+    let event = utils::assert_single_event<InterchainTransfer<COIN>>();
 
     assert!(event.data_hash == data_hash);
     assert!(event.source_address == source_address);
@@ -230,7 +230,7 @@ fun test_interchain_transfer_nonempty_data() {
         amount,
         &data,
     );
-    let event = utils::single_event<InterchainTransfer<COIN>>();
+    let event = utils::assert_single_event<InterchainTransfer<COIN>>();
 
     assert!(event.data_hash == data_hash);
     assert!(event.source_address == source_address);
