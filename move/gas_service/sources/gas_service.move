@@ -1,5 +1,6 @@
 module gas_service::gas_service;
 
+use axelar_gateway::message_ticket::MessageTicket;
 use gas_service::gas_service_v0::{Self, GasService_v0};
 use std::ascii::{Self, String};
 use sui::coin::Coin;
@@ -71,22 +72,16 @@ macro fun value_mut(
 /// setting the sender as the channel ID.
 public fun pay_gas(
     self: &mut GasService,
+    message_ticket: &MessageTicket,
     coin: Coin<SUI>,
-    sender: address,
-    destination_chain: String,
-    destination_address: String,
-    payload: vector<u8>,
     refund_address: address,
     params: vector<u8>,
 ) {
     self
         .value_mut!(b"pay_gas")
         .pay_gas(
+            message_ticket,
             coin,
-            sender,
-            destination_chain,
-            destination_address,
-            payload,
             refund_address,
             params,
         );
@@ -220,13 +215,21 @@ fun test_pay_gas() {
     let digest = ctx.digest();
     let value = (((digest[0] as u16) << 8) | (digest[1] as u16) as u64) + 1;
     let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
+    let channel = axelar_gateway::channel::new(ctx);
+    let destination_chain = b"destination chain".to_ascii_string();
+    let destination_address = b"destination address".to_ascii_string();
+    let payload = b"payload";
+
+    let ticket = axelar_gateway::gateway::prepare_message(
+        &channel,
+        destination_chain,
+        destination_address,
+        payload,
+    );
 
     service.pay_gas(
+        &ticket,
         c,
-        ctx.sender(),
-        std::ascii::string(b"destination chain"),
-        std::ascii::string(b"destination address"),
-        vector[],
         ctx.sender(),
         vector[],
     );
@@ -235,6 +238,8 @@ fun test_pay_gas() {
 
     cap.destroy_cap();
     service.destroy();
+    channel.destroy();
+    sui::test_utils::destroy(ticket);
 }
 
 #[test]

@@ -77,20 +77,19 @@ public fun send_call(
     coin: Coin<SUI>,
     params: vector<u8>,
 ) {
-    gas_service.pay_gas(
-        coin,
-        sui::object::id_address(&singleton.channel),
-        destination_chain,
-        destination_address,
-        payload,
-        refund_address,
-        params,
-    );
+
     let message_ticket = gateway::prepare_message(
         &singleton.channel,
         destination_chain,
         destination_address,
         payload,
+    );    
+    
+    gas_service.pay_gas(
+        &message_ticket,
+        coin,
+        refund_address,
+        params,
     );
 
     gateway.send_message(message_ticket);
