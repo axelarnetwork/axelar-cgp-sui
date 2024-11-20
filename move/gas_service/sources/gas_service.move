@@ -65,26 +65,6 @@ macro fun value_mut(
 // ----------------
 // Public Functions
 // ----------------
-/// Add gas for an existing cross-chain contract call.
-/// This function can be called by a user who wants to add gas for a contract
-/// call with insufficient gas.
-public fun add_gas(
-    self: &mut GasService,
-    coin: Coin<SUI>,
-    message_id: String,
-    refund_address: address,
-    params: vector<u8>,
-) {
-    self
-        .value_mut!(b"add_gas")
-        .add_gas(
-            coin,
-            message_id,
-            refund_address,
-            params,
-        );
-}
-
 /// Pay gas for a contract call.
 /// This function is called by the channel that wants to pay gas for a contract
 /// call.
@@ -102,6 +82,26 @@ public fun pay_gas(
         .pay_gas(
             message_ticket,
             coin,
+            refund_address,
+            params,
+        );
+}
+
+/// Add gas for an existing cross-chain contract call.
+/// This function can be called by a user who wants to add gas for a contract
+/// call with insufficient gas.
+public fun add_gas(
+    self: &mut GasService,
+    coin: Coin<SUI>,
+    message_id: String,
+    refund_address: address,
+    params: vector<u8>,
+) {
+    self
+        .value_mut!(b"add_gas")
+        .add_gas(
+            coin,
+            message_id,
             refund_address,
             params,
         );
