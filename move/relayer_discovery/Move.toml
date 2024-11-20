@@ -9,5 +9,5 @@ VersionControl = { local = "../version_control" }
 AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-relayer_discovery = "0xa2"
+relayer_discovery = "0xaa"
 clock = "0x6"

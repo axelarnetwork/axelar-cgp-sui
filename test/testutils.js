@@ -222,7 +222,8 @@ function calculateNextSigners(gatewayInfo, nonce) {
 
 async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
     const { packageId, gateway, signers, signerKeys, domainSeparator } = gatewayInfo;
-    const messageData = bcs.vector(Message).serialize([contractCallInfo]).toBytes();
+    if (!Array.isArray(contractCallInfo)) contractCallInfo = [contractCallInfo];
+    const messageData = bcs.vector(Message).serialize(contractCallInfo).toBytes();
 
     const hashed = hashMessage(messageData, COMMAND_TYPE_APPROVE_MESSAGES);
 
@@ -251,33 +252,12 @@ async function approveMessage(client, keypair, gatewayInfo, contractCallInfo) {
         signatures,
     }).toBytes();
 
-    let builder = new TxBuilder(client);
-
+    const builder = new TxBuilder(client);
     await builder.moveCall({
         target: `${packageId}::gateway::approve_messages`,
         arguments: [gateway, messageData, encodedProof],
     });
-
     await builder.signAndExecute(keypair);
-
-    builder = new TxBuilder(client);
-
-    const payloadHash = await builder.moveCall({
-        target: `${packageId}::bytes32::new`,
-        arguments: [contractCallInfo.payload_hash],
-    });
-
-    await builder.moveCall({
-        target: `${packageId}::gateway::is_message_approved`,
-        arguments: [
-            gateway,
-            contractCallInfo.source_chain,
-            contractCallInfo.message_id,
-            contractCallInfo.source_address,
-            contractCallInfo.destination_id,
-            payloadHash,
-        ],
-    });
 }
 
 async function approveAndExecuteMessage(client, keypair, gatewayInfo, messageInfo, executeOptions) {

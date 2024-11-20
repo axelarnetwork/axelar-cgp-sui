@@ -168,9 +168,8 @@ public(package) fun create_for_testing(
 
 #[test_only]
 public(package) fun dummy(): Proof {
-    let mut signature = sui::address::to_bytes(@0x01);
-    signature.append(sui::address::to_bytes(@0x23));
-    signature.push_back(2);
+    let mut rng = sui::random::new_generator_for_testing();
+    let signature = rng.generate_bytes(SIGNATURE_LENGTH as u16);
     Proof {
         signers: axelar_gateway::weighted_signers::dummy(),
         signatures: vector[Signature { bytes: signature }],
@@ -203,12 +202,8 @@ public(package) fun generate(
 fun test_getters() {
     let proof = dummy();
 
-    assert!(proof.signers() == axelar_gateway::weighted_signers::dummy());
-
-    let mut signature = sui::address::to_bytes(@0x01);
-    signature.append(sui::address::to_bytes(@0x23));
-    signature.push_back(2);
-    assert!(proof.signatures() == vector[Signature { bytes: signature }]);
+    assert!(proof.signers() == proof.signers);
+    assert!(proof.signatures() == proof.signatures);
 }
 
 #[test]
@@ -219,8 +214,9 @@ fun test_new_signature_invalid_signature_length() {
 
 #[test]
 fun test_recover_pub_key() {
-    let keypair = ecdsa::secp256k1_keypair_from_seed(&@0x1234.to_bytes());
-    let message = @0x5678.to_bytes();
+    let mut rng = sui::random::new_generator_for_testing();
+    let keypair = ecdsa::secp256k1_keypair_from_seed(&rng.generate_bytes(32));
+    let message = rng.generate_bytes(32);
     let signature = new_signature(
         ecdsa::secp256k1_sign(keypair.private_key(), &message, 0, true),
     );
@@ -229,13 +225,14 @@ fun test_recover_pub_key() {
 
 #[test]
 fun test_validate() {
-    let mut keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(
-        |seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()),
+    let mut rng = sui::random::new_generator_for_testing();
+    let mut keypairs = vector[0, 1, 2].map!(
+        |_| ecdsa::secp256k1_keypair_from_seed(&rng.generate_bytes(32)),
     );
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
-    let weights = vector[123, 234, 456];
-    let message = @0x5678.to_bytes();
-    let nonce = axelar_gateway::bytes32::new(@0x0123);
+    let weights = vector[0, 1, 2].map!(|_| rng.generate_u64() as u128);
+    let message = rng.generate_bytes(32);
+    let nonce = axelar_gateway::bytes32::from_bytes(rng.generate_bytes(32));
 
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
         vector[0, 1, 2].map!(
@@ -255,13 +252,14 @@ fun test_validate() {
 #[test]
 #[expected_failure(abort_code = ERedundantSignaturesProvided)]
 fun test_validate_redundant_signatures() {
-    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(
-        |seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()),
+    let mut rng = sui::random::new_generator_for_testing();
+    let keypairs = vector[0, 1, 2].map!(
+        |_| ecdsa::secp256k1_keypair_from_seed(&rng.generate_bytes(32)),
     );
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
-    let weights = vector[123, 234, 456];
-    let message = @0x5678.to_bytes();
-    let nonce = axelar_gateway::bytes32::new(@0x0123);
+    let weights = vector[0, 1, 2].map!(|_| rng.generate_u64() as u128);
+    let message = rng.generate_bytes(32);
+    let nonce = axelar_gateway::bytes32::from_bytes(rng.generate_bytes(32));
 
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
         vector[0, 1, 2].map!(
@@ -280,8 +278,9 @@ fun test_validate_redundant_signatures() {
 #[test]
 #[expected_failure(abort_code = ELowSignaturesWeight)]
 fun test_validate_empty_signers() {
-    let message = @0x5678.to_bytes();
-    let nonce = axelar_gateway::bytes32::new(@0x0123);
+    let mut rng = sui::random::new_generator_for_testing();
+    let message = rng.generate_bytes(32);
+    let nonce = axelar_gateway::bytes32::from_bytes(rng.generate_bytes(32));
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
         vector[],
         1,
@@ -294,13 +293,14 @@ fun test_validate_empty_signers() {
 #[test]
 #[expected_failure(abort_code = ELowSignaturesWeight)]
 fun test_validate_low_signature_weight() {
-    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(
-        |seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()),
+    let mut rng = sui::random::new_generator_for_testing();
+    let keypairs = vector[0, 1, 2].map!(
+        |_| ecdsa::secp256k1_keypair_from_seed(&rng.generate_bytes(32)),
     );
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
-    let weights = vector[123, 234, 456];
-    let message = @0x5678.to_bytes();
-    let nonce = axelar_gateway::bytes32::new(@0x0123);
+    let weights = vector[0, 1, 2].map!(|_| rng.generate_u64() as u128);
+    let message = rng.generate_bytes(32);
+    let nonce = axelar_gateway::bytes32::from_bytes(rng.generate_bytes(32));
 
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
         vector[0, 1, 2].map!(
@@ -327,13 +327,14 @@ fun test_validate_low_signature_weight() {
 #[test]
 #[expected_failure(abort_code = ESignerNotFound)]
 fun test_validate_signer_not_found() {
-    let keypairs = vector[@0x1234, @0x5678, @0x9abc].map!(
-        |seed| ecdsa::secp256k1_keypair_from_seed(&seed.to_bytes()),
+    let mut rng = sui::random::new_generator_for_testing();
+    let keypairs = vector[0, 1, 2].map!(
+        |_| ecdsa::secp256k1_keypair_from_seed(&rng.generate_bytes(32)),
     );
     let pub_keys = keypairs.map_ref!(|keypair| *keypair.public_key());
-    let weights = vector[123, 234, 456];
-    let message = @0x5678.to_bytes();
-    let nonce = axelar_gateway::bytes32::new(@0x0123);
+    let weights = vector[0, 1, 2].map!(|_| rng.generate_u64() as u128);
+    let message = rng.generate_bytes(32);
+    let nonce = axelar_gateway::bytes32::from_bytes(rng.generate_bytes(32));
 
     let weighted_signers = axelar_gateway::weighted_signers::create_for_testing(
         vector[0, 2].map!(
