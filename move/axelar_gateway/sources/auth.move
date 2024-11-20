@@ -165,10 +165,11 @@ use axelar_gateway::proof;
 
 #[test_only]
 public fun dummy(ctx: &mut TxContext): AxelarSigners {
+    let mut rng = sui::random::new_generator_for_testing();
     AxelarSigners {
         epoch: 0,
         epoch_by_signers_hash: table::new(ctx),
-        domain_separator: bytes32::new(@0x1),
+        domain_separator: bytes32::from_bytes(rng.generate_bytes(32)),
         minimum_rotation_delay: 1,
         last_rotation_timestamp: 0,
         previous_signers_retention: 3,
@@ -262,13 +263,14 @@ fun test_update_rotation_timestamp_insufficient_rotation_delay() {
 #[test]
 #[expected_failure(abort_code = EInvalidEpoch)]
 fun test_validate_proof_invalid_epoch() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
     let proof = axelar_gateway::proof::create_for_testing(
         axelar_gateway::weighted_signers::create_for_testing(
             vector[],
             0,
-            bytes32::new(@0x0),
+            bytes32::from_bytes(rng.generate_bytes(32)),
         ),
         vector[],
     );
@@ -281,7 +283,7 @@ fun test_validate_proof_invalid_epoch() {
     self.epoch = 3;
 
     self.validate_proof(
-        bytes32::new(@0x0),
+        bytes32::from_bytes(rng.generate_bytes(32)),
         proof,
     );
 

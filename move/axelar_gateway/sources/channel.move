@@ -217,11 +217,12 @@ fun test_to_address() {
 
 #[test]
 fun test_create_approved_message() {
+    let mut rng = sui::random::new_generator_for_testing();
     let input_source_chain = std::ascii::string(b"Source Chain");
     let input_message_id = std::ascii::string(b"message id");
     let input_source_address = std::ascii::string(b"Source Address");
-    let input_destination_id = @0x5678;
-    let input_payload = b"payload";
+    let input_destination_id = sui::address::from_bytes(rng.generate_bytes(32));
+    let input_payload = rng.generate_bytes(32);
     let approved_message: ApprovedMessage = create_approved_message(
         input_source_chain,
         input_message_id,
@@ -246,6 +247,7 @@ fun test_create_approved_message() {
 
 #[test]
 fun test_consume_approved_message() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
 
@@ -253,7 +255,7 @@ fun test_consume_approved_message() {
     let input_message_id = std::ascii::string(b"message id");
     let input_source_address = std::ascii::string(b"Source Address");
     let input_destination_id = channel.to_address();
-    let input_payload = b"payload";
+    let input_payload = rng.generate_bytes(32);
     let approved_message: ApprovedMessage = create_approved_message(
         input_source_chain,
         input_message_id,
@@ -280,14 +282,15 @@ fun test_consume_approved_message() {
 #[test]
 #[expected_failure(abort_code = EInvalidDestination)]
 fun test_consume_approved_message_wrong_destination() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
 
     let source_chain = std::ascii::string(b"Source Chain");
     let message_id = std::ascii::string(b"message id");
     let source_address = std::ascii::string(b"Source Address");
-    let destination_id = @0x5678;
-    let payload = b"payload";
+    let destination_id = sui::address::from_bytes(rng.generate_bytes(32));
+    let payload = rng.generate_bytes(32);
 
     let approved_message = create_approved_message(
         source_chain,
