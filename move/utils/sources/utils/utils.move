@@ -40,7 +40,7 @@ public fun assert_events<T: copy + drop>(n: u64): vector<T> {
 }
 
 #[test_only]
-public fun assert_single_event<T: copy + drop>(): T {
+public fun assert_assert_single_event<T: copy + drop>(): T {
     let events = assert_events<T>(1);
     events[0]
 }

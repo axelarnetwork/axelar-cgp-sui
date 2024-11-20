@@ -199,9 +199,9 @@ public(package) fun approved_message_payload(
 fun test_new_and_destroy() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    utils::single_event<events::ChannelCreated>();
+    utils::assert_single_event<events::ChannelCreated>();
     channel.destroy();
-    utils::single_event<events::ChannelDestroyed>();
+    utils::assert_single_event<events::ChannelDestroyed>();
 }
 
 #[test]
