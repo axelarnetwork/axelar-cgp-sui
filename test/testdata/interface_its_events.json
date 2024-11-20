@@ -1,4 +1,35 @@
 {
-  "structs": {},
+  "structs": {
+    "TrustedAddressSet": {
+      "name": "TrustedAddressSet",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "chain_name",
+          "type": "String"
+        },
+        {
+          "name": "trusted_address",
+          "type": "String"
+        }
+      ]
+    },
+    "TrustedAddressRemoved": {
+      "name": "TrustedAddressRemoved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "chain_name",
+          "type": "String"
+        }
+      ]
+    }
+  },
   "publicFunctions": {}
 }
