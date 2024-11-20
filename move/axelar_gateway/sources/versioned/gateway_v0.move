@@ -356,13 +356,14 @@ fun test_peel_messages_no_zero_messages() {
 
 #[test]
 fun test_approve_message() {
+    let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
 
     let message_id = std::ascii::string(b"Message Id");
     let channel = axelar_gateway::channel::new(ctx);
     let source_chain = std::ascii::string(b"Source Chain");
     let source_address = std::ascii::string(b"Destination Address");
-    let payload = vector[0, 1, 2, 3];
+    let payload = rng.generate_bytes(32);
     let payload_hash = axelar_gateway::bytes32::new(
         sui::address::from_bytes(hash::keccak256(&payload)),
     );
@@ -483,7 +484,8 @@ fun test_command_type_as_u8() {
 
 #[test]
 fun test_data_hash() {
-    let data = vector[0, 1, 2, 3];
+    let mut rng = sui::random::new_generator_for_testing();
+    let data = rng.generate_bytes(32);
     let mut typed_data = vector::singleton(CommandType::ApproveMessages.as_u8());
     typed_data.append(data);
 
@@ -497,10 +499,11 @@ fun test_data_hash() {
 #[test]
 #[expected_failure(abort_code = ENewerMessage)]
 fun test_send_message_newer_message() {
-    let source_id = @0x1;
+    let mut rng = sui::random::new_generator_for_testing();
+    let source_id = address::from_u256(rng.generate_u256());
     let destination_chain = std::ascii::string(b"Destination Chain");
     let destination_address = std::ascii::string(b"Destination Address");
-    let payload = b"payload";
+    let payload = rng.generate_bytes(32);
     let version = 1;
     let message = axelar_gateway::message_ticket::new(
         source_id,
@@ -518,11 +521,12 @@ fun test_send_message_newer_message() {
 #[test]
 #[expected_failure(abort_code = EMessageNotApproved)]
 fun test_take_approved_message_message_not_approved() {
-    let destination_id = @0x1;
+    let mut rng = sui::random::new_generator_for_testing();
+    let destination_id = address::from_u256(rng.generate_u256());
     let source_chain = std::ascii::string(b"Source Chain");
     let source_address = std::ascii::string(b"Source Address");
     let message_id = std::ascii::string(b"Message Id");
-    let payload = b"payload";
+    let payload = rng.generate_bytes(32);
     let command_id = message::message_to_command_id(source_chain, message_id);
 
     let ctx = &mut sui::tx_context::dummy();
