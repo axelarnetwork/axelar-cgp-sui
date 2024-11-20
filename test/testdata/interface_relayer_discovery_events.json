@@ -1,0 +1,35 @@
+{
+  "structs": {
+    "TransactionRegistered": {
+      "name": "TransactionRegistered",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "channel_id",
+          "type": "ID"
+        },
+        {
+          "name": "transaction",
+          "type": "Transaction"
+        }
+      ]
+    },
+    "TransactionRemoved": {
+      "name": "TransactionRemoved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "channel_id",
+          "type": "ID"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

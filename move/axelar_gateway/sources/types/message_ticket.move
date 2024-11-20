@@ -96,12 +96,13 @@ public fun new_for_testing(
 
 #[test]
 fun test_all() {
-    let source_id: address = @0x123;
-    let destination_chain: String = std::ascii::string(b"Destination Chain");
-    let destination_address: String = std::ascii::string(
+    let mut rng = sui::random::new_generator_for_testing();
+    let source_id = sui::address::from_u256(rng.generate_u256());
+    let destination_chain = std::ascii::string(b"Destination Chain");
+    let destination_address = std::ascii::string(
         b"Destination Address",
     );
-    let payload: vector<u8> = b"payload";
+    let payload: vector<u8> = rng.generate_bytes(256);
     let version: u64 = 2;
 
     let message_ticket = new(
