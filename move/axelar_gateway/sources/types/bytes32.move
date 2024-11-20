@@ -56,9 +56,10 @@ public(package) fun peel(bcs: &mut BCS): Bytes32 {
 
 #[test]
 public fun test_new() {
-    let actual = new(@0x1);
+    let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
+    let actual = new(addr);
 
-    assert!(actual.to_bytes() == @0x1.to_bytes());
+    assert!(actual.to_bytes() == addr.to_bytes());
     assert!(actual.length() == LENGTH);
 }
 
@@ -72,7 +73,7 @@ public fun test_default() {
 
 #[test]
 public fun test_from_address() {
-    let addr = @0x1234;
+    let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
     let bytes32 = from_address(addr);
     assert!(bytes32.bytes == addr);
     assert!(bytes32.length() == LENGTH);

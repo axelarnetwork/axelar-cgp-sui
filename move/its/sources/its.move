@@ -232,6 +232,21 @@ public fun burn_as_distributor<T>(
     );
 }
 
+public fun set_flow_limit<T>(
+    self: &mut ITS,
+    channel: &Channel,
+    token_id: TokenId,
+    limit: u64,
+) {
+    let value = self.value_mut!(b"set_flow_limit");
+
+    value.set_flow_limit<T>(
+        channel,
+        token_id,
+        limit,
+    );
+}
+
 // ---------------
 // Owner Functions
 // ---------------
@@ -306,7 +321,9 @@ fun version_control(): VersionControl {
             b"mint_to_as_distributor",
             b"burn_as_distributor",
             b"set_trusted_addresses",
+            b"remove_trusted_addresses",
             b"register_transaction",
+            b"set_flow_limit",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -822,8 +839,74 @@ fun test_set_trusted_address() {
         trusted_addresses,
     );
 
-    set_trusted_addresses(&mut its, &owner_cap, trusted_addresses);
+    its.set_trusted_addresses(&owner_cap, trusted_addresses);
+    its.remove_trusted_addresses(&owner_cap, trusted_chains);
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(owner_cap);
+}
+
+#[test]
+fun test_set_flow_limit() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+    let symbol = b"COIN";
+    let decimals = 9;
+    let limit = 1234;
+
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = its::coin::create_treasury_and_metadata(symbol, decimals, ctx);
+    let coin_info = its::coin_info::from_metadata<COIN>(
+        coin_metadata,
+    );
+    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+
+    let channel = channel::new(ctx);
+    coin_management.add_operator(channel.to_address());
+
+    let token_id = register_coin(&mut its, coin_info, coin_management);
+    its.set_flow_limit<COIN>(&channel, token_id, limit);
+
+    sui::test_utils::destroy(its);
+    channel.destroy();
+}
+
+#[test]
+fun test_init() {
+    let mut ts = sui::test_scenario::begin(@0x0);
+
+    init(ts.ctx());
+    ts.next_tx(@0x0);
+
+    let owner_cap = ts.take_from_sender<OwnerCap>();
+    let its = ts.take_shared<ITS>();
+    ts.return_to_sender(owner_cap);
+    sui::test_scenario::return_shared(its);
+    ts.end();
+}
+
+#[test]
+fun test_registered_coin_type() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+    let token_id = its::token_id::from_address(@0x1);
+    its.add_registered_coin_type_for_testing(
+        token_id,
+        std::type_name::get<COIN>(),
+    );
+    its.registered_coin_type(token_id);
+
+    sui::test_utils::destroy(its);
+}
+
+#[test]
+fun test_channel_address() {
+    let ctx = &mut tx_context::dummy();
+    let its = create_for_testing(ctx);
+
+    its.channel_address();
+
+    sui::test_utils::destroy(its);
 }

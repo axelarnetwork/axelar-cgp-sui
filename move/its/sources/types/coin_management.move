@@ -73,19 +73,6 @@ public fun add_operator<T>(self: &mut CoinManagement<T>, operator: address) {
     self.operator.fill(operator);
 }
 
-/// Adds a rate limit to the `CoinManagement`.
-/// Note that this rate limit will be calculated for the remote decimals of the
-/// token, not for the native decimals.
-/// To be used by the designated operator of the contract.
-public fun set_flow_limit<T>(
-    self: &mut CoinManagement<T>,
-    channel: &Channel,
-    flow_limit: u64,
-) {
-    assert!(self.operator.contains(&channel.to_address()), ENotOperator);
-    self.flow_limit.set_flow_limit(flow_limit);
-}
-
 // === Protected Methods ===
 
 /// Takes the given amount of Coins from user. Returns the amount that the ITS
@@ -134,6 +121,17 @@ public(package) fun mint<T>(
 public(package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
     self.treasury_cap.borrow_mut().supply_mut().decrease_supply(balance);
 }
+
+/// Adds a rate limit to the `CoinManagement`.
+public(package) fun set_flow_limit<T>(
+    self: &mut CoinManagement<T>,
+    channel: &Channel,
+    flow_limit: u64,
+) {
+    assert!(self.operator.contains(&channel.to_address()), ENotOperator);
+    self.flow_limit.set_flow_limit(flow_limit);
+}
+
 // === Views ===
 
 /// Checks if the given address is a `distributor`.
@@ -220,4 +218,55 @@ fun test_give_coin() {
     sui::test_utils::destroy(management1);
     sui::test_utils::destroy(management2);
     sui::test_utils::destroy(clock);
+}
+
+#[test]
+#[expected_failure(abort_code = EDistributorNeedsTreasuryCap)]
+fun test_add_distributor_no_capability() {
+    let mut management = new_locked<COIN_MANAGEMENT>();
+    let distributor = @0x1;
+
+    management.add_distributor(distributor);
+
+    sui::test_utils::destroy(management);
+}
+
+#[test]
+fun test_add_operator() {
+    let mut management = new_locked<COIN_MANAGEMENT>();
+    let operator = @0x1;
+
+    management.add_operator(operator);
+
+    sui::test_utils::destroy(management);
+}
+
+#[test]
+fun test_set_flow_limit() {
+    let ctx = &mut sui::tx_context::dummy();
+
+    let mut management = new_locked<COIN_MANAGEMENT>();
+    let channel = axelar_gateway::channel::new(ctx);
+
+    management.add_operator(channel.to_address());
+    management.set_flow_limit(&channel, 1);
+
+    sui::test_utils::destroy(management);
+    sui::test_utils::destroy(channel);
+}
+
+#[test]
+#[expected_failure(abort_code = ENotOperator)]
+fun test_set_flow_limit_not_operator() {
+    let ctx = &mut sui::tx_context::dummy();
+
+    let mut management = new_locked<COIN_MANAGEMENT>();
+    let channel = axelar_gateway::channel::new(ctx);
+    let operator = @0x1;
+
+    management.add_operator(operator);
+    management.set_flow_limit(&channel, 1);
+
+    sui::test_utils::destroy(management);
+    sui::test_utils::destroy(channel);
 }

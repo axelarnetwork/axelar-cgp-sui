@@ -189,20 +189,8 @@ public(package) fun remove_trusted_addresses(
     );
 }
 
-public(package) fun coin_data_mut<T>(
-    self: &mut ITS_v0,
-    token_id: TokenId,
-): &mut CoinData<T> {
-    assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
-    &mut self.registered_coins[token_id]
-}
-
 public(package) fun channel(self: &ITS_v0): &Channel {
     &self.channel
-}
-
-public(package) fun channel_mut(self: &mut ITS_v0): &mut Channel {
-    &mut self.channel
 }
 
 public(package) fun version_control(self: &ITS_v0): &VersionControl {
@@ -492,6 +480,16 @@ public(package) fun burn_as_distributor<T>(
     assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
 
     coin_management.burn(coin.into_balance());
+}
+
+public(package) fun set_flow_limit<T>(
+    self: &mut ITS_v0,
+    channel: &Channel,
+    token_id: TokenId,
+    limit: u64,
+) {
+    self.coin_management_mut<T>(token_id).set_flow_limit(channel, limit);
+    events::flow_limit_set<T>(token_id, limit);
 }
 
 // -----------------
@@ -869,6 +867,65 @@ fun test_decode_approved_message_origin_not_hub_routed() {
 }
 
 #[test]
+#[expected_failure(abort_code = EUntrustedChain)]
+fun test_decode_approved_message_not_hub_message_from_hub() {
+    let ctx = &mut tx_context::dummy();
+    let mut self = create_for_testing(ctx);
+
+    let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
+    let source_address = ascii::string(b"Address");
+    let message_id = ascii::string(b"message_id");
+    let mut writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN);
+    let payload = writer.into_bytes();
+
+    self.set_trusted_address(source_chain, source_address);
+
+    let approved_message = channel::new_approved_message(
+        source_chain,
+        message_id,
+        source_address,
+        self.channel.to_address(),
+        payload,
+    );
+
+    self.decode_approved_message(approved_message);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = EUntrustedAddress)]
+fun test_decode_approved_message_untrusted_address() {
+    let ctx = &mut tx_context::dummy();
+    let self = create_for_testing(ctx);
+
+    let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
+    let source_address = ascii::string(b"Address");
+    let message_id = ascii::string(b"message_id");
+    let origin_chain = ascii::string(b"Source Chain");
+    let payload = b"payload";
+
+    let mut writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+    writer.write_bytes(origin_chain.into_bytes());
+    writer.write_bytes(payload);
+    let payload = writer.into_bytes();
+
+    let approved_message = channel::new_approved_message(
+        source_chain,
+        message_id,
+        source_address,
+        self.channel.to_address(),
+        payload,
+    );
+
+    self.decode_approved_message(approved_message);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
 fun test_prepare_message_to_hub() {
     let ctx = &mut tx_context::dummy();
     let mut self = create_for_testing(ctx);
@@ -883,6 +940,30 @@ fun test_prepare_message_to_hub() {
         destination_chain,
         ascii::string(ITS_HUB_ROUTING_IDENTIFIER),
     );
+
+    let message_ticket = self.prepare_message(destination_chain, payload);
+
+    assert!(
+        message_ticket.destination_chain() == ascii::string(ITS_HUB_CHAIN_NAME),
+    );
+    assert!(message_ticket.destination_address() == hub_address);
+
+    sui::test_utils::destroy(self);
+    sui::test_utils::destroy(message_ticket);
+}
+
+#[test]
+#[expected_failure(abort_code = EUntrustedChain)]
+fun test_prepare_message_to_hub_direct() {
+    let ctx = &mut tx_context::dummy();
+    let mut self = create_for_testing(ctx);
+
+    let destination_chain = ascii::string(ITS_HUB_CHAIN_NAME);
+    let hub_address = ascii::string(b"Address");
+
+    let payload = b"payload";
+
+    self.set_trusted_address(destination_chain, hub_address);
 
     let message_ticket = self.prepare_message(destination_chain, payload);
 
@@ -1380,4 +1461,143 @@ fun test_mint_as_distributor_not_distributor() {
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(coin);
     channel.destroy();
+}
+
+#[test]
+#[expected_failure(abort_code = EUnregisteredCoin)]
+fun test_coin_data_not_registered() {
+    let ctx = &mut tx_context::dummy();
+    let self = create_for_testing(ctx);
+    let token_id = token_id::from_address(@0x1);
+
+    self.coin_data<COIN>(token_id);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = ENotDistributor)]
+fun test_mint_to_as_distributor_not_distributor() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+    let symbol = b"COIN";
+    let decimals = 9;
+
+    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+        symbol,
+        decimals,
+        ctx,
+    );
+    let coin_info = its::coin_info::from_metadata<COIN>(
+        coin_metadata,
+    );
+    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+
+    let channel = channel::new(ctx);
+    coin_management.add_distributor(@0x1);
+    let amount = 1234;
+
+    let token_id = register_coin(&mut its, coin_info, coin_management);
+    mint_to_as_distributor<COIN>(
+        &mut its,
+        &channel,
+        token_id,
+        @0x2,
+        amount,
+        ctx,
+    );
+
+    sui::test_utils::destroy(its);
+    channel.destroy();
+}
+
+#[test]
+#[expected_failure(abort_code = EOverflow)]
+fun test_read_amount_overflow() {
+    let mut writer = abi::new_writer(1);
+    writer.write_u256(1u256 << 64);
+
+    let mut reader = abi::new_reader(writer.into_bytes());
+
+    read_amount(&mut reader);
+}
+
+#[test]
+#[expected_failure(abort_code = EUnregisteredCoin)]
+fun test_registered_coin_type_not_registered() {
+    let ctx = &mut tx_context::dummy();
+    let its = create_for_testing(ctx);
+    let token_id = token_id::from_address(@0x1);
+
+    its.registered_coin_type(token_id);
+
+    sui::test_utils::destroy(its);
+}
+
+#[test]
+#[expected_failure(abort_code = EUnregisteredCoin)]
+fun test_unregistered_coin_type_not_registered() {
+    let ctx = &mut tx_context::dummy();
+    let its = create_for_testing(ctx);
+    let symbol = &b"symbol".to_ascii_string();
+    let decimals = 8;
+
+    its.unregistered_coin_type(symbol, decimals);
+
+    sui::test_utils::destroy(its);
+}
+
+#[test]
+#[expected_failure(abort_code = ENewerTicket)]
+fun test_send_interchain_transfer_newer_ticket() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+
+    let token_id = token_id::from_address(@0x1);
+    let amount = 1234;
+    let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
+    let destination_chain = ascii::string(b"Chain Name");
+    let destination_address = b"address";
+    let metadata = b"";
+    let source_channel = channel::new(ctx);
+    let clock = sui::clock::create_for_testing(ctx);
+    let current_version = 0;
+    let invalid_version = 1;
+
+    let interchain_transfer_ticket = its::interchain_transfer_ticket::new<COIN>(
+        token_id,
+        coin.into_balance(),
+        source_channel.to_address(),
+        destination_chain,
+        destination_address,
+        metadata,
+        invalid_version,
+    );
+    let message_ticket = its.send_interchain_transfer<COIN>(
+        interchain_transfer_ticket,
+        current_version,
+        &clock,
+    );
+
+    sui::test_utils::destroy(its);
+    sui::test_utils::destroy(source_channel);
+    sui::test_utils::destroy(message_ticket);
+    sui::test_utils::destroy(clock);
+}
+
+// no error code becaues this aborts in a macro
+#[test]
+#[expected_failure]
+fun test_set_trusted_addresses_mismatch_lengths() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+
+    its.set_trusted_addresses(
+        its::trusted_addresses::new_for_testing(
+            vector[],
+            vector[b"trusted address".to_ascii_string()],
+        ),
+    );
+
+    sui::test_utils::destroy(its);
 }
