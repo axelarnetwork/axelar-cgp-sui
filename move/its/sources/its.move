@@ -238,7 +238,7 @@ public fun set_flow_limit<T>(
     token_id: TokenId,
     limit: u64,
 ) {
-    let value = self.value_mut!(b"mint_to_as_distributor");
+    let value = self.value_mut!(b"set_flow_limit");
 
     value.set_flow_limit<T>(
         channel,
