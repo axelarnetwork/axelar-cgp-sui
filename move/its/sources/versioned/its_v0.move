@@ -478,6 +478,16 @@ public(package) fun burn_as_distributor<T>(
     coin_management.burn(coin.into_balance());
 }
 
+public(package) fun set_flow_limit<T>(
+    self: &mut ITS_v0,
+    channel: &Channel,
+    token_id: TokenId,
+    limit: u64,
+) {
+    self.coin_management_mut<T>(token_id).set_flow_limit(channel, limit);
+    events::flow_limit_set<T>(token_id, limit);
+}
+
 // -----------------
 // Private Functions
 // -----------------

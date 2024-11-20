@@ -48,6 +48,11 @@ public struct UnregisteredCoinReceived<phantom T> has copy, drop {
     decimals: u8,
 }
 
+public struct FlowLimitSet<phantom T> has copy, drop {
+    token_id: TokenId,
+    flow_limit: u64,
+}
+
 // -----------------
 // Package Functions
 // -----------------
@@ -126,6 +131,16 @@ public(package) fun unregistered_coin_received<T>(
         token_id,
         symbol,
         decimals,
+    });
+}
+
+public(package) fun flow_limit_set<T>(
+    token_id: TokenId,
+    flow_limit: u64,
+) {
+    event::emit(FlowLimitSet<T> {
+        token_id,
+        flow_limit
     });
 }
  
