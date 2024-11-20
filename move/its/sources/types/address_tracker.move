@@ -2,6 +2,7 @@
 /// Q: why chains are Strings?
 module its::address_tracker;
 
+use its::events;
 use std::ascii::String;
 use sui::table::{Self, Table};
 
@@ -66,7 +67,8 @@ public(package) fun set_trusted_address(
         *&mut self.trusted_addresses[chain_name] = trusted_address;
     } else {
         self.trusted_addresses.add(chain_name, trusted_address);
-    }
+    };
+    events::trusted_address_set(chain_name, trusted_address);
 }
 
 public(package) fun remove_trusted_address(
@@ -75,6 +77,7 @@ public(package) fun remove_trusted_address(
 ) {
     assert!(chain_name.length() > 0, EEmptyChainName);
     self.trusted_addresses.remove(chain_name);
+    events::trusted_address_removed(chain_name);
 }
 
 // -----
