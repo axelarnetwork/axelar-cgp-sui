@@ -33,14 +33,14 @@ public macro fun peel<$T>($data: vector<u8>, $peel_fn: |&mut BCS| -> $T): $T {
 use sui::event;
 
 #[test_only]
-public fun assert_events<T: copy + drop>(n: u64): vector<T> {
+public fun assert_events<T: copy + drop>(event_count: u64): vector<T> {
     let events = event::events_by_type<T>();
-    assert!(events.length() == n);
+    assert!(events.length() == event_count);
     events
 }
 
 #[test_only]
-public fun assert_single_event<T: copy + drop>(): T {
+public fun assert_event<T: copy + drop>(): T {
     let events = assert_events<T>(1);
     events[0]
 }

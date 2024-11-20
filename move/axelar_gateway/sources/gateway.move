@@ -603,7 +603,7 @@ fun test_take_approved_message() {
         payload,
     );
 
-    utils::assert_single_event<events::MessageExecuted>();
+    utils::assert_event<events::MessageExecuted>();
 
     let expected_approved_message = axelar_gateway::channel::create_approved_message(
         source_chain,
@@ -666,7 +666,7 @@ fun test_approve_messages() {
 
     self.approve_messages(bcs::to_bytes(&messages), bcs::to_bytes(&proof));
 
-    utils::assert_single_event<events::MessageApproved>();
+    utils::assert_event<events::MessageApproved>();
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self)
@@ -768,7 +768,7 @@ fun test_rotate_signers() {
         ctx,
     );
 
-    utils::assert_single_event<events::SignersRotated>();
+    utils::assert_event<events::SignersRotated>();
 
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
@@ -1053,7 +1053,7 @@ fun test_send_message() {
     let gateway = dummy(ctx);
     gateway.send_message(message_ticket);
     
-    utils::assert_single_event<events::ContractCall>();
+    utils::assert_event<events::ContractCall>();
 
     sui::test_utils::destroy(gateway);
     channel.destroy();
