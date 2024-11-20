@@ -136,6 +136,8 @@ public(package) fun unregistered_coin_received<T>(
 use its::coin::COIN;
 #[test_only]
 use its::token_id;
+#[test_only]
+use utils::utils;
 
 // -----
 // Tests
@@ -168,9 +170,7 @@ fun test_interchain_transfer() {
         amount,
         &data2,
     );
-    let events = event::events_by_type<InterchainTransfer<COIN>>();
-
-    assert!(events.length() == 2);
+    let events = utils::multiple_events<InterchainTransfer<COIN>>(2);
 
     assert!(events[0].data_hash == data1_hash);
     assert!(events[1].data_hash == data2_hash);
