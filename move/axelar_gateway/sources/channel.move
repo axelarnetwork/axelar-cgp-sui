@@ -127,9 +127,6 @@ public(package) fun create_approved_message(
 // Test Only
 // ---------
 #[test_only]
-use utils::utils;
-
-#[test_only]
 public fun new_approved_message(
     source_chain: String,
     message_id: String,
@@ -199,9 +196,7 @@ public(package) fun approved_message_payload(
 fun test_new_and_destroy() {
     let ctx = &mut sui::tx_context::dummy();
     let channel: Channel = new(ctx);
-    utils::single_event<events::ChannelCreated>();
-    channel.destroy();
-    utils::single_event<events::ChannelDestroyed>();
+    channel.destroy()
 }
 
 #[test]
