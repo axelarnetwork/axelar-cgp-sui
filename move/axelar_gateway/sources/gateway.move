@@ -285,6 +285,8 @@ fun version_control(): VersionControl {
 use sui::bcs;
 #[test_only]
 use axelar_gateway::auth::generate_proof;
+#[test_only]
+use axelar_gateway::events;
 
 #[test_only]
 public fun create_for_testing(
@@ -600,6 +602,9 @@ fun test_take_approved_message() {
         destination_id,
         payload,
     );
+
+    utils::assert_event<events::MessageExecuted>();
+
     let expected_approved_message = axelar_gateway::channel::create_approved_message(
         source_chain,
         message_id,
@@ -660,6 +665,8 @@ fun test_approve_messages() {
     );
 
     self.approve_messages(bcs::to_bytes(&messages), bcs::to_bytes(&proof));
+
+    utils::assert_event<events::MessageApproved>();
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self)
@@ -761,6 +768,8 @@ fun test_rotate_signers() {
         ctx,
     );
 
+    utils::assert_event<events::SignersRotated>();
+
     let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
         data_hash,
@@ -776,6 +785,8 @@ fun test_rotate_signers() {
         bcs::to_bytes(&proof),
         ctx,
     );
+
+    utils::assert_events<events::SignersRotated>(2);
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(self);
@@ -1041,6 +1052,9 @@ fun test_send_message() {
 
     let gateway = dummy(ctx);
     gateway.send_message(message_ticket);
+    
+    utils::assert_event<events::ContractCall>();
+
     sui::test_utils::destroy(gateway);
     channel.destroy();
 }
