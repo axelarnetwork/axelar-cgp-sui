@@ -34,14 +34,6 @@ const ENotLatestSigners: vector<u8> = b"not latest signers";
 const ENewerMessage: vector<u8> =
     b"message ticket created from newer versions cannot be sent here";
 
-#[error]
-const EFunctionAlreadyAllowed: vector<u8> =
-    b"trying to allow a function already allowed on the specified version";
-
-#[error]
-const EFunctionAlreadyDisallowed: vector<u8> =
-    b"trying to disallow a function already disallowed on the specified version";
-
 // -----
 // Types
 // -----
@@ -230,15 +222,11 @@ public(package) fun send_message(
 }
 
 public(package) fun allow_function(self: &mut Gateway_v0, version: u64, function_name: String) {
-    let allowed_functions = self.version_control.allowed_functions();
-    assert!(!allowed_functions[version].contains(&function_name), EFunctionAlreadyAllowed);
-    allowed_functions[version].insert(function_name);
+    self.version_control.allow_function(version, function_name);
 }
 
 public(package) fun disallow_function(self: &mut Gateway_v0, version: u64, function_name: String) {
-    let allowed_functions = self.version_control.allowed_functions();
-    assert!(allowed_functions[version].contains(&function_name), EFunctionAlreadyDisallowed);
-    allowed_functions[version].remove(&function_name);
+    self.version_control.disallow_function(version, function_name);
 }
 
 // -----------------
@@ -568,32 +556,4 @@ fun test_take_approved_message_message_not_approved() {
     );
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(approved_message);
-}
-
-#[test]
-#[expected_failure(abort_code = EFunctionAlreadyAllowed)]
-fun test_allow_function_already_allowed() {
-    let ctx = &mut sui::tx_context::dummy();
-    let mut self = dummy(ctx);
-    let version = 0;
-    let function_name = b"function_name".to_ascii_string();
-
-    self.version_control.push_back(vector[function_name]);
-    self.allow_function(version, function_name);
-
-    sui::test_utils::destroy(self);
-}
-
-#[test]
-#[expected_failure(abort_code = EFunctionAlreadyDisallowed)]
-fun test_disallow_function_already_disallowed() {
-    let ctx = &mut sui::tx_context::dummy();
-    let mut self = dummy(ctx);
-    let version = 0;
-    let function_name = b"function_name".to_ascii_string();
-
-    self.version_control.push_back(vector[]);
-    self.disallow_function(version, function_name);
-    
-    sui::test_utils::destroy(self);
 }

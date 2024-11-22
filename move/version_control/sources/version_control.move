@@ -11,6 +11,14 @@ use sui::vec_set::{Self, VecSet};
 const EFunctionNotSupported: vector<u8> =
     b"function is not supported in this version";
 
+#[error]
+const EFunctionAlreadyAllowed: vector<u8> =
+    b"trying to allow a function already allowed on the specified version";
+
+#[error]
+const EFunctionAlreadyDisallowed: vector<u8> =
+    b"trying to disallow a function already disallowed on the specified version";
+
 // -----
 // Types
 // -----
@@ -63,6 +71,16 @@ public fun push_back(
                 function_names,
             ),
         );
+}
+
+public fun allow_function(self: &mut VersionControl, version: u64, function_name: String) {
+    assert!(!self.allowed_functions[version].contains(&function_name), EFunctionAlreadyAllowed);
+    self.allowed_functions[version].insert(function_name);
+}
+
+public fun disallow_function(self: &mut VersionControl, version: u64, function_name: String) {
+    assert!(self.allowed_functions[version].contains(&function_name), EFunctionAlreadyDisallowed);
+    self.allowed_functions[version].remove(&function_name);
 }
 
 /// Call this at the begining of each version controlled function. For example
@@ -169,4 +187,75 @@ fun test_check_function_not_supported() {
         ),
     ]);
     version_control.check(0, b"function_name_2".to_ascii_string());
+}
+
+#[test]
+fun test_allow_function() {
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+    let mut self = new(vector[
+        vector[
+        ],
+    ]);
+
+    self.allow_function(version, function_name);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+fun test_disallow_function() {
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+    let mut self = new(vector[
+        vector[
+            function_name,
+        ],
+    ]);
+
+    self.disallow_function(version, function_name);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = EFunctionAlreadyAllowed)]
+fun test_allow_function_already_allowed() {
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+    let mut self = new(vector[
+        vector[
+            function_name,
+        ],
+    ]);
+
+    self.allow_function(version, function_name);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = EFunctionAlreadyDisallowed)]
+fun test_disallow_function_already_disallowed() {
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+    let mut self = new(vector[
+        vector[
+        ],
+    ]);
+
+    self.disallow_function(version, function_name);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+fun test_latest_function() {
+    let mut self = new(vector[
+        vector[],
+    ]);
+
+    assert!(self.latest_version() == 0);
+
+    sui::test_utils::destroy(self);
 }
