@@ -79,6 +79,11 @@ public fun check(self: &VersionControl, version: u64, function: String) {
     );
 }
 
+/// Returns the latest valid index in allowed functions.
+public fun latest_version(self: &VersionControl): u64 {
+    self.allowed_functions.length() - 1
+}
+
 #[test]
 fun test_new() {
     let version_control = new(vector[
