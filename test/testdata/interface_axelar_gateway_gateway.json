@@ -16,8 +16,8 @@
         }
       ]
     },
-    "CreatorCap": {
-      "name": "CreatorCap",
+    "OwnerCap": {
+      "name": "OwnerCap",
       "abilities": [
         "store",
         "key"
