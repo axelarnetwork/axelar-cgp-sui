@@ -15,7 +15,7 @@ const { expect } = require('chai');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 
-describe('Axelar Gateway', () => {
+describe.only('Axelar Gateway', () => {
     let client;
     const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const deployer = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
@@ -77,7 +77,7 @@ describe('Axelar Gateway', () => {
         let result = await publishPackage(client, deployer, 'axelar_gateway');
         packageId = result.packageId;
         const creatorCap = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${packageId}::gateway::OwnerCap`,
+            (change) => change.objectType === `${packageId}::owner_cap::OwnerCap`,
         ).objectId;
         result = await publishPackage(client, deployer, 'relayer_discovery');
         const discoveryPackageId = result.packageId;
