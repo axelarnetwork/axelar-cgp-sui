@@ -1,4 +1,5 @@
-/// This module implements a custom version control scheme to maximize versioning customizability.
+/// This module implements a custom version control scheme to maximize
+/// versioning customizability.
 module version_control::version_control;
 
 use std::ascii::String;
@@ -22,7 +23,8 @@ const EFunctionAlreadyDisallowed: vector<u8> =
 // -----
 // Types
 // -----
-/// The function names are stored as Strings. They are however input as vector<u8> for ease of instantiation.
+/// The function names are stored as Strings. They are however input as
+/// vector<u8> for ease of instantiation.
 public struct VersionControl has store, copy, drop {
     allowed_functions: vector<VecSet<String>>,
 }
@@ -31,15 +33,18 @@ public struct VersionControl has store, copy, drop {
 // Public Functions
 // ----------------
 
-/// Create a new Version Control object by passing in the allowed_functions data.
-/// You are supposed to pass a vector of the bytes of the functions that are allowed per version. For example:
+/// Create a new Version Control object by passing in the allowed_functions
+/// data.
+/// You are supposed to pass a vector of the bytes of the functions that are
+/// allowed per version. For example:
 /// ```
 /// vector [
 ///     vector [ b"v0_function" ],
 ///     vector [ b"v0_function", b"v1_function"],
 /// ]
 /// ```
-/// Would allow only `v0_function` to be called on version == 0, and both `v0_function` and `v1_function` to be called on version == 1.
+/// Would allow only `v0_function` to be called on version == 0, and both
+/// `v0_function` and `v1_function` to be called on version == 1.
 /// This is done to simplify the instantiation syntax of VersionControl.
 public fun new(allowed_functions: vector<vector<String>>): VersionControl {
     VersionControl {
@@ -52,14 +57,16 @@ public fun new(allowed_functions: vector<vector<String>>): VersionControl {
 }
 
 /// This allowes for anyone to modify the raw data of allowed functions.
-/// Do not pass a mutable reference of your VersionControl to anyone you do not trust because they can modify it.
+/// Do not pass a mutable reference of your VersionControl to anyone you do not
+/// trust because they can modify it.
 public fun allowed_functions(
     self: &mut VersionControl,
 ): &mut vector<VecSet<String>> {
     &mut self.allowed_functions
 }
 
-/// If a new version does not need to deprecate any old functions, you can use this to add the newly supported functions.
+/// If a new version does not need to deprecate any old functions, you can use
+/// this to add the newly supported functions.
 public fun push_back(
     self: &mut VersionControl,
     function_names: vector<String>,
@@ -73,13 +80,27 @@ public fun push_back(
         );
 }
 
-public fun allow_function(self: &mut VersionControl, version: u64, function_name: String) {
-    assert!(!self.allowed_functions[version].contains(&function_name), EFunctionAlreadyAllowed);
+public fun allow_function(
+    self: &mut VersionControl,
+    version: u64,
+    function_name: String,
+) {
+    assert!(
+        !self.allowed_functions[version].contains(&function_name),
+        EFunctionAlreadyAllowed,
+    );
     self.allowed_functions[version].insert(function_name);
 }
 
-public fun disallow_function(self: &mut VersionControl, version: u64, function_name: String) {
-    assert!(self.allowed_functions[version].contains(&function_name), EFunctionAlreadyDisallowed);
+public fun disallow_function(
+    self: &mut VersionControl,
+    version: u64,
+    function_name: String,
+) {
+    assert!(
+        self.allowed_functions[version].contains(&function_name),
+        EFunctionAlreadyDisallowed,
+    );
     self.allowed_functions[version].remove(&function_name);
 }
 
@@ -193,10 +214,7 @@ fun test_check_function_not_supported() {
 fun test_allow_function() {
     let version = 0;
     let function_name = b"function_name".to_ascii_string();
-    let mut self = new(vector[
-        vector[
-        ],
-    ]);
+    let mut self = new(vector[vector[]]);
 
     self.allow_function(version, function_name);
 
@@ -207,11 +225,7 @@ fun test_allow_function() {
 fun test_disallow_function() {
     let version = 0;
     let function_name = b"function_name".to_ascii_string();
-    let mut self = new(vector[
-        vector[
-            function_name,
-        ],
-    ]);
+    let mut self = new(vector[vector[function_name]]);
 
     self.disallow_function(version, function_name);
 
@@ -223,11 +237,7 @@ fun test_disallow_function() {
 fun test_allow_function_already_allowed() {
     let version = 0;
     let function_name = b"function_name".to_ascii_string();
-    let mut self = new(vector[
-        vector[
-            function_name,
-        ],
-    ]);
+    let mut self = new(vector[vector[function_name]]);
 
     self.allow_function(version, function_name);
 
@@ -239,10 +249,7 @@ fun test_allow_function_already_allowed() {
 fun test_disallow_function_already_disallowed() {
     let version = 0;
     let function_name = b"function_name".to_ascii_string();
-    let mut self = new(vector[
-        vector[
-        ],
-    ]);
+    let mut self = new(vector[vector[]]);
 
     self.disallow_function(version, function_name);
 
@@ -251,9 +258,7 @@ fun test_disallow_function_already_disallowed() {
 
 #[test]
 fun test_latest_function() {
-    let mut self = new(vector[
-        vector[],
-    ]);
+    let self = new(vector[vector[]]);
 
     assert!(self.latest_version() == 0);
 
