@@ -37,8 +37,9 @@ public fun from_metadata<T>(metadata: CoinMetadata<T>): CoinInfo<T> {
     }
 }
 
-// === Views ===
-
+// -----
+// Views
+// -----
 public fun name<T>(self: &CoinInfo<T>): String {
     self.name
 }

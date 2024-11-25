@@ -23,11 +23,11 @@ public struct InterchainAddressTracker has store {
     trusted_addresses: Table<String, String>,
 }
 
-// -------
-// Getters
-// -------
+// -----------------
+// Package Functions
+// -----------------
 /// Get the trusted address for a chain.
-public fun trusted_address(
+public(package) fun trusted_address(
     self: &InterchainAddressTracker,
     chain_name: String,
 ): &String {
@@ -36,7 +36,7 @@ public fun trusted_address(
 }
 
 /// Check if the given address is trusted for the given chain.
-public fun is_trusted_address(
+public(package) fun is_trusted_address(
     self: &InterchainAddressTracker,
     chain_name: String,
     addr: String,
@@ -44,9 +44,6 @@ public fun is_trusted_address(
     self.trusted_addresses.contains(chain_name) && self.trusted_addresses[chain_name] == addr
 }
 
-// -----------------
-// Package Functions
-// -----------------
 /// Create a new interchain address tracker.
 public(package) fun new(ctx: &mut TxContext): InterchainAddressTracker {
     InterchainAddressTracker {

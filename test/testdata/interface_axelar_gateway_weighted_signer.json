@@ -19,22 +19,5 @@
       ]
     }
   },
-  "publicFunctions": {
-    "pub_key": {
-      "name": "pub_key",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&WeightedSigner"
-      },
-      "returnType": "vector<u8>"
-    },
-    "weight": {
-      "name": "weight",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&WeightedSigner"
-      },
-      "returnType": "u128"
-    }
-  }
+  "publicFunctions": {}
 }

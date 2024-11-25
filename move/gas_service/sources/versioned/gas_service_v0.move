@@ -130,22 +130,22 @@ fun take(
 // Test Only
 // ---------
 #[test_only]
-public fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
+public(package) fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
     &mut self.version_control
 }
 
 #[test_only]
-public fun balance(self: &GasService_v0): &Balance<SUI> {
+public(package) fun balance(self: &GasService_v0): &Balance<SUI> {
     &self.balance
 }
 
 #[test_only]
-public fun balance_mut(self: &mut GasService_v0): &mut Balance<SUI> {
+public(package) fun balance_mut(self: &mut GasService_v0): &mut Balance<SUI> {
     &mut self.balance
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GasService_v0) {
+public(package) fun destroy_for_testing(self: GasService_v0) {
     let GasService_v0 { balance, version_control: _ } = self;
     balance.destroy_for_testing();
 }
