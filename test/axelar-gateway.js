@@ -15,7 +15,7 @@ const { expect } = require('chai');
 
 const COMMAND_TYPE_ROTATE_SIGNERS = 1;
 
-describe.only('Axelar Gateway', () => {
+describe('Axelar Gateway', () => {
     let client;
     const operator = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
     const deployer = Ed25519Keypair.fromSecretKey(arrayify(getRandomBytes32()));
