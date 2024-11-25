@@ -392,7 +392,7 @@ describe('Squid', () => {
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
-            creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'CreatorCap'),
+            creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
             itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
             gateway: findObjectId(deployments.its.publishTxn, `${deployments.axelar_gateway.packageId}::gateway::Gateway`),
         };

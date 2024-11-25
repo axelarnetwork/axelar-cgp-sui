@@ -1,0 +1,18 @@
+{
+  "structs": {
+    "OwnerCap": {
+      "name": "OwnerCap",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
