@@ -18,11 +18,14 @@ public struct WeightedSigner has copy, drop, store {
     weight: u128,
 }
 
-public fun pub_key(self: &WeightedSigner): vector<u8> {
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun pub_key(self: &WeightedSigner): vector<u8> {
     self.pub_key
 }
 
-public fun weight(self: &WeightedSigner): u128 {
+public(package) fun weight(self: &WeightedSigner): u128 {
     self.weight
 }
 

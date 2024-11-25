@@ -18,9 +18,9 @@ public struct Message has copy, drop, store {
 }
 
 /// -----------------
-/// Public Functions
+/// Package Functions
 /// -----------------
-public fun new(
+public(package) fun new(
     source_chain: String,
     message_id: String,
     source_address: String,
@@ -36,9 +36,6 @@ public fun new(
     }
 }
 
-/// -----------------
-/// Package Functions
-/// -----------------
 public(package) fun peel(bcs: &mut BCS): Message {
     // TODO: allow UTF-8 strings? Or keep it as more generic bytes?
     let source_chain = bcs.peel_vec_u8().to_ascii_string();
