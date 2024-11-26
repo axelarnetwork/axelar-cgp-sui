@@ -111,6 +111,22 @@ public(package) fun refund(
     );
 }
 
+public(package) fun allow_function(
+    self: &mut GasService_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut GasService_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
+}
+
 // -----------------
 // Private Functions
 // -----------------
@@ -130,7 +146,9 @@ fun take(
 // Test Only
 // ---------
 #[test_only]
-public(package) fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
+public(package) fun version_control_mut(
+    self: &mut GasService_v0,
+): &mut VersionControl {
     &mut self.version_control
 }
 

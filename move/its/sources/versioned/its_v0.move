@@ -488,6 +488,14 @@ public(package) fun set_flow_limit<T>(
     events::flow_limit_set<T>(token_id, limit);
 }
 
+public(package) fun allow_function(self: &mut ITS_v0, version: u64, function_name: String) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(self: &mut ITS_v0, version: u64, function_name: String) {
+    self.version_control.disallow_function(version, function_name);
+}
+
 // -----------------
 // Private Functions
 // -----------------
