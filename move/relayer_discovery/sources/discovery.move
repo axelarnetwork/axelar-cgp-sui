@@ -7,9 +7,10 @@
 module relayer_discovery::discovery;
 
 use axelar_gateway::channel::Channel;
+use relayer_discovery::owner_cap::{Self, OwnerCap};
 use relayer_discovery::relayer_discovery_v0::{Self, RelayerDiscovery_v0};
 use relayer_discovery::transaction::Transaction;
-use std::ascii;
+use std::ascii::{Self, String};
 use sui::versioned::{Self, Versioned};
 use version_control::version_control::{Self, VersionControl};
 
@@ -43,6 +44,7 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         inner,
     });
+    transfer::public_transfer(owner_cap::create(ctx), ctx.sender());
 }
 
 /// ------
@@ -68,6 +70,32 @@ macro fun value_mut(
     value
 }
 
+// ---------------
+// Entry Functions
+// ---------------
+entry fun allow_function(
+    self: &mut RelayerDiscovery,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(
+    self: &mut RelayerDiscovery,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
+}
+
+// ----------------
+// Public Functions
+// ----------------
 /// During the creation of the object, the UID should be passed here to
 /// receive the Channel and emit an event which will be handled by the
 /// Relayer.
@@ -118,6 +146,8 @@ fun version_control(): VersionControl {
             b"register_transaction",
             b"remove_transaction",
             b"get_transaction",
+            b"allow_function",
+            b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -164,4 +194,32 @@ fun test_register_and_get() {
 
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(channel);
+}
+
+#[test]
+fun test_allow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+
+    self.allow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
+}
+
+#[test]
+fun test_disallow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"register_transaction".to_ascii_string();
+
+    self.disallow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
 }
