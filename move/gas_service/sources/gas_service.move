@@ -62,6 +62,29 @@ macro fun value_mut(
     value
 }
 
+// ---------------
+// Entry Functions
+// ---------------
+entry fun allow_function(
+    self: &mut GasService,
+    _: &GasCollectorCap,
+    version: u64,
+    function_name: String,
+) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(
+    self: &mut GasService,
+    _: &GasCollectorCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
+}
+
 // ----------------
 // Public Functions
 // ----------------
@@ -146,9 +169,14 @@ public fun refund(
 // -----------------
 fun version_control(): VersionControl {
     version_control::new(vector[
-        vector[b"pay_gas", b"add_gas", b"collect_gas", b"refund"].map!(
-            |function_name| function_name.to_ascii_string(),
-        ),
+        vector[
+            b"pay_gas",
+            b"add_gas",
+            b"collect_gas",
+            b"refund",
+            b"allow_function",
+            b"disallow_function",
+        ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
 
@@ -376,4 +404,30 @@ fun test_refund_insufficient_balance() {
 
     cap.destroy_cap();
     service.destroy();
+}
+
+#[test]
+fun test_allow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let (mut self, cap) = new(ctx);
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+
+    self.allow_function(&cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    cap.destroy_cap();
+}
+
+#[test]
+fun test_disallow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let (mut self, cap) = new(ctx);
+    let version = 0;
+    let function_name = b"pay_gas".to_ascii_string();
+
+    self.disallow_function(&cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    cap.destroy_cap();
 }
