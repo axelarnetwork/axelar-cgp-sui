@@ -13,25 +13,5 @@
       ]
     }
   },
-  "publicFunctions": {
-    "trusted_address": {
-      "name": "trusted_address",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&InterchainAddressTracker",
-        "chain_name#0#0": "String"
-      },
-      "returnType": "&String"
-    },
-    "is_trusted_address": {
-      "name": "is_trusted_address",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&InterchainAddressTracker",
-        "chain_name#0#0": "String",
-        "addr#0#0": "String"
-      },
-      "returnType": "bool"
-    }
-  }
+  "publicFunctions": {}
 }

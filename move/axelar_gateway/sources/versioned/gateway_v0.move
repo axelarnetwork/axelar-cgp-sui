@@ -59,7 +59,7 @@ public enum CommandType {
 // -----------------
 // Package Functions
 // -----------------
-/// Init the module by giving a CreatorCap to the sender to allow a full
+/// Init the module by giving a OwnerCap to the sender to allow a full
 /// `setup`.
 public(package) fun new(
     operator: address,
@@ -228,6 +228,22 @@ public(package) fun send_message(
         payload,
         address::from_bytes(hash::keccak256(&payload)),
     );
+}
+
+public(package) fun allow_function(
+    self: &mut Gateway_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut Gateway_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
 }
 
 // -----------------

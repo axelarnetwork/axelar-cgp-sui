@@ -41,6 +41,7 @@ use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway_v0::{Self, Gateway_v0};
 use axelar_gateway::message_ticket::{Self, MessageTicket};
+use axelar_gateway::owner_cap::{Self, OwnerCap};
 use axelar_gateway::weighted_signers;
 use std::ascii::{Self, String};
 use sui::clock::Clock;
@@ -62,30 +63,21 @@ public struct Gateway has key {
     inner: Versioned,
 }
 
-// ------------
-// Capabilities
-// ------------
-public struct CreatorCap has key, store {
-    id: UID,
-}
-
 // -----
 // Setup
 // -----
 
-/// Init the module by giving a CreatorCap to the sender to allow a full
+/// Init the module by giving a OwnerCap to the sender to allow a full
 /// `setup`.
 fun init(ctx: &mut TxContext) {
-    let cap = CreatorCap {
-        id: object::new(ctx),
-    };
+    let cap = owner_cap::create(ctx);
 
-    transfer::transfer(cap, ctx.sender());
+    transfer::public_transfer(cap, ctx.sender());
 }
 
 /// Setup the module by creating a new Gateway object.
 entry fun setup(
-    cap: CreatorCap,
+    _: &OwnerCap,
     operator: address,
     domain_separator: address,
     minimum_rotation_delay: u64,
@@ -94,9 +86,6 @@ entry fun setup(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    let CreatorCap { id } = cap;
-    id.delete();
-
     let inner = versioned::create(
         VERSION,
         gateway_v0::new(
@@ -190,6 +179,14 @@ entry fun rotate_signers(
 /// It upgrades the version control to the new version control.
 entry fun migrate(self: &mut Gateway) {
     self.inner.load_value_mut<Gateway_v0>().migrate(version_control());
+}
+
+entry fun allow_function(self: &mut Gateway, _: &OwnerCap, version: u64, function_name: String) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(self: &mut Gateway, _: &OwnerCap, version: u64, function_name: String) {
+    self.value_mut!(b"disallow_function").disallow_function(version, function_name);
 }
 
 // ----------------
@@ -288,6 +285,8 @@ fun version_control(): VersionControl {
             b"is_message_executed",
             b"take_approved_message",
             b"send_message",
+            b"allow_function",
+            b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -353,6 +352,8 @@ fun dummy(ctx: &mut TxContext): Gateway {
                     b"is_message_executed",
                     b"take_approved_message",
                     b"send_message",
+                    b"allow_function",
+                    b"disallow_function",
                     b"",
                 ].map!(|function_name| function_name.to_ascii_string()),
             ]),
@@ -391,7 +392,7 @@ fun test_init() {
     init(ts.ctx());
     ts.next_tx(@0x0);
 
-    let creator_cap = ts.take_from_sender<CreatorCap>();
+    let creator_cap = ts.take_from_sender<OwnerCap>();
     ts.return_to_sender(creator_cap);
     ts.end();
 }
@@ -409,14 +410,12 @@ fun test_setup() {
     let timestamp = rng.generate_u64();
     clock.increment_for_testing(timestamp);
 
-    let creator_cap = CreatorCap {
-        id: object::new(ctx),
-    };
+    let owner_cap = owner_cap::create(ctx);
 
     let mut scenario = sui::test_scenario::begin(@0x1);
 
     setup(
-        creator_cap,
+        &owner_cap,
         operator,
         domain_separator,
         minimum_rotation_delay,
@@ -466,6 +465,7 @@ fun test_setup() {
     assert!(previous_signers_retention == previous_signers_retention_result);
 
     clock.destroy_for_testing();
+    owner_cap.destroy_for_testing();
     scenario.end();
 }
 
@@ -483,15 +483,13 @@ fun test_setup_remaining_bytes() {
     let timestamp = rng.generate_u64();
     clock.increment_for_testing(timestamp);
 
-    let creator_cap = CreatorCap {
-        id: object::new(ctx),
-    };
+    let owner_cap = owner_cap::create(ctx);
 
     let mut scenario = sui::test_scenario::begin(@0x1);
     let mut initial_signers_bytes = bcs::to_bytes(&initial_signers);
     initial_signers_bytes.push_back(0);
     setup(
-        creator_cap,
+        &owner_cap,
         operator,
         domain_separator,
         minimum_rotation_delay,
@@ -541,6 +539,7 @@ fun test_setup_remaining_bytes() {
     assert!(previous_signers_retention == previous_signers_retention_result);
 
     clock.destroy_for_testing();
+    owner_cap.destroy_for_testing();
     scenario.end();
 }
 
@@ -1072,4 +1071,32 @@ fun test_send_message() {
 
     sui::test_utils::destroy(gateway);
     channel.destroy();
+}
+
+#[test]
+fun test_allow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = dummy(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+
+    self.allow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
+}
+
+#[test]
+fun test_disallow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = dummy(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"approve_messages".to_ascii_string();
+
+    self.disallow_function(&owner_cap, version, function_name);
+    
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
 }

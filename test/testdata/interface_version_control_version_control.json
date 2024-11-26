@@ -31,6 +31,14 @@
         "self#0#0": "&mut VersionControl"
       },
       "returnType": "&mut vector<VecSet<String>>"
+    },
+    "latest_version": {
+      "name": "latest_version",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&VersionControl"
+      },
+      "returnType": "u64"
     }
   }
 }

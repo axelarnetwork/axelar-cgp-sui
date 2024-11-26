@@ -33,22 +33,5 @@
       ]
     }
   },
-  "publicFunctions": {
-    "signers": {
-      "name": "signers",
-      "visibility": "public",
-      "params": {
-        "proof#0#0": "&Proof"
-      },
-      "returnType": "&WeightedSigners"
-    },
-    "signatures": {
-      "name": "signatures",
-      "visibility": "public",
-      "params": {
-        "proof#0#0": "&Proof"
-      },
-      "returnType": "&vector<Signature>"
-    }
-  }
+  "publicFunctions": {}
 }
