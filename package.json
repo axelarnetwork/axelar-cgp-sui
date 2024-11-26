@@ -10,7 +10,12 @@
     "move",
     "version.json",
     "tsconfig.json",
-    "!move/**/build"
+    "!move/**/build",
+    "src",
+    "scripts",
+    "tsconfig.*.json",
+    "tsconfig.json",
+    "UPGRADE.md"
   ],
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
