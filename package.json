@@ -57,7 +57,8 @@
     "verify-web-build": "node scripts/verify-web-build.js",
     "lint": "eslint --fix './src/**/*.ts' './test/*.js'",
     "prettier": "prettier --write './src/**/*.ts' './test/*.js'",
-    "docs": "./scripts/docs.sh"
+    "docs": "./scripts/docs.sh",
+    "postinstall": "npm run build"
   },
   "keywords": [
     "axelar",
