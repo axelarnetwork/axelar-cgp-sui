@@ -1,10 +1,10 @@
 [package]
 name = "Utils"
 version = "0.1.0"
-edition = "2024.beta"
+edition = "2024"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.35.2" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.38.2" }
 
 [addresses]
 utils = "0xa7"

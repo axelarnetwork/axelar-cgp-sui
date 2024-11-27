@@ -17,7 +17,8 @@ const EWrongSwapType: vector<u8> = b"wrong swap type";
 #[error]
 const EWrongPool: vector<u8> = b"pool argument does not match required pool";
 #[error]
-const EWrongCoinType: vector<u8> = b"coin type expected does not match type argument";
+const EWrongCoinType: vector<u8> =
+    b"coin type expected does not match type argument";
 
 const FLOAT_SCALING: u128 = 1_000_000_000;
 
