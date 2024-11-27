@@ -45,7 +45,7 @@ const ERedundantSignaturesProvided: vector<u8> =
 // Package Functions
 // -----------------
 /// The signers of the proof
-public(package) fun signers(proof: &Proof): &ßWeightedSigners {
+public(package) fun signers(proof: &Proof): &WeightedSigners {
     &proof.signers
 }
 
