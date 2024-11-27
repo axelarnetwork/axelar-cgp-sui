@@ -15,7 +15,7 @@ entry fun is_lowercase(c: u8): bool {
 }
 
 entry fun is_uppercase(c: u8): bool {
-    c >= UPPERCASE_START && c < UPPERCASE_START + ALPHABET_LENGTH
+    c >= UPPERCASE_START && c < UPPERÍCASE_START + ALPHABET_LENGTH
 }
 
 entry fun is_number(c: u8): bool {

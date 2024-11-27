@@ -33,7 +33,8 @@ public struct Governance has key, store {
     caps: Table<ID, UpgradeCap>,
 }
 
-// This can only be called once since it needs its own upgrade cap which it deletes.
+// This can only be called once since it needs its own upgrade cap which it
+// deletes.
 entry fun new(
     trusted_source_chain: String,
     trusted_source_address: String,
@@ -68,7 +69,8 @@ public fun is_governance(
     &addr == &self.trusted_source_address
 }
 
-// TODO maybe check that the polcy for the upgrade cap has not been tampered with.
+// TODO maybe check that the polcy for the upgrade cap has not been tampered
+// with.
 entry fun take_upgrade_cap(self: &mut Governance, upgrade_cap: UpgradeCap) {
     is_cap_new(&upgrade_cap);
 

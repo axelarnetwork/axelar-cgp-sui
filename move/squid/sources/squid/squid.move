@@ -89,9 +89,15 @@ entry fun disallow_function(
         .disallow_function(version, function_name);
 }
 
-entry fun withdraw<T>(self: &mut Squid, _: &OwnerCap, amount: u64, ctx: &mut TxContext) {
+entry fun withdraw<T>(
+    self: &mut Squid,
+    _: &OwnerCap,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
     self.value_mut!(b"withdraw").withdraw<T>(amount, ctx);
 }
+
 // ----------------
 // Public Functions
 // ----------------
@@ -247,7 +253,6 @@ fun test_init() {
     init(ctx);
 }
 
-
 #[test]
 fun test_allow_function() {
     let ctx = &mut sui::tx_context::dummy();
@@ -271,7 +276,7 @@ fun test_disallow_function() {
     let function_name = b"start_swap".to_ascii_string();
 
     self.disallow_function(&owner_cap, version, function_name);
-    
+
     sui::test_utils::destroy(self);
     owner_cap.destroy_for_testing();
 }
@@ -286,7 +291,7 @@ fun test_withdraw() {
     let balance = sui::balance::create_for_testing<COIN>(amount);
     self.value_mut!(b"").coin_bag_mut().store_balance(balance);
     self.withdraw<COIN>(&owner_cap, amount, ctx);
-    
+
     sui::test_utils::destroy(self);
     owner_cap.destroy_for_testing();
 }
