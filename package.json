@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
@@ -75,7 +75,7 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@mysten/sui": "^1.3.0",
-    "deepbookv3": "github:axelarnetwork/deepbookv3#mainnet-v1.35.2",
+    "deepbookv3": "github:axelarnetwork/deepbookv3#testnet-v1.38.2",
     "ethers": "^5.0.0",
     "secp256k1": "^5.0.0",
     "smol-toml": "^1.3.0",

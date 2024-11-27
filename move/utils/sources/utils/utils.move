@@ -9,11 +9,13 @@ use sui::bcs::{Self, BCS};
 
 /// Peel data from a BCS encoded vector
 /// This macro is used to peel data from a BCS encoded vector
-/// The macro will assert that there is no remaining data in the BCS after peeling. If there is
+/// The macro will assert that there is no remaining data in the BCS after
+/// peeling. If there is
 /// remaining data, the macro will panic.
 /// $data: The BCS encoded vector
 /// $peel_fn: The function to peel the data
-/// Returns: The peeled data or an error if there is any remaining data in the BCS
+/// Returns: The peeled data or an error if there is any remaining data in the
+/// BCS
 ///
 /// Example Usage:
 /// ```

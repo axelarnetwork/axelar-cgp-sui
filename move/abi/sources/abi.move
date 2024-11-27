@@ -1,4 +1,5 @@
-/// This module implements ABI encoding/decoding methods for interoperability with EVM message format.
+/// This module implements ABI encoding/decoding methods for interoperability
+/// with EVM message format.
 ///
 /// ABI Specification: https://docs.soliditylang.org/en/v0.8.26/abi-spec.html
 module abi::abi;

@@ -4,8 +4,9 @@ use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
 use its::its::ITS;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
+use std::ascii::String;
 use sui::clock::Clock;
-use sui::coin::Coin;
+use sui::coin::{Self, Coin};
 use token::deep::DEEP;
 use version_control::version_control::VersionControl;
 
@@ -67,6 +68,34 @@ public(package) fun give_deep(self: &mut Squid_v0, deep: Coin<DEEP>) {
     self.coin_bag.store_balance(deep.into_balance());
 }
 
+public(package) fun allow_function(
+    self: &mut Squid_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut Squid_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
+}
+
+#[allow(lint(self_transfer))]
+public(package) fun withdraw<T>(
+    self: &mut Squid_v0,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    let balance = self.coin_bag.exact_balance<T>(amount);
+    transfer::public_transfer(coin::from_balance(balance, ctx), ctx.sender());
+}
+// ---------
+// Test Only
+// ---------
 #[test_only]
 public fun new_for_testing(ctx: &mut TxContext): Squid_v0 {
     Squid_v0 {
