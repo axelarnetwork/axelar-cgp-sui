@@ -23,7 +23,8 @@ public struct OperatorCap has key, store {
 /// The main `Operators` struct storing the capabilities and operator IDs.
 public struct Operators has key {
     id: UID,
-    // The number of operators are small in practice, and under the Sui object size limit, so a dynamic collection doesn't need to be used
+    // The number of operators are small in practice, and under the Sui object
+    // size limit, so a dynamic collection doesn't need to be used
     operators: VecSet<address>,
     // map-like collection of capabilities stored as Sui objects
     caps: Bag,
@@ -165,12 +166,14 @@ public fun loan_cap<T: key + store>(
         id: object::id(&cap),
     };
 
-    // Return a tuple of the borrowed capability and the Borrow hot potato object
+    // Return a tuple of the borrowed capability and the Borrow hot potato
+    // object
     (cap, borrow_obj)
 }
 
 /// Restores a previously loaned capability back to the `Operators` struct.
-/// This function must be called before the end of the transaction to return the loaned capability.
+/// This function must be called before the end of the transaction to return the
+/// loaned capability.
 public fun restore_cap<T: key + store>(
     self: &mut Operators,
     _operator_cap: &OperatorCap,

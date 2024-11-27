@@ -79,12 +79,24 @@ macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_v0 {
 // ---------------
 // Entry Functions
 // ---------------
-entry fun allow_function(self: &mut ITS, _: &OwnerCap, version: u64, function_name: String) {
+entry fun allow_function(
+    self: &mut ITS,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
     self.value_mut!(b"allow_function").allow_function(version, function_name);
 }
 
-entry fun disallow_function(self: &mut ITS, _: &OwnerCap, version: u64, function_name: String) {
-    self.value_mut!(b"disallow_function").disallow_function(version, function_name);
+entry fun disallow_function(
+    self: &mut ITS,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
 }
 
 // ----------------
@@ -722,9 +734,9 @@ fun test_receive_deploy_interchain_token() {
     );
 
     receive_deploy_interchain_token<COIN>(&mut its, approved_message);
-    
+
     utils::assert_event<its::events::CoinRegistered<COIN>>();
-    
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
 }
@@ -884,10 +896,11 @@ fun test_set_flow_limit() {
     let decimals = 9;
     let limit = 1234;
 
-    let (
-        treasury_cap,
-        coin_metadata,
-    ) = its::coin::create_treasury_and_metadata(symbol, decimals, ctx);
+    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+        symbol,
+        decimals,
+        ctx,
+    );
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
@@ -964,7 +977,7 @@ fun test_disallow_function() {
     let function_name = b"send_interchain_transfer".to_ascii_string();
 
     self.disallow_function(&owner_cap, version, function_name);
-    
+
     sui::test_utils::destroy(self);
     sui::test_utils::destroy(owner_cap);
 }

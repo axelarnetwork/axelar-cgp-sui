@@ -174,12 +174,24 @@ entry fun rotate_signers(
     )
 }
 
-entry fun allow_function(self: &mut Gateway, _: &OwnerCap, version: u64, function_name: String) {
+entry fun allow_function(
+    self: &mut Gateway,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
     self.value_mut!(b"allow_function").allow_function(version, function_name);
 }
 
-entry fun disallow_function(self: &mut Gateway, _: &OwnerCap, version: u64, function_name: String) {
-    self.value_mut!(b"disallow_function").disallow_function(version, function_name);
+entry fun disallow_function(
+    self: &mut Gateway,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
 }
 
 // ----------------
@@ -1081,7 +1093,7 @@ fun test_disallow_function() {
     let function_name = b"approve_messages".to_ascii_string();
 
     self.disallow_function(&owner_cap, version, function_name);
-    
+
     sui::test_utils::destroy(self);
     owner_cap.destroy_for_testing();
 }

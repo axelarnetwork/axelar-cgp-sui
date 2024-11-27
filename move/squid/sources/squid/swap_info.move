@@ -6,17 +6,19 @@ use sui::bcs;
 // -----
 // Enums
 // -----
-/// Swapping: Curently performing swaps, should happen only after all estimation is finished.
-/// Estimating: Currently performing estimates. Once all estimates are done and the output is satisfactory then we can swap.
+/// Swapping: Curently performing swaps, should happen only after all estimation
+/// is finished.
+/// Estimating: Currently performing estimates. Once all estimates are done and
+/// the output is satisfactory then we can swap.
 /// Done: Done swapping and can be destroyed.
 public enum SwapStatus has copy, drop, store {
-    Swapping { 
-        index: u64, 
-        fallback: bool 
+    Swapping {
+        index: u64,
+        fallback: bool,
     },
-    Estimating { 
-        index: u64, 
-        fallback: bool 
+    Estimating {
+        index: u64,
+        fallback: bool,
     },
     Done,
 }
@@ -71,9 +73,7 @@ public(package) fun new(data: vector<u8>, ctx: &mut TxContext): SwapInfo {
 public(package) fun data_swapping(self: &mut SwapInfo): (vector<u8>, bool) {
     let (index, fallback) = match (self.status) {
         SwapStatus::Swapping { index, fallback } => (index, fallback),
-        SwapStatus::Estimating { .. } => abort (
-            ENotDoneEstimating,
-        ),
+        SwapStatus::Estimating { .. } => abort (ENotDoneEstimating),
         SwapStatus::Done => abort (EDoneSwapping),
     };
 
@@ -88,9 +88,7 @@ public(package) fun data_swapping(self: &mut SwapInfo): (vector<u8>, bool) {
     (self.swap_data[index], fallback)
 }
 
-public(package) fun data_estimating(
-    self: &mut SwapInfo,
-): (vector<u8>, bool) {
+public(package) fun data_estimating(self: &mut SwapInfo): (vector<u8>, bool) {
     let (index, fallback) = match (self.status) {
         SwapStatus::Estimating { index, fallback } => (index, fallback),
         _ => abort (EDoneEstimating),
@@ -114,7 +112,10 @@ public(package) fun coin_bag(self: &mut SwapInfo): &mut CoinBag {
 public(package) fun skip_swap(self: &mut SwapInfo) {
     self.status =
         match (self.status) {
-            SwapStatus::Estimating { index, fallback: false } => SwapStatus::Estimating { index, fallback: true },
+            SwapStatus::Estimating {
+                index,
+                fallback: false,
+            } => SwapStatus::Estimating { index, fallback: true },
             SwapStatus::Estimating { .. } => abort (EAlreadySkippingSwaps),
             _ => abort (ENotEstimating),
         };

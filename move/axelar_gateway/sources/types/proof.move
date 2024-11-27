@@ -40,7 +40,7 @@ const ESignerNotFound: vector<u8> =
 #[error]
 const ERedundantSignaturesProvided: vector<u8> =
     b"redundant signatures provided";
-    
+
 // -----------------
 // Package Functions
 // -----------------

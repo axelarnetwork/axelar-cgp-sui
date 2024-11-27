@@ -148,31 +148,26 @@ public(package) fun trusted_address_set(
     trusted_address: String,
 ) {
     event::emit(TrustedAddressSet {
-    chain_name,
-    trusted_address,
+        chain_name,
+        trusted_address,
     });
 }
 
-public(package) fun trusted_address_removed(
-    chain_name: String,
-) {
+public(package) fun trusted_address_removed(chain_name: String) {
     event::emit(TrustedAddressRemoved {
         chain_name,
     });
 }
 
-public(package) fun flow_limit_set<T>(
-    token_id: TokenId,
-    flow_limit: u64,
-) {
+public(package) fun flow_limit_set<T>(token_id: TokenId, flow_limit: u64) {
     event::emit(FlowLimitSet<T> {
         token_id,
-        flow_limit
+        flow_limit,
     });
 }
- 
+
 // ---------
-// Test Only 
+// Test Only
 // ---------
 #[test_only]
 use its::coin::COIN;
@@ -210,7 +205,6 @@ fun test_interchain_transfer_empty_data() {
     assert!(event.destination_address == destination_address);
     assert!(event.amount == amount);
 }
-
 
 #[test]
 fun test_interchain_transfer_nonempty_data() {

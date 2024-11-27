@@ -37,7 +37,9 @@ public fun new(
 /// -----------------
 /// Package Functions
 /// -----------------
-public(package) fun destroy(self: TrustedAddresses): (vector<String>, vector<String>) {
+public(package) fun destroy(
+    self: TrustedAddresses,
+): (vector<String>, vector<String>) {
     let TrustedAddresses { trusted_chains, trusted_addresses } = self;
     (trusted_chains, trusted_addresses)
 }

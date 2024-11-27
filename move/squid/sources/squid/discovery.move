@@ -6,7 +6,7 @@ use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 use squid::deepbook_v3;
 use squid::squid::Squid;
-use squid::swap_type::{Self};
+use squid::swap_type;
 use squid::transfers;
 use std::ascii::{Self, String};
 use sui::bcs;
