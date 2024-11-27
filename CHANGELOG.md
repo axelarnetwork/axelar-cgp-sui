@@ -1,5 +1,30 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.0.0
+
+### Major Changes
+
+-   af17dcb: Change to sui testnet-v1.38.2
+
+### Minor Changes
+
+-   e8a50a7: added randomness to all axelar gateway tests
+-   7dd615b: Removed remote decimals tracking from ITS as it will be handled at the hub.
+-   409d52f: Paying for gas now requires the message ticket instead of the call information.
+-   952c2e7: Add events to register and remove transaction on relayer discovery
+-   c165a48: Add allow_function and disallow_function on gas_service
+-   167786c: Add allow_function and disallow_function to relayer_discovery.
+-   ce71858: add allow and disallow functions in ITS
+-   9f656e2: Added js e2e tests for squid, and fixed a few things with squid as well.
+-   ada6fd9: Add a query for version on version_control, change CreatorCap to OwnerCap and allow owner to set allowed functions in gateway
+-   d0bfec4: move all events of gas service to gas_service::events and all logic to the versioned contract.
+-   bc498d6: added allow_function and disallow_function to squid
+
+### Patch Changes
+
+-   7a498e9: added events to its trusted address adding and removing
+-   cd52fed: added access to set flow limit on its and a corresponding event
+
 ## 0.8.0
 
 ### Minor Changes
