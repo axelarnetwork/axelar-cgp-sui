@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "2BF8E393A6BC926689C2EF8893266EC21B1C76E0FE59A375A46CB3E88D4C2593"
+manifest_digest = "9000A958E0D3E6CFF585787FB438BFFC534547BC22A28DB5816B23C2F29EC7DC"
 deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { id = "AxelarGateway", name = "AxelarGateway" },
@@ -38,6 +38,7 @@ id = "GasService"
 source = { local = "../gas_service" }
 
 dependencies = [
+  { id = "AxelarGateway", name = "AxelarGateway" },
   { id = "Sui", name = "Sui" },
   { id = "VersionControl", name = "VersionControl" },
 ]
@@ -94,6 +95,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.37.4"
+compiler-version = "1.38.2"
 edition = "2024"
 flavor = "sui"

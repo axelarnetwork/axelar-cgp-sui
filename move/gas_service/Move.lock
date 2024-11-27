@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "C04CC08DC1212FBCB4F5A869F32A9607A3C3E3586BC3BEFC0C0F1DBD3CE563CE"
+manifest_digest = "B42F61019F82CD818F2BA9772475684AF7EC56ED0D88B4441EE2A8552F9DC1F6"
 deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { id = "AxelarGateway", name = "AxelarGateway" },
@@ -50,6 +50,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.37.4"
+compiler-version = "1.38.2"
 edition = "2024"
 flavor = "sui"
