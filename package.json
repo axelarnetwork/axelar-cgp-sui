@@ -1,6 +1,6 @@
 {
   "name": "@axelar-network/axelar-cgp-sui",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/axelarnetwork/axelar-cgp-sui"
