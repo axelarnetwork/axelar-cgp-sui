@@ -34,6 +34,10 @@ const ENotLatestSigners: vector<u8> = b"not latest signers";
 const ENewerMessage: vector<u8> =
     b"message ticket created from newer versions cannot be sent here";
 
+#[error]
+const ECannotMigrateTwice: vector<u8> =
+    b"attempting to migrate a even though migration is complete";
+
 // -----
 // Types
 // -----
@@ -73,6 +77,11 @@ public(package) fun new(
 
 public(package) fun version_control(self: &Gateway_v0): &VersionControl {
     &self.version_control
+}
+
+public(package) fun migrate(self: &mut Gateway_v0, mut version_control: VersionControl) {
+    assert!(self.version_control.allowed_functions().length() == version_control.allowed_functions().length() - 1, ECannotMigrateTwice );
+    self.version_control = version_control;
 }
 
 public(package) fun approve_messages(

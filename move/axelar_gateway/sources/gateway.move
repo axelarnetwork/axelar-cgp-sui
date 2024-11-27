@@ -53,7 +53,7 @@ use version_control::version_control::{Self, VersionControl};
 // -------
 // Version
 // -------
-const VERSION: u64 = 0;
+const VERSION: u64 = 1;
 
 // -------
 // Structs
@@ -174,6 +174,13 @@ entry fun rotate_signers(
     )
 }
 
+/// This function should only be called once
+/// (checks should be made on versioned to ensure this)
+/// It upgrades the version control to the new version control.
+entry fun migrate(self: &mut Gateway) {
+    self.inner.load_value_mut<Gateway_v0>().migrate(version_control());
+}
+
 entry fun allow_function(
     self: &mut Gateway,
     _: &OwnerCap,
@@ -282,6 +289,13 @@ fun version_control(): VersionControl {
             b"is_message_approved",
             b"is_message_executed",
             b"take_approved_message",
+        ].map!(|function_name| function_name.to_ascii_string()),
+        vector[
+            b"approve_messages",
+            b"rotate_signers",
+            b"is_message_approved",
+            b"is_message_executed",
+            b"take_approved_message",
             b"send_message",
             b"allow_function",
             b"disallow_function",
@@ -342,6 +356,7 @@ fun dummy(ctx: &mut TxContext): Gateway {
             table::new(ctx),
             auth::dummy(ctx),
             version_control::new(vector[
+                vector[],
                 vector[
                     b"approve_messages",
                     b"rotate_signers",
