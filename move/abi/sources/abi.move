@@ -4,6 +4,13 @@
 /// ABI Specification: https://docs.soliditylang.org/en/v0.8.26/abi-spec.html
 module abi::abi;
 
+use sui::bcs;
+
+// ---------
+// Constants
+// ---------
+const BYTES_IN_U256: u64 = 32;
+
 // -----
 // Types
 // -----
@@ -33,12 +40,8 @@ public fun new_reader(bytes: vector<u8>): AbiReader {
 
 public fun new_writer(length: u64): AbiWriter {
     let mut bytes = vector[];
-    let mut i = 0;
 
-    while (i < 32 * length) {
-        bytes.push_back(0);
-        i = i + 1;
-    };
+    (BYTES_IN_U256 * length).do!(|_| bytes.push_back(0));
 
     AbiWriter {
         bytes,
@@ -61,15 +64,11 @@ public fun into_remaining_bytes(self: AbiReader): vector<u8> {
 
 public fun read_u256(self: &mut AbiReader): u256 {
     let mut var = 0u256;
-    let mut i = 0;
     let pos = self.pos;
 
-    while (i < 32) {
-        var = (var << 8) | (self.bytes[i + pos] as u256);
-        i = i + 1;
-    };
+    BYTES_IN_U256.do!(|i| var = (var << 8) | (self.bytes[i + pos] as u256));
 
-    self.pos = pos + 32;
+    self.pos = pos + BYTES_IN_U256;
 
     var
 }
@@ -79,7 +78,7 @@ public fun read_u8(self: &mut AbiReader): u8 {
 }
 
 public fun skip_slot(self: &mut AbiReader) {
-    self.pos = self.pos + 32;
+    self.pos = self.pos + BYTES_IN_U256;
 }
 
 public fun read_bytes(self: &mut AbiReader): vector<u8> {
@@ -92,7 +91,7 @@ public fun read_bytes(self: &mut AbiReader): vector<u8> {
     let var = self.decode_bytes();
 
     // Move position to the next slot
-    self.pos = pos + 32;
+    self.pos = pos + BYTES_IN_U256;
 
     var
 }
@@ -107,14 +106,9 @@ public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
 
     let length = self.read_u256() as u64;
 
-    let mut i = 0;
+    length.do!(|_| var.push_back(self.read_u256()));
 
-    while (i < length) {
-        var.push_back(self.read_u256());
-        i = i + 1;
-    };
-
-    self.pos = pos + 32;
+    self.pos = pos + BYTES_IN_U256;
 
     var
 }
@@ -133,33 +127,36 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
     let length = self.read_u256() as u64;
     self.head = self.pos;
 
-    let mut i = 0;
-
-    while (i < length) {
-        var.push_back(self.read_bytes());
-
-        i = i + 1;
-    };
+    length.do!(|_| var.push_back(self.read_bytes()));
 
     // Move position to the next slot
-    self.pos = pos + 32;
+    self.pos = pos + BYTES_IN_U256;
     self.head = head;
+
+    var
+}
+
+public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
+    // Move position to the start of the bytes
+    let offset = self.read_u256() as u64;
+    let length = self.bytes.length() - offset;
+
+    let mut var = vector[];
+    length.do!(|i| var.push_back(self.bytes[offset + i]));
 
     var
 }
 
 public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
     let pos = self.pos;
-    let mut i = 0;
 
-    while (i < 32) {
+    BYTES_IN_U256.do!(|i| {
         let exp = ((31 - i) * 8 as u8);
         let byte = (var >> exp & 255 as u8);
         *&mut self.bytes[i + pos] = byte;
-        i = i + 1;
-    };
+    });
 
-    self.pos = pos + 32;
+    self.pos = pos + BYTES_IN_U256;
 
     self
 }
@@ -189,11 +186,9 @@ public fun write_vector_u256(
     let length = var.length();
     self.append_u256(length as u256);
 
-    let mut i = 0;
-    while (i < length) {
-        self.append_u256(var[i]);
-        i = i + 1;
-    };
+    var.do!(|val| {
+        self.append_u256(val)
+    });
 
     self
 }
@@ -209,14 +204,23 @@ public fun write_vector_bytes(
     self.append_u256(length as u256);
 
     let mut writer = new_writer(length);
-    let mut i = 0;
-
-    while (i < length) {
-        writer.write_bytes(var[i]);
-        i = i + 1;
-    };
+    var.do!(|val| {
+        writer.write_bytes(val);
+    });
 
     self.append_bytes(writer.into_bytes());
+
+    self
+}
+
+public fun write_bytes_raw(
+    self: &mut AbiWriter,
+    var: vector<u8>,
+): &mut AbiWriter {
+    let offset = self.bytes.length() as u256;
+    self.write_u256(offset);
+
+    self.append_bytes(var);
 
     self
 }
@@ -226,11 +230,9 @@ public fun write_vector_bytes(
 // ------------------
 
 fun append_u256(self: &mut AbiWriter, var: u256) {
-    let mut i = 0;
-    while (i < 32) {
-        self.bytes.push_back(((var >> ((31 - i) * 8 as u8)) & 255 as u8));
-        i = i + 1;
-    };
+    let mut bytes = bcs::to_bytes(&var);
+    bytes.reverse();
+    self.bytes.append(bytes)
 }
 
 fun append_bytes(self: &mut AbiWriter, var: vector<u8>) {
@@ -241,12 +243,7 @@ fun append_bytes(self: &mut AbiWriter, var: vector<u8>) {
 
     self.bytes.append(var);
 
-    let mut i = 0u64;
-
-    while (i < 31 - (length - 1) % 32) {
-        self.bytes.push_back(0);
-        i = i + 1;
-    };
+    (31 - (length - 1) % 32).do!(|_| self.bytes.push_back(0));
 }
 
 fun decode_bytes(self: &mut AbiReader): vector<u8> {
@@ -254,12 +251,8 @@ fun decode_bytes(self: &mut AbiReader): vector<u8> {
     let pos = self.pos;
 
     let mut bytes = vector[];
-    let mut i = 0;
 
-    while (i < length) {
-        bytes.push_back(self.bytes[i + pos]);
-        i = i + 1;
-    };
+    length.do!(|i| bytes.push_back(self.bytes[i + pos]));
 
     bytes
 }
@@ -357,4 +350,66 @@ fun test_multiple() {
     assert!(reader.read_bytes() == input2);
     assert!(reader.read_vector_u256() == input3);
     assert!(reader.read_vector_bytes() == input4);
+}
+
+#[test]
+fun test_raw_struct() {
+    let number = 3;
+    let data = b"data";
+
+    let mut writer = new_writer(1);
+    let mut struct_writer = new_writer(2);
+    struct_writer.write_u256(number).write_bytes(data);
+    writer.write_bytes_raw(struct_writer.into_bytes());
+
+    let bytes = writer.into_bytes();
+
+    let mut reader = new_reader(bytes);
+
+    let struct_bytes = reader.read_bytes_raw();
+
+    let mut struct_reader = new_reader(struct_bytes);
+
+    assert!(struct_reader.read_u256() == number);
+    assert!(struct_reader.read_bytes() == data);
+}
+
+#[test]
+fun test_raw_table() {
+    let table = vector[vector[1, 2, 3], vector[4, 5, 6]];
+
+    let mut writer = new_writer(1);
+
+    let length = table.length();
+
+    let mut length_writer = new_writer(1);
+    length_writer.write_u256(length as u256);
+    let mut bytes = length_writer.into_bytes();
+
+    let mut table_writer = new_writer(length);
+    table.do!(|row| {
+        table_writer.write_vector_u256(row);
+    });
+    bytes.append(table_writer.into_bytes());
+
+    writer.write_bytes_raw(bytes);
+
+    let bytes = writer.into_bytes();
+
+    let mut reader = new_reader(bytes);
+
+    let mut table_bytes = reader.read_bytes_raw();
+    let mut length_bytes = vector[];
+
+    // Split the data into the lenth and the actual table contents
+    BYTES_IN_U256.do!(|_| length_bytes.push_back(table_bytes.remove(0)));
+
+    let mut length_reader = new_reader(length_bytes);
+    let length = length_reader.read_u256();
+
+    let mut table_read = vector[];
+    let mut table_reader = new_reader(table_bytes);
+    length.do!(|_| table_read.push_back(table_reader.read_vector_u256()));
+
+    assert!(table_read == table);
 }
