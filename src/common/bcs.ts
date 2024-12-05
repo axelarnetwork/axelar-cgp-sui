@@ -1,6 +1,6 @@
 import { bcs, BcsType } from '@mysten/sui/bcs';
-import { UID } from './types';
 import { SuiClient, SuiMoveNormalizedType } from '@mysten/sui/dist/cjs/client';
+import { UID } from './types';
 import { isString } from './utils';
 
 function getCommonStructs() {
@@ -331,47 +331,73 @@ function getGasServiceStructs() {
     };
 }
 
-export async function getBcsForStruct(client: SuiClient, type: SuiMoveNormalizedType, typeArguments: SuiMoveNormalizedType[] = []): Promise<BcsType<any, any>> {
-    switch(type) {
-        case 'Address': return bcs.Address;
-        case 'Bool': return bcs.Bool;
-        case 'U8': return bcs.U8;
-        case 'U16': return bcs.U16;
-        case 'U32': return bcs.U32;
-        case 'U64': return bcs.U64;
-        case 'U128': return bcs.U128;
-        case 'U256': return bcs.U256;
-        default: {}
+export async function getBcsForStruct(
+    client: SuiClient,
+    type: SuiMoveNormalizedType,
+    typeArguments: SuiMoveNormalizedType[] = [],
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<BcsType<any, any>> {
+    switch (type) {
+        case 'Address':
+            return bcs.Address;
+        case 'Bool':
+            return bcs.Bool;
+        case 'U8':
+            return bcs.U8;
+        case 'U16':
+            return bcs.U16;
+        case 'U32':
+            return bcs.U32;
+        case 'U64':
+            return bcs.U64;
+        case 'U128':
+            return bcs.U128;
+        case 'U256':
+            return bcs.U256;
+
+        default: {
+        }
     }
-    if(isString(type)) {
+
+    if (isString(type)) {
         return bcs.String;
     }
-    if('Vector' in (type as object)) {
+
+    if ('Vector' in (type as object)) {
         return bcs.vector(await getBcsForStruct(client, (type as { Vector: SuiMoveNormalizedType }).Vector, typeArguments));
     }
-    if('Struct' in (type as object)) {
-        const structType = (type as { Struct: {
-            address: string;
-            module: string;
-            name: string;
-            typeArguments: SuiMoveNormalizedType[];
-        }}).Struct;
+
+    if ('Struct' in (type as object)) {
+        const structType = (
+            type as {
+                Struct: {
+                    address: string;
+                    module: string;
+                    name: string;
+                    typeArguments: SuiMoveNormalizedType[];
+                };
+            }
+        ).Struct;
         const struct = await client.getNormalizedMoveStruct({
             package: structType.address,
             module: structType.module,
             struct: structType.name,
         });
-
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const fields: Record<any, any> = {};
-        for(const field of struct.fields) {
+
+        for (const field of struct.fields) {
             fields[field.name] = await getBcsForStruct(client, field.type, structType.typeArguments);
         }
+
         return bcs.struct(structType.name, fields);
     }
-    if('TypeParameter' in (type as object)) {
+
+    if ('TypeParameter' in (type as object)) {
         const index = (type as { TypeParameter: number }).TypeParameter;
         return await getBcsForStruct(client, typeArguments[index], typeArguments);
     }
+
     throw new Error(`Unsupported type ${type}`);
 }
 
