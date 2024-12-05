@@ -10,7 +10,8 @@ import {
 import { Keypair } from '@mysten/sui/cryptography';
 import { Transaction, TransactionObjectInput, TransactionResult } from '@mysten/sui/transactions';
 import { utils as ethersUtils } from 'ethers';
-import { STD_PACKAGE_ID, SUI_PACKAGE_ID } from '../common/types';
+import { SUI_PACKAGE_ID } from '../common/types';
+import { isString } from './utils';
 
 const { arrayify, hexlify } = ethersUtils;
 
@@ -176,18 +177,6 @@ function isTxContext(parameter: SuiMoveNormalizedType): boolean {
     }
 
     return inside.address === SUI_PACKAGE_ID && inside.module === 'tx_context' && inside.name === 'TxContext';
-}
-
-function isString(parameter: SuiMoveNormalizedType): boolean {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let asAny = parameter as any;
-    if (asAny.MutableReference) parameter = asAny.MutableReference;
-    if (asAny.Reference) asAny = asAny.Reference;
-    asAny = asAny.Struct;
-    if (!asAny) return false;
-    const isAsciiString = asAny.address === STD_PACKAGE_ID && asAny.module === 'ascii' && asAny.name === 'String';
-    const isStringString = asAny.address === STD_PACKAGE_ID && asAny.module === 'string' && asAny.name === 'String';
-    return isAsciiString || isStringString;
 }
 
 export class TxBuilderBase {

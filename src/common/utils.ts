@@ -1,7 +1,8 @@
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { getFullnodeUrl, SuiMoveNormalizedType } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
 import { arrayify, keccak256 } from 'ethers/lib/utils';
 import secp256k1 from 'secp256k1';
+import { STD_PACKAGE_ID } from './types';
 
 export const fundAccountsFromFaucet = async (addresses: string[]) => {
     const promises = addresses.map(async (address) => {
@@ -45,4 +46,16 @@ export function signMessage(privKeys: string[], messageToSign: Uint8Array) {
     }
 
     return signatures;
+}
+
+export function isString(parameter: SuiMoveNormalizedType): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let asAny = parameter as any;
+    if (asAny.MutableReference) parameter = asAny.MutableReference;
+    if (asAny.Reference) asAny = asAny.Reference;
+    asAny = asAny.Struct;
+    if (!asAny) return false;
+    const isAsciiString = asAny.address === STD_PACKAGE_ID && asAny.module === 'ascii' && asAny.name === 'String';
+    const isStringString = asAny.address === STD_PACKAGE_ID && asAny.module === 'string' && asAny.name === 'String';
+    return isAsciiString || isStringString;
 }
