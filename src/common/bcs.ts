@@ -335,7 +335,7 @@ export async function getBcsForStruct(
     client: SuiClient,
     type: SuiMoveNormalizedType,
     typeArguments: SuiMoveNormalizedType[] = [],
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<BcsType<any, any>> {
     switch (type) {
         case 'Address':
