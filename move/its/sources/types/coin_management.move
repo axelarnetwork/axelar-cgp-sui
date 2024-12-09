@@ -129,6 +129,14 @@ public(package) fun set_flow_limit<T>(
     flow_limit: u64,
 ) {
     assert!(self.operator.contains(&channel.to_address()), ENotOperator);
+    self.set_flow_limit_permissionless(flow_limit);
+}
+
+/// Adds a rate limit to the `CoinManagement`.
+public(package) fun set_flow_limit_permissionless<T>(
+    self: &mut CoinManagement<T>,
+    flow_limit: u64,
+) {
     self.flow_limit.set_flow_limit(flow_limit);
 }
 
