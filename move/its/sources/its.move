@@ -6,6 +6,7 @@ use its::coin_info::CoinInfo;
 use its::coin_management::CoinManagement;
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use its::its_v0::{Self, ITS_v0};
+use its::operator_cap::{Self, OperatorCap};
 use its::owner_cap::{Self, OwnerCap};
 use its::token_id::TokenId;
 use its::trusted_addresses::TrustedAddresses;
@@ -54,7 +55,12 @@ fun init(ctx: &mut TxContext) {
     transfer::public_transfer(
         owner_cap::create(ctx),
         ctx.sender(),
-    )
+    );
+
+    transfer::public_transfer(
+        operator_cap::create(ctx),
+        ctx.sender(),
+    );
 }
 
 // ------
@@ -255,6 +261,8 @@ public fun burn_as_distributor<T>(
     );
 }
 
+// This is the entrypoint for operators to set the flow limits of their tokens
+// (tokenManager.setFlowLimit on EVM)
 public fun set_flow_limit<T>(
     self: &mut ITS,
     channel: &Channel,
@@ -267,6 +275,22 @@ public fun set_flow_limit<T>(
         channel,
         token_id,
         limit,
+    );
+}
+
+// This is the entrypoint for operators to set the flow limits of their tokens
+// (interchainTokenService.setFlowLimits on EVM)
+public fun set_flow_limit_as_operator<T>(
+    self: &mut ITS,
+    _: &OperatorCap,
+    token_ids: TokenId,
+    limits: u64,
+) {
+    let value = self.value_mut!(b"set_flow_limit_as_operator");
+
+    value.set_flow_limit_as_operator<T>(
+        token_ids,
+        limits,
     );
 }
 
@@ -347,6 +371,7 @@ fun version_control(): VersionControl {
             b"remove_trusted_addresses",
             b"register_transaction",
             b"set_flow_limit",
+            b"set_flow_limit_as_operator",
             b"allow_function",
             b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
@@ -914,6 +939,33 @@ fun test_set_flow_limit() {
 
     sui::test_utils::destroy(its);
     channel.destroy();
+}
+
+#[test]
+fun test_set_flow_limit_as_operator() {
+    let ctx = &mut tx_context::dummy();
+    let mut its = create_for_testing(ctx);
+    let symbol = b"COIN";
+    let decimals = 9;
+    let limit = 1234;
+
+    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+        symbol,
+        decimals,
+        ctx,
+    );
+    let coin_info = its::coin_info::from_metadata<COIN>(
+        coin_metadata,
+    );
+    let coin_management = its::coin_management::new_with_cap(treasury_cap);
+
+    let operator_cap = operator_cap::create(ctx);
+
+    let token_id = register_coin(&mut its, coin_info, coin_management);
+    its.set_flow_limit_as_operator<COIN>(&operator_cap, token_id, limit);
+
+    sui::test_utils::destroy(its);
+    sui::test_utils::destroy(operator_cap);
 }
 
 #[test]

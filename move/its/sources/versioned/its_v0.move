@@ -488,6 +488,15 @@ public(package) fun set_flow_limit<T>(
     events::flow_limit_set<T>(token_id, limit);
 }
 
+public(package) fun set_flow_limit_as_operator<T>(
+    self: &mut ITS_v0,
+    token_id: TokenId,
+    limit: u64,
+) {
+    self.coin_management_mut<T>(token_id).set_flow_limit_permissionless(limit);
+    events::flow_limit_set<T>(token_id, limit);
+}
+
 public(package) fun allow_function(
     self: &mut ITS_v0,
     version: u64,
