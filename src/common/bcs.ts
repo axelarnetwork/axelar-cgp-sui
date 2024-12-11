@@ -273,7 +273,7 @@ function getITSStructs() {
         trusted_addresses: bcs.vector(bcs.string()),
     });
 
-    const InterchainTokenService_v0 = bcs.struct('InterchainTokenService_v0', {
+    const InterchainTokenServiceV0 = bcs.struct('InterchainTokenService_v0', {
         channel: Channel,
         address_tracker: InterchainAddressTracker,
         unregistered_coin_types: Table,
@@ -287,7 +287,7 @@ function getITSStructs() {
     const InterchainTokenService = bcs.struct('InterchainTokenService', {
         id: UID,
         name: bcs.u64(),
-        value: InterchainTokenService_v0,
+        value: InterchainTokenServiceV0,
     });
 
     return {
