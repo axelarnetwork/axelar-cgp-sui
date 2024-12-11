@@ -119,8 +119,8 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${coinType}>`),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${coinType}>`),
-            its: findObjectId(deployments.its.publishTxn, 'its::InterchainTokenService'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::InterchainTokenService_v0'),
+            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
