@@ -1,7 +1,7 @@
 module squid::squid;
 
 use axelar_gateway::channel::ApprovedMessage;
-use its::its::ITS;
+use its::its::InterchainTokenService;
 use squid::owner_cap::{Self, OwnerCap};
 use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
@@ -103,7 +103,7 @@ entry fun withdraw<T>(
 // ----------------
 public fun start_swap<T>(
     self: &mut Squid,
-    its: &mut ITS,
+    its: &mut InterchainTokenService,
     approved_message: ApprovedMessage,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -194,7 +194,7 @@ fun test_start_swap() {
         coin_management,
     );
 
-    // This gives some coin to ITS
+    // This gives some coin to InterchainTokenService
     let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
         token_id,
         coin,

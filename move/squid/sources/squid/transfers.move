@@ -1,7 +1,7 @@
 module squid::transfers;
 
 use axelar_gateway::gateway::Gateway;
-use its::its::{Self, ITS};
+use its::its::{Self, InterchainTokenService};
 use its::token_id::{Self, TokenId};
 use relayer_discovery::transaction::{Self, MoveCall};
 use squid::squid::Squid;
@@ -124,7 +124,7 @@ public fun sui_transfer<T>(swap_info: &mut SwapInfo, ctx: &mut TxContext) {
 public fun its_transfer<T>(
     swap_info: &mut SwapInfo,
     squid: &Squid,
-    its: &mut ITS,
+    its: &mut InterchainTokenService,
     gateway: &Gateway,
     clock: &Clock,
     ctx: &mut TxContext,

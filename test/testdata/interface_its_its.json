@@ -1,7 +1,7 @@
 {
   "structs": {
-    "ITS": {
-      "name": "ITS",
+    "InterchainTokenService": {
+      "name": "InterchainTokenService",
       "abilities": [
         "key"
       ],
@@ -22,7 +22,7 @@
       "name": "register_coin<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut ITS",
+        "self#0#0": "&mut InterchainTokenService",
         "coin_info#0#0": "CoinInfo<T>",
         "coin_management#0#0": "CoinManagement<T>"
       },
@@ -32,7 +32,7 @@
       "name": "deploy_remote_interchain_token<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&ITS",
+        "self#0#0": "&InterchainTokenService",
         "token_id#0#0": "TokenId",
         "destination_chain#0#0": "String"
       },
@@ -55,7 +55,7 @@
       "name": "send_interchain_transfer<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut ITS",
+        "self#0#0": "&mut InterchainTokenService",
         "ticket#0#0": "InterchainTransferTicket<T>",
         "clock#0#0": "&Clock"
       },
@@ -65,7 +65,7 @@
       "name": "receive_interchain_transfer_with_data<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut ITS",
+        "self#0#0": "&mut InterchainTokenService",
         "approved_message#0#0": "ApprovedMessage",
         "channel#0#0": "&Channel",
         "clock#0#0": "&Clock",
@@ -77,7 +77,7 @@
       "name": "mint_as_distributor<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut ITS",
+        "self#0#0": "&mut InterchainTokenService",
         "channel#0#0": "&Channel",
         "token_id#0#0": "TokenId",
         "amount#0#0": "u64",
@@ -89,7 +89,7 @@
       "name": "registered_coin_type",
       "visibility": "public",
       "params": {
-        "self#0#0": "&ITS",
+        "self#0#0": "&InterchainTokenService",
         "token_id#0#0": "TokenId"
       },
       "returnType": "&TypeName"
@@ -98,7 +98,7 @@
       "name": "channel_address",
       "visibility": "public",
       "params": {
-        "self#0#0": "&ITS"
+        "self#0#0": "&InterchainTokenService"
       },
       "returnType": "address"
     }

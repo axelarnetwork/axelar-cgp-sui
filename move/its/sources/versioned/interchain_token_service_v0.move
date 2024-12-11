@@ -1,4 +1,4 @@
-module its::its_v0;
+module its::interchain_token_service_v0;
 
 use abi::abi::{Self, AbiReader};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
@@ -72,7 +72,7 @@ const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
 // === HUB CONSTANTS ===
-// Chain name for Axelar. This is used for routing ITS calls via ITS hub on
+// Chain name for Axelar. This is used for routing InterchainTokenService calls via InterchainTokenService hub on
 // Axelar.
 const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 // Identifier to be used as destination address for chains that route to hub.
@@ -82,7 +82,7 @@ const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 // -----
 // Types
 // -----
-public struct ITS_v0 has store {
+public struct InterchainTokenService_v0 has store {
     channel: Channel,
     address_tracker: InterchainAddressTracker,
     unregistered_coin_types: Table<UnregisteredTokenId, TypeName>,
@@ -99,8 +99,8 @@ public struct ITS_v0 has store {
 public(package) fun new(
     version_control: VersionControl,
     ctx: &mut TxContext,
-): ITS_v0 {
-    ITS_v0 {
+): InterchainTokenService_v0 {
+    InterchainTokenService_v0 {
         channel: axelar_gateway::channel::new(ctx),
         address_tracker: address_tracker::new(
             ctx,
@@ -115,7 +115,7 @@ public(package) fun new(
 }
 
 public(package) fun unregistered_coin_type(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     symbol: &String,
     decimals: u8,
 ): &TypeName {
@@ -126,30 +126,30 @@ public(package) fun unregistered_coin_type(
 }
 
 public(package) fun registered_coin_type(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     token_id: TokenId,
 ): &TypeName {
     assert!(self.registered_coin_types.contains(token_id), EUnregisteredCoin);
     &self.registered_coin_types[token_id]
 }
 
-public(package) fun channel_address(self: &ITS_v0): address {
+public(package) fun channel_address(self: &InterchainTokenService_v0): address {
     self.channel.to_address()
 }
 
 public(package) fun set_relayer_discovery_id(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     relayer_discovery: &RelayerDiscovery,
 ) {
     self.relayer_discovery_id = object::id(relayer_discovery);
 }
 
-public(package) fun relayer_discovery_id(self: &ITS_v0): ID {
+public(package) fun relayer_discovery_id(self: &InterchainTokenService_v0): ID {
     self.relayer_discovery_id
 }
 
 public(package) fun set_trusted_address(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     chain_name: String,
     trusted_address: String,
 ) {
@@ -157,14 +157,14 @@ public(package) fun set_trusted_address(
 }
 
 public(package) fun remove_trusted_address(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     chain_name: String,
 ) {
     self.address_tracker.remove_trusted_address(chain_name);
 }
 
 public(package) fun set_trusted_addresses(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     trusted_addresses: TrustedAddresses,
 ) {
     let (chain_names, trusted_addresses) = trusted_addresses.destroy();
@@ -179,7 +179,7 @@ public(package) fun set_trusted_addresses(
 }
 
 public(package) fun remove_trusted_addresses(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     chain_names: vector<String>,
 ) {
     chain_names.do!(
@@ -189,16 +189,16 @@ public(package) fun remove_trusted_addresses(
     );
 }
 
-public(package) fun channel(self: &ITS_v0): &Channel {
+public(package) fun channel(self: &InterchainTokenService_v0): &Channel {
     &self.channel
 }
 
-public(package) fun version_control(self: &ITS_v0): &VersionControl {
+public(package) fun version_control(self: &InterchainTokenService_v0): &VersionControl {
     &self.version_control
 }
 
 public(package) fun register_coin<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
@@ -210,7 +210,7 @@ public(package) fun register_coin<T>(
 }
 
 public(package) fun deploy_remote_interchain_token<T>(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     token_id: TokenId,
     destination_chain: String,
 ): MessageTicket {
@@ -242,7 +242,7 @@ public(package) fun deploy_remote_interchain_token<T>(
 }
 
 public(package) fun send_interchain_transfer<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     ticket: InterchainTransferTicket<T>,
     current_version: u64,
     clock: &Clock,
@@ -285,7 +285,7 @@ public(package) fun send_interchain_transfer<T>(
 }
 
 public(package) fun receive_interchain_transfer<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     approved_message: ApprovedMessage,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -325,7 +325,7 @@ public(package) fun receive_interchain_transfer<T>(
 }
 
 public(package) fun receive_interchain_transfer_with_data<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     approved_message: ApprovedMessage,
     channel: &Channel,
     clock: &Clock,
@@ -366,7 +366,7 @@ public(package) fun receive_interchain_transfer_with_data<T>(
 }
 
 public(package) fun receive_deploy_interchain_token<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     approved_message: ApprovedMessage,
 ) {
     let (_, payload, _) = self.decode_approved_message(approved_message);
@@ -399,7 +399,7 @@ public(package) fun receive_deploy_interchain_token<T>(
 }
 
 public(package) fun give_unregistered_coin<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     treasury_cap: TreasuryCap<T>,
     mut coin_metadata: CoinMetadata<T>,
 ) {
@@ -432,7 +432,7 @@ public(package) fun give_unregistered_coin<T>(
 }
 
 public(package) fun mint_as_distributor<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     channel: &Channel,
     token_id: TokenId,
     amount: u64,
@@ -447,7 +447,7 @@ public(package) fun mint_as_distributor<T>(
 }
 
 public(package) fun mint_to_as_distributor<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     channel: &Channel,
     token_id: TokenId,
     to: address,
@@ -465,7 +465,7 @@ public(package) fun mint_to_as_distributor<T>(
 }
 
 public(package) fun burn_as_distributor<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     channel: &Channel,
     token_id: TokenId,
     coin: Coin<T>,
@@ -479,7 +479,7 @@ public(package) fun burn_as_distributor<T>(
 }
 
 public(package) fun set_flow_limit<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     channel: &Channel,
     token_id: TokenId,
     limit: u64,
@@ -489,7 +489,7 @@ public(package) fun set_flow_limit<T>(
 }
 
 public(package) fun allow_function(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     version: u64,
     function_name: String,
 ) {
@@ -497,7 +497,7 @@ public(package) fun allow_function(
 }
 
 public(package) fun disallow_function(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     version: u64,
     function_name: String,
 ) {
@@ -507,17 +507,17 @@ public(package) fun disallow_function(
 // -----------------
 // Private Functions
 // -----------------
-fun coin_data<T>(self: &ITS_v0, token_id: TokenId): &CoinData<T> {
+fun coin_data<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinData<T> {
     assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
     &self.registered_coins[token_id]
 }
 
-fun coin_info<T>(self: &ITS_v0, token_id: TokenId): &CoinInfo<T> {
+fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo<T> {
     coin_data<T>(self, token_id).coin_info()
 }
 
 fun is_trusted_address(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     source_chain: String,
     source_address: String,
 ): bool {
@@ -525,7 +525,7 @@ fun is_trusted_address(
 }
 
 fun coin_management_mut<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: TokenId,
 ): &mut CoinManagement<T> {
     let coin_data: &mut CoinData<T> = &mut self.registered_coins[token_id];
@@ -533,7 +533,7 @@ fun coin_management_mut<T>(
 }
 
 fun add_unregistered_coin<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
     treasury_cap: TreasuryCap<T>,
     coin_metadata: CoinMetadata<T>,
@@ -553,7 +553,7 @@ fun add_unregistered_coin<T>(
 }
 
 fun remove_unregistered_coin<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
 ): (TreasuryCap<T>, CoinMetadata<T>) {
     let unregistered_coins: UnregisteredCoinData<T> = self
@@ -566,12 +566,12 @@ fun remove_unregistered_coin<T>(
     (treasury_cap, coin_metadata)
 }
 
-fun trusted_address(self: &ITS_v0, chain_name: String): String {
+fun trusted_address(self: &InterchainTokenService_v0, chain_name: String): String {
     *self.address_tracker.trusted_address(chain_name)
 }
 
 fun add_unregistered_coin_type(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
     type_name: TypeName,
 ) {
@@ -579,14 +579,14 @@ fun add_unregistered_coin_type(
 }
 
 fun remove_unregistered_coin_type(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
 ): TypeName {
     self.unregistered_coin_types.remove(token_id)
 }
 
 fun add_registered_coin_type(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: TokenId,
     type_name: TypeName,
 ) {
@@ -594,7 +594,7 @@ fun add_registered_coin_type(
 }
 
 fun add_registered_coin<T>(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: TokenId,
     coin_management: CoinManagement<T>,
     coin_info: CoinInfo<T>,
@@ -620,20 +620,20 @@ fun add_registered_coin<T>(
 /// Send a payload to a destination chain. The destination chain needs to have a
 /// trusted address.
 fun prepare_message(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     mut destination_chain: String,
     mut payload: vector<u8>,
 ): MessageTicket {
     let mut destination_address = self.trusted_address(destination_chain);
 
-    // Prevent sending directly to the ITS Hub chain. This is not supported yet,
+    // Prevent sending directly to the InterchainTokenService Hub chain. This is not supported yet,
     // so fail early to prevent the user from having their funds stuck.
     assert!(
         destination_chain.into_bytes() != ITS_HUB_CHAIN_NAME,
         EUntrustedChain,
     );
 
-    // Check whether the ITS call should be routed via ITS hub for this
+    // Check whether the InterchainTokenService call should be routed via InterchainTokenService hub for this
     // destination chain
     if (destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
         let mut writer = abi::new_writer(3);
@@ -655,7 +655,7 @@ fun prepare_message(
 
 /// Decode an approved call and check that the source chain is trusted.
 fun decode_approved_message(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     approved_message: ApprovedMessage,
 ): (String, vector<u8>, String) {
     let (mut source_chain, message_id, source_address, mut payload) = self
@@ -706,7 +706,7 @@ use axelar_gateway::channel;
 use its::coin::COIN;
 
 #[test_only]
-fun create_for_testing(ctx: &mut TxContext): ITS_v0 {
+fun create_for_testing(ctx: &mut TxContext): InterchainTokenService_v0 {
     let mut self = new(version_control::version_control::new(vector[]), ctx);
 
     self.set_trusted_address(
@@ -719,7 +719,7 @@ fun create_for_testing(ctx: &mut TxContext): ITS_v0 {
 
 #[test_only]
 public fun create_unregistered_coin(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     symbol: vector<u8>,
     decimals: u8,
     ctx: &mut TxContext,
@@ -739,7 +739,7 @@ public fun create_unregistered_coin(
 
 #[test_only]
 public(package) fun add_unregistered_coin_type_for_testing(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
     type_name: TypeName,
 ) {
@@ -748,7 +748,7 @@ public(package) fun add_unregistered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun remove_unregistered_coin_type_for_testing(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: UnregisteredTokenId,
 ): TypeName {
     self.remove_unregistered_coin_type(token_id)
@@ -756,7 +756,7 @@ public(package) fun remove_unregistered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun add_registered_coin_type_for_testing(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: TokenId,
     type_name: TypeName,
 ) {
@@ -765,7 +765,7 @@ public(package) fun add_registered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun remove_registered_coin_type_for_testing(
-    self: &mut ITS_v0,
+    self: &mut InterchainTokenService_v0,
     token_id: TokenId,
 ): TypeName {
     self.remove_registered_coin_type_for_testing(token_id)
@@ -773,7 +773,7 @@ public(package) fun remove_registered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun trusted_address_for_testing(
-    self: &ITS_v0,
+    self: &InterchainTokenService_v0,
     chain_name: String,
 ): String {
     *self.address_tracker.trusted_address(chain_name)

@@ -5,7 +5,7 @@ use axelar_gateway::message_ticket::MessageTicket;
 use its::coin_info::CoinInfo;
 use its::coin_management::CoinManagement;
 use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
-use its::its_v0::{Self, ITS_v0};
+use its::interchain_token_service_v0::{Self, InterchainTokenService_v0};
 use its::owner_cap::{Self, OwnerCap};
 use its::token_id::TokenId;
 use its::trusted_addresses::TrustedAddresses;
@@ -27,7 +27,7 @@ const DATA_VERSION: u64 = 0;
 // -------
 // Structs
 // -------
-public struct ITS has key {
+public struct InterchainTokenService has key {
     id: UID,
     inner: Versioned,
 }
@@ -38,7 +38,7 @@ public struct ITS has key {
 fun init(ctx: &mut TxContext) {
     let inner = versioned::create(
         DATA_VERSION,
-        its_v0::new(
+        interchain_token_service_v0::new(
             version_control(),
             ctx,
         ),
@@ -46,7 +46,7 @@ fun init(ctx: &mut TxContext) {
     );
 
     // Share the its object for anyone to use.
-    transfer::share_object(ITS {
+    transfer::share_object(InterchainTokenService {
         id: object::new(ctx),
         inner,
     });
@@ -61,17 +61,17 @@ fun init(ctx: &mut TxContext) {
 // Macros
 // ------
 /// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &ITS, $function_name: vector<u8>): &ITS_v0 {
+macro fun value($self: &InterchainTokenService, $function_name: vector<u8>): &InterchainTokenService_v0 {
     let its = $self;
-    let value = its.inner.load_value<ITS_v0>();
+    let value = its.inner.load_value<InterchainTokenService_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_v0 {
+macro fun value_mut($self: &mut InterchainTokenService, $function_name: vector<u8>): &mut InterchainTokenService_v0 {
     let its = $self;
-    let value = its.inner.load_value_mut<ITS_v0>();
+    let value = its.inner.load_value_mut<InterchainTokenService_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -80,7 +80,7 @@ macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_v0 {
 // Entry Functions
 // ---------------
 entry fun allow_function(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     _: &OwnerCap,
     version: u64,
     function_name: String,
@@ -89,7 +89,7 @@ entry fun allow_function(
 }
 
 entry fun disallow_function(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     _: &OwnerCap,
     version: u64,
     function_name: String,
@@ -103,7 +103,7 @@ entry fun disallow_function(
 // Public Functions
 // ----------------
 public fun register_coin<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
@@ -113,7 +113,7 @@ public fun register_coin<T>(
 }
 
 public fun deploy_remote_interchain_token<T>(
-    self: &ITS,
+    self: &InterchainTokenService,
     token_id: TokenId,
     destination_chain: String,
 ): MessageTicket {
@@ -142,7 +142,7 @@ public fun prepare_interchain_transfer<T>(
 }
 
 public fun send_interchain_transfer<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     ticket: InterchainTransferTicket<T>,
     clock: &Clock,
 ): MessageTicket {
@@ -156,7 +156,7 @@ public fun send_interchain_transfer<T>(
 }
 
 public fun receive_interchain_transfer<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     approved_message: ApprovedMessage,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -167,7 +167,7 @@ public fun receive_interchain_transfer<T>(
 }
 
 public fun receive_interchain_transfer_with_data<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     approved_message: ApprovedMessage,
     channel: &Channel,
     clock: &Clock,
@@ -184,7 +184,7 @@ public fun receive_interchain_transfer_with_data<T>(
 }
 
 public fun receive_deploy_interchain_token<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     approved_message: ApprovedMessage,
 ) {
     let value = self.value_mut!(b"receive_deploy_interchain_token");
@@ -195,7 +195,7 @@ public fun receive_deploy_interchain_token<T>(
 // We need an coin with zero supply that has the proper decimals and typing, and
 // no Url.
 public fun give_unregistered_coin<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     treasury_cap: TreasuryCap<T>,
     coin_metadata: CoinMetadata<T>,
 ) {
@@ -205,7 +205,7 @@ public fun give_unregistered_coin<T>(
 }
 
 public fun mint_as_distributor<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     channel: &Channel,
     token_id: TokenId,
     amount: u64,
@@ -222,7 +222,7 @@ public fun mint_as_distributor<T>(
 }
 
 public fun mint_to_as_distributor<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     channel: &Channel,
     token_id: TokenId,
     to: address,
@@ -241,7 +241,7 @@ public fun mint_to_as_distributor<T>(
 }
 
 public fun burn_as_distributor<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     channel: &Channel,
     token_id: TokenId,
     coin: Coin<T>,
@@ -256,7 +256,7 @@ public fun burn_as_distributor<T>(
 }
 
 public fun set_flow_limit<T>(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     channel: &Channel,
     token_id: TokenId,
     limit: u64,
@@ -274,7 +274,7 @@ public fun set_flow_limit<T>(
 // Owner Functions
 // ---------------
 public fun set_trusted_addresses(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     _owner_cap: &OwnerCap,
     trusted_addresses: TrustedAddresses,
 ) {
@@ -284,7 +284,7 @@ public fun set_trusted_addresses(
 }
 
 public fun remove_trusted_addresses(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     _owner_cap: &OwnerCap,
     chain_names: vector<String>,
 ) {
@@ -294,25 +294,25 @@ public fun remove_trusted_addresses(
 }
 
 // === Getters ===
-public fun registered_coin_type(self: &ITS, token_id: TokenId): &TypeName {
+public fun registered_coin_type(self: &InterchainTokenService, token_id: TokenId): &TypeName {
     self.package_value().registered_coin_type(token_id)
 }
 
-public fun channel_address(self: &ITS): address {
+public fun channel_address(self: &InterchainTokenService): address {
     self.package_value().channel_address()
 }
 
 // -----------------
 // Package Functions
 // -----------------
-// This function allows the rest of the package to read information about ITS
+// This function allows the rest of the package to read information about InterchainTokenService
 // (discovery needs this).
-public(package) fun package_value(self: &ITS): &ITS_v0 {
-    self.inner.load_value<ITS_v0>()
+public(package) fun package_value(self: &InterchainTokenService): &InterchainTokenService_v0 {
+    self.inner.load_value<InterchainTokenService_v0>()
 }
 
 public(package) fun register_transaction(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     discovery: &mut RelayerDiscovery,
     transaction: Transaction,
 ) {
@@ -381,11 +381,11 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
 
 #[test_only]
-public fun create_for_testing(ctx: &mut TxContext): ITS {
+public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
     let mut version_control = version_control();
     version_control.allowed_functions()[0].insert(b"".to_ascii_string());
 
-    let mut value = its_v0::new(
+    let mut value = interchain_token_service_v0::new(
         version_control,
         ctx,
     );
@@ -400,7 +400,7 @@ public fun create_for_testing(ctx: &mut TxContext): ITS {
         ctx,
     );
 
-    ITS {
+    InterchainTokenService {
         id: object::new(ctx),
         inner,
     }
@@ -408,7 +408,7 @@ public fun create_for_testing(ctx: &mut TxContext): ITS {
 
 #[test_only]
 public(package) fun add_unregistered_coin_type_for_testing(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     token_id: its::token_id::UnregisteredTokenId,
     type_name: std::type_name::TypeName,
 ) {
@@ -419,7 +419,7 @@ public(package) fun add_unregistered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun remove_unregistered_coin_type_for_testing(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     token_id: its::token_id::UnregisteredTokenId,
 ): std::type_name::TypeName {
     self.value_mut!(b"").remove_unregistered_coin_type_for_testing(token_id)
@@ -427,7 +427,7 @@ public(package) fun remove_unregistered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun add_registered_coin_type_for_testing(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     token_id: TokenId,
     type_name: std::type_name::TypeName,
 ) {
@@ -438,7 +438,7 @@ public(package) fun add_registered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun remove_registered_coin_type_for_testing(
-    self: &mut ITS,
+    self: &mut InterchainTokenService,
     token_id: TokenId,
 ): std::type_name::TypeName {
     self.value_mut!(b"").remove_registered_coin_type_for_testing(token_id)
@@ -924,7 +924,7 @@ fun test_init() {
     ts.next_tx(@0x0);
 
     let owner_cap = ts.take_from_sender<OwnerCap>();
-    let its = ts.take_shared<ITS>();
+    let its = ts.take_shared<InterchainTokenService>();
     ts.return_to_sender(owner_cap);
     sui::test_scenario::return_shared(its);
     ts.end();

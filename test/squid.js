@@ -385,8 +385,8 @@ describe('Squid', () => {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
             squidV0: findObjectId(deployments.squid.publishTxn, 'squid_v0::Squid_v0'),
-            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
+            its: findObjectId(deployments.its.publishTxn, 'interchain_token_service::InterchainTokenService'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,

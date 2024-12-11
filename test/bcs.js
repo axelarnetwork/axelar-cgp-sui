@@ -20,7 +20,7 @@ describe('BCS', () => {
         expect(obj).to.deep.include({ id: expectedId, size });
     };
 
-    it('should decode ITS_v0 object successfully', () => {
+    it('should decode InterchainTokenService_v0 object successfully', () => {
         const its = bcsStructs.its.ITS.parse(fromHEX(hexData.ITSV0)).value;
 
         checkIdAndSize(its.address_tracker.trusted_addresses, '270c7f8b9757b05777d3cbf98fa1bb197e1f5a18c8ff7a8ef16e80bedf39a67f');

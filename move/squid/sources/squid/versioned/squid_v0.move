@@ -1,7 +1,7 @@
 module squid::squid_v0;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use its::its::ITS;
+use its::its::InterchainTokenService;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
 use std::ascii::String;
@@ -47,7 +47,7 @@ public(package) fun coin_bag_mut(self: &mut Squid_v0): &mut CoinBag {
 
 public(package) fun start_swap<T>(
     self: &Squid_v0,
-    its: &mut ITS,
+    its: &mut InterchainTokenService,
     approved_message: ApprovedMessage,
     clock: &Clock,
     ctx: &mut TxContext,

@@ -1,7 +1,7 @@
 module squid::discovery;
 
 use axelar_gateway::gateway::Gateway;
-use its::its::ITS;
+use its::its::InterchainTokenService;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 use squid::deepbook_v3;
@@ -16,7 +16,7 @@ const EInvalidSwapType: vector<u8> = b"swap type does not exist";
 
 public fun register_transaction(
     squid: &Squid,
-    its: &ITS,
+    its: &InterchainTokenService,
     gateway: &Gateway,
     relayer_discovery: &mut RelayerDiscovery,
 ) {
@@ -52,7 +52,7 @@ public fun register_transaction(
 
 public fun transaction(
     squid: &Squid,
-    its: &ITS,
+    its: &InterchainTokenService,
     gateway: &Gateway,
     payload: vector<u8>,
 ): Transaction {
