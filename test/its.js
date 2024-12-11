@@ -31,7 +31,7 @@ const {
 } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
 
-describe('ITS', () => {
+describe.only('ITS', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
@@ -151,7 +151,7 @@ describe('ITS', () => {
         const txBuilder = new TxBuilder(client);
 
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::interchain_token_service::register_transaction`,
+            target: `${deployments.example.packageId}::its::register_transaction`,
             arguments: [objectIds.relayerDiscovery, objectIds.singleton, objectIds.its, CLOCK_PACKAGE_ID],
         });
 
@@ -164,7 +164,7 @@ describe('ITS', () => {
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::interchain_token_service::register_coin`,
+            target: `${deployments.example.packageId}::its::register_coin`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata],
             typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
@@ -202,7 +202,7 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::interchain_token_service::send_interchain_transfer_call`,
+                    target: `${deployments.example.packageId}::its::send_interchain_transfer_call`,
                     arguments: [
                         objectIds.singleton,
                         objectIds.its,
@@ -272,7 +272,7 @@ describe('ITS', () => {
                 });
 
                 await txBuilder.moveCall({
-                    target: `${deployments.example.packageId}::interchain_token_service::deploy_remote_interchain_token`,
+                    target: `${deployments.example.packageId}::its::deploy_remote_interchain_token`,
                     arguments: [
                         objectIds.its,
                         objectIds.gateway,
