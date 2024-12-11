@@ -27,7 +27,7 @@ const { expect } = chai;
 
 const SUI = '0x2';
 
-describe.only('Squid', () => {
+describe('Squid', () => {
     // Sui Client
     let client;
     const network = process.env.NETWORK || 'localnet';
