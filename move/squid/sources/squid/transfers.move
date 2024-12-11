@@ -153,7 +153,7 @@ public fun its_transfer<T>(
         return
     };
 
-    let interchain_transfer_ticket = its::prepare_interchain_transfer(
+    let interchain_transfer_ticket = interchain_token_service::prepare_interchain_transfer(
         swap_data.token_id,
         coin::from_balance(option.destroy_some(), ctx),
         swap_data.destination_chain,
