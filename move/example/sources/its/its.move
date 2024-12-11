@@ -198,7 +198,7 @@ public fun send_interchain_transfer_call<TOKEN>(
     gas_params: vector<u8>,
     clock: &Clock,
 ) {
-    let interchain_transfer_ticket = its::prepare_interchain_transfer<TOKEN>(
+    let interchain_transfer_ticket = interchain_token_service::prepare_interchain_transfer<TOKEN>(
         token_id,
         coin,
         destination_chain,
