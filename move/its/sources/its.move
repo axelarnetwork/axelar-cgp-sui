@@ -263,15 +263,15 @@ public fun burn_as_distributor<T>(
 
 // This is the entrypoint for operators to set the flow limits of their tokens
 // (tokenManager.setFlowLimit on EVM)
-public fun set_flow_limit<T>(
+public fun set_flow_limit_as_token_operator<T>(
     self: &mut ITS,
     channel: &Channel,
     token_id: TokenId,
     limit: u64,
 ) {
-    let value = self.value_mut!(b"set_flow_limit");
+    let value = self.value_mut!(b"set_flow_limit_as_token_operator");
 
-    value.set_flow_limit<T>(
+    value.set_flow_limit_as_token_operator<T>(
         channel,
         token_id,
         limit,
@@ -280,15 +280,15 @@ public fun set_flow_limit<T>(
 
 // This is the entrypoint for operators to set the flow limits of their tokens
 // (interchainTokenService.setFlowLimits on EVM)
-public fun set_flow_limit_as_operator<T>(
+public fun set_flow_limit<T>(
     self: &mut ITS,
     _: &OperatorCap,
     token_ids: TokenId,
     limits: u64,
 ) {
-    let value = self.value_mut!(b"set_flow_limit_as_operator");
+    let value = self.value_mut!(b"set_flow_limit");
 
-    value.set_flow_limit_as_operator<T>(
+    value.set_flow_limit<T>(
         token_ids,
         limits,
     );
@@ -371,7 +371,7 @@ fun version_control(): VersionControl {
             b"remove_trusted_addresses",
             b"register_transaction",
             b"set_flow_limit",
-            b"set_flow_limit_as_operator",
+            b"set_flow_limit_as_token_operator",
             b"allow_function",
             b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
@@ -914,7 +914,7 @@ fun test_set_trusted_address() {
 }
 
 #[test]
-fun test_set_flow_limit() {
+fun test_set_flow_limit_as_token_operator() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
@@ -935,14 +935,14 @@ fun test_set_flow_limit() {
     coin_management.add_operator(channel.to_address());
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
-    its.set_flow_limit<COIN>(&channel, token_id, limit);
+    its.set_flow_limit_as_token_operator<COIN>(&channel, token_id, limit);
 
     sui::test_utils::destroy(its);
     channel.destroy();
 }
 
 #[test]
-fun test_set_flow_limit_as_operator() {
+fun test_set_flow_limit() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
@@ -962,7 +962,7 @@ fun test_set_flow_limit_as_operator() {
     let operator_cap = operator_cap::create(ctx);
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
-    its.set_flow_limit_as_operator<COIN>(&operator_cap, token_id, limit);
+    its.set_flow_limit<COIN>(&operator_cap, token_id, limit);
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(operator_cap);

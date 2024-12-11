@@ -478,7 +478,7 @@ public(package) fun burn_as_distributor<T>(
     coin_management.burn(coin.into_balance());
 }
 
-public(package) fun set_flow_limit<T>(
+public(package) fun set_flow_limit_as_token_operator<T>(
     self: &mut ITS_v0,
     channel: &Channel,
     token_id: TokenId,
@@ -488,12 +488,12 @@ public(package) fun set_flow_limit<T>(
     events::flow_limit_set<T>(token_id, limit);
 }
 
-public(package) fun set_flow_limit_as_operator<T>(
+public(package) fun set_flow_limit<T>(
     self: &mut ITS_v0,
     token_id: TokenId,
     limit: u64,
 ) {
-    self.coin_management_mut<T>(token_id).set_flow_limit_permissionless(limit);
+    self.coin_management_mut<T>(token_id).set_flow_limit_internal(limit);
     events::flow_limit_set<T>(token_id, limit);
 }
 
@@ -642,7 +642,7 @@ fun prepare_message(
         EUntrustedChain,
     );
 
-    // Check whether the ITS call should be routed via ITS hub for this
+    // Check whether the ITS call should be routed via InterchainTokenService hub for this
     // destination chain
     if (destination_address.into_bytes() == ITS_HUB_ROUTING_IDENTIFIER) {
         let mut writer = abi::new_writer(3);
