@@ -1,7 +1,7 @@
 module its::discovery;
 
 use abi::abi::{Self, AbiReader};
-use its::its::InterchainTokenService;
+use its::interchain_token_service::InterchainTokenService;
 use its::token_id::{Self, TokenId};
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, Transaction, package_id};
@@ -212,7 +212,7 @@ fun initial_tx(its: &InterchainTokenService): Transaction {
 #[test]
 fun test_discovery_initial() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -230,7 +230,7 @@ fun test_discovery_initial() {
 #[test]
 fun test_discovery_interchain_transfer() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -286,7 +286,7 @@ fun test_discovery_interchain_transfer() {
 #[test]
 fun test_discovery_interchain_transfer_with_data() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -333,7 +333,7 @@ fun test_discovery_interchain_transfer_with_data() {
 #[test]
 fun test_discovery_deploy_token() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -444,7 +444,7 @@ fun test_interchain_transfer_info_invalid_message_type() {
 #[test]
 fun test_discovery_hub_message() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -504,7 +504,7 @@ fun test_discovery_hub_message() {
 #[expected_failure(abort_code = EUnsupportedMessageType)]
 fun test_call_info_unsupported_message_type() {
     let ctx = &mut sui::tx_context::dummy();
-    let its = its::its::create_for_testing(ctx);
+    let its = its::interchain_token_service::create_for_testing(ctx);
 
     let mut writer = abi::new_writer(1);
     writer.write_u256(5);

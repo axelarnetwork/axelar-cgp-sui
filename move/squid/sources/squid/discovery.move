@@ -1,7 +1,7 @@
 module squid::discovery;
 
 use axelar_gateway::gateway::Gateway;
-use its::its::InterchainTokenService;
+use its::interchain_token_service::InterchainTokenService;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 use squid::deepbook_v3;

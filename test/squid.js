@@ -227,13 +227,13 @@ describe('Squid', () => {
         });
 
         const interchainTransfer = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
+            target: `${deployments.its.packageId}::interchain_token_service::prepare_interchain_transfer`,
             arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
             typeArguments: [coins[coinName].type],
         });
 
         const messageTicket = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::send_interchain_transfer`,
+            target: `${deployments.its.packageId}::interchain_token_service::send_interchain_transfer`,
             arguments: [objectIds.its, interchainTransfer, CLOCK_PACKAGE_ID],
             typeArguments: [coins[coinName].type],
         });
@@ -267,7 +267,7 @@ describe('Squid', () => {
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
-            target: `${deployments.its.packageId}::its::register_coin`,
+            target: `${deployments.its.packageId}::interchain_token_service::register_coin`,
             arguments: [objectIds.its, coinInfo, coinManagment],
             typeArguments: [coins[coin].type],
         });

@@ -8,7 +8,7 @@ use gas_service::gas_service::GasService;
 use its::coin_info;
 use its::coin_management;
 use its::discovery as its_discovery;
-use its::its::{Self, InterchainTokenService};
+use its::interchain_token_service::{Self, InterchainTokenService};
 use its::token_id::TokenId;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, Transaction};

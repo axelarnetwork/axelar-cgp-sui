@@ -1,4 +1,4 @@
-module its::its;
+module its::interchain_token_service;
 
 use axelar_gateway::channel::{ApprovedMessage, Channel};
 use axelar_gateway::message_ticket::MessageTicket;

@@ -1,7 +1,7 @@
 module squid::squid_v0;
 
 use axelar_gateway::channel::{Self, Channel, ApprovedMessage};
-use its::its::InterchainTokenService;
+use its::interchain_token_service::InterchainTokenService;
 use squid::coin_bag::{Self, CoinBag};
 use squid::swap_info::{Self, SwapInfo};
 use std::ascii::String;
@@ -114,7 +114,7 @@ use sui::test_utils::destroy;
 fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
     let clock = sui::clock::create_for_testing(ctx);
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = its::interchain_token_service::create_for_testing(ctx);
     let squid = new_for_testing(ctx);
 
     let coin_info = its::coin_info::from_info<COIN>(
@@ -134,7 +134,7 @@ fun test_start_swap() {
     );
 
     // This gives some coin to the service.
-    let interchain_transfer_ticket = its::its::prepare_interchain_transfer(
+    let interchain_transfer_ticket = its::interchain_token_service::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),
