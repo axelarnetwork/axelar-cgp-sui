@@ -39,7 +39,6 @@ public fun new_reader(bytes: vector<u8>): AbiReader {
 }
 
 public fun new_writer(length: u64): AbiWriter {
-    let mut bytes = vector[];
 
     (BYTES_IN_U256 * length).do!(|_| bytes.push_back(0));
 
