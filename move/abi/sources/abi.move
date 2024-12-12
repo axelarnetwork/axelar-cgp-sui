@@ -44,7 +44,7 @@ public fun new_writer(length: u64): AbiWriter {
     (BYTES_IN_U256 * length).do!(|_| bytes.push_back(0));
 
     AbiWriter {
-        bytes,
+        bytes: vector::tabulate!(BYTES_IN_U256 * length, |_| 0);
         pos: 0,
     }
 }
