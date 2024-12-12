@@ -112,14 +112,6 @@
       },
       "returnType": "vector<vector<u8>>"
     },
-    "read_bytes_raw": {
-      "name": "read_bytes_raw",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&mut AbiReader"
-      },
-      "returnType": "vector<u8>"
-    },
     "write_u256": {
       "name": "write_u256",
       "visibility": "public",
@@ -162,15 +154,6 @@
       "params": {
         "self#0#0": "&mut AbiWriter",
         "var#0#0": "vector<vector<u8>>"
-      },
-      "returnType": "&mut AbiWriter"
-    },
-    "write_bytes_raw": {
-      "name": "write_bytes_raw",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&mut AbiWriter",
-        "var#0#0": "vector<u8>"
       },
       "returnType": "&mut AbiWriter"
     }

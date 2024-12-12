@@ -162,40 +162,6 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
     var
 }
 
-/// Reads the raw bytes of a variable length variable. This will return
-/// additional bytes at the end of the structure as there is no way to know how
-/// to decode the bytes returned. This can be used to decode structs and complex
-/// nested vectors that this library does not provide a method for.
-/// For more complex types like structs or nested vectors `read_bytes_raw` can
-/// be used and decoded manualy. To read a struct that contains a `u256` and
-/// a `vector<u8>` from an `AbiReader` called `reader` a user may:
-/// ```rust
-/// let struct_bytes = reader.read_bytes_raw();
-/// let mut struct_reader = new_reader(struct_bytes);
-/// let number = struct_reader.read_u256();
-/// let data = struct_reader.read_bytes();
-/// ```
-/// As another example, to decode a `vector<vector<u256>>` into a variable
-/// called `table` from an `AbiReader` called `reader` a user can:
-/// ```rust
-/// let mut table_bytes = reader.read_bytes_raw();
-/// // Split the data into the lenth and the actual table contents
-/// let length_bytes = vector::tabulate!(U256_BYTES, |_| table_bytes.remove(0));
-/// let mut length_reader = new_reader(length_bytes);
-/// let length = length_reader.read_u256() as u64;
-/// let mut table_reader = new_reader(table_bytes);
-/// let table = vector::tabulate!(length, |_| table_reader.read_vector_u256());
-/// ```
-public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
-    // Move position to the start of the bytes
-    let offset = self.read_u256() as u64;
-    let length = self.bytes.length() - offset;
-
-    let var = vector::tabulate!(length, |i| self.bytes[offset + i]);
-
-    var
-}
-
 /// Write a `u256` into the next slot of an `AbiWriter`. Can be used to write
 /// other fixed lenght variables as well.
 public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
@@ -267,20 +233,6 @@ public fun write_vector_bytes(
     });
 
     self.append_bytes(writer.into_bytes());
-
-    self
-}
-
-/// Write raw bytes to the next slot of an `AbiWriter`. This can be used to
-/// write structs or more nested arrays that we support in this module.
-public fun write_bytes_raw(
-    self: &mut AbiWriter,
-    var: vector<u8>,
-): &mut AbiWriter {
-    let offset = self.bytes.length() as u256;
-    self.write_u256(offset);
-
-    self.append_bytes(var);
 
     self
 }
@@ -404,63 +356,4 @@ fun test_multiple() {
     assert!(reader.read_bytes() == input2);
     assert!(reader.read_vector_u256() == input3);
     assert!(reader.read_vector_bytes() == input4);
-}
-
-#[test]
-fun test_raw_struct() {
-    let number = 3;
-    let data = b"data";
-
-    let mut writer = new_writer(1);
-    let mut struct_writer = new_writer(2);
-    struct_writer.write_u256(number).write_bytes(data);
-    writer.write_bytes_raw(struct_writer.into_bytes());
-
-    let bytes = writer.into_bytes();
-
-    let mut reader = new_reader(bytes);
-
-    let struct_bytes = reader.read_bytes_raw();
-
-    let mut struct_reader = new_reader(struct_bytes);
-
-    assert!(struct_reader.read_u256() == number);
-    assert!(struct_reader.read_bytes() == data);
-}
-
-#[test]
-fun test_raw_table() {
-    let table = vector[vector[1, 2, 3], vector[4, 5, 6]];
-
-    let mut writer = new_writer(1);
-
-    let length = table.length();
-
-    let mut length_writer = new_writer(1);
-    length_writer.write_u256(length as u256);
-    let mut bytes = length_writer.into_bytes();
-
-    let mut table_writer = new_writer(length);
-    table.do!(|row| {
-        table_writer.write_vector_u256(row);
-    });
-    bytes.append(table_writer.into_bytes());
-
-    writer.write_bytes_raw(bytes);
-
-    let bytes = writer.into_bytes();
-
-    let mut reader = new_reader(bytes);
-    let mut table_bytes = reader.read_bytes_raw();
-
-    // Split the data into the lenth and the actual table contents
-    let length_bytes = vector::tabulate!(U256_BYTES, |_| table_bytes.remove(0));
-
-    let mut length_reader = new_reader(length_bytes);
-    let length = length_reader.read_u256() as u64;
-
-    let mut table_reader = new_reader(table_bytes);
-    let table_read = vector::tabulate!(length, |_| table_reader.read_vector_u256());
-
-    assert!(table_read == table);
 }
