@@ -20,7 +20,6 @@ This type can be used to encode abi data. It has the following relevant function
 - `abi::write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter`: Writes the provided bytes into the next slot in the `AbiWriter`. This should be used to write all types that are equivelant to `vector<u8>` (`ascii::String` and `string::String` for example) by converting them to `vector<u8>`.
 - `abi::write_vector_u256(self: &mut AbiWriter, var: vector<u256>,): &mut AbiWriter`: Writes the provided `vector<u256>` into the next slot in the  `AbiWriter`. This should be used for vectors of other fixed length variables as well.
 - `abi::write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>,): &mut AbiWriter`: Writes the provided `vector<vector<u8>>` into the nexts slot in the `AbiWriter`. This should be used for vectors of other variable length variables as well.
-- `abi::write_bytes_raw(self: &mut AbiWriter, var: vector<u8>,): &mut AbiWriter`: Writes the raw bytes provided to the next slot of the `AbiWriter`. These bytes are not length prefixed, and can therefore not be decoded as bytes. The purpose of this function is to allow for encoding of more complex, unavailable structs.
 
 #### Example
 ```rust
@@ -34,33 +33,7 @@ let encoded_data = writer.into_bytes();
 ```
 
 #### More complex types
-More complex types are curently not supported. This is because Sui Move does not support any sort of type inspection (like `is_vector<T>`) to recursively encode vectors. However with `abi::write_bytes_raw` these types can be encoded with some extra work from the user.
-For example to encode a struct consisting of  `u256` called `number` and a `vector<u8>` called `data` into an `AbiWriter` named `writer` a user could do
-```rust
-let mut struct_writer = new_writer(2);
-struct_writer
-    .write_u256(number)
-    .write_bytes(data);
-writer
-    .write_bytes_raw(struct_writer.into_bytes());
-```
-As another example, to abi encode a `vector<vector<u256>>` named `table` into an `AbiWriter` named `writer` a user could do
-```rust
-let length = table.length();
-
-let mut length_writer = new_writer(1);
-length_writer.write_u256(length as u256);
-let mut bytes = length_writer.into_bytes();
-
-let mut table_writer = new_writer(length);
-table.do!(|row| {
-    table_writer.write_vector_u256(row);
-});
-bytes.append(table_writer.into_bytes());
-
-writer
-    .write_bytes_raw(bytes);
-```
+More complex types are not supported yet.
 
 ### `AbiReader`
 
@@ -73,7 +46,6 @@ This type can be used to decode abi enocded data. The relevant functions are as 
 - `abi::read_bytes(self: &mut AbiReader): vector<8>`: Read a `vector<u8>` from the next slot of the `AbiReader`. Should be used to read other variable length types as well.
 - `abi::read_vector_u256(self: &mut AbiReader): vector<u256>`: Read a `vector<u256>` from the next slot of the `AbiReader`. Should be used to read other fixed length types as well.
 - `abi::read_vector_bytes(self: &mut AbiReader): vector<vector<u8>>`: Read a `vector<vector<u8>>` from the next slot of the `AbiReader`. Should be used to read other vectors of variable length types as well (such as `vector<ascii::String>`).
-- `abi::read_bytes_raw(self: &mut AbiReader): vector<u8>`: Read the raw bytes encoded in the next slot of the `AbiReader`. This will include any bytes encoded after the raw bytes desired which should be ignored.
 
 #### Example
 ```rust
@@ -86,27 +58,4 @@ let info = reader.read_vector_bytes();
 
 #### More Complex Types
 
-For more complex types like structs or nested vectors `read_bytes_raw` can be used and decoded. For to read a struct that contains a `u256` and a `vector<u8>` from an `AbiReader` called `reader` a user may:
-```rust
-    let struct_bytes = reader.read_bytes_raw();
-
-    let mut struct_reader = new_reader(struct_bytes);
-    let number = struct_reader.read_u256();
-    let data = struct_reader.read_bytes();
-```
-As another example, to decode a `vector<vector<u256>>` into a variable called table from an `AbiReader` called `reader` a user can:
-```rust
-let mut table_bytes = reader.read_bytes_raw();
-let mut length_bytes = vector[];
-
-// Split the data into the lenth and the actual table contents.
-32u64.do!(|_| length_bytes.push_back(table_bytes.remove(0)));
-
-let mut length_reader = new_reader(length_bytes);
-let length = length_reader.read_u256();
-
-let mut table = vector[];
-let mut table_reader = new_reader(table_bytes);
-length.do!(|_| table.push_back(table_reader.read_vector_u256()));
-```
-
+More complex types are not supported yet.
