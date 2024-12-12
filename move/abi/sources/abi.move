@@ -125,7 +125,6 @@ public fun read_bytes(self: &mut AbiReader): vector<u8> {
 /// `vector<u256>`. Can also be cast into vectors of other fixed length
 /// variables.
 public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
-    let mut var = vector[];
     let pos = self.pos;
 
     // Move position to the start of the dynamic data
@@ -134,7 +133,7 @@ public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
 
     let length = self.read_u256() as u64;
 
-    length.do!(|_| var.push_back(self.read_u256()));
+    let var = vector::tabulate!(length, |_| self.read_u256());
 
     self.pos = pos + U256_BYTES;
 
@@ -145,8 +144,6 @@ public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
 /// `vector<vector<u8>>`. Can also be cast into vectors of other variable length
 /// variables.
 public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
-    let mut var = vector[];
-
     let pos = self.pos;
     let head = self.head;
 
@@ -157,8 +154,7 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
     let length = self.read_u256() as u64;
     self.head = self.pos;
 
-    length.do!(|_| var.push_back(self.read_bytes()));
-
+    let var = vector::tabulate!(length, |_| self.read_bytes());
     // Move position to the next slot
     self.pos = pos + U256_BYTES;
     self.head = head;
@@ -183,22 +179,19 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
 /// called `table` from an `AbiReader` called `reader` a user can:
 /// ```rust
 /// let mut table_bytes = reader.read_bytes_raw();
-/// let mut length_bytes = vector[];
-/// // Split the data into the lenth and the actual table contents.
-/// 32u64.do!(|_| length_bytes.push_back(table_bytes.remove(0)));
+/// // Split the data into the lenth and the actual table contents
+/// let length_bytes = vector::tabulate!(U256_BYTES, |_| table_bytes.remove(0));
 /// let mut length_reader = new_reader(length_bytes);
-/// let length = length_reader.read_u256();
-/// let mut table = vector[];
+/// let length = length_reader.read_u256() as u64;
 /// let mut table_reader = new_reader(table_bytes);
-/// length.do!(|_| table.push_back(table_reader.read_vector_u256()));
+/// let table = vector::tabulate!(length, |_| table_reader.read_vector_u256());
 /// ```
 public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
     // Move position to the start of the bytes
     let offset = self.read_u256() as u64;
     let length = self.bytes.length() - offset;
 
-    let mut var = vector[];
-    length.do!(|i| var.push_back(self.bytes[offset + i]));
+    let var = vector::tabulate!(length, |i| self.bytes[offset + i]);
 
     var
 }
@@ -316,11 +309,7 @@ fun decode_bytes(self: &mut AbiReader): vector<u8> {
     let length = self.read_u256() as u64;
     let pos = self.pos;
 
-    let mut bytes = vector[];
-
-    length.do!(|i| bytes.push_back(self.bytes[i + pos]));
-
-    bytes
+    vector::tabulate!(length, |i| self.bytes[i + pos])
 }
 
 // -----
@@ -462,19 +451,16 @@ fun test_raw_table() {
     let bytes = writer.into_bytes();
 
     let mut reader = new_reader(bytes);
-
     let mut table_bytes = reader.read_bytes_raw();
-    let mut length_bytes = vector[];
 
     // Split the data into the lenth and the actual table contents
-    U256_BYTES.do!(|_| length_bytes.push_back(table_bytes.remove(0)));
+    let length_bytes = vector::tabulate!(U256_BYTES, |_| table_bytes.remove(0));
 
     let mut length_reader = new_reader(length_bytes);
-    let length = length_reader.read_u256();
+    let length = length_reader.read_u256() as u64;
 
-    let mut table_read = vector[];
     let mut table_reader = new_reader(table_bytes);
-    length.do!(|_| table_read.push_back(table_reader.read_vector_u256()));
+    let table_read = vector::tabulate!(length, |_| table_reader.read_vector_u256());
 
     assert!(table_read == table);
 }
