@@ -40,7 +40,6 @@ public fun new_reader(bytes: vector<u8>): AbiReader {
 
 public fun new_writer(length: u64): AbiWriter {
 
-    (BYTES_IN_U256 * length).do!(|_| bytes.push_back(0));
 
     AbiWriter {
         bytes: vector::tabulate!(BYTES_IN_U256 * length, |_| 0);
