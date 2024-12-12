@@ -76,6 +76,29 @@ macro fun value_mut($self: &mut ITS, $function_name: vector<u8>): &mut ITS_v0 {
     value
 }
 
+// ---------------
+// Entry Functions
+// ---------------
+entry fun allow_function(
+    self: &mut ITS,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(
+    self: &mut ITS,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
+}
+
 // ----------------
 // Public Functions
 // ----------------
@@ -324,6 +347,8 @@ fun version_control(): VersionControl {
             b"remove_trusted_addresses",
             b"register_transaction",
             b"set_flow_limit",
+            b"allow_function",
+            b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -709,9 +734,9 @@ fun test_receive_deploy_interchain_token() {
     );
 
     receive_deploy_interchain_token<COIN>(&mut its, approved_message);
-    
+
     utils::assert_event<its::events::CoinRegistered<COIN>>();
-    
+
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
 }
@@ -871,10 +896,11 @@ fun test_set_flow_limit() {
     let decimals = 9;
     let limit = 1234;
 
-    let (
-        treasury_cap,
-        coin_metadata,
-    ) = its::coin::create_treasury_and_metadata(symbol, decimals, ctx);
+    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+        symbol,
+        decimals,
+        ctx,
+    );
     let coin_info = its::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
@@ -926,4 +952,32 @@ fun test_channel_address() {
     its.channel_address();
 
     sui::test_utils::destroy(its);
+}
+
+#[test]
+fun test_allow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = create_for_testing(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+
+    self.allow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    sui::test_utils::destroy(owner_cap);
+}
+
+#[test]
+fun test_disallow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = create_for_testing(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"send_interchain_transfer".to_ascii_string();
+
+    self.disallow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    sui::test_utils::destroy(owner_cap);
 }

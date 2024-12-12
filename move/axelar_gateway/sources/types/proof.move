@@ -41,22 +41,19 @@ const ESignerNotFound: vector<u8> =
 const ERedundantSignaturesProvided: vector<u8> =
     b"redundant signatures provided";
 
-// ----------------
-// Public Functions
-// ----------------
+// -----------------
+// Package Functions
+// -----------------
 /// The signers of the proof
-public fun signers(proof: &Proof): &WeightedSigners {
+public(package) fun signers(proof: &Proof): &WeightedSigners {
     &proof.signers
 }
 
 /// The proof signatures
-public fun signatures(proof: &Proof): &vector<Signature> {
+public(package) fun signatures(proof: &Proof): &vector<Signature> {
     &proof.signatures
 }
 
-// -----------------
-// Package Functions
-// -----------------
 public(package) fun new_signature(bytes: vector<u8>): Signature {
     assert!(bytes.length() == SIGNATURE_LENGTH, EInvalidSignatureLength);
 

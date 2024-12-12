@@ -111,6 +111,22 @@ public(package) fun refund(
     );
 }
 
+public(package) fun allow_function(
+    self: &mut GasService_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut GasService_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
+}
+
 // -----------------
 // Private Functions
 // -----------------
@@ -130,22 +146,24 @@ fun take(
 // Test Only
 // ---------
 #[test_only]
-public fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
+public(package) fun version_control_mut(
+    self: &mut GasService_v0,
+): &mut VersionControl {
     &mut self.version_control
 }
 
 #[test_only]
-public fun balance(self: &GasService_v0): &Balance<SUI> {
+public(package) fun balance(self: &GasService_v0): &Balance<SUI> {
     &self.balance
 }
 
 #[test_only]
-public fun balance_mut(self: &mut GasService_v0): &mut Balance<SUI> {
+public(package) fun balance_mut(self: &mut GasService_v0): &mut Balance<SUI> {
     &mut self.balance
 }
 
 #[test_only]
-public fun destroy_for_testing(self: GasService_v0) {
+public(package) fun destroy_for_testing(self: GasService_v0) {
     let GasService_v0 { balance, version_control: _ } = self;
     balance.destroy_for_testing();
 }

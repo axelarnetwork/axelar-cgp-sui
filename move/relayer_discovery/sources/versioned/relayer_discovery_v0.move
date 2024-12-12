@@ -2,6 +2,7 @@ module relayer_discovery::relayer_discovery_v0;
 
 use relayer_discovery::events;
 use relayer_discovery::transaction::Transaction;
+use std::ascii::String;
 use sui::table::{Self, Table};
 use version_control::version_control::VersionControl;
 
@@ -72,6 +73,22 @@ public(package) fun version_control(
     self: &RelayerDiscovery_v0,
 ): &VersionControl {
     &self.version_control
+}
+
+public(package) fun allow_function(
+    self: &mut RelayerDiscovery_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut RelayerDiscovery_v0,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
 }
 
 // ---------

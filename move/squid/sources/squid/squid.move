@@ -2,9 +2,10 @@ module squid::squid;
 
 use axelar_gateway::channel::ApprovedMessage;
 use its::its::ITS;
+use squid::owner_cap::{Self, OwnerCap};
 use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
-use std::ascii;
+use std::ascii::{Self, String};
 use sui::clock::Clock;
 use sui::coin::Coin;
 use sui::versioned::{Self, Versioned};
@@ -33,6 +34,7 @@ fun init(ctx: &mut TxContext) {
             ctx,
         ),
     });
+    transfer::public_transfer(owner_cap::create(ctx), ctx.sender());
 }
 
 // ------
@@ -65,6 +67,35 @@ public(package) macro fun value_mut(
 // ---------------
 entry fun give_deep(self: &mut Squid, deep: Coin<DEEP>) {
     self.value_mut!(b"give_deep").give_deep(deep);
+}
+
+entry fun allow_function(
+    self: &mut Squid,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(
+    self: &mut Squid,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
+}
+
+entry fun withdraw<T>(
+    self: &mut Squid,
+    _: &OwnerCap,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    self.value_mut!(b"withdraw").withdraw<T>(amount, ctx);
 }
 
 // ----------------
@@ -113,6 +144,9 @@ fun new_version_control(): VersionControl {
             b"deepbook_v3_swap",
             b"register_transaction",
             b"give_deep",
+            b"allow_function",
+            b"disallow_function",
+            b"withdraw",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -217,4 +251,47 @@ fun test_start_swap() {
 fun test_init() {
     let ctx = &mut tx_context::dummy();
     init(ctx);
+}
+
+#[test]
+fun test_allow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new_for_testing(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"function_name".to_ascii_string();
+
+    self.allow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
+}
+
+#[test]
+fun test_disallow_function() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new_for_testing(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let version = 0;
+    let function_name = b"start_swap".to_ascii_string();
+
+    self.disallow_function(&owner_cap, version, function_name);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
+}
+
+#[test]
+fun test_withdraw() {
+    let ctx = &mut sui::tx_context::dummy();
+    let mut self = new_for_testing(ctx);
+    let owner_cap = owner_cap::create(ctx);
+    let amount = 123;
+
+    let balance = sui::balance::create_for_testing<COIN>(amount);
+    self.value_mut!(b"").coin_bag_mut().store_balance(balance);
+    self.withdraw<COIN>(&owner_cap, amount, ctx);
+
+    sui::test_utils::destroy(self);
+    owner_cap.destroy_for_testing();
 }

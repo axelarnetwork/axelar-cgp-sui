@@ -27,14 +27,6 @@
         "trusted_addresses#0#0": "vector<String>"
       },
       "returnType": "TrustedAddresses"
-    },
-    "destroy": {
-      "name": "destroy",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "TrustedAddresses"
-      },
-      "returnType": "vector<String> * vector<String>"
     }
   }
 }

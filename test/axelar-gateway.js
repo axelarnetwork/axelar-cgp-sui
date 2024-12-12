@@ -96,7 +96,7 @@ describe.only('Axelar Gateway', () => {
         let result = await publishPackage(client, deployer, 'axelar_gateway');
         packageId = result.packageId;
         const creatorCap = result.publishTxn.objectChanges.find(
-            (change) => change.objectType === `${packageId}::gateway::CreatorCap`,
+            (change) => change.objectType === `${packageId}::owner_cap::OwnerCap`,
         ).objectId;
         result = await publishPackage(client, deployer, 'relayer_discovery');
         const discoveryPackageId = result.packageId;
