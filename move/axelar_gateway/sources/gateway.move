@@ -1091,7 +1091,7 @@ fun test_allow_function() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = dummy(ctx);
     let owner_cap = owner_cap::create(ctx);
-    let version = 0;
+    let version = VERSION;
     let function_name = b"function_name".to_ascii_string();
 
     self.allow_function(&owner_cap, version, function_name);
@@ -1105,7 +1105,7 @@ fun test_disallow_function() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = dummy(ctx);
     let owner_cap = owner_cap::create(ctx);
-    let version = 0;
+    let version = VERSION;
     let function_name = b"approve_messages".to_ascii_string();
 
     self.disallow_function(&owner_cap, version, function_name);

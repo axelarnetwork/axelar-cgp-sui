@@ -221,6 +221,22 @@ public(package) fun send_message(
     );
 }
 
+public(package) fun allow_function(
+    self: &mut Gateway_v1,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.allow_function(version, function_name);
+}
+
+public(package) fun disallow_function(
+    self: &mut Gateway_v1,
+    version: u64,
+    function_name: String,
+) {
+    self.version_control.disallow_function(version, function_name);
+}
+
 // -----------------
 // Private Functions
 // -----------------
