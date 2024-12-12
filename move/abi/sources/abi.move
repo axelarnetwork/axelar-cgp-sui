@@ -73,14 +73,6 @@ public fun into_bytes(self: AbiWriter): vector<u8> {
     bytes
 }
 
-/// Retrieve the bytes from an `AbiWriter`.
-// TODO: check that all bytes were decoded
-public fun into_remaining_bytes(self: AbiReader): vector<u8> {
-    let AbiReader { bytes, head: _, pos: _ } = self;
-
-    bytes
-}
-
 /// Read a `u256` from the next slot of the `AbiReader`. Should be used to read
 /// other fixed length types as well.
 public fun read_u256(self: &mut AbiReader): u256 {
@@ -356,4 +348,21 @@ fun test_multiple() {
     assert!(reader.read_bytes() == input2);
     assert!(reader.read_vector_u256() == input3);
     assert!(reader.read_vector_bytes() == input4);
+}
+
+#[test]
+fun test_read_u8() {
+    let val = 123;
+    let mut writer = new_writer(1);
+    writer.write_u8(val);
+    let bytes = writer.into_bytes();
+    let mut reader = new_reader(bytes);
+
+    assert!(reader.read_u8() == val);
+}
+
+#[test]
+fun test_append_empty_bytes() {
+    let mut writer = new_writer(0);
+    writer.append_bytes(vector[]);
 }
