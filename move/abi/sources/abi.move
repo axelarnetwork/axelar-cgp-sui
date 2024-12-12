@@ -14,12 +14,32 @@ const U256_BYTES: u64 = 32;
 // -----
 // Types
 // -----
+/// Used to decode abi encoded bytes into variables.
+/// Example
+/// ```rust
+/// let mut reader = abi::new_reader(data);
+/// let number = reader.read_u256();
+/// let name = reader.read_bytes().to_string();
+/// let addresses = reader.read_vector_u256().map!(|val|
+/// sui::address::from_u256(val));
+/// let info = reader.read_vector_bytes();
+/// ```
 public struct AbiReader has copy, drop {
     bytes: vector<u8>,
     head: u64,
     pos: u64,
 }
 
+/// Used to encode variables into abi encoded bytes.
+/// ```rust
+/// let mut writer = abi::new_writer(4);
+/// writer
+///     .write_u256(1234)
+///     .write_bytes(b"some_bytes")
+///     .write_vector_u256(vector[12, 34, 56])
+///     .write_vector_bytes(vector[b"some", b"more", b"bytes"]);
+/// let encoded_data = writer.into_bytes();
+/// ```
 public struct AbiWriter has copy, drop {
     bytes: vector<u8>,
     pos: u64,
@@ -149,14 +169,29 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
 /// Reads the raw bytes of a variable length variable. This will return
 /// additional bytes at the end of the structure as there is no way to know how
 /// to decode the bytes returned. This can be used to decode structs and complex
-/// nested vectors that this library does not provide a method for. For example
-/// if a user calls `read_bytes_raw` to decode encoded an encoded `bytes`
-/// variable this will return 32 bytes that contain the length of the encoded
-/// `bytes`, followed by all remaining bytes in the `AbiReader`. To decode
-/// these, a user can first parse the length from the first 32 bytes and then
-/// parse the subsection of the remaining bytes with that length into a
-/// `vector<u8>` (which should yield the same result as calling `read_bytes` on
-/// the original `AbiReader` instead of `read_bytes_raw`).
+/// nested vectors that this library does not provide a method for.
+/// For more complex types like structs or nested vectors `read_bytes_raw` can
+/// be used and decoded manualy. To read a struct that contains a `u256` and
+/// a `vector<u8>` from an `AbiReader` called `reader` a user may:
+/// ```rust
+/// let struct_bytes = reader.read_bytes_raw();
+/// let mut struct_reader = new_reader(struct_bytes);
+/// let number = struct_reader.read_u256();
+/// let data = struct_reader.read_bytes();
+/// ```
+/// As another example, to decode a `vector<vector<u256>>` into a variable
+/// called `table` from an `AbiReader` called `reader` a user can:
+/// ```rust
+/// let mut table_bytes = reader.read_bytes_raw();
+/// let mut length_bytes = vector[];
+/// // Split the data into the lenth and the actual table contents.
+/// 32u64.do!(|_| length_bytes.push_back(table_bytes.remove(0)));
+/// let mut length_reader = new_reader(length_bytes);
+/// let length = length_reader.read_u256();
+/// let mut table = vector[];
+/// let mut table_reader = new_reader(table_bytes);
+/// length.do!(|_| table.push_back(table_reader.read_vector_u256()));
+/// ```
 public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
     // Move position to the start of the bytes
     let offset = self.read_u256() as u64;
