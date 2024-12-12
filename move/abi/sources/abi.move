@@ -254,7 +254,7 @@ fun append_bytes(self: &mut AbiWriter, var: vector<u8>) {
 
     self.bytes.append(var);
 
-    (31 - (length - 1) % 32).do!(|_| self.bytes.push_back(0));
+    ((U256_BYTES) - 1 - (length - 1) % U256_BYTES).do!(|_| self.bytes.push_back(0));
 }
 
 fun decode_bytes(self: &mut AbiReader): vector<u8> {
