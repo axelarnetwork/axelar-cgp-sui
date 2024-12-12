@@ -14,7 +14,6 @@ const U256_BYTES: u64 = 32;
 // -----
 // Types
 // -----
-
 public struct AbiReader has copy, drop {
     bytes: vector<u8>,
     head: u64,
@@ -29,7 +28,7 @@ public struct AbiWriter has copy, drop {
 // ----------------
 // Public Functions
 // ----------------
-
+/// Creates a new AbiReader from the bytes passed.
 public fun new_reader(bytes: vector<u8>): AbiReader {
     AbiReader {
         bytes,
@@ -38,6 +37,8 @@ public fun new_reader(bytes: vector<u8>): AbiReader {
     }
 }
 
+/// Creates a new `AbiWriter` that can fit up to length bytes before to
+/// overflows.
 public fun new_writer(length: u64): AbiWriter {
     AbiWriter {
         bytes: vector::tabulate!(U256_BYTES * length, |_| 0),
@@ -45,12 +46,14 @@ public fun new_writer(length: u64): AbiWriter {
     }
 }
 
+/// Retrieve the bytes from an `AbiWriter`.
 public fun into_bytes(self: AbiWriter): vector<u8> {
     let AbiWriter { bytes, pos: _ } = self;
 
     bytes
 }
 
+/// Retrieve the bytes from an `AbiWriter`.
 // TODO: check that all bytes were decoded
 public fun into_remaining_bytes(self: AbiReader): vector<u8> {
     let AbiReader { bytes, head: _, pos: _ } = self;
@@ -58,6 +61,8 @@ public fun into_remaining_bytes(self: AbiReader): vector<u8> {
     bytes
 }
 
+/// Read a `u256` from the next slot of the `AbiReader`. Should be used to read
+/// other fixed length types as well.
 public fun read_u256(self: &mut AbiReader): u256 {
     let mut var = 0u256;
     let pos = self.pos;
@@ -69,14 +74,18 @@ public fun read_u256(self: &mut AbiReader): u256 {
     var
 }
 
+/// Wrapper for `read_u256` that casts the result into a `u8`.
 public fun read_u8(self: &mut AbiReader): u8 {
     self.read_u256() as u8
 }
 
+/// Used to ignore the next variable in an `AbiReader`.
 public fun skip_slot(self: &mut AbiReader) {
     self.pos = self.pos + U256_BYTES;
 }
 
+/// Reads a variable length variable from an `AbiReader`, as bytes. Can be
+/// converted to other variable length variables as well (such as `Strings`).
 public fun read_bytes(self: &mut AbiReader): vector<u8> {
     let pos = self.pos;
 
@@ -92,6 +101,9 @@ public fun read_bytes(self: &mut AbiReader): vector<u8> {
     var
 }
 
+/// Reads a vector of fixed length variables from an `AbiReader` as a
+/// `vector<u256>`. Can also be cast into vectors of other fixed length
+/// variables.
 public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
     let mut var = vector[];
     let pos = self.pos;
@@ -109,7 +121,9 @@ public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
     var
 }
 
-/// Decode ABI-encoded 'bytes[]'
+/// Reads a vector of variable length variables from an `AbiReader` as a
+/// `vector<vector<u8>>`. Can also be cast into vectors of other variable length
+/// variables.
 public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
     let mut var = vector[];
 
@@ -132,6 +146,17 @@ public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
     var
 }
 
+/// Reads the raw bytes of a variable length variable. This will return
+/// additional bytes at the end of the structure as there is no way to know how
+/// to decode the bytes returned. This can be used to decode structs and complex
+/// nested vectors that this library does not provide a method for. For example
+/// if a user calls `read_bytes_raw` to decode encoded an encoded `bytes`
+/// variable this will return 32 bytes that contain the length of the encoded
+/// `bytes`, followed by all remaining bytes in the `AbiReader`. To decode
+/// these, a user can first parse the length from the first 32 bytes and then
+/// parse the subsection of the remaining bytes with that length into a
+/// `vector<u8>` (which should yield the same result as calling `read_bytes` on
+/// the original `AbiReader` instead of `read_bytes_raw`).
 public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
     // Move position to the start of the bytes
     let offset = self.read_u256() as u64;
@@ -143,6 +168,8 @@ public fun read_bytes_raw(self: &mut AbiReader): vector<u8> {
     var
 }
 
+/// Write a `u256` into the next slot of an `AbiWriter`. Can be used to write
+/// other fixed lenght variables as well.
 public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
     let pos = self.pos;
 
@@ -157,10 +184,13 @@ public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
     self
 }
 
+/// Write a `u8` into the next slot of an `AbiWriter`.
 public fun write_u8(self: &mut AbiWriter, var: u8): &mut AbiWriter {
     self.write_u256(var as u256)
 }
 
+/// Write some bytes into the next slot of an `AbiWriter`. Can be used to write
+/// another variable length variable, such as a `String`as well.
 public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
     let offset = self.bytes.length() as u256;
     self.write_u256(offset);
@@ -172,6 +202,8 @@ public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
     self
 }
 
+/// Write a `vector<u256>` into the next slot of an `AbiWriter`. Can be used to
+/// encode other vectors of fixed length variables as well.
 public fun write_vector_u256(
     self: &mut AbiWriter,
     var: vector<u256>,
@@ -189,6 +221,8 @@ public fun write_vector_u256(
     self
 }
 
+/// Write a vector of bytes into the next slot of an `AbiWriter`. Can be used to
+/// encode vectors of other variable length variables as well.
 public fun write_vector_bytes(
     self: &mut AbiWriter,
     var: vector<vector<u8>>,
@@ -209,6 +243,8 @@ public fun write_vector_bytes(
     self
 }
 
+/// Write raw bytes to the next slot of an `AbiWriter`. This can be used to
+/// write structs or more nested arrays that we support in this module.
 public fun write_bytes_raw(
     self: &mut AbiWriter,
     var: vector<u8>,
@@ -224,7 +260,6 @@ public fun write_bytes_raw(
 // ------------------
 // Internal Functions
 // ------------------
-
 fun append_u256(self: &mut AbiWriter, var: u256) {
     let mut bytes = bcs::to_bytes(&var);
     bytes.reverse();
@@ -256,7 +291,6 @@ fun decode_bytes(self: &mut AbiReader): vector<u8> {
 // -----
 // Tests
 // -----
-
 #[test]
 fun test_u256() {
     let input = 56;
