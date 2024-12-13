@@ -54,7 +54,7 @@ use version_control::version_control::{Self, VersionControl};
 // -------
 // Version
 // -------
-const VERSION: u64 = 1;
+const VERSION: u64 = 2;
 
 // -------
 // Structs
@@ -291,6 +291,7 @@ public fun take_approved_message(
 fun version_control(): VersionControl {
     version_control::new(vector[
         vector[],
+        vector[],
         vector[
             b"approve_messages",
             b"rotate_signers",
@@ -357,6 +358,7 @@ fun dummy(ctx: &mut TxContext): Gateway {
             table::new(ctx),
             auth::dummy(ctx),
             version_control::new(vector[
+                vector[],
                 vector[],
                 vector[
                     b"approve_messages",

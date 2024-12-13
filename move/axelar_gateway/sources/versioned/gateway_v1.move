@@ -45,6 +45,7 @@ public struct Gateway_v1 has store {
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
+    new_field: u64,
 }
 
 public enum CommandType {
@@ -68,6 +69,7 @@ public(package) fun new(
         messages,
         signers,
         version_control,
+        new_field: 0,
     }
 }
 
@@ -325,6 +327,7 @@ public(package) fun destroy_for_testing(
         messages,
         signers,
         version_control,
+        new_field: _,
     } = self;
     (operator, messages, signers, version_control)
 }
