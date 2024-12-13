@@ -289,6 +289,8 @@ fun version_control(): VersionControl {
             b"is_message_approved",
             b"is_message_executed",
             b"take_approved_message",
+            b"allow_function",
+            b"disallow_function",
         ].map!(|function_name| function_name.to_ascii_string()),
         vector[
             b"approve_messages",
