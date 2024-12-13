@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.0.1
+
+### Patch Changes
+
+-   d9a6492: Bump sui version from testnet-v1.38.2 to mainnet-v1.38.3
+
 ## 1.0.0
 
 ### Major Changes
