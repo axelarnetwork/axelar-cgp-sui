@@ -7,6 +7,10 @@ use sui::table::Table;
 use version_control::version_control::VersionControl;
 use axelar_gateway::gateway_v1::{Self, Gateway_v1};
 
+#[error]
+const ENoDataAllowedOnMigrate: vector<u8> = 
+    b"no data should be passed to migrate to this version";
+
 // -----
 // Types
 // -----
@@ -28,7 +32,7 @@ public enum CommandType {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun migrate(self: Gateway_v0, version_control: VersionControl): Gateway_v1 {
+public(package) fun migrate(self: Gateway_v0, version_control: VersionControl, data: vector<u8>): Gateway_v1 {
     let Gateway_v0 {
         operator,
         messages,
@@ -40,5 +44,6 @@ public(package) fun migrate(self: Gateway_v0, version_control: VersionControl): 
         messages,
         signers,
         version_control,
+        data,
     )
 }

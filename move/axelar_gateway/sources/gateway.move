@@ -178,9 +178,9 @@ entry fun rotate_signers(
 /// This function should only be called once
 /// (checks should be made on versioned to ensure this)
 /// It upgrades the version control to the new version control.
-entry fun migrate(self: &mut Gateway) {
+entry fun migrate(self: &mut Gateway, _: &OwnerCap, data: vector<u8>) {
     let (v0, cap) = self.inner.remove_value_for_upgrade<Gateway_v0>();
-    let v1 = v0.migrate(version_control());
+    let v1 = v0.migrate(version_control(), data);
     self.inner.upgrade(
         VERSION,
         v1,
