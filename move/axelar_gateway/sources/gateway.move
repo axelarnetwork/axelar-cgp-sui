@@ -104,6 +104,7 @@ entry fun setup(
                 ctx,
             ),
             version_control(),
+            0,
         ),
         ctx,
     );
@@ -206,6 +207,14 @@ entry fun disallow_function(
     self
         .value_mut!(b"disallow_function")
         .disallow_function(version, function_name);
+}
+
+entry fun set_new_field(self: &mut Gateway, new_field: u64) {
+    self.value_mut!(b"set_new_field").set_new_field(new_field);
+}
+
+entry fun new_field(self: &Gateway): u64 {
+    self.value!(b"new_field").new_field()
 }
 
 // ----------------
@@ -339,6 +348,7 @@ public fun create_for_testing(
                 ctx,
             ),
             version_control(),
+            0,
         ),
         ctx,
     );
@@ -372,6 +382,7 @@ fun dummy(ctx: &mut TxContext): Gateway {
                     b"",
                 ].map!(|function_name| function_name.to_ascii_string()),
             ]),
+            0,
         ),
         ctx,
     );

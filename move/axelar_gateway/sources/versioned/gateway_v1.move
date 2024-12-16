@@ -63,13 +63,14 @@ public(package) fun new(
     messages: Table<Bytes32, MessageStatus>,
     signers: AxelarSigners,
     version_control: VersionControl,
+    new_field: u64,
 ): Gateway_v1 {
     Gateway_v1 {
         operator,
         messages,
         signers,
         version_control,
-        new_field: 0,
+        new_field,
     }
 }
 
@@ -239,6 +240,14 @@ public(package) fun disallow_function(
     self.version_control.disallow_function(version, function_name);
 }
 
+public(package) fun set_new_field(self: &mut Gateway_v1, new_field: u64) {
+    self.new_field = new_field;
+}
+
+public(package) fun new_field(self: &Gateway_v1): u64 {
+    self.new_field
+}
+
 // -----------------
 // Private Functions
 // -----------------
@@ -339,6 +348,7 @@ fun dummy(ctx: &mut TxContext): Gateway_v1 {
         sui::table::new(ctx),
         axelar_gateway::auth::dummy(ctx),
         version_control::version_control::new(vector[]),
+        0,
     )
 }
 

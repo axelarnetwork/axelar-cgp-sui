@@ -6,10 +6,7 @@ use axelar_gateway::message_status::MessageStatus;
 use sui::table::Table;
 use version_control::version_control::VersionControl;
 use axelar_gateway::gateway_v1::{Self, Gateway_v1};
-
-#[error]
-const ENoDataAllowedOnMigrate: vector<u8> = 
-    b"no data should be passed to migrate to this version";
+use utils::utils;
 
 // -----
 // Types
@@ -39,11 +36,12 @@ public(package) fun migrate(self: Gateway_v0, version_control: VersionControl, d
         signers,
         version_control: _,
     } = self;
+    let new_field = utils::peel!(data, |bcs| bcs.peel_u64());
     gateway_v1::new(
         operator,
         messages,
         signers,
         version_control,
-        data,
+        new_field,
     )
 }
