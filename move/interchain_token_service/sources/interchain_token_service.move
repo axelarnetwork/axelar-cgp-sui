@@ -1,14 +1,14 @@
-module its::interchain_token_service;
+module interchain_token_service::interchain_token_service;
 
 use axelar_gateway::channel::{ApprovedMessage, Channel};
 use axelar_gateway::message_ticket::MessageTicket;
-use its::coin_info::CoinInfo;
-use its::coin_management::CoinManagement;
-use its::interchain_transfer_ticket::{Self, InterchainTransferTicket};
-use its::interchain_token_service_v0::{Self, InterchainTokenService_v0};
-use its::owner_cap::{Self, OwnerCap};
-use its::token_id::TokenId;
-use its::trusted_addresses::TrustedAddresses;
+use interchain_token_service::coin_info::CoinInfo;
+use interchain_token_service::coin_management::CoinManagement;
+use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTransferTicket};
+use interchain_token_service::interchain_token_service_v0::{Self, InterchainTokenService_v0};
+use interchain_token_service::owner_cap::{Self, OwnerCap};
+use interchain_token_service::token_id::TokenId;
+use interchain_token_service::trusted_addresses::TrustedAddresses;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::Transaction;
 use std::ascii::{Self, String};
@@ -357,7 +357,7 @@ fun version_control(): VersionControl {
 // Test Only
 // ---------
 #[test_only]
-use its::coin::COIN;
+use interchain_token_service::coin::COIN;
 #[test_only]
 use axelar_gateway::channel;
 #[test_only]
@@ -409,7 +409,7 @@ public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
 #[test_only]
 public(package) fun add_unregistered_coin_type_for_testing(
     self: &mut InterchainTokenService,
-    token_id: its::token_id::UnregisteredTokenId,
+    token_id: interchain_token_service::token_id::UnregisteredTokenId,
     type_name: std::type_name::TypeName,
 ) {
     self
@@ -420,7 +420,7 @@ public(package) fun add_unregistered_coin_type_for_testing(
 #[test_only]
 public(package) fun remove_unregistered_coin_type_for_testing(
     self: &mut InterchainTokenService,
-    token_id: its::token_id::UnregisteredTokenId,
+    token_id: interchain_token_service::token_id::UnregisteredTokenId,
 ): std::type_name::TypeName {
     self.value_mut!(b"").remove_unregistered_coin_type_for_testing(token_id)
 }
@@ -452,15 +452,15 @@ fun test_register_coin() {
     let ctx = &mut sui::tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
     );
-    let coin_management = its::coin_management::new_locked();
+    let coin_management = interchain_token_service::coin_management::new_locked();
 
     register_coin(&mut its, coin_info, coin_management);
-    utils::assert_event<its::events::CoinRegistered<COIN>>();
+    utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
     sui::test_utils::destroy(its);
 }
@@ -473,12 +473,12 @@ fun test_deploy_remote_interchain_token() {
     let token_symbol = ascii::string(b"Symbol");
     let token_decimals = 10;
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         token_name,
         token_symbol,
         token_decimals,
     );
-    let coin_management = its::coin_management::new_locked();
+    let coin_management = interchain_token_service::coin_management::new_locked();
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
     let destination_chain = ascii::string(b"Chain Name");
@@ -488,7 +488,7 @@ fun test_deploy_remote_interchain_token() {
         destination_chain,
     );
 
-    utils::assert_event<its::events::InterchainTokenDeploymentStarted<COIN>>();
+    utils::assert_event<interchain_token_service::events::InterchainTokenDeploymentStarted<COIN>>();
 
     let mut writer = abi::new_writer(6);
 
@@ -519,16 +519,16 @@ fun test_deploy_interchain_token() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
     );
-    let coin_management = its::coin_management::new_locked();
+    let coin_management = interchain_token_service::coin_management::new_locked();
 
     let token_id = register_coin(&mut its, coin_info, coin_management);
 
-    utils::assert_event<its::events::CoinRegistered<COIN>>();
+    utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
     let amount = 1234;
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
@@ -552,7 +552,7 @@ fun test_deploy_interchain_token() {
         &clock,
     );
 
-    utils::assert_event<its::events::InterchainTransfer<COIN>>();
+    utils::assert_event<interchain_token_service::events::InterchainTransfer<COIN>>();
 
     let mut writer = abi::new_writer(6);
 
@@ -586,14 +586,14 @@ fun test_receive_interchain_transfer() {
     let clock = sui::clock::create_for_testing(ctx);
     let mut its = create_for_testing(ctx);
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
     );
 
     let amount = 1234;
-    let mut coin_management = its::coin_management::new_locked();
+    let mut coin_management = interchain_token_service::coin_management::new_locked();
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
     coin_management.take_balance(coin.into_balance(), &clock);
 
@@ -624,7 +624,7 @@ fun test_receive_interchain_transfer() {
 
     receive_interchain_transfer<COIN>(&mut its, approved_message, &clock, ctx);
 
-    utils::assert_event<its::events::InterchainTransferReceived<COIN>>();
+    utils::assert_event<interchain_token_service::events::InterchainTransferReceived<COIN>>();
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
@@ -636,7 +636,7 @@ fun test_receive_interchain_transfer_with_data() {
     let clock = sui::clock::create_for_testing(ctx);
     let mut its = create_for_testing(ctx);
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         string::utf8(b"Name"),
         ascii::string(b"Symbol"),
         10,
@@ -644,7 +644,7 @@ fun test_receive_interchain_transfer_with_data() {
 
     let amount = 1234;
     let data = b"some_data";
-    let mut coin_management = its::coin_management::new_locked();
+    let mut coin_management = interchain_token_service::coin_management::new_locked();
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
     coin_management.take_balance(coin.into_balance(), &clock);
 
@@ -686,7 +686,7 @@ fun test_receive_interchain_transfer_with_data() {
         ctx,
     );
 
-    utils::assert_event<its::events::InterchainTransferReceived<COIN>>();
+    utils::assert_event<interchain_token_service::events::InterchainTransferReceived<COIN>>();
 
     assert!(received_source_chain == source_chain);
     assert!(received_source_address == its_source_address);
@@ -735,7 +735,7 @@ fun test_receive_deploy_interchain_token() {
 
     receive_deploy_interchain_token<COIN>(&mut its, approved_message);
 
-    utils::assert_event<its::events::CoinRegistered<COIN>>();
+    utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
     clock.destroy_for_testing();
     sui::test_utils::destroy(its);
@@ -748,7 +748,7 @@ fun test_give_unregistered_coin() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
-    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -766,15 +766,15 @@ fun test_mint_as_distributor() {
     let symbol = b"COIN";
     let decimals = 9;
 
-    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
     );
-    let coin_info = its::coin_info::from_metadata<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
-    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+    let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
     let channel = channel::new(ctx);
     coin_management.add_distributor(channel.to_address());
@@ -803,15 +803,15 @@ fun test_mint_to_as_distributor() {
     let symbol = b"COIN";
     let decimals = 9;
 
-    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
     );
-    let coin_info = its::coin_info::from_metadata<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
-    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+    let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
     let channel = channel::new(ctx);
     coin_management.add_distributor(channel.to_address());
@@ -842,12 +842,12 @@ fun test_burn_as_distributor() {
     let (
         mut treasury_cap,
         coin_metadata,
-    ) = its::coin::create_treasury_and_metadata(symbol, decimals, ctx);
+    ) = interchain_token_service::coin::create_treasury_and_metadata(symbol, decimals, ctx);
     let coin = treasury_cap.mint(amount, ctx);
-    let coin_info = its::coin_info::from_metadata<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
-    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+    let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
     let channel = channel::new(ctx);
     coin_management.add_distributor(channel.to_address());
@@ -876,7 +876,7 @@ fun test_set_trusted_address() {
         ITS_HUB_ROUTING_IDENTIFIER,
         b"hub address",
     ].map!(|chain| chain.to_ascii_string());
-    let trusted_addresses = its::trusted_addresses::new(
+    let trusted_addresses = interchain_token_service::trusted_addresses::new(
         trusted_chains,
         trusted_addresses,
     );
@@ -896,15 +896,15 @@ fun test_set_flow_limit() {
     let decimals = 9;
     let limit = 1234;
 
-    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
     );
-    let coin_info = its::coin_info::from_metadata<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
-    let mut coin_management = its::coin_management::new_with_cap(treasury_cap);
+    let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
     let channel = channel::new(ctx);
     coin_management.add_operator(channel.to_address());
@@ -934,7 +934,7 @@ fun test_init() {
 fun test_registered_coin_type() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
-    let token_id = its::token_id::from_address(@0x1);
+    let token_id = interchain_token_service::token_id::from_address(@0x1);
     its.add_registered_coin_type_for_testing(
         token_id,
         std::type_name::get<COIN>(),

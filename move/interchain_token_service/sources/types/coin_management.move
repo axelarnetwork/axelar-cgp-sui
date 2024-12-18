@@ -1,7 +1,7 @@
-module its::coin_management;
+module interchain_token_service::coin_management;
 
 use axelar_gateway::channel::Channel;
-use its::flow_limit::{Self, FlowLimit};
+use interchain_token_service::flow_limit::{Self, FlowLimit};
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, TreasuryCap, Coin};

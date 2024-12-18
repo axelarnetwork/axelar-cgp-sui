@@ -1,7 +1,7 @@
 module squid::squid;
 
 use axelar_gateway::channel::ApprovedMessage;
-use its::interchain_token_service::InterchainTokenService;
+use interchain_token_service::interchain_token_service::InterchainTokenService;
 use squid::owner_cap::{Self, OwnerCap};
 use squid::squid_v0::{Self, Squid_v0};
 use squid::swap_info::SwapInfo;
@@ -169,16 +169,16 @@ public fun new_for_testing(ctx: &mut TxContext): Squid {
 }
 
 #[test_only]
-use its::coin::COIN;
+use interchain_token_service::coin::COIN;
 
 #[test]
 fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
     let clock = sui::clock::create_for_testing(ctx);
-    let mut its = its::interchain_token_service::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut squid = new_for_testing(ctx);
 
-    let coin_info = its::coin_info::from_info<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_info<COIN>(
         std::string::utf8(b"Name"),
         std::ascii::string(b"Symbol"),
         10,
@@ -186,7 +186,7 @@ fun test_start_swap() {
 
     let amount = 1234;
     let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
-    let coin_management = its::coin_management::new_locked();
+    let coin_management = interchain_token_service::coin_management::new_locked();
     let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
 
     let token_id = its.register_coin(
@@ -195,7 +195,7 @@ fun test_start_swap() {
     );
 
     // This gives some coin to InterchainTokenService
-    let interchain_transfer_ticket = its::interchain_token_service::prepare_interchain_transfer(
+    let interchain_transfer_ticket = interchain_token_service::interchain_token_service::prepare_interchain_transfer(
         token_id,
         coin,
         std::ascii::string(b"Chain Name"),

@@ -1,4 +1,4 @@
-module its::trusted_addresses;
+module interchain_token_service::trusted_addresses;
 
 use std::ascii::String;
 

@@ -1,6 +1,6 @@
 /// Defines the `CoinInfo` type which allows to store information about a coin:
 /// either derived from `CoinMetadata` or manually provided.
-module its::coin_info;
+module interchain_token_service::coin_info;
 
 use std::ascii;
 use std::string::String;
@@ -79,7 +79,7 @@ public fun drop<T>(coin_info: CoinInfo<T>) {
 #[test]
 fun test_from_metadata() {
     let ctx = &mut tx_context::dummy();
-    let metadata = its::coin::create_metadata(b"Symbol", 8, ctx);
+    let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
     let metadata_bytes = sui::bcs::to_bytes(&metadata);
 
     let name = metadata.get_name();

@@ -1,7 +1,7 @@
 module squid::discovery;
 
 use axelar_gateway::gateway::Gateway;
-use its::interchain_token_service::InterchainTokenService;
+use interchain_token_service::interchain_token_service::InterchainTokenService;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, MoveCall, Transaction};
 use squid::deepbook_v3;
@@ -56,7 +56,7 @@ public fun transaction(
     gateway: &Gateway,
     payload: vector<u8>,
 ): Transaction {
-    let (token_id, _, _, data) = its::discovery::interchain_transfer_info(
+    let (token_id, _, _, data) = interchain_token_service::discovery::interchain_transfer_info(
         payload,
     );
     let type_in = (*its.registered_coin_type(token_id)).into_string();

@@ -1,8 +1,8 @@
 module squid::transfers;
 
 use axelar_gateway::gateway::Gateway;
-use its::interchain_token_service::{Self, InterchainTokenService};
-use its::token_id::{Self, TokenId};
+use interchain_token_service::interchain_token_service::{Self, InterchainTokenService};
+use interchain_token_service::token_id::{Self, TokenId};
 use relayer_discovery::transaction::{Self, MoveCall};
 use squid::squid::Squid;
 use squid::swap_info::SwapInfo;
