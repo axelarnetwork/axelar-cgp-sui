@@ -1,7 +1,7 @@
-module its::coin_management;
+module interchain_token_service::coin_management;
 
 use axelar_gateway::channel::Channel;
-use its::flow_limit::{Self, FlowLimit};
+use interchain_token_service::flow_limit::{Self, FlowLimit};
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
 use sui::coin::{Self, TreasuryCap, Coin};
@@ -15,7 +15,7 @@ const EDistributorNeedsTreasuryCap: vector<u8> =
 #[error]
 const ENotOperator: vector<u8> = b"channel provided is not the operator";
 
-/// Struct that stores information about the ITS Coin.
+/// Struct that stores information about the InterchainTokenService Coin.
 public struct CoinManagement<phantom T> has store {
     treasury_cap: Option<TreasuryCap<T>>,
     balance: Option<Balance<T>>,
@@ -75,7 +75,7 @@ public fun add_operator<T>(self: &mut CoinManagement<T>, operator: address) {
 
 // === Protected Methods ===
 
-/// Takes the given amount of Coins from user. Returns the amount that the ITS
+/// Takes the given amount of Coins from user. Returns the amount that the InterchainTokenService
 /// is supposed to give on other chains.
 public(package) fun take_balance<T>(
     self: &mut CoinManagement<T>,

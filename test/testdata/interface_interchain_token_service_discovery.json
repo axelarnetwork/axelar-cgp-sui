@@ -13,7 +13,7 @@
       "name": "call_info",
       "visibility": "public",
       "params": {
-        "its#0#0": "&ITS",
+        "its#0#0": "&InterchainTokenService",
         "payload#0#0": "vector<u8>"
       },
       "returnType": "Transaction"

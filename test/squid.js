@@ -93,7 +93,7 @@ describe('Squid', () => {
         const registerTransactionBuilder = new TxBuilder(client);
 
         await registerTransactionBuilder.moveCall({
-            target: `${deployments.its.packageId}::discovery::register_transaction`,
+            target: `${deployments.interchain_token_service.packageId}::discovery::register_transaction`,
             arguments: [objectIds.its, objectIds.relayerDiscovery],
         });
 
@@ -221,19 +221,19 @@ describe('Squid', () => {
         });
 
         const tokenId = await builder.moveCall({
-            target: `${deployments.its.packageId}::token_id::from_address`,
+            target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
             arguments: [objectIds.tokenId],
             typeArguments: [],
         });
 
         const interchainTransfer = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::prepare_interchain_transfer`,
             arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
             typeArguments: [coins[coinName].type],
         });
 
         const messageTicket = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::send_interchain_transfer`,
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::send_interchain_transfer`,
             arguments: [objectIds.its, interchainTransfer, CLOCK_PACKAGE_ID],
             typeArguments: [coins[coinName].type],
         });
@@ -257,17 +257,17 @@ describe('Squid', () => {
         const builder = new TxBuilder(client);
 
         const coinInfo = await builder.moveCall({
-            target: `${deployments.its.packageId}::coin_info::from_metadata`,
+            target: `${deployments.interchain_token_service.packageId}::coin_info::from_metadata`,
             arguments: [coins[coin].coinMetadata],
             typeArguments: [coins[coin].type],
         });
         const coinManagment = await builder.moveCall({
-            target: `${deployments.its.packageId}::coin_management::new_locked`,
+            target: `${deployments.interchain_token_service.packageId}::coin_management::new_locked`,
             arguments: [],
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
-            target: `${deployments.its.packageId}::its::register_coin`,
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::register_coin`,
             arguments: [objectIds.its, coinInfo, coinManagment],
             typeArguments: [coins[coin].type],
         });
@@ -385,16 +385,22 @@ describe('Squid', () => {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
             squidV0: findObjectId(deployments.squid.publishTxn, 'squid_v0::Squid_v0'),
-            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
+            its: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service::InterchainTokenService'),
+            itsV0: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
-            gateway: findObjectId(deployments.its.publishTxn, `${deployments.axelar_gateway.packageId}::gateway::Gateway`),
+            itsOwnerCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
+            gateway: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.axelar_gateway.packageId}::gateway::Gateway`,
+            ),
         };
         // Find the object ids from the publish transactions
         objectIds = {

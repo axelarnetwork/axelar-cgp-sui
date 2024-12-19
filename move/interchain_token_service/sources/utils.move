@@ -1,4 +1,4 @@
-module its::utils;
+module interchain_token_service::utils;
 
 use std::ascii;
 

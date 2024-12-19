@@ -1,5 +1,5 @@
 [package]
-name = "ITS"
+name = "InterchainTokenService"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,4 +12,4 @@ VersionControl = { local = "../version_control" }
 RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]
-its = "0xa5"
+interchain_token_service = "0xa5"

@@ -128,7 +128,7 @@ fun estimate_key<T>(): address {
 }
 
 #[test_only]
-use its::coin::COIN;
+use interchain_token_service::coin::COIN;
 
 #[test]
 fun test_balance() {
