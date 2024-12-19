@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.0.2
+
+### Patch Changes
+
+-   ee155fd: Fix publish template interchain token
+
 ## 1.0.1
 
 ### Patch Changes
