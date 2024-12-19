@@ -1,4 +1,4 @@
-module its::flow_limit;
+module interchain_token_service::flow_limit;
 
 use sui::clock::Clock;
 

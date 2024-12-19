@@ -9,7 +9,7 @@ GasService = { local = "../gas_service" }
 AxelarGateway = { local = "../axelar_gateway" }
 Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
-ITS = { local = "../its" }
+InterchainTokenService = { local = "../interchain_token_service" }
 RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]

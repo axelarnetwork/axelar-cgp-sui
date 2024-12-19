@@ -1,4 +1,4 @@
-module its::unregistered_coin_data;
+module interchain_token_service::unregistered_coin_data;
 
 use sui::coin::{TreasuryCap, CoinMetadata};
 

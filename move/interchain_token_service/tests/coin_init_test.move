@@ -1,5 +1,5 @@
 #[test_only]
-module its::thecool1234coin___;
+module interchain_token_service::thecool1234coin___;
 
 use sui::coin;
 use sui::url::Url;

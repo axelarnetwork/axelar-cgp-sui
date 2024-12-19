@@ -380,7 +380,7 @@ async function setupTrustedAddresses(client, keypair, objectIds, deployments, tr
     });
 
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::its::set_trusted_addresses`,
+        target: `${deployments.its.packageId}::interchain_token_service::set_trusted_addresses`,
         arguments: [objectIds.its, objectIds.itsOwnerCap, trustedAddressesObject],
     });
 

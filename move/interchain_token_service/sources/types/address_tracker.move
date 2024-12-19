@@ -1,8 +1,8 @@
 /// Q: why addresses are stored as Strings?
 /// Q: why chains are Strings?
-module its::address_tracker;
+module interchain_token_service::address_tracker;
 
-use its::events;
+use interchain_token_service::events;
 use std::ascii::String;
 use sui::table::{Self, Table};
 

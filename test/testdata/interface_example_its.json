@@ -48,7 +48,7 @@
       "visibility": "public",
       "params": {
         "singleton#0#0": "&Singleton",
-        "its#0#0": "&ITS",
+        "its#0#0": "&InterchainTokenService",
         "payload#0#0": "vector<u8>",
         "clock#0#0": "&Clock"
       },
@@ -58,7 +58,7 @@
       "name": "register_coin<TOKEN>",
       "visibility": "public",
       "params": {
-        "its#0#0": "&mut ITS",
+        "its#0#0": "&mut InterchainTokenService",
         "coin_metadata#0#0": "&CoinMetadata<TOKEN>"
       },
       "returnType": "TokenId"

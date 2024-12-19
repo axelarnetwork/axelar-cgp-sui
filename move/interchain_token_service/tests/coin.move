@@ -1,5 +1,5 @@
 #[test_only]
-module its::coin;
+module interchain_token_service::coin;
 
 use sui::coin::{Self, CoinMetadata, TreasuryCap};
 use sui::url::Url;

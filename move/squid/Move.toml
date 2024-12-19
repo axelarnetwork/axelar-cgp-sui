@@ -9,7 +9,7 @@ deepbook = { git = "https://github.com/axelarnetwork/deepbookv3.git", subdir = "
 token = { git = "https://github.com/axelarnetwork/deepbookv3.git", subdir = "packages/token", rev = "mainnet-v1.38.3" }
 Utils = { local = "../utils" }
 AxelarGateway = { local = "../axelar_gateway" }
-ITS = { local = "../its" }
+InterchainTokenService = { local = "../interchain_token_service" }
 VersionControl = { local = "../version_control" }
 RelayerDiscovery = { local = "../relayer_discovery" }
 

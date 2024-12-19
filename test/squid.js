@@ -227,13 +227,13 @@ describe('Squid', () => {
         });
 
         const interchainTransfer = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
+            target: `${deployments.its.packageId}::interchain_token_service::prepare_interchain_transfer`,
             arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
             typeArguments: [coins[coinName].type],
         });
 
         const messageTicket = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::send_interchain_transfer`,
+            target: `${deployments.its.packageId}::interchain_token_service::send_interchain_transfer`,
             arguments: [objectIds.its, interchainTransfer, CLOCK_PACKAGE_ID],
             typeArguments: [coins[coinName].type],
         });
@@ -267,7 +267,7 @@ describe('Squid', () => {
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
-            target: `${deployments.its.packageId}::its::register_coin`,
+            target: `${deployments.its.packageId}::interchain_token_service::register_coin`,
             arguments: [objectIds.its, coinInfo, coinManagment],
             typeArguments: [coins[coin].type],
         });
@@ -385,8 +385,8 @@ describe('Squid', () => {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
             squidV0: findObjectId(deployments.squid.publishTxn, 'squid_v0::Squid_v0'),
-            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
+            its: findObjectId(deployments.its.publishTxn, 'interchain_token_service::InterchainTokenService'),
+            itsV0: findObjectId(deployments.its.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,

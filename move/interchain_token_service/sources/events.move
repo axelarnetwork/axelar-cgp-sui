@@ -1,7 +1,7 @@
-module its::events;
+module interchain_token_service::events;
 
 use axelar_gateway::bytes32::{Self, Bytes32};
-use its::token_id::{TokenId, UnregisteredTokenId};
+use interchain_token_service::token_id::{TokenId, UnregisteredTokenId};
 use std::ascii::String;
 use std::string;
 use sui::address;
@@ -170,9 +170,9 @@ public(package) fun flow_limit_set<T>(token_id: TokenId, flow_limit: u64) {
 // Test Only
 // ---------
 #[test_only]
-use its::coin::COIN;
+use interchain_token_service::coin::COIN;
 #[test_only]
-use its::token_id;
+use interchain_token_service::token_id;
 #[test_only]
 use utils::utils;
 
