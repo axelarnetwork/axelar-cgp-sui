@@ -33,13 +33,14 @@
 ///  - CallApproval is checked to match the `Channel`.id
 ///
 /// The Gateway object uses a versioned field to support upgradability. The
-/// current implementation uses Gateway_v0.
+/// current implementation uses Gateway_v1.
 module axelar_gateway::gateway;
 
 use axelar_gateway::auth::{Self, validate_proof};
 use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
-use axelar_gateway::gateway_v0::{Self, Gateway_v0};
+use axelar_gateway::gateway_v1::{Self, Gateway_v1};
+use axelar_gateway::gateway_v0::{Gateway_v0};
 use axelar_gateway::message_ticket::{Self, MessageTicket};
 use axelar_gateway::owner_cap::{Self, OwnerCap};
 use axelar_gateway::weighted_signers;
@@ -53,7 +54,7 @@ use version_control::version_control::{Self, VersionControl};
 // -------
 // Version
 // -------
-const VERSION: u64 = 0;
+const VERSION: u64 = 2;
 
 // -------
 // Structs
@@ -88,7 +89,7 @@ entry fun setup(
 ) {
     let inner = versioned::create(
         VERSION,
-        gateway_v0::new(
+        gateway_v1::new(
             operator,
             table::new(ctx),
             auth::setup(
@@ -103,6 +104,7 @@ entry fun setup(
                 ctx,
             ),
             version_control(),
+            0,
         ),
         ctx,
     );
@@ -118,9 +120,9 @@ entry fun setup(
 // Macros
 // ------
 /// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &Gateway, $function_name: vector<u8>): &Gateway_v0 {
+macro fun value($self: &Gateway, $function_name: vector<u8>): &Gateway_v1 {
     let gateway = $self;
-    let value = gateway.inner.load_value<Gateway_v0>();
+    let value = gateway.inner.load_value<Gateway_v1>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -129,9 +131,9 @@ macro fun value($self: &Gateway, $function_name: vector<u8>): &Gateway_v0 {
 macro fun value_mut(
     $self: &mut Gateway,
     $function_name: vector<u8>,
-): &mut Gateway_v0 {
+): &mut Gateway_v1 {
     let gateway = $self;
-    let value = gateway.inner.load_value_mut<Gateway_v0>();
+    let value = gateway.inner.load_value_mut<Gateway_v1>();
     value.version_control().check(VERSION, ascii::string($function_name));
     value
 }
@@ -174,6 +176,19 @@ entry fun rotate_signers(
     )
 }
 
+/// This function should only be called once
+/// (checks should be made on versioned to ensure this)
+/// It upgrades the version control to the new version control.
+entry fun migrate(self: &mut Gateway, _: &OwnerCap, data: vector<u8>) {
+    let (v0, cap) = self.inner.remove_value_for_upgrade<Gateway_v0>();
+    let v1 = v0.migrate(version_control(), data);
+    self.inner.upgrade(
+        VERSION,
+        v1,
+        cap
+    );
+}
+
 entry fun allow_function(
     self: &mut Gateway,
     _: &OwnerCap,
@@ -192,6 +207,14 @@ entry fun disallow_function(
     self
         .value_mut!(b"disallow_function")
         .disallow_function(version, function_name);
+}
+
+entry fun set_new_field(self: &mut Gateway, new_field: u64) {
+    self.value_mut!(b"set_new_field").set_new_field(new_field);
+}
+
+entry fun new_field(self: &Gateway): u64 {
+    self.value!(b"new_field").new_field()
 }
 
 // ----------------
@@ -276,6 +299,8 @@ public fun take_approved_message(
 
 fun version_control(): VersionControl {
     version_control::new(vector[
+        vector[],
+        vector[],
         vector[
             b"approve_messages",
             b"rotate_signers",
@@ -285,6 +310,8 @@ fun version_control(): VersionControl {
             b"send_message",
             b"allow_function",
             b"disallow_function",
+            b"set_new_field",
+            b"new_field",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
@@ -311,7 +338,7 @@ public fun create_for_testing(
 ): Gateway {
     let inner = versioned::create(
         VERSION,
-        gateway_v0::new(
+        gateway_v1::new(
             operator,
             table::new(ctx),
             auth::setup(
@@ -323,6 +350,7 @@ public fun create_for_testing(
                 ctx,
             ),
             version_control(),
+            0,
         ),
         ctx,
     );
@@ -337,11 +365,13 @@ fun dummy(ctx: &mut TxContext): Gateway {
     let mut rng = sui::random::new_generator_for_testing();
     let inner = versioned::create(
         VERSION,
-        gateway_v0::new(
+        gateway_v1::new(
             sui::address::from_bytes(rng.generate_bytes(32)),
             table::new(ctx),
             auth::dummy(ctx),
             version_control::new(vector[
+                vector[],
+                vector[],
                 vector[
                     b"approve_messages",
                     b"rotate_signers",
@@ -354,6 +384,7 @@ fun dummy(ctx: &mut TxContext): Gateway {
                     b"",
                 ].map!(|function_name| function_name.to_ascii_string()),
             ]),
+            0,
         ),
         ctx,
     );
@@ -371,7 +402,7 @@ public fun destroy_for_testing(self: Gateway) {
     } = self;
     id.delete();
 
-    let value = inner.destroy<Gateway_v0>();
+    let value = inner.destroy<Gateway_v1>();
     let (_, messages, signers, _) = value.destroy_for_testing();
 
     let (_, table, _, _, _, _) = signers.destroy_for_testing();
@@ -436,7 +467,7 @@ fun test_setup() {
     id.delete();
 
     let (operator_result, messages, signers, _) = inner
-        .destroy<Gateway_v0>()
+        .destroy<Gateway_v1>()
         .destroy_for_testing();
 
     assert!(operator == operator_result);
@@ -510,7 +541,7 @@ fun test_setup_remaining_bytes() {
     id.delete();
 
     let (operator_result, messages, signers, _) = inner
-        .destroy<Gateway_v0>()
+        .destroy<Gateway_v1>()
         .destroy_for_testing();
 
     assert!(operator == operator_result);
@@ -667,7 +698,7 @@ fun test_approve_messages() {
     let messages = vector<axelar_gateway::message::Message>[
         axelar_gateway::message::dummy(),
     ];
-    let data_hash = gateway_v0::approve_messages_data_hash(messages);
+    let data_hash = gateway_v1::approve_messages_data_hash(messages);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -717,7 +748,7 @@ fun test_approve_messages_remaining_data() {
         ctx,
     );
     let messages = vector[axelar_gateway::message::dummy()];
-    let data_hash = gateway_v0::approve_messages_data_hash(messages);
+    let data_hash = gateway_v1::approve_messages_data_hash(messages);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -781,7 +812,7 @@ fun test_rotate_signers() {
 
     utils::assert_event<events::SignersRotated>();
 
-    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let data_hash = gateway_v1::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -853,7 +884,7 @@ fun test_rotate_signers_remaining_data_message_data() {
     let mut message_data = bcs::to_bytes(&next_weighted_signers);
     message_data.push_back(0);
 
-    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let data_hash = gateway_v1::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -915,7 +946,7 @@ fun test_rotate_signers_remaining_data_proof_data() {
         ctx,
     );
 
-    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let data_hash = gateway_v1::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -938,7 +969,7 @@ fun test_rotate_signers_remaining_data_proof_data() {
 }
 
 #[test]
-#[expected_failure(abort_code = axelar_gateway::gateway_v0::ENotLatestSigners)]
+#[expected_failure(abort_code = axelar_gateway::gateway_v1::ENotLatestSigners)]
 fun test_rotate_signers_not_latest_signers() {
     let mut rng = sui::random::new_generator_for_testing();
     let ctx = &mut sui::tx_context::dummy();
@@ -987,7 +1018,7 @@ fun test_rotate_signers_not_latest_signers() {
     let epoch = self.value_mut!(b"rotate_signers").signers_mut().epoch_mut();
     *epoch = *epoch + 1;
 
-    let data_hash = gateway_v0::rotate_signers_data_hash(next_weighted_signers);
+    let data_hash = gateway_v1::rotate_signers_data_hash(next_weighted_signers);
     let proof = generate_proof(
         data_hash,
         domain_separator,
@@ -1075,7 +1106,7 @@ fun test_allow_function() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = dummy(ctx);
     let owner_cap = owner_cap::create(ctx);
-    let version = 0;
+    let version = VERSION;
     let function_name = b"function_name".to_ascii_string();
 
     self.allow_function(&owner_cap, version, function_name);
@@ -1089,7 +1120,7 @@ fun test_disallow_function() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = dummy(ctx);
     let owner_cap = owner_cap::create(ctx);
-    let version = 0;
+    let version = VERSION;
     let function_name = b"approve_messages".to_ascii_string();
 
     self.disallow_function(&owner_cap, version, function_name);
