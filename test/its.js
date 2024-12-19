@@ -127,7 +127,10 @@ describe('ITS', () => {
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.interchain_token_service.publishTxn, `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`),
+            itsOwnerCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
         };
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);

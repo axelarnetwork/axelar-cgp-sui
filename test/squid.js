@@ -393,8 +393,14 @@ describe('Squid', () => {
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.interchain_token_service.publishTxn, `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`),
-            gateway: findObjectId(deployments.interchain_token_service.publishTxn, `${deployments.axelar_gateway.packageId}::gateway::Gateway`),
+            itsOwnerCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
+            gateway: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.axelar_gateway.packageId}::gateway::Gateway`,
+            ),
         };
         // Find the object ids from the publish transactions
         objectIds = {
