@@ -310,6 +310,8 @@ fun version_control(): VersionControl {
             b"send_message",
             b"allow_function",
             b"disallow_function",
+            b"set_new_field",
+            b"new_field",
         ].map!(|function_name| function_name.to_ascii_string()),
     ])
 }
