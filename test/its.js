@@ -93,7 +93,7 @@ describe('ITS', () => {
         const registerTransactionBuilder = new TxBuilder(client);
 
         await registerTransactionBuilder.moveCall({
-            target: `${deployments.its.packageId}::discovery::register_transaction`,
+            target: `${deployments.interchain_token_service.packageId}::discovery::register_transaction`,
             arguments: [objectIds.its, objectIds.relayerDiscovery],
         });
 
@@ -119,15 +119,15 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${coinType}>`),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${coinType}>`),
-            its: findObjectId(deployments.its.publishTxn, 'interchain_token_service::InterchainTokenService'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
+            its: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service::InterchainTokenService'),
+            itsV0: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
+            itsOwnerCap: findObjectId(deployments.interchain_token_service.publishTxn, `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`),
         };
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
@@ -197,7 +197,7 @@ describe('ITS', () => {
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
                     arguments: [objectIds.tokenId],
                 });
 
@@ -267,7 +267,7 @@ describe('ITS', () => {
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
                     arguments: [objectIds.tokenId],
                 });
 
@@ -310,7 +310,7 @@ describe('ITS', () => {
                 const txBuilder = new TxBuilder(client);
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::interchain_token_service::give_unregistered_coin`,
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::give_unregistered_coin`,
                     arguments: [objectIds.its, treasuryCap, metadata],
                     typeArguments: [typeArg],
                 });
