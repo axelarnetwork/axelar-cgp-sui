@@ -414,11 +414,13 @@ describe('Squid', () => {
         }
 
         pools.ab = await createPool('a', 'b');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         pools.bc = await createPool('b', 'c');
         await setupGateway();
         await registerItsTransaction();
         await registerSquidTransaction();
         await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await registerCoin('a');
         await giveDeepToSquid();
     });
