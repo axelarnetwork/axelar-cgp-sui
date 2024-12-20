@@ -1,6 +1,6 @@
-module its::interchain_transfer_ticket;
+module interchain_token_service::interchain_transfer_ticket;
 
-use its::token_id::TokenId;
+use interchain_token_service::token_id::TokenId;
 use std::ascii::String;
 use sui::balance::Balance;
 

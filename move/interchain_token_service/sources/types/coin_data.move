@@ -1,7 +1,7 @@
-module its::coin_data;
+module interchain_token_service::coin_data;
 
-use its::coin_info::CoinInfo;
-use its::coin_management::CoinManagement;
+use interchain_token_service::coin_info::CoinInfo;
+use interchain_token_service::coin_management::CoinManagement;
 
 // -----
 // Types

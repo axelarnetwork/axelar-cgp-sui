@@ -1,8 +1,8 @@
-module its::discovery;
+module interchain_token_service::discovery;
 
 use abi::abi::{Self, AbiReader};
-use its::its::ITS;
-use its::token_id::{Self, TokenId};
+use interchain_token_service::interchain_token_service::InterchainTokenService;
+use interchain_token_service::token_id::{Self, TokenId};
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::{Self, Transaction, package_id};
 use std::ascii;
@@ -44,7 +44,7 @@ public fun interchain_transfer_info(
 }
 
 public fun register_transaction(
-    its: &mut ITS,
+    its: &mut InterchainTokenService,
     discovery: &mut RelayerDiscovery,
 ) {
     let mut arg = vector[0];
@@ -53,7 +53,7 @@ public fun register_transaction(
     let arguments = vector[arg, vector[3]];
 
     let function = transaction::new_function(
-        package_id<ITS>(),
+        package_id<InterchainTokenService>(),
         ascii::string(b"discovery"),
         ascii::string(b"call_info"),
     );
@@ -73,7 +73,7 @@ public fun register_transaction(
     );
 }
 
-public fun call_info(its: &ITS, mut payload: vector<u8>): Transaction {
+public fun call_info(its: &InterchainTokenService, mut payload: vector<u8>): Transaction {
     let mut reader = abi::new_reader(payload);
     let mut message_type = reader.read_u256();
 
@@ -95,7 +95,7 @@ public fun call_info(its: &ITS, mut payload: vector<u8>): Transaction {
     }
 }
 
-fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
+fun interchain_transfer_tx(its: &InterchainTokenService, reader: &mut AbiReader): Transaction {
     let token_id = token_id::from_u256(reader.read_u256());
     reader.skip_slot(); // skip source_address
     let destination_address = address::from_bytes(reader.read_bytes());
@@ -116,8 +116,8 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
             vector[
                 transaction::new_move_call(
                     transaction::new_function(
-                        package_id<ITS>(),
-                        ascii::string(b"its"),
+                        package_id<InterchainTokenService>(),
+                        ascii::string(b"interchain_token_service"),
                         ascii::string(b"receive_interchain_transfer"),
                     ),
                     arguments,
@@ -152,7 +152,7 @@ fun interchain_transfer_tx(its: &ITS, reader: &mut AbiReader): Transaction {
     }
 }
 
-fun deploy_interchain_token_tx(its: &ITS, reader: &mut AbiReader): Transaction {
+fun deploy_interchain_token_tx(its: &InterchainTokenService, reader: &mut AbiReader): Transaction {
     let mut arg = vector[0];
     arg.append(object::id_address(its).to_bytes());
 
@@ -169,8 +169,8 @@ fun deploy_interchain_token_tx(its: &ITS, reader: &mut AbiReader): Transaction {
 
     let move_call = transaction::new_move_call(
         transaction::new_function(
-            package_id<ITS>(),
-            ascii::string(b"its"),
+            package_id<InterchainTokenService>(),
+            ascii::string(b"interchain_token_service"),
             ascii::string(b"receive_deploy_interchain_token"),
         ),
         arguments,
@@ -185,14 +185,14 @@ fun deploy_interchain_token_tx(its: &ITS, reader: &mut AbiReader): Transaction {
 
 // === Tests ===
 #[test_only]
-fun initial_tx(its: &ITS): Transaction {
+fun initial_tx(its: &InterchainTokenService): Transaction {
     let mut arg = vector[0];
     arg.append(sui::bcs::to_bytes(&object::id(its)));
 
     let arguments = vector[arg, vector[3]];
 
     let function = transaction::new_function(
-        package_id<ITS>(),
+        package_id<InterchainTokenService>(),
         ascii::string(b"discovery"),
         ascii::string(b"call_info"),
     );
@@ -212,7 +212,7 @@ fun initial_tx(its: &ITS): Transaction {
 #[test]
 fun test_discovery_initial() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -230,7 +230,7 @@ fun test_discovery_initial() {
 #[test]
 fun test_discovery_interchain_transfer() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -252,7 +252,7 @@ fun test_discovery_interchain_transfer() {
 
     let type_arg = std::type_name::get<RelayerDiscovery>();
     its.add_registered_coin_type_for_testing(
-        its::token_id::from_address(token_id),
+        interchain_token_service::token_id::from_address(token_id),
         type_arg,
     );
     let tx_block = call_info(&its, payload);
@@ -266,9 +266,9 @@ fun test_discovery_interchain_transfer() {
     let call_info = tx_block.move_calls().pop_back();
 
     assert!(
-        call_info.function().package_id_from_function() == package_id<ITS>(),
+        call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
-    assert!(call_info.function().module_name() == ascii::string(b"its"));
+    assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
     assert!(
         call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
     );
@@ -286,7 +286,7 @@ fun test_discovery_interchain_transfer() {
 #[test]
 fun test_discovery_interchain_transfer_with_data() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -315,7 +315,7 @@ fun test_discovery_interchain_transfer_with_data() {
     let payload = writer.into_bytes();
 
     its.add_registered_coin_type_for_testing(
-        its::token_id::from_address(token_id),
+        interchain_token_service::token_id::from_address(token_id),
         std::type_name::get<RelayerDiscovery>(),
     );
 
@@ -333,7 +333,7 @@ fun test_discovery_interchain_transfer_with_data() {
 #[test]
 fun test_discovery_deploy_token() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -355,7 +355,7 @@ fun test_discovery_deploy_token() {
 
     let type_arg = std::type_name::get<RelayerDiscovery>();
     its.add_unregistered_coin_type_for_testing(
-        its::token_id::unregistered_token_id(
+        interchain_token_service::token_id::unregistered_token_id(
             &ascii::string(symbol),
             (decimals as u8),
         ),
@@ -373,9 +373,9 @@ fun test_discovery_deploy_token() {
     assert!(move_calls.length() == 1);
     let call_info = move_calls.pop_back();
     assert!(
-        call_info.function().package_id_from_function() == package_id<ITS>(),
+        call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
-    assert!(call_info.function().module_name() == ascii::string(b"its"));
+    assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
     assert!(
         call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"),
     );
@@ -444,7 +444,7 @@ fun test_interchain_transfer_info_invalid_message_type() {
 #[test]
 fun test_discovery_hub_message() {
     let ctx = &mut sui::tx_context::dummy();
-    let mut its = its::its::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
     let mut discovery = relayer_discovery::discovery::new(ctx);
 
     register_transaction(&mut its, &mut discovery);
@@ -472,7 +472,7 @@ fun test_discovery_hub_message() {
 
     let type_arg = std::type_name::get<RelayerDiscovery>();
     its.add_registered_coin_type_for_testing(
-        its::token_id::from_address(token_id),
+        interchain_token_service::token_id::from_address(token_id),
         type_arg,
     );
     let tx_block = call_info(&its, payload);
@@ -483,9 +483,9 @@ fun test_discovery_hub_message() {
     let call_info = tx_block.move_calls().pop_back();
 
     assert!(
-        call_info.function().package_id_from_function() == package_id<ITS>(),
+        call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
-    assert!(call_info.function().module_name() == ascii::string(b"its"));
+    assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
     assert!(
         call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
     );
@@ -504,7 +504,7 @@ fun test_discovery_hub_message() {
 #[expected_failure(abort_code = EUnsupportedMessageType)]
 fun test_call_info_unsupported_message_type() {
     let ctx = &mut sui::tx_context::dummy();
-    let its = its::its::create_for_testing(ctx);
+    let its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
 
     let mut writer = abi::new_writer(1);
     writer.write_u256(5);

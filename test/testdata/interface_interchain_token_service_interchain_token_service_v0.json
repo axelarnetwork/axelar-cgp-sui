@@ -1,7 +1,7 @@
 {
   "structs": {
-    "ITS_v0": {
-      "name": "ITS_v0",
+    "InterchainTokenService_v0": {
+      "name": "InterchainTokenService_v0",
       "abilities": [
         "store"
       ],

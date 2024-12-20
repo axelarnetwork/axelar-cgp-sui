@@ -1,7 +1,7 @@
-module its::token_id;
+module interchain_token_service::token_id;
 
-use its::coin_info::CoinInfo;
-use its::coin_management::CoinManagement;
+use interchain_token_service::coin_info::CoinInfo;
+use interchain_token_service::coin_management::CoinManagement;
 use std::ascii;
 use std::string::String;
 use std::type_name;
@@ -77,7 +77,7 @@ public fun unregistered_token_id(
 #[test]
 fun test() {
     use std::string;
-    use its::coin_info;
+    use interchain_token_service::coin_info;
 
     let prefix = address::to_u256(
         address::from_bytes(

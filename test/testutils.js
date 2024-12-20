@@ -375,12 +375,12 @@ async function setupTrustedAddresses(client, keypair, objectIds, deployments, tr
     const trustedAddressTxBuilder = new TxBuilder(client);
 
     const trustedAddressesObject = await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::trusted_addresses::new`,
+        target: `${deployments.interchain_token_service.packageId}::trusted_addresses::new`,
         arguments: [trustedChains, trustedAddresses],
     });
 
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.its.packageId}::its::set_trusted_addresses`,
+        target: `${deployments.interchain_token_service.packageId}::interchain_token_service::set_trusted_addresses`,
         arguments: [objectIds.its, objectIds.itsOwnerCap, trustedAddressesObject],
     });
 

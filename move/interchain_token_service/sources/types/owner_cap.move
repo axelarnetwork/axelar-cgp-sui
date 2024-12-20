@@ -1,4 +1,4 @@
-module its::owner_cap;
+module interchain_token_service::owner_cap;
 
 // -----
 // Types
