@@ -7,6 +7,7 @@ use interchain_token_service::coin_management::CoinManagement;
 use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use interchain_token_service::interchain_token_service_v0::{Self, InterchainTokenService_v0};
 use interchain_token_service::owner_cap::{Self, OwnerCap};
+use interchain_token_service::operator_cap::{Self, OperatorCap};
 use interchain_token_service::token_id::TokenId;
 use interchain_token_service::trusted_addresses::TrustedAddresses;
 use relayer_discovery::discovery::RelayerDiscovery;
@@ -948,15 +949,15 @@ fun test_set_flow_limit() {
     let decimals = 9;
     let limit = 1234;
 
-    let (treasury_cap, coin_metadata) = its::coin::create_treasury_and_metadata(
+    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
     );
-    let coin_info = its::coin_info::from_metadata<COIN>(
+    let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
         coin_metadata,
     );
-    let coin_management = its::coin_management::new_with_cap(treasury_cap);
+    let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
     let operator_cap = operator_cap::create(ctx);
 
