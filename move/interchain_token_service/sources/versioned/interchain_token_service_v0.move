@@ -478,13 +478,22 @@ public(package) fun burn_as_distributor<T>(
     coin_management.burn(coin.into_balance());
 }
 
-public(package) fun set_flow_limit<T>(
+public(package) fun set_flow_limit_as_token_operator<T>(
     self: &mut InterchainTokenService_v0,
     channel: &Channel,
     token_id: TokenId,
     limit: u64,
 ) {
     self.coin_management_mut<T>(token_id).set_flow_limit(channel, limit);
+    events::flow_limit_set<T>(token_id, limit);
+}
+
+public(package) fun set_flow_limit<T>(
+    self: &mut InterchainTokenService_v0,
+    token_id: TokenId,
+    limit: u64,
+) {
+    self.coin_management_mut<T>(token_id).set_flow_limit_internal(limit);
     events::flow_limit_set<T>(token_id, limit);
 }
 
