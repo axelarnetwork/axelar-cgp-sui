@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.0.3
+
+### Patch Changes
+
+-   11b1a8a: Removing pre-existing dirs before copying a new one in copyMovePackage
+
 ## 1.0.2
 
 ### Patch Changes
