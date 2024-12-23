@@ -115,6 +115,10 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
         fromDir = `${__dirname}/../../move`;
     }
 
+    if (fs.existsSync(`${toDir}/${packageName}`)) {
+        fs.rmSync(`${toDir}/${packageName}`, { recursive: true });
+    }
+
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
