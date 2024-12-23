@@ -8,7 +8,7 @@ on:
     branches:
       - main
       - releases/**
-      - feat/add-this-to-the-release
+      - feat/add-this-to-releases
     types: [closed]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
