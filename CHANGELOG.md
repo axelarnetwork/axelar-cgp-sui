@@ -1,5 +1,16 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.1.0
+
+### Minor Changes
+
+-   e070df9: Add operator cap to ITS and allow operator to overwrite flow limits
+-   2d6d8e6: rename its to interchain_token_service everywhere
+
+### Patch Changes
+
+-   86f95ea: Removing pre-existing dirs before copying a new one in copyMovePackage
+
 ## 1.0.2
 
 ### Patch Changes
