@@ -57,7 +57,7 @@ describe('ITS', () => {
 
     // Parameters for Trusted Addresses
     const trustedSourceChain = 'axelar';
-    const trustedSourceAddress = 'hub';
+    const trustedSourceAddress = 'hub_address';
     const otherChain = 'Avalanche';
 
     async function setupGateway() {
@@ -187,7 +187,7 @@ describe('ITS', () => {
         before(async () => {
             await setupGateway();
             await registerItsTransaction();
-            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceChain]);
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
         });
 
         describe('Interchain Token Transfer', () => {
@@ -247,9 +247,13 @@ describe('ITS', () => {
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
+                );
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
                 );
 
                 const message = {
@@ -282,7 +286,7 @@ describe('ITS', () => {
                         objectIds.its,
                         objectIds.gateway,
                         objectIds.gasService,
-                        trustedSourceChain,
+                        otherChain,
                         TokenId,
                         gas,
                         '0x',
@@ -331,10 +335,14 @@ describe('ITS', () => {
                 const distributor = '0x';
 
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
+                payload = defaultAbiCoder.encode(
+                    ['uint256', 'string', 'bytes'],
+                    [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
+                )
 
                 const message = {
                     source_chain: trustedSourceChain,

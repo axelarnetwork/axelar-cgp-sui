@@ -30,6 +30,14 @@ public fun interchain_transfer_info(
 ): (TokenId, address, u64, vector<u8>) {
     let mut reader = abi::new_reader(payload);
     assert!(
+        reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB,
+        EInvalidMessageType,
+    );
+    // Source chain validation is not done here.
+    reader.skip_slot();
+    let payload = reader.read_bytes();
+    reader = abi::new_reader(payload);
+        assert!(
         reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER,
         EInvalidMessageType,
     );

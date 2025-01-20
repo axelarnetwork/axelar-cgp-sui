@@ -270,7 +270,7 @@ function getITSStructs() {
 
     const InterchainTokenServiceV0 = bcs.struct('InterchainTokenService_v0', {
         channel: Channel,
-        address_tracker: InterchainChainTracker,
+        chain_tracker: InterchainChainTracker,
         unregistered_coin_types: Table,
         unregistered_coins: Bag,
         registered_coin_types: Table,

@@ -23,6 +23,9 @@ export interface Dependency {
 export enum ITSMessageType {
     InterchainTokenTransfer = 0,
     InterchainTokenDeployment = 1,
+    SendToItsHub = 3,
+    ReceiveFromItsHub = 4,
+    RegisdterTokenMetadata = 6,
 }
 
 export enum GatewayMessageType {

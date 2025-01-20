@@ -20,7 +20,7 @@
       ],
       "fields": [
         {
-          "name": "trusted_addresses",
+          "name": "trusted_chains",
           "type": "Table<String, TrustedChain>"
         }
       ]

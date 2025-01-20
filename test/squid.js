@@ -51,8 +51,9 @@ describe('Squid', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
-    const trustedSourceChain = 'Avalanche';
-    const trustedSourceAddress = hexlify(randomBytes(20));
+    const trustedSourceChain = 'axelar';
+    const trustedSourceAddress = 'hub_address';
+    const otherChain = 'Avalanche';
     const coins = {};
     const pools = {};
 
@@ -228,7 +229,7 @@ describe('Squid', () => {
 
         const interchainTransfer = await builder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::prepare_interchain_transfer`,
-            arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
+            arguments: [tokenId, input, otherChain, '0xadd1', '0x', channel],
             typeArguments: [coins[coinName].type],
         });
 
@@ -425,7 +426,7 @@ describe('Squid', () => {
         await setupGateway();
         await registerItsTransaction();
         await registerSquidTransaction();
-        await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         await registerCoin('a');
         await giveDeepToSquid();
@@ -441,16 +442,20 @@ describe('Squid', () => {
 
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
-        const sourceAddress = trustedSourceAddress;
+        const sourceAddress = '0x1234';
         const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
         const data = swapData;
         // Channel ID for Squid. This will be encoded in the payload
         const squidChannelId = objectIds.squidChannel;
         // ITS transfer payload from Ethereum to Sui
-        const payload = defaultAbiCoder.encode(
+        let payload = defaultAbiCoder.encode(
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
         );
+        payload = defaultAbiCoder.encode(
+            ['uint256', 'string', 'bytes'],
+            [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
+        )
 
         const message = {
             source_chain: trustedSourceChain,
@@ -477,15 +482,19 @@ describe('Squid', () => {
 
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
-        const sourceAddress = trustedSourceAddress;
+        const sourceAddress = '0x1234';
         const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
         const data = swapData;
         // Channel ID for Squid. This will be encoded in the payload
         const squidChannelId = objectIds.squidChannel;
         // ITS transfer payload from Ethereum to Sui
-        const payload = defaultAbiCoder.encode(
+        let payload = defaultAbiCoder.encode(
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
+        );
+        payload = defaultAbiCoder.encode(
+            ['uint256', 'string', 'bytes'],
+            [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
         );
 
         const message = {
