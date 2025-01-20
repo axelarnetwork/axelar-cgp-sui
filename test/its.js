@@ -56,7 +56,9 @@ describe('ITS', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
-    const trustedSourceChain = 'Avalanche';
+    const trustedSourceChain = 'axelar';
+    const trustedSourceAddress = 'hub';
+    const otherChain = 'Avalanche';
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -196,6 +198,7 @@ describe('ITS', () => {
                 const tx = txBuilder.tx;
 
                 const coin = tx.splitCoins(objectIds.token, [1e9]);
+                const destinationAddress = '0x1234';
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
@@ -212,8 +215,8 @@ describe('ITS', () => {
                         objectIds.gasService,
                         TokenId,
                         coin,
-                        trustedSourceChain,
-                        trustedSourceAddress,
+                        otherChain,
+                        destinationAddress,
                         '0x', // its token metadata
                         deployer.toSuiAddress(),
                         gas,
@@ -231,7 +234,7 @@ describe('ITS', () => {
                 // Approve ITS transfer message
                 const messageType = ITSMessageType.InterchainTokenTransfer;
                 const tokenId = objectIds.tokenId;
-                const sourceAddress = trustedSourceAddress;
+                const sourceAddress = '0x1234';
                 const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
                 const amount = 1e9;
                 const data = '0x1234';
