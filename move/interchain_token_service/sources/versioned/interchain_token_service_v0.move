@@ -714,8 +714,17 @@ public(package) fun remove_registered_coin_type_for_testing(
 }
 
 #[test_only]
-public(package) fun wrap_payload_for_testing(self: &InterchainTokenService_v0, payload: &mut vector<u8>, destination_chain: String) {
+public(package) fun wrap_payload_sending(self: &InterchainTokenService_v0, payload: &mut vector<u8>, destination_chain: String) {
     self.wrap_payload(payload, destination_chain);
+}
+
+#[test_only]
+public fun wrap_payload_receiving(payload: &mut vector<u8>, source_chain: String) {
+    let mut writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+    writer.write_bytes(source_chain.into_bytes());
+    writer.write_bytes(*payload);
+    *payload = writer.into_bytes();
 }
 
 // -----

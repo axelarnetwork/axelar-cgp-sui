@@ -405,6 +405,7 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
 // === HUB CONSTANTS ===
+#[test_only]
 // Axelar.
 const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 #[test_only]
@@ -526,7 +527,7 @@ fun test_deploy_remote_interchain_token() {
         .write_u256((token_decimals as u256))
         .write_bytes(vector::empty());
     let mut payload = writer.into_bytes();
-    its.value!(b"").wrap_payload_for_testing(&mut payload, destination_chain);
+    its.value!(b"").wrap_payload_sending(&mut payload, destination_chain);
 
     assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
     assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
@@ -579,7 +580,6 @@ fun test_deploy_interchain_token() {
     utils::assert_event<interchain_token_service::events::InterchainTransfer<COIN>>();
 
     let mut writer = abi::new_writer(6);
-
     writer
         .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
         .write_u256(token_id.to_u256())
@@ -588,7 +588,7 @@ fun test_deploy_interchain_token() {
         .write_u256((amount as u256))
         .write_bytes(b"");
     let mut payload = writer.into_bytes();
-    its.value!(b"").wrap_payload_for_testing(&mut payload, destination_chain);
+    its.value!(b"").wrap_payload_sending(&mut payload, destination_chain);
 
     assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
     assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());

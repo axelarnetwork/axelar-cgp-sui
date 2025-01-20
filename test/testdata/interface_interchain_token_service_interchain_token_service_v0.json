@@ -11,8 +11,8 @@
           "type": "Channel"
         },
         {
-          "name": "address_tracker",
-          "type": "InterchainAddressTracker"
+          "name": "chain_tracker",
+          "type": "InterchainChainTracker"
         },
         {
           "name": "unregistered_coin_types",
