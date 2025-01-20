@@ -370,18 +370,13 @@ const getSingletonChannelId = async (client, singletonObjectId) => {
     return '0x' + data.channel.id;
 };
 
-async function setupTrustedAddresses(client, keypair, objectIds, deployments, trustedAddresses, trustedChains = ['Ethereum']) {
+async function setupTrustedAddresses(client, keypair, objectIds, deployments, trustedChains = ['Ethereum']) {
     // Set trusted addresses
     const trustedAddressTxBuilder = new TxBuilder(client);
 
-    const trustedAddressesObject = await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.interchain_token_service.packageId}::trusted_addresses::new`,
-        arguments: [trustedChains, trustedAddresses],
-    });
-
     await trustedAddressTxBuilder.moveCall({
-        target: `${deployments.interchain_token_service.packageId}::interchain_token_service::set_trusted_addresses`,
-        arguments: [objectIds.its, objectIds.itsOwnerCap, trustedAddressesObject],
+        target: `${deployments.interchain_token_service.packageId}::interchain_token_service::add_trusted_chains`,
+        arguments: [objectIds.its, objectIds.itsOwnerCap, trustedChains],
     });
 
     const trustedAddressResult = await trustedAddressTxBuilder.signAndExecute(keypair);

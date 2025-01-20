@@ -57,7 +57,6 @@ describe('ITS', () => {
 
     // Parameters for Trusted Addresses
     const trustedSourceChain = 'Avalanche';
-    const trustedSourceAddress = hexlify(randomBytes(20));
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -186,7 +185,7 @@ describe('ITS', () => {
         before(async () => {
             await setupGateway();
             await registerItsTransaction();
-            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceChain]);
         });
 
         describe('Interchain Token Transfer', () => {

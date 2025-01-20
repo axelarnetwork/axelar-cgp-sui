@@ -19,7 +19,7 @@ public struct TrustedChain has store, drop {}
 
 /// The interchain address tracker stores the trusted addresses for each chain.
 public struct InterchainChainTracker has store {
-    trusted_addresses: Table<String, TrustedChain>,
+    trusted_chains: Table<String, TrustedChain>,
 }
 
 // -----------------
@@ -30,13 +30,13 @@ public(package) fun is_trusted_chain(
     self: &InterchainChainTracker,
     chain_name: String,
 ): bool {
-    self.trusted_addresses.contains(chain_name)
+    self.trusted_chains.contains(chain_name)
 }
 
 /// Create a new interchain address tracker.
 public(package) fun new(ctx: &mut TxContext): InterchainChainTracker {
     InterchainChainTracker {
-        trusted_addresses: table::new(ctx),
+        trusted_chains: table::new(ctx),
     }
 }
 
@@ -47,10 +47,10 @@ public(package) fun add_trusted_chain(
 ) {
     assert!(chain_name.length() > 0, EEmptyChainName);
 
-    if (self.trusted_addresses.contains(chain_name)) {
+    if (self.trusted_chains.contains(chain_name)) {
         abort EAlreadyTrusted
     } else {
-        self.trusted_addresses.add(chain_name, TrustedChain{});
+        self.trusted_chains.add(chain_name, TrustedChain{});
     };
     events::trusted_address_added(chain_name);
 }
@@ -60,7 +60,7 @@ public(package) fun remove_trusted_chain(
     chain_name: String,
 ) {
     assert!(chain_name.length() > 0, EEmptyChainName);
-    self.trusted_addresses.remove(chain_name);
+    self.trusted_chains.remove(chain_name);
     events::trusted_address_removed(chain_name);
 }
 
@@ -80,8 +80,8 @@ fun test_chain_tracker() {
     assert!(self.is_trusted_chain(chain1) == true);
     assert!(self.is_trusted_chain(chain2) == true);
 
-    assert!(self.trusted_addresses.contains(chain1));
-    assert!(self.trusted_addresses.contains(chain2));
+    assert!(self.trusted_chains.contains(chain1));
+    assert!(self.trusted_chains.contains(chain2));
 
     self.remove_trusted_chain(chain1);
     self.remove_trusted_chain(chain2);
@@ -90,8 +90,8 @@ fun test_chain_tracker() {
     assert!(self.is_trusted_chain(chain1) == false);
     assert!(self.is_trusted_chain(chain2) == false);
 
-    assert!(!self.trusted_addresses.contains(chain1));
-    assert!(!self.trusted_addresses.contains(chain2));
+    assert!(!self.trusted_chains.contains(chain1));
+    assert!(!self.trusted_chains.contains(chain2));
 
     sui::test_utils::destroy(self);
 }
