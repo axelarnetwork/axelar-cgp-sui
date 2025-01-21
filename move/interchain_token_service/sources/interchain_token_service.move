@@ -7,6 +7,7 @@ use interchain_token_service::coin_management::CoinManagement;
 use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use interchain_token_service::interchain_token_service_v0::{Self, InterchainTokenService_v0};
 use interchain_token_service::owner_cap::{Self, OwnerCap};
+use interchain_token_service::creator_cap::{Self, CreatorCap};
 use interchain_token_service::operator_cap::{Self, OperatorCap};
 use interchain_token_service::token_id::TokenId;
 use interchain_token_service::trusted_addresses::TrustedAddresses;
@@ -37,10 +38,28 @@ public struct InterchainTokenService has key {
 // Setup
 // -----
 fun init(ctx: &mut TxContext) {
+    transfer::public_transfer(
+        owner_cap::create(ctx),
+        ctx.sender(),
+    );
+
+    transfer::public_transfer(
+        operator_cap::create(ctx),
+        ctx.sender(),
+    );
+
+    transfer::public_transfer(
+        creator_cap::create(ctx),
+        ctx.sender(),
+    );
+}
+
+public fun setup(creator_cap: CreatorCap, chain_name: String, ctx: &mut TxContext) {
     let inner = versioned::create(
         DATA_VERSION,
         interchain_token_service_v0::new(
             version_control(),
+            chain_name,
             ctx,
         ),
         ctx,
@@ -52,15 +71,7 @@ fun init(ctx: &mut TxContext) {
         inner,
     });
 
-    transfer::public_transfer(
-        owner_cap::create(ctx),
-        ctx.sender(),
-    );
-
-    transfer::public_transfer(
-        operator_cap::create(ctx),
-        ctx.sender(),
-    );
+    creator_cap.destroy();
 }
 
 // ------
@@ -412,6 +423,7 @@ public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
 
     let mut value = interchain_token_service_v0::new(
         version_control,
+        b"chain name".to_ascii_string(),
         ctx,
     );
     value.set_trusted_address(
@@ -976,8 +988,25 @@ fun test_init() {
     ts.next_tx(@0x0);
 
     let owner_cap = ts.take_from_sender<OwnerCap>();
-    let its = ts.take_shared<InterchainTokenService>();
+    let operator_cap = ts.take_from_sender<OperatorCap>();
+    
     ts.return_to_sender(owner_cap);
+    ts.return_to_sender(operator_cap);
+    ts.end();
+}
+
+#[test]
+fun test_setup() {
+    let mut ts = sui::test_scenario::begin(@0x0);
+    let creator_cap = creator_cap::create(ts.ctx());
+    let chain_name = b"chain name".to_ascii_string();
+
+    setup(creator_cap, chain_name, ts.ctx());
+    ts.next_tx(@0x0);
+
+    let its = ts.take_shared<InterchainTokenService>();
+    assert!(its.value!(b"send_interchain_transfer").chain_name() == chain_name);
+
     sui::test_scenario::return_shared(its);
     ts.end();
 }
