@@ -251,10 +251,7 @@ describe('ITS', () => {
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
                 );
-                payload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
-                );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,
@@ -339,10 +336,7 @@ describe('ITS', () => {
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
-                payload = defaultAbiCoder.encode(
-                    ['uint256', 'string', 'bytes'],
-                    [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
-                )
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,

@@ -12,8 +12,7 @@ use sui::table::{Self, Table};
 #[error]
 const EEmptyChainName: vector<u8> = b"empty trusted chain name is unsupported";
 #[error]
-const EAlreadyTrusted: vector<u8> =
-    b"chain is already trusted";
+const EAlreadyTrusted: vector<u8> = b"chain is already trusted";
 
 public struct TrustedChain has store, drop {}
 
@@ -26,10 +25,7 @@ public struct InterchainChainTracker has store {
 // Package Functions
 // -----------------
 /// Check if the given address is trusted for the given chain.
-public(package) fun is_trusted_chain(
-    self: &InterchainChainTracker,
-    chain_name: String,
-): bool {
+public(package) fun is_trusted_chain(self: &InterchainChainTracker, chain_name: String): bool {
     self.trusted_chains.contains(chain_name)
 }
 
@@ -41,24 +37,18 @@ public(package) fun new(ctx: &mut TxContext): InterchainChainTracker {
 }
 
 /// Set the trusted address for a chain or adds it if it doesn't exist.
-public(package) fun add_trusted_chain(
-    self: &mut InterchainChainTracker,
-    chain_name: String,
-) {
+public(package) fun add_trusted_chain(self: &mut InterchainChainTracker, chain_name: String) {
     assert!(chain_name.length() > 0, EEmptyChainName);
 
     if (self.trusted_chains.contains(chain_name)) {
         abort EAlreadyTrusted
     } else {
-        self.trusted_chains.add(chain_name, TrustedChain{});
+        self.trusted_chains.add(chain_name, TrustedChain {});
     };
     events::trusted_address_added(chain_name);
 }
 
-public(package) fun remove_trusted_chain(
-    self: &mut InterchainChainTracker,
-    chain_name: String,
-) {
+public(package) fun remove_trusted_chain(self: &mut InterchainChainTracker, chain_name: String) {
     assert!(chain_name.length() > 0, EEmptyChainName);
     self.trusted_chains.remove(chain_name);
     events::trusted_address_removed(chain_name);
@@ -85,7 +75,6 @@ fun test_chain_tracker() {
 
     self.remove_trusted_chain(chain1);
     self.remove_trusted_chain(chain2);
-
 
     assert!(self.is_trusted_chain(chain1) == false);
     assert!(self.is_trusted_chain(chain2) == false);

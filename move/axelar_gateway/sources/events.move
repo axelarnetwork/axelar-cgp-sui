@@ -48,11 +48,7 @@ public struct MessageExecuted has copy, drop {
 // -----------------
 // Package Functions
 // -----------------
-public(package) fun signers_rotated(
-    epoch: u64,
-    signers_hash: Bytes32,
-    signers: WeightedSigners,
-) {
+public(package) fun signers_rotated(epoch: u64, signers_hash: Bytes32, signers: WeightedSigners) {
     event::emit(SignersRotated {
         epoch,
         signers_hash,

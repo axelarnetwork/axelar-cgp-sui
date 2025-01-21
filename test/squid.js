@@ -452,10 +452,7 @@ describe('Squid', () => {
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
         );
-        payload = defaultAbiCoder.encode(
-            ['uint256', 'string', 'bytes'],
-            [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
-        )
+        payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
         const message = {
             source_chain: trustedSourceChain,
@@ -492,10 +489,7 @@ describe('Squid', () => {
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
         );
-        payload = defaultAbiCoder.encode(
-            ['uint256', 'string', 'bytes'],
-            [ITSMessageType.ReceiveFromItsHub, otherChain, payload],
-        );
+        payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
         const message = {
             source_chain: trustedSourceChain,

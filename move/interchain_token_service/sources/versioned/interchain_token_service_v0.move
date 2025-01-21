@@ -588,7 +588,11 @@ fun add_registered_coin<T>(
     );
 }
 
-fun wrap_payload(self: &InterchainTokenService_v0, payload: &mut vector<u8>, destination_chain: String) {
+fun wrap_payload(
+    self: &InterchainTokenService_v0,
+    payload: &mut vector<u8>,
+    destination_chain: String,
+) {
     assert!(self.is_trusted_chain(destination_chain), EUntrustedChain);
 
     let mut writer = abi::new_writer(3);
@@ -714,7 +718,11 @@ public(package) fun remove_registered_coin_type_for_testing(
 }
 
 #[test_only]
-public(package) fun wrap_payload_sending(self: &InterchainTokenService_v0, payload: &mut vector<u8>, destination_chain: String) {
+public(package) fun wrap_payload_sending(
+    self: &InterchainTokenService_v0,
+    payload: &mut vector<u8>,
+    destination_chain: String,
+) {
     self.wrap_payload(payload, destination_chain);
 }
 
@@ -742,9 +750,9 @@ fun test_decode_approved_message_axelar_hub_sender() {
     let payload = b"payload";
 
     let mut writer = abi::new_writer(3);
-        writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
-        writer.write_bytes(origin_chain.into_bytes());
-        writer.write_bytes(payload);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+    writer.write_bytes(origin_chain.into_bytes());
+    writer.write_bytes(payload);
     let payload = writer.into_bytes();
 
     self.add_trusted_chain(
@@ -806,9 +814,9 @@ fun test_decode_approved_message_origin_not_hub_routed() {
     let payload = b"payload";
 
     let mut writer = abi::new_writer(3);
-        writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
-        writer.write_bytes(origin_chain.into_bytes());
-        writer.write_bytes(payload);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+    writer.write_bytes(origin_chain.into_bytes());
+    writer.write_bytes(payload);
     let payload = writer.into_bytes();
 
     let approved_message = channel::new_approved_message(

@@ -13,8 +13,7 @@ use sui::address;
 /// Errors
 /// ------
 #[error]
-const EUnsupportedMessageType: vector<u8> =
-    b"the message type found is not supported";
+const EUnsupportedMessageType: vector<u8> = b"the message type found is not supported";
 #[error]
 const EInvalidMessageType: vector<u8> =
     b"can only get interchain transfer info for interchain transfers";
@@ -25,22 +24,14 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 // onst MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
-public fun interchain_transfer_info(
-    payload: vector<u8>,
-): (TokenId, address, u64, vector<u8>) {
+public fun interchain_transfer_info(payload: vector<u8>): (TokenId, address, u64, vector<u8>) {
     let mut reader = abi::new_reader(payload);
-    assert!(
-        reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB,
-        EInvalidMessageType,
-    );
+    assert!(reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB, EInvalidMessageType);
     // Source chain validation is not done here.
     reader.skip_slot();
     let payload = reader.read_bytes();
     reader = abi::new_reader(payload);
-        assert!(
-        reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER,
-        EInvalidMessageType,
-    );
+    assert!(reader.read_u256() == MESSAGE_TYPE_INTERCHAIN_TRANSFER, EInvalidMessageType);
 
     let token_id = token_id::from_u256(reader.read_u256());
     reader.skip_slot(); // skip source_address
@@ -95,10 +86,7 @@ public fun call_info(its: &InterchainTokenService, mut payload: vector<u8>): Tra
     if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
         interchain_transfer_tx(its, &mut reader)
     } else {
-        assert!(
-            message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN,
-            EUnsupportedMessageType,
-        );
+        assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
         deploy_interchain_token_tx(its, &mut reader)
     }
 }
@@ -135,10 +123,7 @@ fun interchain_transfer_tx(its: &InterchainTokenService, reader: &mut AbiReader)
         )
     } else {
         let mut discovery_arg = vector[0];
-        discovery_arg.append(value
-            .relayer_discovery_id()
-            .id_to_address()
-            .to_bytes());
+        discovery_arg.append(value.relayer_discovery_id().id_to_address().to_bytes());
 
         let mut channel_id_arg = vector[1];
         channel_id_arg.append(destination_address.to_bytes());
@@ -277,9 +262,7 @@ fun test_discovery_interchain_transfer() {
         call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
     assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
-    assert!(
-        call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
-    );
+    assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"));
     let mut arg = vector[0];
     arg.append(object::id_address(&its).to_bytes());
 
@@ -330,9 +313,7 @@ fun test_discovery_interchain_transfer_with_data() {
     let mut reader = abi::new_reader(payload);
     reader.skip_slot(); // skip message_type
 
-    assert!(
-        call_info(&its, payload) == interchain_transfer_tx(&its, &mut reader),
-    );
+    assert!(call_info(&its, payload) == interchain_transfer_tx(&its, &mut reader));
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(discovery);
@@ -384,9 +365,7 @@ fun test_discovery_deploy_token() {
         call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
     assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
-    assert!(
-        call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"),
-    );
+    assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"));
     let mut arg = vector[0];
     arg.append(object::id_address(&its).to_bytes());
 
@@ -403,6 +382,7 @@ fun test_interchain_transfer_info() {
     let message_type = MESSAGE_TYPE_INTERCHAIN_TRANSFER;
     let token_id = 1;
     let source_address = b"source address";
+    let source_chain = b"Chain Name";
     let destination = @0x3.to_bytes();
     let amount = 2;
     let data = b"data";
@@ -415,6 +395,9 @@ fun test_interchain_transfer_info() {
         .write_bytes(destination)
         .write_u256(amount)
         .write_bytes(data);
+    let payload = writer.into_bytes();
+    writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(source_chain).write_bytes(payload);
 
     let (
         resolved_token_id,
@@ -494,9 +477,7 @@ fun test_discovery_hub_message() {
         call_info.function().package_id_from_function() == package_id<InterchainTokenService>(),
     );
     assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
-    assert!(
-        call_info.function().name() == ascii::string(b"receive_interchain_transfer"),
-    );
+    assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"));
     let mut arg = vector[0];
     arg.append(object::id_address(&its).to_bytes());
 
