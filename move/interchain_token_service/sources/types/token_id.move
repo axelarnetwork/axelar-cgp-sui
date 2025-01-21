@@ -34,6 +34,7 @@ public fun to_u256(token_id: &TokenId): u256 {
 }
 
 public fun from_info<T>(
+    chain_name: &ascii::String,
     name: &String,
     symbol: &ascii::String,
     decimals: &u8,
@@ -42,6 +43,7 @@ public fun from_info<T>(
 ): TokenId {
     let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
     vec.append(bcs::to_bytes(&type_name::get<T>()));
+    vec.append(bcs::to_bytes(chain_name));
     vec.append(bcs::to_bytes(name));
     vec.append(bcs::to_bytes(symbol));
     vec.append(bcs::to_bytes(decimals));
@@ -51,10 +53,12 @@ public fun from_info<T>(
 }
 
 public(package) fun from_coin_data<T>(
+    chain_name: &ascii::String,
     coin_info: &CoinInfo<T>,
     coin_management: &CoinManagement<T>,
 ): TokenId {
     from_info<T>(
+        chain_name,
         &coin_info.name(),
         &coin_info.symbol(),
         &coin_info.decimals(),

@@ -201,7 +201,7 @@ public(package) fun register_coin<T>(
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
-    let token_id = token_id::from_coin_data(&coin_info, &coin_management);
+    let token_id = token_id::from_coin_data(self.chain_name(), &coin_info, &coin_management);
 
     self.add_registered_coin(token_id, coin_management, coin_info);
 
@@ -493,8 +493,8 @@ public(package) fun disallow_function(
     self.version_control.disallow_function(version, function_name);
 }
 
-public(package) fun chain_name(self: &InterchainTokenService_v0): String {
-    self.chain_name
+public(package) fun chain_name(self: &InterchainTokenService_v0): &String {
+    &self.chain_name
 }
 
 // -----------------
