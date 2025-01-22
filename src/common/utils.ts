@@ -65,7 +65,7 @@ export function isString(parameter: SuiMoveNormalizedType): boolean {
     if (!asAny) {
         return false;
     }
-    
+
     const isAsciiString = asAny.address === STD_PACKAGE_ID && asAny.module === 'ascii' && asAny.name === 'String';
     const isStringString = asAny.address === STD_PACKAGE_ID && asAny.module === 'string' && asAny.name === 'String';
     return isAsciiString || isStringString;
