@@ -60,15 +60,20 @@ export function getContractBuild(packageName: string, moveDir: string): { module
 export function writeInterchainToken(moveDir: string, options: InterchainTokenOptions) {
     const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
 
+    const templateContent = fs.readFileSync(templateFilePath, 'utf8');
     const { filePath, content } = newInterchainToken(templateFilePath, options);
 
     fs.writeFileSync(filePath, content, 'utf8');
 
-    return filePath;
+    return { templateFilePath, filePath, templateContent };
 }
 
 export function removeFile(filePath: string) {
     fs.rmSync(filePath);
+}
+
+export function addFile(filePath: string, content: string) {
+    fs.writeFileSync(filePath, content, 'utf8');
 }
 
 export function updateMoveToml(
@@ -108,6 +113,10 @@ export function updateMoveToml(
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
     if (fromDir == null) {
         fromDir = `${__dirname}/../../move`;
+    }
+
+    if (fs.existsSync(`${toDir}/${packageName}`)) {
+        fs.rmSync(`${toDir}/${packageName}`, { recursive: true });
     }
 
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
