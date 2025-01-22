@@ -94,10 +94,7 @@ describe('Squid', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [
-                objectIds.itsCreatorCap,
-                chainName,
-            ],
+            arguments: [objectIds.itsCreatorCap, chainName],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
@@ -424,7 +421,7 @@ describe('Squid', () => {
         };
 
         await setupIts();
-        
+
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
