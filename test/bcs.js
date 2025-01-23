@@ -24,7 +24,7 @@ describe('BCS', () => {
     it('should decode InterchainTokenService_v0 object successfully', () => {
         const its = bcsStructs.its.InterchainTokenService.parse(fromHEX(hexData.InterchainTokenService_v0)).value;
 
-        checkIdAndSize(its.chain_tracker.trusted_chains, '270c7f8b9757b05777d3cbf98fa1bb197e1f5a18c8ff7a8ef16e80bedf39a67f');
+        checkIdAndSize(its.trusted_chains.trusted_chains, '270c7f8b9757b05777d3cbf98fa1bb197e1f5a18c8ff7a8ef16e80bedf39a67f');
         checkIdAndSize(its.unregistered_coin_types, '00c101dbc800d8cf853e6d21c916aba7c92e4c2692527dc951c777dae15cf474');
         checkIdAndSize(its.unregistered_coins, '44bacbed87a2d5f871ce96f3245a293b936fb287605330b3859649f3a2697668');
         checkIdAndSize(its.registered_coin_types, '13bd4dc87b61a82ce5959e3ea8c3fed1e03d9c1f7246eef82722354d8e3c0d54');

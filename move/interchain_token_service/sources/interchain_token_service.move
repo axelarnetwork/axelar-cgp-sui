@@ -9,7 +9,6 @@ use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTrans
 use interchain_token_service::owner_cap::{Self, OwnerCap};
 use interchain_token_service::creator_cap::{Self, CreatorCap};
 use interchain_token_service::operator_cap::{Self, OperatorCap};
-use interchain_token_service::owner_cap::{Self, OwnerCap};
 use interchain_token_service::token_id::TokenId;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::Transaction;

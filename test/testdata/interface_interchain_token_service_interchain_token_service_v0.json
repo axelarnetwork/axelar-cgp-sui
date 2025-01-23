@@ -11,8 +11,8 @@
           "type": "Channel"
         },
         {
-          "name": "chain_tracker",
-          "type": "InterchainChainTracker"
+          "name": "trusted_chains",
+          "type": "TrustedChains"
         },
         {
           "name": "unregistered_coin_types",

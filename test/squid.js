@@ -94,7 +94,7 @@ describe('Squid', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [objectIds.itsCreatorCap, chainName],
+            arguments: [objectIds.itsCreatorCap, otherChain],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);

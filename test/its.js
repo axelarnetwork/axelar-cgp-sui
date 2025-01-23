@@ -95,7 +95,7 @@ describe('ITS', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [objectIds.itsCreatorCap, chainName],
+            arguments: [objectIds.itsCreatorCap, otherChain],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
@@ -261,9 +261,9 @@ describe('ITS', () => {
                     packageId: deployments.relayer_discovery.packageId,
                     discovery: objectIds.relayerDiscovery,
                 };
-
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
+                
                 // ITS transfer payload from Ethereum to Sui
                 let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],

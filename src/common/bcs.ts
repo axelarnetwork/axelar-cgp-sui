@@ -266,13 +266,13 @@ function getITSStructs() {
     const { Table, Bag, Channel } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
 
-    const InterchainChainTracker = bcs.struct('InterchainChainTracker', {
-        trusted_chains: Table,
+    const TrustedChains = bcs.struct('TrustedChains', {
+        trusted_chains: Bag,
     });
 
     const InterchainTokenServiceV0 = bcs.struct('InterchainTokenService_v0', {
         channel: Channel,
-        chain_tracker: InterchainChainTracker,
+        trusted_chains: TrustedChains,
         unregistered_coin_types: Table,
         unregistered_coins: Bag,
         registered_coin_types: Table,
@@ -288,7 +288,7 @@ function getITSStructs() {
     });
 
     return {
-        InterchainChainTracker,
+        TrustedChains,
         InterchainTokenService,
     };
 }

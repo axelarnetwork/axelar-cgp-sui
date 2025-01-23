@@ -1,7 +1,7 @@
 {
   "structs": {
-    "TrustedAddressAdded": {
-      "name": "TrustedAddressAdded",
+    "TrustedChainAdded": {
+      "name": "TrustedChainAdded",
       "abilities": [
         "copy",
         "drop"
@@ -13,8 +13,8 @@
         }
       ]
     },
-    "TrustedAddressRemoved": {
-      "name": "TrustedAddressRemoved",
+    "TrustedChainRemoved": {
+      "name": "TrustedChainRemoved",
       "abilities": [
         "copy",
         "drop"
