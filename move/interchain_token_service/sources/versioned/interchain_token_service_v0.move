@@ -84,6 +84,7 @@ public struct InterchainTokenService_v0 has store {
     registered_coin_types: Table<TokenId, TypeName>,
     registered_coins: Bag,
     relayer_discovery_id: ID,
+    chain_name: String,
     version_control: VersionControl,
 }
 
@@ -92,6 +93,7 @@ public struct InterchainTokenService_v0 has store {
 // -----------------
 public(package) fun new(
     version_control: VersionControl,
+    chain_name: String,
     ctx: &mut TxContext,
 ): InterchainTokenService_v0 {
     InterchainTokenService_v0 {
@@ -103,6 +105,7 @@ public(package) fun new(
         registered_coin_types: table::new(ctx),
         unregistered_coins: bag::new(ctx),
         unregistered_coin_types: table::new(ctx),
+        chain_name,
         relayer_discovery_id: object::id_from_address(@0x0),
         version_control,
     }
@@ -185,7 +188,7 @@ public(package) fun register_coin<T>(
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
-    let token_id = token_id::from_coin_data(&coin_info, &coin_management);
+    let token_id = token_id::from_coin_data(self.chain_name(), &coin_info, &coin_management);
 
     self.add_registered_coin(token_id, coin_management, coin_info);
 
@@ -481,6 +484,10 @@ public(package) fun disallow_function(
     self.version_control.disallow_function(version, function_name);
 }
 
+public(package) fun chain_name(self: &InterchainTokenService_v0): &String {
+    &self.chain_name
+}
+
 // -----------------
 // Private Functions
 // -----------------
@@ -651,7 +658,11 @@ use interchain_token_service::coin::COIN;
 
 #[test_only]
 fun create_for_testing(ctx: &mut TxContext): InterchainTokenService_v0 {
-    let mut self = new(version_control::version_control::new(vector[]), ctx);
+    let mut self = new(
+        version_control::version_control::new(vector[]),
+        b"chain name".to_ascii_string(),
+        ctx,
+    );
 
     self.add_trusted_chain(
         std::ascii::string(b"Chain Name"),

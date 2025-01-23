@@ -35,6 +35,10 @@
           "type": "ID"
         },
         {
+          "name": "chain_name",
+          "type": "String"
+        },
+        {
           "name": "version_control",
           "type": "VersionControl"
         }
