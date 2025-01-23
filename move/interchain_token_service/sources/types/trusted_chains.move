@@ -1,5 +1,3 @@
-/// Q: why addresses are stored as Strings?
-/// Q: why chains are Strings?
 module interchain_token_service::trusted_chains;
 
 use interchain_token_service::events;

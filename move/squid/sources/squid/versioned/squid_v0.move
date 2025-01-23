@@ -93,18 +93,16 @@ public(package) fun withdraw<T>(
     let balance = self.coin_bag.exact_balance<T>(amount);
     transfer::public_transfer(coin::from_balance(balance, ctx), ctx.sender());
 }
-// ---------
-// Test Only
-// ---------
+
 /// ---------
 /// Test Only
 /// ---------
 /// // === HUB CONSTANTS ===
-#[test_only]
 // Axelar.
-const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 #[test_only]
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 // The address of the ITS HUB.
+#[test_only]
 const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 
 #[test_only]
