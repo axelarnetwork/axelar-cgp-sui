@@ -4,7 +4,7 @@ use abi::abi::{Self, AbiReader};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
-use interchain_token_service::chain_tracker::{Self, InterchainChainTracker};
+use interchain_token_service::trusted_chains::{Self, InterchainChainTracker};
 use interchain_token_service::coin_data::{Self, CoinData};
 use interchain_token_service::coin_info::{Self, CoinInfo};
 use interchain_token_service::coin_management::{Self, CoinManagement};
@@ -78,7 +78,7 @@ const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 // -----
 public struct InterchainTokenService_v0 has store {
     channel: Channel,
-    chain_tracker: InterchainChainTracker,
+    trusted_chains: InterchainChainTracker,
     unregistered_coin_types: Table<UnregisteredTokenId, TypeName>,
     unregistered_coins: Bag,
     registered_coin_types: Table<TokenId, TypeName>,
@@ -96,7 +96,7 @@ public(package) fun new(
 ): InterchainTokenService_v0 {
     InterchainTokenService_v0 {
         channel: axelar_gateway::channel::new(ctx),
-        chain_tracker: chain_tracker::new(
+        trusted_chains: trusted_chains::new(
             ctx,
         ),
         registered_coins: bag::new(ctx),
@@ -143,11 +143,11 @@ public(package) fun relayer_discovery_id(self: &InterchainTokenService_v0): ID {
 }
 
 public(package) fun add_trusted_chain(self: &mut InterchainTokenService_v0, chain_name: String) {
-    self.chain_tracker.add_trusted_chain(chain_name);
+    self.trusted_chains.add_trusted_chain(chain_name);
 }
 
 public(package) fun remove_trusted_chain(self: &mut InterchainTokenService_v0, chain_name: String) {
-    self.chain_tracker.remove_trusted_chain(chain_name);
+    self.trusted_chains.remove_trusted_chain(chain_name);
 }
 
 public(package) fun add_trusted_chains(
@@ -498,7 +498,7 @@ fun is_trusted_address(source_chain: String, source_address: String): bool {
 }
 
 fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
-    self.chain_tracker.is_trusted_chain(source_chain)
+    self.trusted_chains.is_trusted_chain(source_chain)
 }
 
 fun coin_management_mut<T>(
