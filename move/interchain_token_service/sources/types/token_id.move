@@ -42,8 +42,8 @@ public fun from_info<T>(
     has_treasury: &bool,
 ): TokenId {
     let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
-    vec.append(bcs::to_bytes(&type_name::get<T>()));
     vec.append(bcs::to_bytes(chain_name));
+    vec.append(bcs::to_bytes(&type_name::get<T>()));
     vec.append(bcs::to_bytes(name));
     vec.append(bcs::to_bytes(symbol));
     vec.append(bcs::to_bytes(decimals));
