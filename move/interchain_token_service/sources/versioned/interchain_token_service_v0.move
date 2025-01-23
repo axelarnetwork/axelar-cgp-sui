@@ -4,7 +4,7 @@ use abi::abi::{Self, AbiReader};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
-use interchain_token_service::trusted_chains::{Self, InterchainChainTracker};
+use interchain_token_service::trusted_chains::{Self, TrustedChains};
 use interchain_token_service::coin_data::{Self, CoinData};
 use interchain_token_service::coin_info::{Self, CoinInfo};
 use interchain_token_service::coin_management::{Self, CoinManagement};
@@ -78,7 +78,7 @@ const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 // -----
 public struct InterchainTokenService_v0 has store {
     channel: Channel,
-    trusted_chains: InterchainChainTracker,
+    trusted_chains: TrustedChains,
     unregistered_coin_types: Table<UnregisteredTokenId, TypeName>,
     unregistered_coins: Bag,
     registered_coin_types: Table<TokenId, TypeName>,
@@ -143,11 +143,11 @@ public(package) fun relayer_discovery_id(self: &InterchainTokenService_v0): ID {
 }
 
 public(package) fun add_trusted_chain(self: &mut InterchainTokenService_v0, chain_name: String) {
-    self.trusted_chains.add_trusted_chain(chain_name);
+    self.trusted_chains.add(chain_name);
 }
 
 public(package) fun remove_trusted_chain(self: &mut InterchainTokenService_v0, chain_name: String) {
-    self.trusted_chains.remove_trusted_chain(chain_name);
+    self.trusted_chains.remove(chain_name);
 }
 
 public(package) fun add_trusted_chains(
@@ -498,7 +498,7 @@ fun is_trusted_address(source_chain: String, source_address: String): bool {
 }
 
 fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
-    self.trusted_chains.is_trusted_chain(source_chain)
+    self.trusted_chains.is_trusted(source_chain)
 }
 
 fun coin_management_mut<T>(
