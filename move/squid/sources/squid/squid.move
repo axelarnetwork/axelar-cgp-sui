@@ -155,11 +155,12 @@ fun new_version_control(): VersionControl {
 /// Test Only
 /// ---------
 /// // === HUB CONSTANTS ===
+/// ITS Hub test chain name
 #[test_only]
-// Axelar.
 const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+
+/// ITS hub test address
 #[test_only]
-// The address of the ITS HUB.
 const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 
 #[test_only]
