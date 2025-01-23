@@ -48,11 +48,11 @@ public struct UnregisteredCoinReceived<phantom T> has copy, drop {
     decimals: u8,
 }
 
-public struct TrustedAddressAdded has copy, drop {
+public struct TrustedChainAdded has copy, drop {
     chain_name: String,
 }
 
-public struct TrustedAddressRemoved has copy, drop {
+public struct TrustedChainRemoved has copy, drop {
     chain_name: String,
 }
 
@@ -142,16 +142,16 @@ public(package) fun unregistered_coin_received<T>(
     });
 }
 
-public(package) fun trusted_address_added(
+public(package) fun trusted_chain_added(
     chain_name: String,
 ) {
-    event::emit(TrustedAddressAdded {
+    event::emit(TrustedChainAdded {
         chain_name,
     });
 }
 
-public(package) fun trusted_address_removed(chain_name: String) {
-    event::emit(TrustedAddressRemoved {
+public(package) fun trusted_chain_removed(chain_name: String) {
+    event::emit(TrustedChainRemoved {
         chain_name,
     });
 }

@@ -4,7 +4,7 @@ module interchain_token_service::chain_tracker;
 
 use interchain_token_service::events;
 use std::ascii::String;
-use sui::table::{Self, Table};
+use sui::bag::{Self, Bag};
 
 // ------
 // Errors
@@ -18,7 +18,7 @@ public struct TrustedChain has store, drop {}
 
 /// The interchain address tracker stores the trusted addresses for each chain.
 public struct InterchainChainTracker has store {
-    trusted_chains: Table<String, TrustedChain>,
+    trusted_chains: Bag,
 }
 
 // -----------------
@@ -32,7 +32,7 @@ public(package) fun is_trusted_chain(self: &InterchainChainTracker, chain_name: 
 /// Create a new interchain address tracker.
 public(package) fun new(ctx: &mut TxContext): InterchainChainTracker {
     InterchainChainTracker {
-        trusted_chains: table::new(ctx),
+        trusted_chains: bag::new(ctx),
     }
 }
 
@@ -45,13 +45,13 @@ public(package) fun add_trusted_chain(self: &mut InterchainChainTracker, chain_n
     } else {
         self.trusted_chains.add(chain_name, TrustedChain {});
     };
-    events::trusted_address_added(chain_name);
+    events::trusted_chain_added(chain_name);
 }
 
 public(package) fun remove_trusted_chain(self: &mut InterchainChainTracker, chain_name: String) {
     assert!(chain_name.length() > 0, EEmptyChainName);
-    self.trusted_chains.remove(chain_name);
-    events::trusted_address_removed(chain_name);
+    self.trusted_chains.remove<String, TrustedChain>(chain_name);
+    events::trusted_chain_removed(chain_name);
 }
 
 // -----
