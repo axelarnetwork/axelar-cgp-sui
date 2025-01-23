@@ -358,7 +358,7 @@ describe('Squid', () => {
 
         objectIds = {
             balanceManager: await createBalanceManager(),
-            deepCoin: findObjectId(deployments.token.publishTxn, 'Coin'),
+            deepCoin: findObjectId(deployments.token.publishTxn, `Coin<${deployments.token.packageId}`),
             deepbookAdminCap: findObjectId(deployments.deepbook.publishTxn, 'DeepbookAdminCap'),
             deepbookRegistry: findObjectId(deployments.deepbook.publishTxn, 'Registry', 'created', 'RegistryInner'),
         };
@@ -421,13 +421,11 @@ describe('Squid', () => {
         }
 
         pools.ab = await createPool('a', 'b');
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         pools.bc = await createPool('b', 'c');
         await setupGateway();
         await registerItsTransaction();
         await registerSquidTransaction();
         await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         await registerCoin('a');
         await giveDeepToSquid();
     });
