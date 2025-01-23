@@ -53,12 +53,13 @@ fun init(ctx: &mut TxContext) {
     );
 }
 
-public fun setup(creator_cap: CreatorCap, chain_name: String, ctx: &mut TxContext) {
+entry fun setup(creator_cap: CreatorCap, chain_name: String, its_hub_address: String, ctx: &mut TxContext) {
     let inner = versioned::create(
         DATA_VERSION,
         interchain_token_service_v0::new(
             version_control(),
             chain_name,
+            its_hub_address,
             ctx,
         ),
         ctx,
@@ -416,11 +417,11 @@ const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
 const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
 // === HUB CONSTANTS ===
-#[test_only]
 // Axelar.
-const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 #[test_only]
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
 // The address of the ITS HUB.
+#[test_only]
 const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 
 #[test_only]
@@ -431,6 +432,7 @@ public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
     let mut value = interchain_token_service_v0::new(
         version_control,
         b"chain name".to_ascii_string(),
+        ITS_HUB_ADDRESS.to_ascii_string(),
         ctx,
     );
     value.add_trusted_chain(
@@ -1021,7 +1023,7 @@ fun test_setup() {
     let creator_cap = creator_cap::create(ts.ctx());
     let chain_name = b"chain name".to_ascii_string();
 
-    setup(creator_cap, chain_name, ts.ctx());
+    setup(creator_cap, chain_name, ITS_HUB_ADDRESS.to_ascii_string(), ts.ctx());
     ts.next_tx(@0x0);
 
     let its = ts.take_shared<InterchainTokenService>();

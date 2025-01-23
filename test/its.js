@@ -59,6 +59,7 @@ describe('ITS', () => {
     const trustedSourceChain = 'axelar';
     const trustedSourceAddress = 'hub_address';
     const otherChain = 'Avalanche';
+    const chainName = 'Chain Name';
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -95,7 +96,7 @@ describe('ITS', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [objectIds.itsCreatorCap, otherChain],
+            arguments: [objectIds.itsCreatorCap, chainName, trustedSourceAddress],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);

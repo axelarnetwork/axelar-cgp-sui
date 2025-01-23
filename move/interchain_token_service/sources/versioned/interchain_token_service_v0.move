@@ -70,8 +70,6 @@ const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 // Chain name for Axelar. This is used for routing InterchainTokenService calls via InterchainTokenService hub on
 // Axelar.
 const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
-// The address of the ITS HUB.
-const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 
 // -----
 // Types
@@ -85,6 +83,7 @@ public struct InterchainTokenService_v0 has store {
     registered_coins: Bag,
     relayer_discovery_id: ID,
     chain_name: String,
+    its_hub_address: String,
     version_control: VersionControl,
 }
 
@@ -94,6 +93,7 @@ public struct InterchainTokenService_v0 has store {
 public(package) fun new(
     version_control: VersionControl,
     chain_name: String,
+    its_hub_address: String,
     ctx: &mut TxContext,
 ): InterchainTokenService_v0 {
     InterchainTokenService_v0 {
@@ -106,6 +106,7 @@ public(package) fun new(
         unregistered_coins: bag::new(ctx),
         unregistered_coin_types: table::new(ctx),
         chain_name,
+        its_hub_address,
         relayer_discovery_id: object::id_from_address(@0x0),
         version_control,
     }
@@ -500,8 +501,8 @@ fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo
     coin_data<T>(self, token_id).coin_info()
 }
 
-fun is_trusted_address(source_chain: String, source_address: String): bool {
-    source_chain.into_bytes() == ITS_HUB_CHAIN_NAME && source_address.into_bytes() == ITS_HUB_ADDRESS
+fun is_trusted_address(self: &InterchainTokenService_v0, source_chain: String, source_address: String): bool {
+    source_chain.into_bytes() == ITS_HUB_CHAIN_NAME && source_address == self.its_hub_address
 }
 
 fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
@@ -615,7 +616,7 @@ fun prepare_message(self: &InterchainTokenService_v0, payload: vector<u8>): Mess
     gateway::prepare_message(
         &self.channel,
         ITS_HUB_CHAIN_NAME.to_ascii_string(),
-        ITS_HUB_ADDRESS.to_ascii_string(),
+        self.its_hub_address,
         payload,
     )
 }
@@ -629,7 +630,7 @@ fun decode_approved_message(
         .channel
         .consume_approved_message(approved_message);
 
-    assert!(is_trusted_address(source_chain, source_address), EUntrustedAddress);
+    assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
 
     let mut reader = abi::new_reader(payload);
     assert!(reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB, EInvalidMessageType);
@@ -656,11 +657,16 @@ use axelar_gateway::channel;
 #[test_only]
 use interchain_token_service::coin::COIN;
 
+// The address of the ITS HUB.
+#[test_only]
+const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
+
 #[test_only]
 fun create_for_testing(ctx: &mut TxContext): InterchainTokenService_v0 {
     let mut self = new(
         version_control::version_control::new(vector[]),
         b"chain name".to_ascii_string(),
+        ITS_HUB_ADDRESS.to_ascii_string(),
         ctx,
     );
 

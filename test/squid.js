@@ -54,6 +54,8 @@ describe('Squid', () => {
     const trustedSourceChain = 'axelar';
     const trustedSourceAddress = 'hub_address';
     const otherChain = 'Avalanche';
+    const chainName = 'Chain Name';
+
     const coins = {};
     const pools = {};
 
@@ -94,7 +96,7 @@ describe('Squid', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [objectIds.itsCreatorCap, otherChain],
+            arguments: [objectIds.itsCreatorCap, chainName, trustedSourceAddress],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
