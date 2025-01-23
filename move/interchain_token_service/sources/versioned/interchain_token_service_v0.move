@@ -225,9 +225,9 @@ public(package) fun deploy_remote_interchain_token<T>(
         destination_chain,
     );
 
-    let mut payload = writer.into_bytes();
-    payload = self.wrap_payload(payload, destination_chain);
-    prepare_message(self, payload)
+    let payload = writer.into_bytes();
+
+    self.prepare_wrapped_message(payload, destination_chain)
 }
 
 public(package) fun send_interchain_transfer<T>(
@@ -268,9 +268,9 @@ public(package) fun send_interchain_transfer<T>(
         &data,
     );
 
-    let mut payload = writer.into_bytes();
-    payload = self.wrap_payload(payload, destination_chain);
-    prepare_message(self, payload)
+    let payload = writer.into_bytes();
+
+    self.prepare_wrapped_message(payload, destination_chain)
 }
 
 public(package) fun receive_interchain_transfer<T>(
@@ -592,18 +592,20 @@ fun add_registered_coin<T>(
     );
 }
 
-fun wrap_payload(
+fun prepare_wrapped_message(
     self: &InterchainTokenService_v0,
-    payload: vector<u8>,
+    mut payload: vector<u8>,
     destination_chain: String,
-): vector<u8> {
+): MessageTicket {
     assert!(self.is_trusted_chain(destination_chain), EUntrustedChain);
 
     let mut writer = abi::new_writer(3);
     writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
     writer.write_bytes(destination_chain.into_bytes());
     writer.write_bytes(payload);
-    writer.into_bytes()
+    payload = writer.into_bytes();
+
+    self.prepare_message(payload)
 }
 
 /// Send a payload to a destination chain. The destination chain needs to have a
@@ -733,11 +735,14 @@ public(package) fun remove_registered_coin_type_for_testing(
 
 #[test_only]
 public(package) fun wrap_payload_sending(
-    self: &InterchainTokenService_v0,
     payload: vector<u8>,
     destination_chain: String,
 ): vector<u8> {
-    self.wrap_payload(payload, destination_chain)
+    let mut writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
+    writer.write_bytes(destination_chain.into_bytes());
+    writer.write_bytes(payload);
+    writer.into_bytes()
 }
 
 #[test_only]
@@ -938,7 +943,7 @@ fun test_prepare_message_to_hub() {
 
     self.add_trusted_chain(destination_chain);
 
-    payload = self.wrap_payload(payload, destination_chain);
+    payload = wrap_payload_sending(payload, destination_chain);
 
     let message_ticket = self.prepare_message(payload);
 
@@ -1600,13 +1605,14 @@ fun test_send_interchain_transfer_newer_ticket() {
 
 #[test]
 #[expected_failure(abort_code = EUntrustedChain)]
-fun test_wrap_payload_untrusted_chain() {
+fun test_prepare_wrapped_message_untrusted_chain() {
     let ctx = &mut tx_context::dummy();
     let its = create_for_testing(ctx);
-    let mut payload = b"payload";
+    let payload = b"payload";
     let destination_chain = b"destination_chain".to_ascii_string();
 
-    payload = its.wrap_payload(payload, destination_chain);
+    let message_ticket = its.prepare_wrapped_message(payload, destination_chain);
 
     sui::test_utils::destroy(its);
+    sui::test_utils::destroy(message_ticket);
 }

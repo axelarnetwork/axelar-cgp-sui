@@ -541,7 +541,7 @@ fun test_deploy_remote_interchain_token() {
         .write_u256((token_decimals as u256))
         .write_bytes(vector::empty());
         
-    let payload = its.value!(b"").wrap_payload_sending(writer.into_bytes(), destination_chain);
+    let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
 
     assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
     assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
@@ -602,7 +602,7 @@ fun test_deploy_interchain_token() {
         .write_u256((amount as u256))
         .write_bytes(b"");
         
-    let payload = its.value!(b"").wrap_payload_sending(writer.into_bytes(), destination_chain);
+    let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
 
     assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
     assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());

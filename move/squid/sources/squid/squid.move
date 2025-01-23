@@ -239,7 +239,7 @@ fun test_start_swap() {
         .write_bytes(data);
         
     let mut payload = writer.into_bytes();
-    interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(&mut payload, source_chain);
+    payload = interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(payload, source_chain);
 
     let approved_message = axelar_gateway::channel::new_approved_message(
         ITS_HUB_CHAIN_NAME.to_ascii_string(),
