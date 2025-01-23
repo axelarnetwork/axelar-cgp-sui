@@ -264,7 +264,7 @@ describe('ITS', () => {
                 };
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
-                
+
                 // ITS transfer payload from Ethereum to Sui
                 let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],

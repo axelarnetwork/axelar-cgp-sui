@@ -226,7 +226,7 @@ public(package) fun deploy_remote_interchain_token<T>(
     );
 
     let mut payload = writer.into_bytes();
-    self.wrap_payload(&mut payload, destination_chain);
+    payload = self.wrap_payload(payload, destination_chain);
     prepare_message(self, payload)
 }
 
@@ -269,7 +269,7 @@ public(package) fun send_interchain_transfer<T>(
     );
 
     let mut payload = writer.into_bytes();
-    self.wrap_payload(&mut payload, destination_chain);
+    payload = self.wrap_payload(payload, destination_chain);
     prepare_message(self, payload)
 }
 
@@ -501,10 +501,6 @@ fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo
     coin_data<T>(self, token_id).coin_info()
 }
 
-fun is_trusted_address(self: &InterchainTokenService_v0, source_chain: String, source_address: String): bool {
-    source_chain.into_bytes() == ITS_HUB_CHAIN_NAME && source_address == self.its_hub_address
-}
-
 fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
     self.trusted_chains.is_trusted(source_chain)
 }
@@ -598,16 +594,16 @@ fun add_registered_coin<T>(
 
 fun wrap_payload(
     self: &InterchainTokenService_v0,
-    payload: &mut vector<u8>,
+    payload: vector<u8>,
     destination_chain: String,
-) {
+): vector<u8> {
     assert!(self.is_trusted_chain(destination_chain), EUntrustedChain);
 
     let mut writer = abi::new_writer(3);
     writer.write_u256(MESSAGE_TYPE_SEND_TO_HUB);
     writer.write_bytes(destination_chain.into_bytes());
-    writer.write_bytes(*payload);
-    *payload = writer.into_bytes();
+    writer.write_bytes(payload);
+    writer.into_bytes()
 }
 
 /// Send a payload to a destination chain. The destination chain needs to have a
@@ -630,7 +626,8 @@ fun decode_approved_message(
         .channel
         .consume_approved_message(approved_message);
 
-    assert!(self.is_trusted_address(source_chain, source_address), EUntrustedAddress);
+    assert!(source_chain.into_bytes() == ITS_HUB_CHAIN_NAME, EUntrustedChain);
+    assert!(source_address == self.its_hub_address, EUntrustedAddress);
 
     let mut reader = abi::new_reader(payload);
     assert!(reader.read_u256() == MESSAGE_TYPE_RECEIVE_FROM_HUB, EInvalidMessageType);
@@ -737,19 +734,19 @@ public(package) fun remove_registered_coin_type_for_testing(
 #[test_only]
 public(package) fun wrap_payload_sending(
     self: &InterchainTokenService_v0,
-    payload: &mut vector<u8>,
+    payload: vector<u8>,
     destination_chain: String,
-) {
-    self.wrap_payload(payload, destination_chain);
+): vector<u8> {
+    self.wrap_payload(payload, destination_chain)
 }
 
 #[test_only]
-public fun wrap_payload_receiving(payload: &mut vector<u8>, source_chain: String) {
+public fun wrap_payload_receiving(payload: vector<u8>, source_chain: String): vector<u8> {
     let mut writer = abi::new_writer(3);
     writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
     writer.write_bytes(source_chain.into_bytes());
-    writer.write_bytes(*payload);
-    *payload = writer.into_bytes();
+    writer.write_bytes(payload);
+    writer.into_bytes()
 }
 
 // -----
@@ -790,12 +787,41 @@ fun test_decode_approved_message_axelar_hub_sender() {
 }
 
 #[test]
-#[expected_failure(abort_code = EUntrustedAddress)]
+#[expected_failure(abort_code = EUntrustedChain)]
 fun test_decode_approved_message_sender_not_hub() {
     let ctx = &mut tx_context::dummy();
     let self = create_for_testing(ctx);
 
     let source_chain = ascii::string(b"Chain Name");
+    let source_address = ascii::string(b"Address");
+    let message_id = ascii::string(b"message_id");
+
+    let mut writer = abi::new_writer(3);
+    writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB);
+    writer.write_bytes(b"Source Chain");
+    writer.write_bytes(b"payload");
+    let payload = writer.into_bytes();
+
+    let approved_message = channel::new_approved_message(
+        source_chain,
+        message_id,
+        source_address,
+        self.channel.to_address(),
+        payload,
+    );
+
+    self.decode_approved_message(approved_message);
+
+    sui::test_utils::destroy(self);
+}
+
+#[test]
+#[expected_failure(abort_code = EUntrustedAddress)]
+fun test_decode_approved_message_sender_not_hub_address() {
+    let ctx = &mut tx_context::dummy();
+    let self = create_for_testing(ctx);
+
+    let source_chain = ascii::string(ITS_HUB_CHAIN_NAME);
     let source_address = ascii::string(b"Address");
     let message_id = ascii::string(b"message_id");
 
@@ -912,7 +938,7 @@ fun test_prepare_message_to_hub() {
 
     self.add_trusted_chain(destination_chain);
 
-    self.wrap_payload(&mut payload, destination_chain);
+    payload = self.wrap_payload(payload, destination_chain);
 
     let message_ticket = self.prepare_message(payload);
 
@@ -1580,7 +1606,7 @@ fun test_wrap_payload_untrusted_chain() {
     let mut payload = b"payload";
     let destination_chain = b"destination_chain".to_ascii_string();
 
-    its.wrap_payload(&mut payload, destination_chain);
+    payload = its.wrap_payload(payload, destination_chain);
 
     sui::test_utils::destroy(its);
 }
