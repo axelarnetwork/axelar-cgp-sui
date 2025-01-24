@@ -35,8 +35,8 @@
           "type": "ID"
         },
         {
-          "name": "chain_name",
-          "type": "String"
+          "name": "chain_name_hash",
+          "type": "Bytes32"
         },
         {
           "name": "version_control",
