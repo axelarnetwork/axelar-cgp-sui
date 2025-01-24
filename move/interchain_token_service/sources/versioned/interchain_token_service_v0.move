@@ -1,6 +1,7 @@
 module interchain_token_service::interchain_token_service_v0;
 
 use abi::abi::{Self, AbiReader};
+use axelar_gateway::bytes32::{Self, Bytes32};
 use axelar_gateway::channel::{Channel, ApprovedMessage};
 use axelar_gateway::gateway;
 use axelar_gateway::message_ticket::MessageTicket;
@@ -22,6 +23,7 @@ use sui::address;
 use sui::bag::{Self, Bag};
 use sui::clock::Clock;
 use sui::coin::{Self, TreasuryCap, CoinMetadata, Coin};
+use sui::hash::keccak256;
 use sui::table::{Self, Table};
 use version_control::version_control::VersionControl;
 
@@ -86,7 +88,7 @@ public struct InterchainTokenService_v0 has store {
     registered_coin_types: Table<TokenId, TypeName>,
     registered_coins: Bag,
     relayer_discovery_id: ID,
-    chain_name: String,
+    chain_name_hash: Bytes32,
     version_control: VersionControl,
 }
 
@@ -107,7 +109,7 @@ public(package) fun new(
         registered_coin_types: table::new(ctx),
         unregistered_coins: bag::new(ctx),
         unregistered_coin_types: table::new(ctx),
-        chain_name,
+        chain_name_hash: bytes32::from_bytes(keccak256(&chain_name.into_bytes())),
         relayer_discovery_id: object::id_from_address(@0x0),
         version_control,
     }
@@ -201,7 +203,7 @@ public(package) fun register_coin<T>(
     coin_info: CoinInfo<T>,
     coin_management: CoinManagement<T>,
 ): TokenId {
-    let token_id = token_id::from_coin_data(self.chain_name(), &coin_info, &coin_management);
+    let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
 
     self.add_registered_coin(token_id, coin_management, coin_info);
 
@@ -493,10 +495,6 @@ public(package) fun disallow_function(
     self.version_control.disallow_function(version, function_name);
 }
 
-public(package) fun chain_name(self: &InterchainTokenService_v0): &String {
-    &self.chain_name
-}
-
 // -----------------
 // Private Functions
 // -----------------
@@ -763,6 +761,13 @@ public(package) fun trusted_address_for_testing(
     chain_name: String,
 ): String {
     *self.address_tracker.trusted_address(chain_name)
+}
+
+#[test_only]
+public(package) fun chain_name_hash(
+    self: &InterchainTokenService_v0,
+): Bytes32 {
+    self.chain_name_hash
 }
 
 // -----
