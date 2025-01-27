@@ -126,7 +126,7 @@ public(package) fun burn<T>(self: &mut CoinManagement<T>, balance: Balance<T>) {
 public(package) fun set_flow_limit<T>(
     self: &mut CoinManagement<T>,
     channel: &Channel,
-    flow_limit: u64,
+    flow_limit: Option<u64>,
 ) {
     assert!(self.operator.contains(&channel.to_address()), ENotOperator);
     self.set_flow_limit_internal(flow_limit);
@@ -135,7 +135,7 @@ public(package) fun set_flow_limit<T>(
 /// Adds a rate limit to the `CoinManagement`.
 public(package) fun set_flow_limit_internal<T>(
     self: &mut CoinManagement<T>,
-    flow_limit: u64,
+    flow_limit: Option<u64>,
 ) {
     self.flow_limit.set_flow_limit(flow_limit);
 }
@@ -257,7 +257,7 @@ fun test_set_flow_limit() {
     let channel = axelar_gateway::channel::new(ctx);
 
     management.add_operator(channel.to_address());
-    management.set_flow_limit(&channel, 1);
+    management.set_flow_limit(&channel, option::some(1));
 
     sui::test_utils::destroy(management);
     sui::test_utils::destroy(channel);
@@ -273,7 +273,7 @@ fun test_set_flow_limit_not_operator() {
     let operator = @0x1;
 
     management.add_operator(operator);
-    management.set_flow_limit(&channel, 1);
+    management.set_flow_limit(&channel, option::some(1));
 
     sui::test_utils::destroy(management);
     sui::test_utils::destroy(channel);

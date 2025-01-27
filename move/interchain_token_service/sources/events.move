@@ -58,7 +58,7 @@ public struct TrustedChainRemoved has copy, drop {
 
 public struct FlowLimitSet<phantom T> has copy, drop {
     token_id: TokenId,
-    flow_limit: u64,
+    flow_limit: Option<u64>,
 }
 
 // -----------------
@@ -156,7 +156,7 @@ public(package) fun trusted_chain_removed(chain_name: String) {
     });
 }
 
-public(package) fun flow_limit_set<T>(token_id: TokenId, flow_limit: u64) {
+public(package) fun flow_limit_set<T>(token_id: TokenId, flow_limit: Option<u64>) {
     event::emit(FlowLimitSet<T> {
         token_id,
         flow_limit,

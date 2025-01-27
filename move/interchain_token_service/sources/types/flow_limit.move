@@ -8,7 +8,7 @@ const EPOCH_TIME: u64 = 6 * 60 * 60 * 1000;
 const EFlowLimitExceeded: vector<u8> = b"flow limit exceeded";
 
 public struct FlowLimit has store, copy, drop {
-    flow_limit: u64,
+    flow_limit: Option<u64>,
     flow_in: u128,
     flow_out: u128,
     current_epoch: u64,
@@ -16,7 +16,7 @@ public struct FlowLimit has store, copy, drop {
 
 public(package) fun new(): FlowLimit {
     FlowLimit {
-        flow_limit: 0,
+        flow_limit: option::none(),
         flow_in: 0,
         flow_out: 0,
         current_epoch: 0,
@@ -37,11 +37,14 @@ public(package) fun add_flow_in(
     amount: u64,
     clock: &Clock,
 ) {
-    if (self.flow_limit == 0) return;
+    if (self.flow_limit.is_none()) {
+        return
+    };
+    let flow_limit = *self.flow_limit.borrow() as u128;
 
     update_epoch(self, clock);
     assert!(
-        self.flow_in + (amount as u128) < (self.flow_limit as u128) + self.flow_out,
+        self.flow_in + (amount as u128) < flow_limit + self.flow_out,
         EFlowLimitExceeded,
     );
     self.flow_in = self.flow_in + (amount as u128);
@@ -51,18 +54,21 @@ public(package) fun add_flow_out(
     self: &mut FlowLimit,
     amount: u64,
     clock: &Clock,
-) {
-    if (self.flow_limit == 0) return;
+) {    
+    if (self.flow_limit.is_none()) {
+        return
+    };
+    let flow_limit = *self.flow_limit.borrow() as u128;
 
     update_epoch(self, clock);
     assert!(
-        self.flow_out + (amount as u128) < (self.flow_limit as u128) + self.flow_in,
+        self.flow_out + (amount as u128) < flow_limit + self.flow_in,
         EFlowLimitExceeded,
     );
     self.flow_out = self.flow_out + (amount as u128);
 }
 
-public(package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: u64) {
+public(package) fun set_flow_limit(self: &mut FlowLimit, flow_limit: Option<u64>) {
     self.flow_limit = flow_limit;
 }
 
@@ -85,7 +91,7 @@ fun test_add_flow_in() {
     let ctx = &mut tx_context::dummy();
     let mut flow_limit = new();
     let clock = sui::clock::create_for_testing(ctx);
-    flow_limit.set_flow_limit(2);
+    flow_limit.set_flow_limit(option::some(2));
     flow_limit.add_flow_in(1, &clock);
     clock.destroy_for_testing();
 }
@@ -95,7 +101,7 @@ fun test_add_flow_out() {
     let ctx = &mut tx_context::dummy();
     let mut flow_limit = new();
     let clock = sui::clock::create_for_testing(ctx);
-    flow_limit.set_flow_limit(2);
+    flow_limit.set_flow_limit(option::some(2));
     flow_limit.add_flow_out(1, &clock);
     clock.destroy_for_testing();
 }
@@ -124,7 +130,7 @@ fun test_add_flow_in_limit_exceeded() {
     let ctx = &mut tx_context::dummy();
     let mut flow_limit = new();
     let clock = sui::clock::create_for_testing(ctx);
-    flow_limit.set_flow_limit(1);
+    flow_limit.set_flow_limit(option::some(1));
     flow_limit.add_flow_in(1, &clock);
     clock.destroy_for_testing();
 }
@@ -135,7 +141,7 @@ fun test_add_flow_out_limit_exceeded() {
     let ctx = &mut tx_context::dummy();
     let mut flow_limit = new();
     let clock = sui::clock::create_for_testing(ctx);
-    flow_limit.set_flow_limit(1);
+    flow_limit.set_flow_limit(option::some(1));
     flow_limit.add_flow_out(1, &clock);
     clock.destroy_for_testing();
 }
