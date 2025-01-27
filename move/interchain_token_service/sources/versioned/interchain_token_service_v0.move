@@ -227,7 +227,7 @@ public(package) fun deploy_remote_interchain_token<T>(
 
     let payload = writer.into_bytes();
 
-    self.prepare_wrapped_message(payload, destination_chain)
+    self.prepare_hub_message(payload, destination_chain)
 }
 
 public(package) fun send_interchain_transfer<T>(
@@ -270,7 +270,7 @@ public(package) fun send_interchain_transfer<T>(
 
     let payload = writer.into_bytes();
 
-    self.prepare_wrapped_message(payload, destination_chain)
+    self.prepare_hub_message(payload, destination_chain)
 }
 
 public(package) fun receive_interchain_transfer<T>(
@@ -592,7 +592,7 @@ fun add_registered_coin<T>(
     );
 }
 
-fun prepare_wrapped_message(
+fun prepare_hub_message(
     self: &InterchainTokenService_v0,
     mut payload: vector<u8>,
     destination_chain: String,
@@ -1605,13 +1605,13 @@ fun test_send_interchain_transfer_newer_ticket() {
 
 #[test]
 #[expected_failure(abort_code = EUntrustedChain)]
-fun test_prepare_wrapped_message_untrusted_chain() {
+fun test_prepare_hub_message_untrusted_chain() {
     let ctx = &mut tx_context::dummy();
     let its = create_for_testing(ctx);
     let payload = b"payload";
     let destination_chain = b"destination_chain".to_ascii_string();
 
-    let message_ticket = its.prepare_wrapped_message(payload, destination_chain);
+    let message_ticket = its.prepare_hub_message(payload, destination_chain);
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(message_ticket);
