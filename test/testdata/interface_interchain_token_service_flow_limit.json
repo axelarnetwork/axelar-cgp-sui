@@ -10,7 +10,7 @@
       "fields": [
         {
           "name": "flow_limit",
-          "type": "u64"
+          "type": "Option<u64>"
         },
         {
           "name": "flow_in",

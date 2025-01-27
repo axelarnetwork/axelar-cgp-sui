@@ -278,7 +278,7 @@ public fun set_flow_limit_as_token_operator<T>(
     self: &mut InterchainTokenService,
     channel: &Channel,
     token_id: TokenId,
-    limit: u64,
+    limit: Option<u64>,
 ) {
     let value = self.value_mut!(b"set_flow_limit_as_token_operator");
 
@@ -295,13 +295,13 @@ public fun set_flow_limit<T>(
     self: &mut InterchainTokenService,
     _: &OperatorCap,
     token_ids: TokenId,
-    limits: u64,
+    limit: Option<u64>,
 ) {
     let value = self.value_mut!(b"set_flow_limit");
 
     value.set_flow_limit<T>(
         token_ids,
-        limits,
+        limit,
     );
 }
 
@@ -931,7 +931,7 @@ fun test_set_flow_limit_as_token_operator() {
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let limit = 1234;
+    let limit = option::some(1234);
 
     let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
@@ -959,7 +959,7 @@ fun test_set_flow_limit() {
     let mut its = create_for_testing(ctx);
     let symbol = b"COIN";
     let decimals = 9;
-    let limit = 1234;
+    let limit = option::some(1234);
 
     let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
