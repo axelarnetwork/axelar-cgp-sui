@@ -11,6 +11,8 @@ use sui::bag::{Self, Bag};
 const EEmptyChainName: vector<u8> = b"empty trusted chain name is unsupported";
 #[error]
 const EAlreadyTrusted: vector<u8> = b"chain is already trusted";
+#[error]
+const ENotTrusted: vector<u8> = b"chain is not trusted";
 
 public struct TrustedChain has store, drop {}
 
@@ -45,6 +47,8 @@ public(package) fun add(self: &mut TrustedChains, chain_name: String) {
 
 public(package) fun remove(self: &mut TrustedChains, chain_name: String) {
     assert!(chain_name.length() > 0, EEmptyChainName);
+    assert!(self.trusted_chains.contains(chain_name), ENotTrusted);
+
     self.trusted_chains.remove<String, TrustedChain>(chain_name);
     events::trusted_chain_removed(chain_name);
 }
