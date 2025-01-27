@@ -37,12 +37,9 @@ public(package) fun is_trusted(self: &TrustedChains, chain_name: String): bool {
 /// Set the trusted address for a chain or adds it if it doesn't exist.
 public(package) fun add(self: &mut TrustedChains, chain_name: String) {
     assert!(chain_name.length() > 0, EEmptyChainName);
+    assert!(!self.trusted_chains.contains(chain_name), EAlreadyTrusted);
 
-    if (self.trusted_chains.contains(chain_name)) {
-        abort EAlreadyTrusted
-    } else {
-        self.trusted_chains.add(chain_name, TrustedChain {});
-    };
+    self.trusted_chains.add(chain_name, TrustedChain {});
     events::trusted_chain_added(chain_name);
 }
 
