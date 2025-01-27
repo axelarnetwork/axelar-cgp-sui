@@ -1027,7 +1027,8 @@ fun test_setup() {
     ts.next_tx(@0x0);
 
     let its = ts.take_shared<InterchainTokenService>();
-    assert!(its.value!(b"send_interchain_transfer").chain_name() == chain_name);
+    let chain_name_hash = axelar_gateway::bytes32::from_bytes(sui::hash::keccak256(&chain_name.into_bytes()));
+    assert!(its.value!(b"send_interchain_transfer").chain_name_hash() == chain_name_hash);
 
     sui::test_scenario::return_shared(its);
     ts.end();
