@@ -487,10 +487,6 @@ public(package) fun disallow_function(
     self.version_control.disallow_function(version, function_name);
 }
 
-public(package) fun chain_name(self: &InterchainTokenService_v0): &String {
-    &self.chain_name
-}
-
 // -----------------
 // Private Functions
 // -----------------
