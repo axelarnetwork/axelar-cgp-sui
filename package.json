@@ -45,6 +45,7 @@
     "test-move": "./scripts/run.sh test",
     "test-js": "npx mocha",
     "test": "npm run test-move && npm run test-js",
+    "update-interfaces": "GOLDEN_TESTS=true npx mocha test/packages.js",
     "coverage": "./scripts/coverage.sh",
     "release": "npm run build && changeset publish",
     "release-snapshot": "npm run build && npm version 0.0.0-snapshot.$(git rev-parse --short HEAD) --git-tag-version=false && npm publish --no-git-checks --tag snapshot --access public",

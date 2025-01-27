@@ -56,6 +56,7 @@ describe('ITS', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
+    const chainName = 'Chain Name';
     const trustedSourceChain = 'Avalanche';
     const trustedSourceAddress = hexlify(randomBytes(20));
 
@@ -89,6 +90,20 @@ describe('ITS', () => {
         discoveryInfo.discovery = objectIds.relayerDiscovery;
     }
 
+    async function setupIts() {
+        const itsSetupTxBuilder = new TxBuilder(client);
+
+        await itsSetupTxBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
+            arguments: [objectIds.itsCreatorCap, chainName],
+        });
+
+        const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
+
+        objectIds.its = findObjectId(itsSetupReceipt, 'interchain_token_service::InterchainTokenService');
+        objectIds.itsV0 = findObjectId(itsSetupReceipt, 'interchain_token_service_v0::InterchainTokenService_v0');
+    }
+
     async function registerItsTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
@@ -119,8 +134,6 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${coinType}>`),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${coinType}>`),
-            its: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service::InterchainTokenService'),
-            itsV0: findObjectId(deployments.interchain_token_service.publishTxn, 'interchain_token_service_v0::InterchainTokenService_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
@@ -130,6 +143,10 @@ describe('ITS', () => {
             itsOwnerCap: findObjectId(
                 deployments.interchain_token_service.publishTxn,
                 `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
+            itsCreatorCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::creator_cap::CreatorCap`,
             ),
         };
         // Mint some coins for tests
@@ -141,6 +158,8 @@ describe('ITS', () => {
         });
 
         const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
+
+        await setupIts();
 
         // Find the object ids from the publish transactions
         objectIds = {
