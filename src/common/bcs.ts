@@ -278,6 +278,8 @@ function getITSStructs() {
         registered_coin_types: Table,
         registered_coins: Bag,
         relayer_discovery_id: bcs.Address,
+        its_hub_address: bcs.String,
+        chain_name_hash: bcs.Address,
         version_control: VersionControl,
     });
 
