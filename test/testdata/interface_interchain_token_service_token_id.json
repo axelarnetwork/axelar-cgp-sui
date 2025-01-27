@@ -58,6 +58,7 @@
       "name": "from_info<T>",
       "visibility": "public",
       "params": {
+        "chain_name_hash#0#0": "&Bytes32",
         "name#0#0": "&String",
         "symbol#0#0": "&String",
         "decimals#0#0": "&u8",

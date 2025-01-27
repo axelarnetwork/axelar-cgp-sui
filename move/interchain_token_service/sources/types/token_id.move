@@ -1,5 +1,6 @@
 module interchain_token_service::token_id;
 
+use axelar_gateway::bytes32::Bytes32;
 use interchain_token_service::coin_info::CoinInfo;
 use interchain_token_service::coin_management::CoinManagement;
 use std::ascii;
@@ -34,6 +35,7 @@ public fun to_u256(token_id: &TokenId): u256 {
 }
 
 public fun from_info<T>(
+    chain_name_hash: &Bytes32,
     name: &String,
     symbol: &ascii::String,
     decimals: &u8,
@@ -41,6 +43,7 @@ public fun from_info<T>(
     has_treasury: &bool,
 ): TokenId {
     let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
+    vec.append(bcs::to_bytes(chain_name_hash));
     vec.append(bcs::to_bytes(&type_name::get<T>()));
     vec.append(bcs::to_bytes(name));
     vec.append(bcs::to_bytes(symbol));
@@ -51,10 +54,12 @@ public fun from_info<T>(
 }
 
 public(package) fun from_coin_data<T>(
+    chain_name_hash: &Bytes32,
     coin_info: &CoinInfo<T>,
     coin_management: &CoinManagement<T>,
 ): TokenId {
     from_info<T>(
+        chain_name_hash,
         &coin_info.name(),
         &coin_info.symbol(),
         &coin_info.decimals(),
