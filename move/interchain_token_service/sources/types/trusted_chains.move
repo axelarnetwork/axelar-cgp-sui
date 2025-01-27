@@ -14,7 +14,7 @@ const EAlreadyTrusted: vector<u8> = b"chain is already trusted";
 
 public struct TrustedChain has store, drop {}
 
-/// The interchain address tracker stores the trusted addresses for each chain.
+/// The trusted chains where messages can be sent or received from.
 public struct TrustedChains has store {
     trusted_chains: Bag,
 }
