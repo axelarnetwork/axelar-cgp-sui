@@ -53,7 +53,7 @@ public(package) fun remove(self: &mut TrustedChains, chain_name: String) {
 // Tests
 // -----
 #[test]
-fun test_chain_tracker() {
+fun test_trusted_chains() {
     let ctx = &mut sui::tx_context::dummy();
     let mut self = new(ctx);
     let chain1 = std::ascii::string(b"chain1");
