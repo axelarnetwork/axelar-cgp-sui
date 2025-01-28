@@ -16,7 +16,7 @@ const hexData = {
         '5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b87100000000000000005339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58010000000000000001031472656769737465725f7472616e73616374696f6e1272656d6f76655f7472616e73616374696f6e0f6765745f7472616e73616374696f6e',
 };
 
-describe.only('BCS', () => {
+describe('BCS', () => {
     const checkIdAndSize = (obj, expectedId, size = '0') => {
         expect(obj).to.deep.include({ id: expectedId, size });
     };
@@ -37,7 +37,8 @@ describe.only('BCS', () => {
         const allowedFunctions = its.version_control.allowed_functions[0].contents;
         expect(allowedFunctions)
             .to.be.an('array')
-            .that.includes(      'register_coin',
+            .that.includes(
+                'register_coin',
                 'deploy_remote_interchain_token',
                 'send_interchain_transfer',
                 'receive_interchain_transfer',
