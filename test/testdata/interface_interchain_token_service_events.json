@@ -1,7 +1,7 @@
 {
   "structs": {
-    "TrustedAddressSet": {
-      "name": "TrustedAddressSet",
+    "TrustedChainAdded": {
+      "name": "TrustedChainAdded",
       "abilities": [
         "copy",
         "drop"
@@ -10,15 +10,11 @@
         {
           "name": "chain_name",
           "type": "String"
-        },
-        {
-          "name": "trusted_address",
-          "type": "String"
         }
       ]
     },
-    "TrustedAddressRemoved": {
-      "name": "TrustedAddressRemoved",
+    "TrustedChainRemoved": {
+      "name": "TrustedChainRemoved",
       "abilities": [
         "copy",
         "drop"

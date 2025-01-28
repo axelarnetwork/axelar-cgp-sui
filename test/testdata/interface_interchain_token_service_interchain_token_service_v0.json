@@ -11,8 +11,8 @@
           "type": "Channel"
         },
         {
-          "name": "address_tracker",
-          "type": "InterchainAddressTracker"
+          "name": "trusted_chains",
+          "type": "TrustedChains"
         },
         {
           "name": "unregistered_coin_types",
@@ -33,6 +33,10 @@
         {
           "name": "relayer_discovery_id",
           "type": "ID"
+        },
+        {
+          "name": "its_hub_address",
+          "type": "String"
         },
         {
           "name": "chain_name_hash",

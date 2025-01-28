@@ -56,9 +56,10 @@ describe('ITS', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
+    const trustedSourceChain = 'axelar';
+    const trustedSourceAddress = 'hub_address';
+    const otherChain = 'Avalanche';
     const chainName = 'Chain Name';
-    const trustedSourceChain = 'Avalanche';
-    const trustedSourceAddress = hexlify(randomBytes(20));
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -95,7 +96,7 @@ describe('ITS', () => {
 
         await itsSetupTxBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
-            arguments: [objectIds.itsCreatorCap, chainName],
+            arguments: [objectIds.itsCreatorCap, chainName, trustedSourceAddress],
         });
 
         const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
@@ -205,7 +206,7 @@ describe('ITS', () => {
         before(async () => {
             await setupGateway();
             await registerItsTransaction();
-            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
         });
 
         describe('Interchain Token Transfer', () => {
@@ -216,6 +217,7 @@ describe('ITS', () => {
                 const tx = txBuilder.tx;
 
                 const coin = tx.splitCoins(objectIds.token, [1e9]);
+                const destinationAddress = '0x1234';
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
@@ -232,8 +234,8 @@ describe('ITS', () => {
                         objectIds.gasService,
                         TokenId,
                         coin,
-                        trustedSourceChain,
-                        trustedSourceAddress,
+                        otherChain,
+                        destinationAddress,
                         '0x', // its token metadata
                         deployer.toSuiAddress(),
                         gas,
@@ -251,7 +253,7 @@ describe('ITS', () => {
                 // Approve ITS transfer message
                 const messageType = ITSMessageType.InterchainTokenTransfer;
                 const tokenId = objectIds.tokenId;
-                const sourceAddress = trustedSourceAddress;
+                const sourceAddress = '0x1234';
                 const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
                 const amount = 1e9;
                 const data = '0x1234';
@@ -260,14 +262,15 @@ describe('ITS', () => {
                     packageId: deployments.relayer_discovery.packageId,
                     discovery: objectIds.relayerDiscovery,
                 };
-
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
+
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
                 );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,
@@ -299,7 +302,7 @@ describe('ITS', () => {
                         objectIds.its,
                         objectIds.gateway,
                         objectIds.gasService,
-                        trustedSourceChain,
+                        otherChain,
                         TokenId,
                         gas,
                         '0x',
@@ -348,10 +351,11 @@ describe('ITS', () => {
                 const distributor = '0x';
 
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,

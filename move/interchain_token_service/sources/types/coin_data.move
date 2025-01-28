@@ -28,8 +28,6 @@ public(package) fun coin_info<T>(self: &CoinData<T>): &CoinInfo<T> {
     &self.coin_info
 }
 
-public(package) fun coin_management_mut<T>(
-    self: &mut CoinData<T>,
-): &mut CoinManagement<T> {
+public(package) fun coin_management_mut<T>(self: &mut CoinData<T>): &mut CoinManagement<T> {
     &mut self.coin_management
 }

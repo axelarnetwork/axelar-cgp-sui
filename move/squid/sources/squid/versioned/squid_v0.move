@@ -93,9 +93,18 @@ public(package) fun withdraw<T>(
     let balance = self.coin_bag.exact_balance<T>(amount);
     transfer::public_transfer(coin::from_balance(balance, ctx), ctx.sender());
 }
-// ---------
-// Test Only
-// ---------
+
+/// ---------
+/// Test Only
+/// ---------
+/// // === HUB CONSTANTS ===
+// Axelar.
+#[test_only]
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+// The address of the ITS HUB.
+#[test_only]
+const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
+
 #[test_only]
 public fun new_for_testing(ctx: &mut TxContext): Squid_v0 {
     Squid_v0 {
@@ -149,7 +158,6 @@ fun test_start_swap() {
 
     let source_chain = std::ascii::string(b"Chain Name");
     let message_id = std::ascii::string(b"Message Id");
-    let message_source_address = std::ascii::string(b"Address");
     let its_source_address = b"Source Address";
 
     let destination_address = squid.channel().to_address();
@@ -162,12 +170,13 @@ fun test_start_swap() {
         .write_bytes(destination_address.to_bytes())
         .write_u256((amount as u256))
         .write_bytes(data);
-    let payload = writer.into_bytes();
+    let mut payload = writer.into_bytes();
+    payload = interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(payload, source_chain);
 
     let approved_message = channel::new_approved_message(
-        source_chain,
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
         message_id,
-        message_source_address,
+        ITS_HUB_ADDRESS.to_ascii_string(),
         its.channel_address(),
         payload,
     );

@@ -151,6 +151,18 @@ fun new_version_control(): VersionControl {
     ])
 }
 
+/// ---------
+/// Test Only
+/// ---------
+/// // === HUB CONSTANTS ===
+/// ITS Hub test chain name
+#[test_only]
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+
+/// ITS hub test address
+#[test_only]
+const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
+
 #[test_only]
 public fun new_for_testing(ctx: &mut TxContext): Squid {
     let mut version_control = new_version_control();
@@ -171,6 +183,9 @@ public fun new_for_testing(ctx: &mut TxContext): Squid {
 #[test_only]
 use interchain_token_service::coin::COIN;
 
+/// -----
+/// Tests
+/// -----
 #[test]
 fun test_start_swap() {
     let ctx = &mut tx_context::dummy();
@@ -210,7 +225,6 @@ fun test_start_swap() {
 
     let source_chain = std::ascii::string(b"Chain Name");
     let message_id = std::ascii::string(b"Message Id");
-    let message_source_address = std::ascii::string(b"Address");
     let its_source_address = b"Source Address";
 
     let destination_address = squid.value!(b"").channel().to_address();
@@ -223,12 +237,14 @@ fun test_start_swap() {
         .write_bytes(destination_address.to_bytes())
         .write_u256((amount as u256))
         .write_bytes(data);
-    let payload = writer.into_bytes();
+        
+    let mut payload = writer.into_bytes();
+    payload = interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(payload, source_chain);
 
     let approved_message = axelar_gateway::channel::new_approved_message(
-        source_chain,
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
         message_id,
-        message_source_address,
+        ITS_HUB_ADDRESS.to_ascii_string(),
         its.channel_address(),
         payload,
     );

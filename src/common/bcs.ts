@@ -266,23 +266,20 @@ function getITSStructs() {
     const { Table, Bag, Channel } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
 
-    const InterchainAddressTracker = bcs.struct('InterchainAddressTracker', {
-        trusted_addresses: Table,
-    });
-
-    const TrustedAddresses = bcs.struct('TrustedAddresses', {
-        trusted_chains: bcs.vector(bcs.string()),
-        trusted_addresses: bcs.vector(bcs.string()),
+    const TrustedChains = bcs.struct('TrustedChains', {
+        trusted_chains: Bag,
     });
 
     const InterchainTokenServiceV0 = bcs.struct('InterchainTokenService_v0', {
         channel: Channel,
-        address_tracker: InterchainAddressTracker,
+        trusted_chains: TrustedChains,
         unregistered_coin_types: Table,
         unregistered_coins: Bag,
         registered_coin_types: Table,
         registered_coins: Bag,
         relayer_discovery_id: bcs.Address,
+        its_hub_address: bcs.String,
+        chain_name_hash: bcs.Address,
         version_control: VersionControl,
     });
 
@@ -293,9 +290,8 @@ function getITSStructs() {
     });
 
     return {
-        InterchainAddressTracker,
+        TrustedChains,
         InterchainTokenService,
-        TrustedAddresses,
     };
 }
 

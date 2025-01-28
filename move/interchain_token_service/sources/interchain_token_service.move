@@ -4,13 +4,12 @@ use axelar_gateway::channel::{ApprovedMessage, Channel};
 use axelar_gateway::message_ticket::MessageTicket;
 use interchain_token_service::coin_info::CoinInfo;
 use interchain_token_service::coin_management::CoinManagement;
-use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use interchain_token_service::interchain_token_service_v0::{Self, InterchainTokenService_v0};
+use interchain_token_service::interchain_transfer_ticket::{Self, InterchainTransferTicket};
 use interchain_token_service::owner_cap::{Self, OwnerCap};
 use interchain_token_service::creator_cap::{Self, CreatorCap};
 use interchain_token_service::operator_cap::{Self, OperatorCap};
 use interchain_token_service::token_id::TokenId;
-use interchain_token_service::trusted_addresses::TrustedAddresses;
 use relayer_discovery::discovery::RelayerDiscovery;
 use relayer_discovery::transaction::Transaction;
 use std::ascii::{Self, String};
@@ -54,12 +53,13 @@ fun init(ctx: &mut TxContext) {
     );
 }
 
-public fun setup(creator_cap: CreatorCap, chain_name: String, ctx: &mut TxContext) {
+entry fun setup(creator_cap: CreatorCap, chain_name: String, its_hub_address: String, ctx: &mut TxContext) {
     let inner = versioned::create(
         DATA_VERSION,
         interchain_token_service_v0::new(
             version_control(),
             chain_name,
+            its_hub_address,
             ctx,
         ),
         ctx,
@@ -78,7 +78,10 @@ public fun setup(creator_cap: CreatorCap, chain_name: String, ctx: &mut TxContex
 // Macros
 // ------
 /// This macro also uses version control to sinplify things a bit.
-macro fun value($self: &InterchainTokenService, $function_name: vector<u8>): &InterchainTokenService_v0 {
+macro fun value(
+    $self: &InterchainTokenService,
+    $function_name: vector<u8>,
+): &InterchainTokenService_v0 {
     let its = $self;
     let value = its.inner.load_value<InterchainTokenService_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -86,7 +89,10 @@ macro fun value($self: &InterchainTokenService, $function_name: vector<u8>): &In
 }
 
 /// This macro also uses version control to sinplify things a bit.
-macro fun value_mut($self: &mut InterchainTokenService, $function_name: vector<u8>): &mut InterchainTokenService_v0 {
+macro fun value_mut(
+    $self: &mut InterchainTokenService,
+    $function_name: vector<u8>,
+): &mut InterchainTokenService_v0 {
     let its = $self;
     let value = its.inner.load_value_mut<InterchainTokenService_v0>();
     value.version_control().check(VERSION, ascii::string($function_name));
@@ -111,9 +117,7 @@ entry fun disallow_function(
     version: u64,
     function_name: String,
 ) {
-    self
-        .value_mut!(b"disallow_function")
-        .disallow_function(version, function_name);
+    self.value_mut!(b"disallow_function").disallow_function(version, function_name);
 }
 
 // ----------------
@@ -308,24 +312,24 @@ public fun set_flow_limit<T>(
 // ---------------
 // Owner Functions
 // ---------------
-public fun set_trusted_addresses(
-    self: &mut InterchainTokenService,
-    _owner_cap: &OwnerCap,
-    trusted_addresses: TrustedAddresses,
-) {
-    let value = self.value_mut!(b"set_trusted_addresses");
-
-    value.set_trusted_addresses(trusted_addresses);
-}
-
-public fun remove_trusted_addresses(
+public fun add_trusted_chains(
     self: &mut InterchainTokenService,
     _owner_cap: &OwnerCap,
     chain_names: vector<String>,
 ) {
-    let value = self.value_mut!(b"remove_trusted_addresses");
+    let value = self.value_mut!(b"add_trusted_chains");
 
-    value.remove_trusted_addresses(chain_names);
+    value.add_trusted_chains(chain_names);
+}
+
+public fun remove_trusted_chains(
+    self: &mut InterchainTokenService,
+    _owner_cap: &OwnerCap,
+    chain_names: vector<String>,
+) {
+    let value = self.value_mut!(b"remove_trusted_chains");
+
+    value.remove_trusted_chains(chain_names);
 }
 
 // === Getters ===
@@ -378,8 +382,8 @@ fun version_control(): VersionControl {
             b"mint_as_distributor",
             b"mint_to_as_distributor",
             b"burn_as_distributor",
-            b"set_trusted_addresses",
-            b"remove_trusted_addresses",
+            b"add_trusted_chains",
+            b"remove_trusted_chains",
             b"register_transaction",
             b"set_flow_limit",
             b"set_flow_limit_as_token_operator",
@@ -408,13 +412,17 @@ use utils::utils;
 const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
 #[test_only]
 const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
-// onst MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+// const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+#[test_only]
+const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
 // === HUB CONSTANTS ===
-// Identifier to be used as destination address for chains that route to hub.
-// For Sui this will probably be every supported chain.
+// Axelar.
 #[test_only]
-const ITS_HUB_ROUTING_IDENTIFIER: vector<u8> = b"hub";
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+// The address of the ITS HUB.
+#[test_only]
+const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
 
 #[test_only]
 public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
@@ -424,11 +432,11 @@ public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
     let mut value = interchain_token_service_v0::new(
         version_control,
         b"chain name".to_ascii_string(),
+        ITS_HUB_ADDRESS.to_ascii_string(),
         ctx,
     );
-    value.set_trusted_address(
+    value.add_trusted_chain(
         std::ascii::string(b"Chain Name"),
-        std::ascii::string(b"Address"),
     );
 
     let inner = versioned::create(
@@ -449,9 +457,7 @@ public(package) fun add_unregistered_coin_type_for_testing(
     token_id: interchain_token_service::token_id::UnregisteredTokenId,
     type_name: std::type_name::TypeName,
 ) {
-    self
-        .value_mut!(b"")
-        .add_unregistered_coin_type_for_testing(token_id, type_name);
+    self.value_mut!(b"").add_unregistered_coin_type_for_testing(token_id, type_name);
 }
 
 #[test_only]
@@ -468,9 +474,7 @@ public(package) fun add_registered_coin_type_for_testing(
     token_id: TokenId,
     type_name: std::type_name::TypeName,
 ) {
-    self
-        .value_mut!(b"")
-        .add_registered_coin_type_for_testing(token_id, type_name);
+    self.value_mut!(b"").add_registered_coin_type_for_testing(token_id, type_name);
 }
 
 #[test_only]
@@ -536,15 +540,13 @@ fun test_deploy_remote_interchain_token() {
         .write_bytes(*token_symbol.as_bytes())
         .write_u256((token_decimals as u256))
         .write_bytes(vector::empty());
+        
+    let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
 
-    assert!(
-        message_ticket.source_id() == its.value!(b"").channel().to_address(),
-    );
-    assert!(message_ticket.destination_chain() == destination_chain);
-    assert!(
-        message_ticket.destination_address() == its.value!(b"").trusted_address_for_testing(destination_chain),
-    );
-    assert!(message_ticket.payload() == writer.into_bytes());
+    assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+    assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
+    assert!(message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string());
+    assert!(message_ticket.payload() == payload);
     assert!(message_ticket.version() == 0);
 
     sui::test_utils::destroy(its);
@@ -592,7 +594,6 @@ fun test_deploy_interchain_token() {
     utils::assert_event<interchain_token_service::events::InterchainTransfer<COIN>>();
 
     let mut writer = abi::new_writer(6);
-
     writer
         .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
         .write_u256(token_id.to_u256())
@@ -600,15 +601,15 @@ fun test_deploy_interchain_token() {
         .write_bytes(destination_address)
         .write_u256((amount as u256))
         .write_bytes(b"");
+        
+    let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
 
+    assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+    assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
     assert!(
-        message_ticket.source_id() == its.value!(b"").channel().to_address(),
+        message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string(),
     );
-    assert!(message_ticket.destination_chain() == destination_chain);
-    assert!(
-        message_ticket.destination_address() == its.value!(b"").trusted_address_for_testing(destination_chain),
-    );
-    assert!(message_ticket.payload() == writer.into_bytes());
+    assert!(message_ticket.payload() == payload);
     assert!(message_ticket.version() == 0);
 
     clock.destroy_for_testing();
@@ -637,7 +638,6 @@ fun test_receive_interchain_transfer() {
     let token_id = register_coin(&mut its, coin_info, coin_management);
     let source_chain = ascii::string(b"Chain Name");
     let message_id = ascii::string(b"Message Id");
-    let message_source_address = ascii::string(b"Address");
     let its_source_address = b"Source Address";
     let destination_address = @0x1;
 
@@ -649,12 +649,18 @@ fun test_receive_interchain_transfer() {
         .write_bytes(destination_address.to_bytes())
         .write_u256((amount as u256))
         .write_bytes(b"");
-    let payload = writer.into_bytes();
+    let mut payload = writer.into_bytes();
+    writer = abi::new_writer(3);
+    writer
+        .write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB)
+        .write_bytes(source_chain.into_bytes())
+        .write_bytes(payload);
+    payload = writer.into_bytes();
 
     let approved_message = channel::new_approved_message(
-        source_chain,
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
         message_id,
-        message_source_address,
+        ITS_HUB_ADDRESS.to_ascii_string(),
         its.value!(b"").channel().to_address(),
         payload,
     );
@@ -688,7 +694,6 @@ fun test_receive_interchain_transfer_with_data() {
     let token_id = its.register_coin(coin_info, coin_management);
     let source_chain = ascii::string(b"Chain Name");
     let message_id = ascii::string(b"Message Id");
-    let message_source_address = ascii::string(b"Address");
     let its_source_address = b"Source Address";
     let channel = channel::new(ctx);
     let destination_address = channel.to_address();
@@ -701,12 +706,18 @@ fun test_receive_interchain_transfer_with_data() {
         .write_bytes(destination_address.to_bytes())
         .write_u256((amount as u256))
         .write_bytes(data);
-    let payload = writer.into_bytes();
+    let mut payload = writer.into_bytes();
+    writer = abi::new_writer(3);
+    writer
+        .write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB)
+        .write_bytes(source_chain.into_bytes())
+        .write_bytes(payload);
+    payload = writer.into_bytes();
 
     let approved_message = channel::new_approved_message(
-        source_chain,
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
         message_id,
-        message_source_address,
+        ITS_HUB_ADDRESS.to_ascii_string(),
         its.value!(b"").channel().to_address(),
         payload,
     );
@@ -744,7 +755,6 @@ fun test_receive_deploy_interchain_token() {
 
     let source_chain = ascii::string(b"Chain Name");
     let message_id = ascii::string(b"Message Id");
-    let source_address = ascii::string(b"Address");
     let name = b"Token Name";
     let symbol = b"Symbol";
     let decimals = 9;
@@ -760,12 +770,18 @@ fun test_receive_deploy_interchain_token() {
         .write_bytes(symbol)
         .write_u256((decimals as u256))
         .write_bytes(vector::empty());
-    let payload = writer.into_bytes();
+    let mut payload = writer.into_bytes();
+    writer = abi::new_writer(3);
+    writer
+        .write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB)
+        .write_bytes(source_chain.into_bytes())
+        .write_bytes(payload);
+    payload = writer.into_bytes();
 
     let approved_message = channel::new_approved_message(
-        source_chain,
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
         message_id,
-        source_address,
+        ITS_HUB_ADDRESS.to_ascii_string(),
         its.value!(b"").channel().to_address(),
         payload,
     );
@@ -785,7 +801,10 @@ fun test_give_unregistered_coin() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
-    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -803,7 +822,10 @@ fun test_mint_as_distributor() {
     let symbol = b"COIN";
     let decimals = 9;
 
-    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -840,7 +862,10 @@ fun test_mint_to_as_distributor() {
     let symbol = b"COIN";
     let decimals = 9;
 
-    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -897,7 +922,7 @@ fun test_burn_as_distributor() {
 }
 
 #[test]
-fun test_set_trusted_address() {
+fun test_add_trusted_chain() {
     let ctx = &mut tx_context::dummy();
     let mut its = create_for_testing(ctx);
 
@@ -908,18 +933,9 @@ fun test_set_trusted_address() {
     let trusted_chains = vector[b"Ethereum", b"Avalance", b"Axelar"].map!(
         |chain| chain.to_ascii_string(),
     );
-    let trusted_addresses = vector[
-        b"ethereum address",
-        ITS_HUB_ROUTING_IDENTIFIER,
-        b"hub address",
-    ].map!(|chain| chain.to_ascii_string());
-    let trusted_addresses = interchain_token_service::trusted_addresses::new(
-        trusted_chains,
-        trusted_addresses,
-    );
 
-    its.set_trusted_addresses(&owner_cap, trusted_addresses);
-    its.remove_trusted_addresses(&owner_cap, trusted_chains);
+    its.add_trusted_chains(&owner_cap, trusted_chains);
+    its.remove_trusted_chains(&owner_cap, trusted_chains);
 
     sui::test_utils::destroy(its);
     sui::test_utils::destroy(owner_cap);
@@ -933,7 +949,10 @@ fun test_set_flow_limit_as_token_operator() {
     let decimals = 9;
     let limit = option::some(1234);
 
-    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -961,7 +980,10 @@ fun test_set_flow_limit() {
     let decimals = 9;
     let limit = option::some(1234);
 
-    let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+    let (
+        treasury_cap,
+        coin_metadata,
+    ) = interchain_token_service::coin::create_treasury_and_metadata(
         symbol,
         decimals,
         ctx,
@@ -1001,7 +1023,7 @@ fun test_setup() {
     let creator_cap = creator_cap::create(ts.ctx());
     let chain_name = b"chain name".to_ascii_string();
 
-    setup(creator_cap, chain_name, ts.ctx());
+    setup(creator_cap, chain_name, ITS_HUB_ADDRESS.to_ascii_string(), ts.ctx());
     ts.next_tx(@0x0);
 
     let its = ts.take_shared<InterchainTokenService>();
