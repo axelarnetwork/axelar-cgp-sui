@@ -12,9 +12,171 @@ module squid::squid {
     // -------
     const VERSION: u64 = 0;
 
-    public struct Squid has key, store {
-        id: UID,
-        inner: Versioned,
+// -------
+// Version
+// -------
+const VERSION: u64 = 0;
+
+public struct Squid has key, store {
+    id: UID,
+    inner: Versioned,
+}
+
+fun init(ctx: &mut TxContext) {
+    transfer::share_object(Squid {
+        id: object::new(ctx),
+        inner: versioned::create(
+            VERSION,
+            squid_v0::new(
+                new_version_control(),
+                ctx,
+            ),
+            ctx,
+        ),
+    });
+    transfer::public_transfer(owner_cap::create(ctx), ctx.sender());
+}
+
+// ------
+// Macros
+// ------
+/// This macro retrieves the underlying versioned singleton by reference
+public(package) macro fun value(
+    $self: &Squid,
+    $function_name: vector<u8>,
+): &Squid_v0 {
+    let squid = $self;
+    let value = squid.inner().load_value<Squid_v0>();
+    value.version_control().check(version(), ascii::string($function_name));
+    value
+}
+
+/// This macro retrieves the underlying versioned singleton by mutable reference
+public(package) macro fun value_mut(
+    $self: &mut Squid,
+    $function_name: vector<u8>,
+): &mut Squid_v0 {
+    let squid = $self;
+    let value = squid.inner_mut().load_value_mut<Squid_v0>();
+    value.version_control().check(version(), ascii::string($function_name));
+    value
+}
+
+// ---------------
+// Entry Functions
+// ---------------
+entry fun give_deep(self: &mut Squid, deep: Coin<DEEP>) {
+    self.value_mut!(b"give_deep").give_deep(deep);
+}
+
+entry fun allow_function(
+    self: &mut Squid,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self.value_mut!(b"allow_function").allow_function(version, function_name);
+}
+
+entry fun disallow_function(
+    self: &mut Squid,
+    _: &OwnerCap,
+    version: u64,
+    function_name: String,
+) {
+    self
+        .value_mut!(b"disallow_function")
+        .disallow_function(version, function_name);
+}
+
+entry fun withdraw<T>(
+    self: &mut Squid,
+    _: &OwnerCap,
+    amount: u64,
+    ctx: &mut TxContext,
+) {
+    self.value_mut!(b"withdraw").withdraw<T>(amount, ctx);
+}
+
+// ----------------
+// Public Functions
+// ----------------
+public fun start_swap<T>(
+    self: &mut Squid,
+    its: &mut InterchainTokenService,
+    approved_message: ApprovedMessage,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): SwapInfo {
+    self
+        .value_mut!(b"start_swap")
+        .start_swap<T>(its, approved_message, clock, ctx)
+}
+
+public fun finalize(swap_info: SwapInfo) {
+    swap_info.finalize();
+}
+
+// -----------------
+// Package Functions
+// -----------------
+public(package) fun inner(self: &Squid): &Versioned {
+    &self.inner
+}
+
+public(package) fun inner_mut(self: &mut Squid): &mut Versioned {
+    &mut self.inner
+}
+
+public(package) fun version(): u64 {
+    VERSION
+}
+
+/// -------
+/// Private
+/// -------
+fun new_version_control(): VersionControl {
+    version_control::new(vector[
+        // Version 0
+        vector[
+            b"start_swap",
+            b"its_transfer",
+            b"deepbook_v3_swap",
+            b"register_transaction",
+            b"give_deep",
+            b"allow_function",
+            b"disallow_function",
+            b"withdraw",
+        ].map!(|function_name| function_name.to_ascii_string()),
+    ])
+}
+
+/// ---------
+/// Test Only
+/// ---------
+/// // === HUB CONSTANTS ===
+/// ITS Hub test chain name
+#[test_only]
+const ITS_HUB_CHAIN_NAME: vector<u8> = b"axelar";
+
+/// ITS hub test address
+#[test_only]
+const ITS_HUB_ADDRESS: vector<u8> = b"hub_address";
+
+#[test_only]
+public fun new_for_testing(ctx: &mut TxContext): Squid {
+    let mut version_control = new_version_control();
+    version_control.allowed_functions()[VERSION].insert(ascii::string(b""));
+    Squid {
+        id: object::new(ctx),
+        inner: versioned::create(
+            VERSION,
+            squid_v0::new(
+                version_control,
+                ctx,
+            ),
+            ctx,
+        ),
     }
 
     fun init(ctx: &mut TxContext) {
@@ -32,16 +194,15 @@ module squid::squid {
         transfer::public_transfer(owner_cap::create(ctx), ctx.sender());
     }
 
-    // ------
-    // Macros
-    // ------
-    /// This macro retrieves the underlying versioned singleton by reference
-    public(package) macro fun value($self: &Squid, $function_name: vector<u8>): &Squid_v0 {
-        let squid = $self;
-        let value = squid.inner().load_value<Squid_v0>();
-        value.version_control().check(version(), ascii::string($function_name));
-        value
-    }
+/// -----
+/// Tests
+/// -----
+#[test]
+fun test_start_swap() {
+    let ctx = &mut tx_context::dummy();
+    let clock = sui::clock::create_for_testing(ctx);
+    let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
+    let mut squid = new_for_testing(ctx);
 
     /// This macro retrieves the underlying versioned singleton by mutable reference
     public(package) macro fun value_mut($self: &mut Squid, $function_name: vector<u8>): &mut Squid_v0 {
@@ -194,23 +355,31 @@ module squid::squid {
             &clock,
         ));
 
-        let source_chain = std::ascii::string(b"Chain Name");
-        let message_id = std::ascii::string(b"Message Id");
-        let its_source_address = b"Source Address";
+    let source_chain = std::ascii::string(b"Chain Name");
+    let message_id = std::ascii::string(b"Message Id");
+    let its_source_address = b"Source Address";
 
         let destination_address = squid.value!(b"").channel().to_address();
 
-        let mut writer = abi::abi::new_writer(6);
-        writer
-            .write_u256(0)
-            .write_u256(token_id.to_u256())
-            .write_bytes(its_source_address)
-            .write_bytes(destination_address.to_bytes())
-            .write_u256((amount as u256))
-            .write_bytes(data);
+    let mut writer = abi::abi::new_writer(6);
+    writer
+        .write_u256(0)
+        .write_u256(token_id.to_u256())
+        .write_bytes(its_source_address)
+        .write_bytes(destination_address.to_bytes())
+        .write_u256((amount as u256))
+        .write_bytes(data);
+        
+    let mut payload = writer.into_bytes();
+    payload = interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(payload, source_chain);
 
-        let mut payload = writer.into_bytes();
-        payload = interchain_token_service::interchain_token_service_v0::wrap_payload_receiving(payload, source_chain);
+    let approved_message = axelar_gateway::channel::new_approved_message(
+        ITS_HUB_CHAIN_NAME.to_ascii_string(),
+        message_id,
+        ITS_HUB_ADDRESS.to_ascii_string(),
+        its.channel_address(),
+        payload,
+    );
 
         let approved_message = axelar_gateway::channel::new_approved_message(
             ITS_HUB_CHAIN_NAME.to_ascii_string(),
