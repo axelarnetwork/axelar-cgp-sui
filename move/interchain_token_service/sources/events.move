@@ -11,13 +11,6 @@ module interchain_token_service::events {
         token_id: TokenId,
     }
 
-    // -----
-    // Types
-    // -----
-    public struct CoinRegistered<phantom T> has copy, drop {
-        token_id: TokenId,
-    }
-
     public struct InterchainTransfer<phantom T> has copy, drop {
         token_id: TokenId,
         source_address: address,

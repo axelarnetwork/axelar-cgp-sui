@@ -13,16 +13,6 @@ module axelar_gateway::events {
         signers: WeightedSigners,
     }
 
-    // ------
-    // Events
-    // ------
-    /// Emitted when signers are rotated.
-    public struct SignersRotated has copy, drop {
-        epoch: u64,
-        signers_hash: Bytes32,
-        signers: WeightedSigners,
-    }
-
     /// Emitted when a new channel is created.
     public struct ChannelCreated has copy, drop {
         id: address,
