@@ -363,4 +363,3 @@ module abi::abi {
         writer.append_bytes(vector[]);
     }
 }
-
