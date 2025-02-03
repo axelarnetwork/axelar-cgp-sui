@@ -52,7 +52,7 @@
     "cs": "changeset",
     "verify-web-build": "node scripts/verify-web-build.js",
     "lint": "eslint --fix './src/**/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/**/*.ts' './test/*.js' && npx prettier-move -w ./move/**/*.move",
+    "prettier": "prettier --write './src/**/*.ts' './test/*.js' './move/**/*.move'",
     "docs": "./scripts/docs.sh"
   },
   "keywords": [
