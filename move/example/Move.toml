@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.38.2" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.38.3" }
 GasService = { local = "../gas_service" }
 AxelarGateway = { local = "../axelar_gateway" }
 Utils = { local = "../utils" }
 VersionControl = { local = "../version_control" }
-ITS = { local = "../its" }
+InterchainTokenService = { local = "../interchain_token_service" }
 RelayerDiscovery = { local = "../relayer_discovery" }
 
 [addresses]
