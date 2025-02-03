@@ -132,7 +132,7 @@ export function newInterchainToken(templateFilePath: string, options: Interchain
     const structRegex = new RegExp(`struct\\s+Q\\s+has\\s+drop\\s+{}`, 'g');
 
     // replace the module name with the token symbol in lowercase
-    content = content.replace(/(module\s+)([^:]+)(::)([^;]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
+    content = content.replace(/(module\s+)([^:]+)(::)([^{]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
 
     // replace the struct name with the token symbol in uppercase
     content = content.replace(structRegex, `struct ${options.symbol.toUpperCase()} has drop {}`);

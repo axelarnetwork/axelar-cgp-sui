@@ -52,7 +52,7 @@
     "cs": "changeset",
     "verify-web-build": "node scripts/verify-web-build.js",
     "lint": "eslint --fix './src/**/*.ts' './test/*.js'",
-    "prettier": "prettier --write './src/**/*.ts' './test/*.js'",
+    "prettier": "prettier --write './src/**/*.ts' './test/*.js' './move/**/*.move'",
     "docs": "./scripts/docs.sh"
   },
   "keywords": [
@@ -90,8 +90,9 @@
     "eslint": "^8.57.0",
     "eslint-config-richardpringle": "^2.0.0",
     "mocha": "^10.4.0",
-    "prettier": "^2.8.7",
+    "prettier": "^3.0.0",
     "prettier-plugin-sort-imports": "^1.8.5",
+    "@mysten/prettier-plugin-move": "^0.2.2",
     "typescript": "^5.5.3"
   },
   "description": "Axelar Sui Move contracts"

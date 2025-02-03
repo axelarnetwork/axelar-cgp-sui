@@ -29,6 +29,14 @@
             "options": {
                 "tabWidth": 2
             }
+        },
+        {
+            "files": "*.move",
+            "options": {
+                "plugins": [
+                    "@mysten/prettier-plugin-move"
+                ]
+            }
         }
     ]
 }

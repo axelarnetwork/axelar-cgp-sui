@@ -1,80 +1,79 @@
-module axelar_gateway::bytes32;
+module axelar_gateway::bytes32 {
+    use sui::{address, bcs::BCS};
 
-use sui::address;
-use sui::bcs::BCS;
+    // -----
+    // Types
+    // -----
 
-// -----
-// Types
-// -----
+    public struct Bytes32 has copy, drop, store {
+        bytes: address,
+    }
 
-public struct Bytes32 has copy, drop, store {
-    bytes: address,
-}
+    // ---------
+    // Constants
+    // ---------
 
-// ---------
-// Constants
-// ---------
+    const LENGTH: u64 = 32;
 
-const LENGTH: u64 = 32;
+    // ----------------
+    // Public Functions
+    // ----------------
 
-// ----------------
-// Public Functions
-// ----------------
+    /// Casts an address to a bytes32
+    public fun new(bytes: address): Bytes32 {
+        Bytes32 { bytes: bytes }
+    }
 
-/// Casts an address to a bytes32
-public fun new(bytes: address): Bytes32 {
-    Bytes32 { bytes: bytes }
-}
+    public fun default(): Bytes32 {
+        Bytes32 { bytes: @0x0 }
+    }
 
-public fun default(): Bytes32 {
-    Bytes32 { bytes: @0x0 }
-}
+    public fun from_bytes(bytes: vector<u8>): Bytes32 {
+        new(address::from_bytes(bytes))
+    }
 
-public fun from_bytes(bytes: vector<u8>): Bytes32 {
-    new(address::from_bytes(bytes))
-}
+    public fun from_address(addr: address): Bytes32 {
+        new(addr)
+    }
 
-public fun from_address(addr: address): Bytes32 {
-    new(addr)
-}
+    public fun to_bytes(self: Bytes32): vector<u8> {
+        self.bytes.to_bytes()
+    }
 
-public fun to_bytes(self: Bytes32): vector<u8> {
-    self.bytes.to_bytes()
-}
+    public fun length(_self: &Bytes32): u64 {
+        LENGTH
+    }
 
-public fun length(_self: &Bytes32): u64 {
-    LENGTH
-}
+    public(package) fun peel(bcs: &mut BCS): Bytes32 {
+        new(bcs.peel_address())
+    }
 
-public(package) fun peel(bcs: &mut BCS): Bytes32 {
-    new(bcs.peel_address())
-}
+    // -----
+    // Tests
+    // -----
 
-// -----
-// Tests
-// -----
+    #[test]
+    public fun test_new() {
+        let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
+        let actual = new(addr);
 
-#[test]
-public fun test_new() {
-    let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
-    let actual = new(addr);
+        assert!(actual.to_bytes() == addr.to_bytes());
+        assert!(actual.length() == LENGTH);
+    }
 
-    assert!(actual.to_bytes() == addr.to_bytes());
-    assert!(actual.length() == LENGTH);
-}
+    #[test]
+    public fun test_default() {
+        let default = default();
 
-#[test]
-public fun test_default() {
-    let default = default();
+        assert!(default.bytes == @0x0);
+        assert!(default.length() == LENGTH);
+    }
 
-    assert!(default.bytes == @0x0);
-    assert!(default.length() == LENGTH);
-}
-
-#[test]
-public fun test_from_address() {
-    let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
-    let bytes32 = from_address(addr);
-    assert!(bytes32.bytes == addr);
-    assert!(bytes32.length() == LENGTH);
+    #[test]
+    public fun test_from_address() {
+        let addr = address::from_u256(sui::random::new_generator_for_testing().generate_u256());
+        let bytes32 = from_address(addr);
+        assert!(bytes32.bytes == addr);
+        assert!(bytes32.length() == LENGTH);
+    }
 }
