@@ -1,0 +1,18 @@
+{
+  "structs": {
+    "CreatorCap": {
+      "name": "CreatorCap",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

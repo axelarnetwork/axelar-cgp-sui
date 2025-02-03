@@ -1,0 +1,30 @@
+{
+  "structs": {
+    "TrustedChain": {
+      "name": "TrustedChain",
+      "abilities": [
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "dummy_field",
+          "type": "bool"
+        }
+      ]
+    },
+    "InterchainChainTracker": {
+      "name": "InterchainChainTracker",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "trusted_chains",
+          "type": "Table<String, TrustedChain>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

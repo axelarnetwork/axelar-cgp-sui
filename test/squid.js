@@ -51,8 +51,11 @@ describe('Squid', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
-    const trustedSourceChain = 'Avalanche';
-    const trustedSourceAddress = hexlify(randomBytes(20));
+    const trustedSourceChain = 'axelar';
+    const trustedSourceAddress = 'hub_address';
+    const otherChain = 'Avalanche';
+    const chainName = 'Chain Name';
+
     const coins = {};
     const pools = {};
 
@@ -88,12 +91,26 @@ describe('Squid', () => {
         gatewayInfo.discovery = objectIds.relayerDiscovery;
     }
 
+    async function setupIts() {
+        const itsSetupTxBuilder = new TxBuilder(client);
+
+        await itsSetupTxBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
+            arguments: [objectIds.itsCreatorCap, chainName, trustedSourceAddress],
+        });
+
+        const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
+
+        objectIds.its = findObjectId(itsSetupReceipt, 'interchain_token_service::InterchainTokenService');
+        objectIds.itsV0 = findObjectId(itsSetupReceipt, 'interchain_token_service_v0::InterchainTokenService_v0');
+    }
+
     // Registers the ITS in relayer discovery
     async function registerItsTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
         await registerTransactionBuilder.moveCall({
-            target: `${deployments.its.packageId}::discovery::register_transaction`,
+            target: `${deployments.interchain_token_service.packageId}::discovery::register_transaction`,
             arguments: [objectIds.its, objectIds.relayerDiscovery],
         });
 
@@ -221,19 +238,19 @@ describe('Squid', () => {
         });
 
         const tokenId = await builder.moveCall({
-            target: `${deployments.its.packageId}::token_id::from_address`,
+            target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
             arguments: [objectIds.tokenId],
             typeArguments: [],
         });
 
         const interchainTransfer = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::prepare_interchain_transfer`,
-            arguments: [tokenId, input, trustedSourceChain, '0xadd1', '0x', channel],
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::prepare_interchain_transfer`,
+            arguments: [tokenId, input, otherChain, '0xadd1', '0x', channel],
             typeArguments: [coins[coinName].type],
         });
 
         const messageTicket = await builder.moveCall({
-            target: `${deployments.its.packageId}::its::send_interchain_transfer`,
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::send_interchain_transfer`,
             arguments: [objectIds.its, interchainTransfer, CLOCK_PACKAGE_ID],
             typeArguments: [coins[coinName].type],
         });
@@ -257,17 +274,17 @@ describe('Squid', () => {
         const builder = new TxBuilder(client);
 
         const coinInfo = await builder.moveCall({
-            target: `${deployments.its.packageId}::coin_info::from_metadata`,
+            target: `${deployments.interchain_token_service.packageId}::coin_info::from_metadata`,
             arguments: [coins[coin].coinMetadata],
             typeArguments: [coins[coin].type],
         });
         const coinManagment = await builder.moveCall({
-            target: `${deployments.its.packageId}::coin_management::new_locked`,
+            target: `${deployments.interchain_token_service.packageId}::coin_management::new_locked`,
             arguments: [],
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
-            target: `${deployments.its.packageId}::its::register_coin`,
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::register_coin`,
             arguments: [objectIds.its, coinInfo, coinManagment],
             typeArguments: [coins[coin].type],
         });
@@ -357,7 +374,7 @@ describe('Squid', () => {
 
         objectIds = {
             balanceManager: await createBalanceManager(),
-            deepCoin: findObjectId(deployments.token.publishTxn, 'Coin'),
+            deepCoin: findObjectId(deployments.token.publishTxn, `Coin<${deployments.token.packageId}`),
             deepbookAdminCap: findObjectId(deployments.deepbook.publishTxn, 'DeepbookAdminCap'),
             deepbookRegistry: findObjectId(deployments.deepbook.publishTxn, 'Registry', 'created', 'RegistryInner'),
         };
@@ -385,17 +402,28 @@ describe('Squid', () => {
             ...objectIds,
             squid: findObjectId(deployments.squid.publishTxn, 'squid::Squid'),
             squidV0: findObjectId(deployments.squid.publishTxn, 'squid_v0::Squid_v0'),
-            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
-            gateway: findObjectId(deployments.its.publishTxn, `${deployments.axelar_gateway.packageId}::gateway::Gateway`),
+            itsOwnerCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
+            itsCreatorCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::creator_cap::CreatorCap`,
+            ),
+            gateway: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.axelar_gateway.packageId}::gateway::Gateway`,
+            ),
         };
+
+        await setupIts();
+
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
@@ -418,7 +446,7 @@ describe('Squid', () => {
         await setupGateway();
         await registerItsTransaction();
         await registerSquidTransaction();
-        await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+        await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
         await registerCoin('a');
         await giveDeepToSquid();
     });
@@ -433,16 +461,17 @@ describe('Squid', () => {
 
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
-        const sourceAddress = trustedSourceAddress;
+        const sourceAddress = '0x1234';
         const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
         const data = swapData;
         // Channel ID for Squid. This will be encoded in the payload
         const squidChannelId = objectIds.squidChannel;
         // ITS transfer payload from Ethereum to Sui
-        const payload = defaultAbiCoder.encode(
+        let payload = defaultAbiCoder.encode(
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
         );
+        payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
         const message = {
             source_chain: trustedSourceChain,
@@ -469,16 +498,17 @@ describe('Squid', () => {
 
         const messageType = ITSMessageType.InterchainTokenTransfer;
         const tokenId = objectIds.tokenId;
-        const sourceAddress = trustedSourceAddress;
+        const sourceAddress = '0x1234';
         const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
         const data = swapData;
         // Channel ID for Squid. This will be encoded in the payload
         const squidChannelId = objectIds.squidChannel;
         // ITS transfer payload from Ethereum to Sui
-        const payload = defaultAbiCoder.encode(
+        let payload = defaultAbiCoder.encode(
             ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
             [messageType, tokenId, sourceAddress, squidChannelId, amount, data],
         );
+        payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
         const message = {
             source_chain: trustedSourceChain,

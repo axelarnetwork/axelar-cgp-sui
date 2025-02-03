@@ -60,15 +60,20 @@ export function getContractBuild(packageName: string, moveDir: string): { module
 export function writeInterchainToken(moveDir: string, options: InterchainTokenOptions) {
     const templateFilePath = `${moveDir}/interchain_token/sources/interchain_token.move`;
 
+    const templateContent = fs.readFileSync(templateFilePath, 'utf8');
     const { filePath, content } = newInterchainToken(templateFilePath, options);
 
     fs.writeFileSync(filePath, content, 'utf8');
 
-    return filePath;
+    return { templateFilePath, filePath, templateContent };
 }
 
 export function removeFile(filePath: string) {
     fs.rmSync(filePath);
+}
+
+export function addFile(filePath: string, content: string) {
+    fs.writeFileSync(filePath, content, 'utf8');
 }
 
 export function updateMoveToml(
@@ -110,6 +115,10 @@ export function copyMovePackage(packageName: string, fromDir: null | string, toD
         fromDir = `${__dirname}/../../move`;
     }
 
+    if (fs.existsSync(`${toDir}/${packageName}`)) {
+        fs.rmSync(`${toDir}/${packageName}`, { recursive: true });
+    }
+
     fs.cpSync(`${fromDir}/${packageName}`, `${toDir}/${packageName}`, { recursive: true });
 }
 
@@ -123,7 +132,7 @@ export function newInterchainToken(templateFilePath: string, options: Interchain
     const structRegex = new RegExp(`struct\\s+Q\\s+has\\s+drop\\s+{}`, 'g');
 
     // replace the module name with the token symbol in lowercase
-    content = content.replace(/(module\s+)([^:]+)(::)([^;]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
+    content = content.replace(/(module\s+)([^:]+)(::)([^{]+)/, `$1interchain_token$3${options.symbol.toLowerCase()}`);
 
     // replace the struct name with the token symbol in uppercase
     content = content.replace(structRegex, `struct ${options.symbol.toUpperCase()} has drop {}`);
