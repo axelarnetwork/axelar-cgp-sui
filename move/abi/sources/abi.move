@@ -364,7 +364,7 @@ module abi::abi {
 
         assert!(reader.read_u8() == val);
     }
-    
+
     #[test]
     #[expected_failure]
     fun test_read_u8_overflow() {
