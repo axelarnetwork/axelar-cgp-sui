@@ -209,7 +209,7 @@ module abi::abi {
     }
 
     /// Write a vector of bytes into the next slot of an `AbiWriter`. Can be used to
-    /// encode vectors of other variable length variables as well.
+    /// write vectors of other variable length types as well.
     public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
         let offset = self.bytes.length() as u256;
         self.write_u256(offset);
