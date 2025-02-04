@@ -176,7 +176,7 @@ module abi::abi {
     /// called `table` from an `AbiReader` called `reader` a user can:
     /// ```rust
     /// let mut table_bytes = reader.read_bytes_raw();
-    /// // Split the data into the lenth and the actual table contents
+    /// // Split the data into the length and the actual table contents
     /// let length_bytes = vector::tabulate!(U256_BYTES, |_| table_bytes.remove(0));
     /// let mut length_reader = new_reader(length_bytes);
     /// let length = length_reader.read_u256() as u64;
