@@ -94,7 +94,7 @@ module abi::abi {
         var
     }
 
-    /// Wrapper for `read_u256` that casts the result into a `u8`.
+    /// Read a `u8` from the next slot of the `AbiReader`. Aborts if the slot value exceeds `u8::MAX`
     public fun read_u8(self: &mut AbiReader): u8 {
         self.read_u256() as u8
     }
