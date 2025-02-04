@@ -64,14 +64,6 @@
       },
       "returnType": "vector<u8>"
     },
-    "into_remaining_bytes": {
-      "name": "into_remaining_bytes",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "AbiReader"
-      },
-      "returnType": "vector<u8>"
-    },
     "read_u256": {
       "name": "read_u256",
       "visibility": "public",
