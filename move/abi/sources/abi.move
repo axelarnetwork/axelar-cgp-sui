@@ -179,8 +179,8 @@ module abi::abi {
         self.write_u256(var as u256)
     }
 
-    /// Write some bytes into the next slot of an `AbiWriter`. Can be used to write
-    /// another variable length variable, such as a `String`as well.
+    /// Write a variable-length bytes into the next slot of an `AbiWriter`. Can be used to write
+    /// other variable length types, such as `String`.
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
         let offset = self.bytes.length() as u256;
         self.write_u256(offset);
