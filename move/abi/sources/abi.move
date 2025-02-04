@@ -512,4 +512,3 @@ module abi::abi {
         assert!(table_read == table);
     }
 }
-
