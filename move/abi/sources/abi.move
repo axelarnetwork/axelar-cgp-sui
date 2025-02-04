@@ -161,6 +161,8 @@ module abi::abi {
     /// additional bytes at the end of the structure as there is no way to know how
     /// to decode the bytes returned. This can be used to decode structs and complex
     /// nested vectors that this library does not provide a method for.
+    ///
+    /// # Examples
     /// For more complex types like structs or nested vectors `read_bytes_raw` can
     /// be used and decoded manualy. To read a struct that contains a `u256` and
     /// a `vector<u8>` from an `AbiReader` called `reader` a user may:
