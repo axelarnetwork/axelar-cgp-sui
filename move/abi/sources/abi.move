@@ -51,6 +51,7 @@ module abi::abi {
     // ----------------
     // Public Functions
     // ----------------
+
     /// Creates a new AbiReader from the bytes passed.
     public fun new_reader(bytes: vector<u8>): AbiReader {
         AbiReader {
