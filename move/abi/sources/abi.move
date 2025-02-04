@@ -17,8 +17,10 @@ module abi::abi {
     // -----
     // Types
     // -----
+
     /// Used to decode abi encoded bytes into variables.
-    /// Example
+    ///
+    /// # Examples
     /// ```rust
     /// let mut reader = abi::new_reader(data);
     /// let number = reader.read_u256();
@@ -34,6 +36,8 @@ module abi::abi {
     }
 
     /// Used to encode variables into abi encoded bytes.
+    ///
+    /// # Examples
     /// ```rust
     /// let mut writer = abi::new_writer(4);
     /// writer
@@ -51,6 +55,7 @@ module abi::abi {
     // ----------------
     // Public Functions
     // ----------------
+
     /// Creates a new AbiReader from the bytes passed.
     public fun new_reader(bytes: vector<u8>): AbiReader {
         AbiReader {
@@ -89,7 +94,7 @@ module abi::abi {
         var
     }
 
-    /// Wrapper for `read_u256` that casts the result into a `u8`.
+    /// Read a `u8` from the next slot of the `AbiReader`. Aborts if the slot value exceeds `u8::MAX`
     public fun read_u8(self: &mut AbiReader): u8 {
         self.read_u256() as u8
     }
@@ -99,8 +104,8 @@ module abi::abi {
         self.pos = self.pos + U256_BYTES;
     }
 
-    /// Reads a variable length variable from an `AbiReader`, as bytes. Can be
-    /// converted to other variable length variables as well (such as `Strings`).
+    /// Reads a variable length bytes from an `AbiReader`.
+    /// This can be used to read other variable length types, such as `String`.
     public fun read_bytes(self: &mut AbiReader): vector<u8> {
         let pos = self.pos;
 
@@ -118,7 +123,7 @@ module abi::abi {
 
     /// Reads a vector of fixed length variables from an `AbiReader` as a
     /// `vector<u256>`. Can also be cast into vectors of other fixed length
-    /// variables.
+    /// types.
     public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
         let pos = self.pos;
 
@@ -137,7 +142,7 @@ module abi::abi {
 
     /// Reads a vector of variable length variables from an `AbiReader` as a
     /// `vector<vector<u8>>`. Can also be cast into vectors of other variable length
-    /// variables.
+    /// types.
     public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
         let pos = self.pos;
         let head = self.head;
@@ -194,7 +199,7 @@ module abi::abi {
     }
 
     /// Write a `u256` into the next slot of an `AbiWriter`. Can be used to write
-    /// other fixed lenght variables as well.
+    /// other fixed length types as well.
     public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
         let pos = self.pos;
 
@@ -214,8 +219,8 @@ module abi::abi {
         self.write_u256(var as u256)
     }
 
-    /// Write some bytes into the next slot of an `AbiWriter`. Can be used to write
-    /// another variable length variable, such as a `String`as well.
+    /// Write a variable-length bytes into the next slot of an `AbiWriter`. Can be used to write
+    /// other variable length types, such as `String`.
     public fun write_bytes(self: &mut AbiWriter, var: vector<u8>): &mut AbiWriter {
         let offset = self.bytes.length() as u256;
         self.write_u256(offset);
@@ -228,7 +233,7 @@ module abi::abi {
     }
 
     /// Write a `vector<u256>` into the next slot of an `AbiWriter`. Can be used to
-    /// encode other vectors of fixed length variables as well.
+    /// write other vectors of fixed length types as well.
     public fun write_vector_u256(self: &mut AbiWriter, var: vector<u256>): &mut AbiWriter {
         let offset = self.bytes.length() as u256;
         self.write_u256(offset);
@@ -244,7 +249,7 @@ module abi::abi {
     }
 
     /// Write a vector of bytes into the next slot of an `AbiWriter`. Can be used to
-    /// encode vectors of other variable length variables as well.
+    /// write vectors of other variable length types as well.
     public fun write_vector_bytes(self: &mut AbiWriter, var: vector<vector<u8>>): &mut AbiWriter {
         let offset = self.bytes.length() as u256;
         self.write_u256(offset);
@@ -429,6 +434,17 @@ module abi::abi {
         let mut reader = new_reader(bytes);
 
         assert!(reader.read_u8() == val);
+    }
+
+    #[test]
+    #[expected_failure]
+    fun test_read_u8_overflow() {
+        let val = 256;
+        let mut writer = new_writer(1);
+        writer.write_u256(val);
+        let bytes = writer.into_bytes();
+        let mut reader = new_reader(bytes);
+        reader.read_u8();
     }
 
     #[test]
