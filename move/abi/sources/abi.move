@@ -17,8 +17,10 @@ module abi::abi {
     // -----
     // Types
     // -----
+
     /// Used to decode abi encoded bytes into variables.
-    /// Example
+    ///
+    /// # Examples
     /// ```rust
     /// let mut reader = abi::new_reader(data);
     /// let number = reader.read_u256();
