@@ -163,7 +163,7 @@ module abi::abi {
     }
 
     /// Write a `u256` into the next slot of an `AbiWriter`. Can be used to write
-    /// other fixed lenght variables as well.
+    /// other fixed length types as well.
     public fun write_u256(self: &mut AbiWriter, var: u256): &mut AbiWriter {
         let pos = self.pos;
 
