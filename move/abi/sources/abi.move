@@ -138,7 +138,7 @@ module abi::abi {
 
     /// Reads a vector of variable length variables from an `AbiReader` as a
     /// `vector<vector<u8>>`. Can also be cast into vectors of other variable length
-    /// variables.
+    /// types.
     public fun read_vector_bytes(self: &mut AbiReader): vector<vector<u8>> {
         let pos = self.pos;
         let head = self.head;
