@@ -244,7 +244,10 @@ module abi::abi {
 
         self.bytes.append(var);
 
-        ((U256_BYTES) - 1 - (length - 1) % U256_BYTES).do!(|_| self.bytes.push_back(0));
+        // Number of bytes in the overflow 32-byte slot that are filled
+        let filled = ((length - 1) % U256_BYTES) + 1;
+        let padding = U256_BYTES - filled;
+        padding.do!(|_| self.bytes.push_back(0));
     }
 
     fun decode_bytes(self: &mut AbiReader): vector<u8> {
