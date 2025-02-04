@@ -119,7 +119,7 @@ module abi::abi {
 
     /// Reads a vector of fixed length variables from an `AbiReader` as a
     /// `vector<u256>`. Can also be cast into vectors of other fixed length
-    /// variables.
+    /// types.
     public fun read_vector_u256(self: &mut AbiReader): vector<u256> {
         let pos = self.pos;
 
