@@ -364,6 +364,17 @@ module abi::abi {
 
         assert!(reader.read_u8() == val);
     }
+    
+    #[test]
+    #[expected_failure]
+    fun test_read_u8_overflow() {
+        let val = 256;
+        let mut writer = new_writer(1);
+        writer.write_u256(val);
+        let bytes = writer.into_bytes();
+        let mut reader = new_reader(bytes);
+        reader.read_u8();
+    }
 
     #[test]
     fun test_append_empty_bytes() {
