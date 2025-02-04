@@ -34,6 +34,8 @@ module abi::abi {
     }
 
     /// Used to encode variables into abi encoded bytes.
+    ///
+    /// # Examples
     /// ```rust
     /// let mut writer = abi::new_writer(4);
     /// writer
