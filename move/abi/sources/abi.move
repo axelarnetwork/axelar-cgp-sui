@@ -104,8 +104,8 @@ module abi::abi {
         self.pos = self.pos + U256_BYTES;
     }
 
-    /// Reads a variable length variable from an `AbiReader`, as bytes. Can be
-    /// converted to other variable length variables as well (such as `Strings`).
+    /// Reads a variable length bytes from an `AbiReader`.
+    /// This can be used to read other variable length types, such as `String`.
     public fun read_bytes(self: &mut AbiReader): vector<u8> {
         let pos = self.pos;
 
