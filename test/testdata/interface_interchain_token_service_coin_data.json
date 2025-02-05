@@ -1,4 +1,21 @@
 {
   "structs": {},
-  "publicFunctions": {}
+  "publicFunctions": {
+    "coin_info<T>": {
+      "name": "coin_info<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinData<T>"
+      },
+      "returnType": "&CoinInfo<T>"
+    },
+    "coin_management<T>": {
+      "name": "coin_management<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinData<T>"
+      },
+      "returnType": "&CoinManagement<T>"
+    }
+  }
 }
