@@ -280,7 +280,7 @@ module interchain_token_service::interchain_token_service {
         value.transfer_distributorship<T>(
             channel,
             token_id,
-            new_distributor
+            new_distributor,
         );
     }
 
@@ -295,7 +295,7 @@ module interchain_token_service::interchain_token_service {
         value.transfer_operatorship<T>(
             channel,
             token_id,
-            new_operator
+            new_operator,
         );
     }
 

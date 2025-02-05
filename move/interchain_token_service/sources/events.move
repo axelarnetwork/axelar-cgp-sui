@@ -67,7 +67,6 @@ module interchain_token_service::events {
         new_operator: Option<address>,
     }
 
-
     // -----------------
     // Package Functions
     // -----------------
@@ -164,20 +163,14 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun distributorship_transfered<T> (
-        token_id: TokenId,
-        new_distributor: Option<address>,
-    ) {
+    public(package) fun distributorship_transfered<T>(token_id: TokenId, new_distributor: Option<address>) {
         event::emit(DistributorshipTransfered<T> {
             token_id,
             new_distributor,
         });
     }
 
-    public(package) fun operatorship_transfered<T> (
-        token_id: TokenId,
-        new_operator: Option<address>,
-    ) {
+    public(package) fun operatorship_transfered<T>(token_id: TokenId, new_operator: Option<address>) {
         event::emit(OperatorshipTransfered<T> {
             token_id,
             new_operator,
