@@ -2,6 +2,8 @@
 name = "GasService"
 version = "0.1.0"
 edition = "2024"
+published-at = "0x3e7044fe789a4f466964e520e4793b467fcdca2d62bef43213d51d0756fc5a75" #testnet
+
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.38.3" }
