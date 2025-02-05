@@ -57,6 +57,17 @@ module interchain_token_service::events {
         flow_limit: Option<u64>,
     }
 
+    public struct DistributorshipTransfered<phantom T> has copy, drop {
+        token_id: TokenId,
+        new_distributor: Option<address>,
+    }
+
+    public struct OperatorshipTransfered<phantom T> has copy, drop {
+        token_id: TokenId,
+        new_operator: Option<address>,
+    }
+
+
     // -----------------
     // Package Functions
     // -----------------
@@ -150,6 +161,26 @@ module interchain_token_service::events {
         event::emit(FlowLimitSet<T> {
             token_id,
             flow_limit,
+        });
+    }
+
+    public(package) fun distributorship_transfered<T> (
+        token_id: TokenId,
+        new_distributor: Option<address>,
+    ) {
+        event::emit(DistributorshipTransfered<T> {
+            token_id,
+            new_distributor,
+        });
+    }
+
+    public(package) fun operatorship_transfered<T> (
+        token_id: TokenId,
+        new_operator: Option<address>,
+    ) {
+        event::emit(OperatorshipTransfered<T> {
+            token_id,
+            new_operator,
         });
     }
 

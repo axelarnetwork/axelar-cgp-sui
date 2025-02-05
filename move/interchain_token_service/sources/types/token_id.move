@@ -57,7 +57,7 @@ module interchain_token_service::token_id {
             &coin_info.symbol(),
             &coin_info.decimals(),
             &option::is_some(coin_info.metadata()),
-            &coin_management.has_capability(),
+            &coin_management.has_treasury_cap(),
         )
     }
 

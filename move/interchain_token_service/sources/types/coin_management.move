@@ -57,7 +57,7 @@ module interchain_token_service::coin_management {
     /// Adds the distributor address to the `CoinManagement`.
     /// Only works for a `CoinManagement` with a `TreasuryCap`.
     public fun add_distributor<T>(self: &mut CoinManagement<T>, distributor: address) {
-        assert!(has_capability(self), EDistributorNeedsTreasuryCap);
+        assert!(self.has_treasury_cap(), EDistributorNeedsTreasuryCap);
         self.distributor.fill(distributor);
     }
 
@@ -67,6 +67,26 @@ module interchain_token_service::coin_management {
         self.operator.fill(operator);
     }
 
+    // -------
+    // Getters
+    // -------
+    public fun operator<T>(self: &CoinManagement<T>): &Option<address> {
+        &self.operator
+    }
+
+    public fun distributor<T>(self: &CoinManagement<T>): &Option<address> {
+        &self.distributor
+    }
+
+    /// Returns true if the coin management has a `TreasuryCap`.
+    public fun has_treasury_cap<T>(self: &CoinManagement<T>): bool {
+        self.treasury_cap.is_some()
+    }
+
+    public fun treasury_cap<T>(self: &CoinManagement<T>): &Option<TreasuryCap<T>> {
+        &self.treasury_cap
+    }
+
     // === Protected Methods ===
 
     /// Takes the given amount of Coins from user. Returns the amount that the InterchainTokenService
@@ -74,7 +94,7 @@ module interchain_token_service::coin_management {
     public(package) fun take_balance<T>(self: &mut CoinManagement<T>, to_take: Balance<T>, clock: &Clock): u64 {
         self.flow_limit.add_flow_out(to_take.value(), clock);
         let amount = to_take.value();
-        if (has_capability(self)) {
+        if (self.has_treasury_cap()) {
             self.burn(to_take);
         } else {
             self.balance.borrow_mut().join(to_take);
@@ -86,7 +106,7 @@ module interchain_token_service::coin_management {
     /// previous transfers is added to the coin here.
     public(package) fun give_coin<T>(self: &mut CoinManagement<T>, amount: u64, clock: &Clock, ctx: &mut TxContext): Coin<T> {
         self.flow_limit.add_flow_in(amount, clock);
-        if (has_capability(self)) {
+        if (self.has_treasury_cap()) {
             self.mint(amount, ctx)
         } else {
             coin::take(self.balance.borrow_mut(), amount, ctx)
@@ -114,16 +134,20 @@ module interchain_token_service::coin_management {
         self.flow_limit.set_flow_limit(flow_limit);
     }
 
+    public(package) fun update_distributorship<T>(self: &mut CoinManagement<T>, new_distributor: Option<address>) {
+        self.distributor = new_distributor;
+    }
+
+    public(package) fun update_operatorship<T>(self: &mut CoinManagement<T>, channel: &Channel, new_opeatator: Option<address>) {
+        assert!(self.operator.contains(&channel.to_address()), ENotOperator);
+        self.operator = new_opeatator;
+    }
+
     // === Views ===
 
     /// Checks if the given address is a `distributor`.
     public fun is_distributor<T>(self: &CoinManagement<T>, distributor: address): bool {
         &distributor == self.distributor.borrow()
-    }
-
-    /// Returns true if the coin management has a `TreasuryCap`.
-    public fun has_capability<T>(self: &CoinManagement<T>): bool {
-        self.treasury_cap.is_some()
     }
 
     // === Tests ===
