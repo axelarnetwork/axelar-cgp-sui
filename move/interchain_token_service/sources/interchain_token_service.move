@@ -269,6 +269,8 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// The current distributor can use this function to update the distributorship.
+    /// If an empty Option is provided then the distributor will be removed forever.
     public fun transfer_distributorship<T>(
         self: &mut InterchainTokenService,
         channel: &Channel,
@@ -284,6 +286,8 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// The current operator can use this function to update the operatorship.
+    /// If an empty Option is provided then the operator will be removed forever.
     public fun transfer_operatorship<T>(
         self: &mut InterchainTokenService,
         channel: &Channel,

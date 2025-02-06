@@ -9,6 +9,17 @@ module interchain_token_service::coin_data {
         coin_info: CoinInfo<T>,
     }
 
+    // ----------------
+    // Public functions
+    // ----------------
+    public fun coin_info<T>(self: &CoinData<T>): &CoinInfo<T> {
+        &self.coin_info
+    }
+
+    public fun coin_management<T>(self: &CoinData<T>): &CoinManagement<T> {
+        &self.coin_management
+    }
+
     // -----------------
     // Package Functions
     // -----------------
@@ -17,14 +28,6 @@ module interchain_token_service::coin_data {
             coin_management,
             coin_info,
         }
-    }
-
-    public fun coin_info<T>(self: &CoinData<T>): &CoinInfo<T> {
-        &self.coin_info
-    }
-
-    public fun coin_management<T>(self: &CoinData<T>): &CoinManagement<T> {
-        &self.coin_management
     }
 
     public(package) fun coin_management_mut<T>(self: &mut CoinData<T>): &mut CoinManagement<T> {

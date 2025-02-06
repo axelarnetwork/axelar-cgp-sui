@@ -138,9 +138,9 @@ module interchain_token_service::coin_management {
         self.distributor = new_distributor;
     }
 
-    public(package) fun update_operatorship<T>(self: &mut CoinManagement<T>, channel: &Channel, new_opeatator: Option<address>) {
+    public(package) fun update_operatorship<T>(self: &mut CoinManagement<T>, channel: &Channel, new_operator: Option<address>) {
         assert!(self.operator.contains(&channel.to_address()), ENotOperator);
-        self.operator = new_opeatator;
+        self.operator = new_operator;
     }
 
     // === Views ===
