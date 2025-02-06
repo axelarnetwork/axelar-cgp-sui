@@ -1,6 +1,7 @@
 module interchain_token_service::interchain_token_service {
     use axelar_gateway::{channel::{ApprovedMessage, Channel}, message_ticket::MessageTicket};
     use interchain_token_service::{
+        coin_data::CoinData,
         coin_info::CoinInfo,
         coin_management::CoinManagement,
         creator_cap::{Self, CreatorCap},
@@ -268,6 +269,40 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// The current distributor can use this function to update the distributorship.
+    /// If an empty Option is provided then the distributor will be removed forever.
+    public fun transfer_distributorship<T>(
+        self: &mut InterchainTokenService,
+        channel: &Channel,
+        token_id: TokenId,
+        new_distributor: Option<address>,
+    ) {
+        let value = self.value_mut!(b"transfer_distributorship");
+
+        value.transfer_distributorship<T>(
+            channel,
+            token_id,
+            new_distributor,
+        );
+    }
+
+    /// The current operator can use this function to update the operatorship.
+    /// If an empty Option is provided then the operator will be removed forever.
+    public fun transfer_operatorship<T>(
+        self: &mut InterchainTokenService,
+        channel: &Channel,
+        token_id: TokenId,
+        new_operator: Option<address>,
+    ) {
+        let value = self.value_mut!(b"transfer_operatorship");
+
+        value.transfer_operatorship<T>(
+            channel,
+            token_id,
+            new_operator,
+        );
+    }
+
     // ---------------
     // Owner Functions
     // ---------------
@@ -290,6 +325,10 @@ module interchain_token_service::interchain_token_service {
 
     public fun channel_address(self: &InterchainTokenService): address {
         self.package_value().channel_address()
+    }
+
+    public fun registered_coin_data<T>(self: &InterchainTokenService, token_id: TokenId): &CoinData<T> {
+        self.package_value().coin_data<T>(token_id)
     }
 
     // -----------------
@@ -338,6 +377,8 @@ module interchain_token_service::interchain_token_service {
                 b"register_transaction",
                 b"set_flow_limit",
                 b"set_flow_limit_as_token_operator",
+                b"transfer_distributorship",
+                b"transfer_operatorship",
                 b"allow_function",
                 b"disallow_function",
             ].map!(|function_name| function_name.to_ascii_string()),

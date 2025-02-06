@@ -428,6 +428,35 @@ module interchain_token_service::interchain_token_service_v0 {
         events::flow_limit_set<T>(token_id, limit);
     }
 
+    public(package) fun transfer_distributorship<T>(
+        self: &mut InterchainTokenService_v0,
+        channel: &Channel,
+        token_id: TokenId,
+        new_distributor: Option<address>,
+    ) {
+        let coin_management = self.coin_management_mut<T>(token_id);
+        let distributor = channel.to_address();
+
+        assert!(coin_management.is_distributor<T>(distributor), ENotDistributor);
+
+        coin_management.update_distributorship(new_distributor);
+
+        events::distributorship_transfered<T>(token_id, new_distributor);
+    }
+
+    public(package) fun transfer_operatorship<T>(
+        self: &mut InterchainTokenService_v0,
+        channel: &Channel,
+        token_id: TokenId,
+        new_operator: Option<address>,
+    ) {
+        let coin_management = self.coin_management_mut<T>(token_id);
+
+        coin_management.update_operatorship<T>(channel, new_operator);
+
+        events::operatorship_transfered<T>(token_id, new_operator);
+    }
+
     public(package) fun allow_function(self: &mut InterchainTokenService_v0, version: u64, function_name: String) {
         self.version_control.allow_function(version, function_name);
     }
@@ -436,13 +465,14 @@ module interchain_token_service::interchain_token_service_v0 {
         self.version_control.disallow_function(version, function_name);
     }
 
-    // -----------------
-    // Private Functions
-    // -----------------
-    fun coin_data<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinData<T> {
+    public(package) fun coin_data<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &self.registered_coins[token_id]
     }
+
+    // -----------------
+    // Private Functions
+    // -----------------
 
     fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo<T> {
         coin_data<T>(self, token_id).coin_info()

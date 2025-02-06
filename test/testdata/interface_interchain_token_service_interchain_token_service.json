@@ -101,6 +101,15 @@
         "self#0#0": "&InterchainTokenService"
       },
       "returnType": "address"
+    },
+    "registered_coin_data<T>": {
+      "name": "registered_coin_data<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&InterchainTokenService",
+        "token_id#0#0": "TokenId"
+      },
+      "returnType": "&CoinData<T>"
     }
   }
 }

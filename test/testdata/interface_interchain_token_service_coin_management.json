@@ -15,20 +15,44 @@
       "params": {},
       "returnType": "CoinManagement<T>"
     },
+    "operator<T>": {
+      "name": "operator<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinManagement<T>"
+      },
+      "returnType": "&Option<address>"
+    },
+    "distributor<T>": {
+      "name": "distributor<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinManagement<T>"
+      },
+      "returnType": "&Option<address>"
+    },
+    "has_treasury_cap<T>": {
+      "name": "has_treasury_cap<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinManagement<T>"
+      },
+      "returnType": "bool"
+    },
+    "treasury_cap<T>": {
+      "name": "treasury_cap<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&CoinManagement<T>"
+      },
+      "returnType": "&Option<TreasuryCap<T>>"
+    },
     "is_distributor<T>": {
       "name": "is_distributor<T>",
       "visibility": "public",
       "params": {
         "self#0#0": "&CoinManagement<T>",
         "distributor#0#0": "address"
-      },
-      "returnType": "bool"
-    },
-    "has_capability<T>": {
-      "name": "has_capability<T>",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&CoinManagement<T>"
       },
       "returnType": "bool"
     }
