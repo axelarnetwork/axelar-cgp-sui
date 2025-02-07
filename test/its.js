@@ -171,10 +171,10 @@ describe('ITS', () => {
         };
     });
 
-    it('should check that the unregistered token id is derived consistently', async() => {
-        const symbol = "symbol";
+    it('should check that the unregistered token id is derived consistently', async () => {
+        const symbol = 'symbol';
         const decimals = 9;
-        const prefix = arrayify("0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50");
+        const prefix = arrayify('0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50');
 
         const encoded = new Uint8Array(33 + symbol.length);
 
