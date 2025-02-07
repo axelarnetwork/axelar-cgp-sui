@@ -2,7 +2,8 @@
 name = "Utils"
 version = "0.1.0"
 edition = "2024"
-published-id = "0x9d817589ae367cc3f3bc9ca40394be79e5853bfca98014f27acfd4da9db78421" #testnet
+# published-at = "0x9d817589ae367cc3f3bc9ca40394be79e5853bfca98014f27acfd4da9db78421" #testnet
+published-at = "0xd937e31b88f0c35c65210e5a38b8222044bf0624227a220c0ee5ec48f86aa8e0" #devnet
 
 
 [dependencies]

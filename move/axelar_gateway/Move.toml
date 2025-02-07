@@ -2,7 +2,8 @@
 name = "AxelarGateway"
 version = "0.1.0"
 edition = "2024"
-published-id = "0x6ddfcdd14a1019d13485a724db892fa0defe580f19c991eaabd690140abb21e4" #testnet
+# published-at = "0x6ddfcdd14a1019d13485a724db892fa0defe580f19c991eaabd690140abb21e4" #testnet
+published-at = "0x936c1f0714a06fac58edc57bb95276bb0ad1e6ae930e5c232fdfec4a18f65818" #devnet
 
 
 [dependencies]
