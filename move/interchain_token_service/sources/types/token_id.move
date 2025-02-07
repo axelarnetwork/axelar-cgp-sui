@@ -65,7 +65,7 @@ module interchain_token_service::token_id {
     }
 
     public fun unregistered_token_id(symbol: &ascii::String, decimals: u8): UnregisteredTokenId {
-        let prefix = PREFIX_UNREGISTERED_INTERHCAIN_TOKEN_ID;
+        let prefix = PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID;
         let mut v = bcs::to_bytes(&prefix);
         v.push_back(decimals);
         v.append(*ascii::as_bytes(symbol));
