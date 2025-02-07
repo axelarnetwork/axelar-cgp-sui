@@ -2,7 +2,7 @@
 name = "VersionControl"
 version = "0.1.0"
 edition = "2024"
-published-at = "0x6e8ebd241a5b89499e0cd104540f8025af111dcd42644bb732dbc170e395ce0c" #testnet
+published-id = "0x6e8ebd241a5b89499e0cd104540f8025af111dcd42644bb732dbc170e395ce0c" #testnet
 
 
 [dependencies]

@@ -2,7 +2,7 @@
 name = "GasService"
 version = "0.1.0"
 edition = "2024"
-published-at = "0x3e7044fe789a4f466964e520e4793b467fcdca2d62bef43213d51d0756fc5a75" #testnet
+published-id = "0x3e7044fe789a4f466964e520e4793b467fcdca2d62bef43213d51d0756fc5a75" #testnet
 
 
 [dependencies]

@@ -2,7 +2,7 @@
 name = "Operators"
 version = "0.1.0"
 edition = "2024"
-published-at = "0xbf6b0b743c01709fc636f41d74dd1db15b140bb6bb7ff4897dcf381cbec58db7" #testnet
+published-id = "0xbf6b0b743c01709fc636f41d74dd1db15b140bb6bb7ff4897dcf381cbec58db7" #testnet
 
 
 [dependencies]
