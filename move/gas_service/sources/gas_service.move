@@ -2,7 +2,7 @@ module gas_service::gas_service {
     use axelar_gateway::message_ticket::MessageTicket;
     use gas_service::gas_service_v0::{Self, GasService_v0};
     use std::ascii::{Self, String};
-    use sui::{coin::Coin, hash::keccak256, sui::SUI, versioned::{Self, Versioned}};
+    use sui::{coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
     use version_control::version_control::{Self, VersionControl};
 
     // -------
@@ -32,6 +32,7 @@ module gas_service::gas_service {
                 VERSION,
                 gas_service_v0::new(
                     version_control(),
+                    ctx,
                 ),
                 ctx,
             ),
@@ -74,16 +75,16 @@ module gas_service::gas_service {
     /// call.
     /// It can also be called by the user to pay gas for a contract call, while
     /// setting the sender as the channel ID.
-    public fun pay_gas(
+    public fun pay_gas<T>(
         self: &mut GasService,
         message_ticket: &MessageTicket,
-        coin: Coin<SUI>,
+        coin: Coin<T>,
         refund_address: address,
         params: vector<u8>,
     ) {
         self
             .value_mut!(b"pay_gas")
-            .pay_gas(
+            .pay_gas<T>(
                 message_ticket,
                 coin,
                 refund_address,
@@ -94,10 +95,10 @@ module gas_service::gas_service {
     /// Add gas for an existing cross-chain contract call.
     /// This function can be called by a user who wants to add gas for a contract
     /// call with insufficient gas.
-    public fun add_gas(self: &mut GasService, coin: Coin<SUI>, message_id: String, refund_address: address, params: vector<u8>) {
+    public fun add_gas<T>(self: &mut GasService, coin: Coin<T>, message_id: String, refund_address: address, params: vector<u8>) {
         self
             .value_mut!(b"add_gas")
-            .add_gas(
+            .add_gas<T>(
                 coin,
                 message_id,
                 refund_address,
@@ -105,20 +106,27 @@ module gas_service::gas_service {
             );
     }
 
-    public fun collect_gas(self: &mut GasService, _: &GasCollectorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
+    public fun collect_gas<T>(self: &mut GasService, _: &GasCollectorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
         self
             .value_mut!(b"collect_gas")
-            .collect_gas(
+            .collect_gas<T>(
                 receiver,
                 amount,
                 ctx,
             )
     }
 
-    public fun refund(self: &mut GasService, _: &GasCollectorCap, message_id: String, receiver: address, amount: u64, ctx: &mut TxContext) {
+    public fun refund<T>(
+        self: &mut GasService,
+        _: &GasCollectorCap,
+        message_id: String,
+        receiver: address,
+        amount: u64,
+        ctx: &mut TxContext,
+    ) {
         self
             .value_mut!(b"refund")
-            .refund(
+            .refund<T>(
                 message_id,
                 receiver,
                 amount,
@@ -141,7 +149,7 @@ module gas_service::gas_service {
     // Tests
     // -----
     #[test_only]
-    use sui::coin;
+    use sui::{coin, sui::SUI};
 
     #[test_only]
     macro fun value($self: &GasService): &GasService_v0 {
@@ -157,6 +165,7 @@ module gas_service::gas_service {
                 VERSION,
                 gas_service_v0::new(
                     version_control(),
+                    ctx,
                 ),
                 ctx,
             ),
@@ -219,7 +228,7 @@ module gas_service::gas_service {
             vector[],
         );
 
-        assert!(service.value!().balance().value() == value);
+        assert!(service.value!().balance<SUI>().value() == value);
 
         cap.destroy_cap();
         service.destroy();
@@ -243,7 +252,7 @@ module gas_service::gas_service {
             vector[],
         );
 
-        assert!(service.value!().balance().value() == value);
+        assert!(service.value!().balance<SUI>().value() == value);
 
         cap.destroy_cap();
         service.destroy();
@@ -265,14 +274,14 @@ module gas_service::gas_service {
             vector[],
         );
 
-        service.collect_gas(
+        service.collect_gas<SUI>(
             &cap,
             ctx.sender(),
             value,
             ctx,
         );
 
-        assert!(service.value!().balance().value() == 0);
+        assert!(service.value!().balance<SUI>().value() == 0);
 
         cap.destroy_cap();
         service.destroy();
@@ -287,14 +296,14 @@ module gas_service::gas_service {
     1; // 1..65,536
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
-        service.add_gas(
+        service.add_gas<SUI>(
             c,
             std::ascii::string(b"message id"),
             @0x0,
             vector[],
         );
 
-        service.refund(
+        service.refund<SUI>(
             &cap,
             std::ascii::string(b"message id"),
             ctx.sender(),
@@ -302,7 +311,7 @@ module gas_service::gas_service {
             ctx,
         );
 
-        assert!(service.value!().balance().value() == 0);
+        assert!(service.value!().balance<SUI>().value() == 0);
 
         cap.destroy_cap();
         service.destroy();
@@ -325,7 +334,7 @@ module gas_service::gas_service {
             vector[],
         );
 
-        service.collect_gas(
+        service.collect_gas<SUI>(
             &cap,
             ctx.sender(),
             value + 1,
@@ -344,14 +353,14 @@ module gas_service::gas_service {
         let value = 10;
         let c: Coin<SUI> = coin::mint_for_testing(value, ctx);
 
-        service.add_gas(
+        service.add_gas<SUI>(
             c,
             std::ascii::string(b"message id"),
             @0x0,
             vector[],
         );
 
-        service.refund(
+        service.refund<SUI>(
             &cap,
             std::ascii::string(b"message id"),
             ctx.sender(),
