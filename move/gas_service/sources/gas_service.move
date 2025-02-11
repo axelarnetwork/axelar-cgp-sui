@@ -2,7 +2,7 @@ module gas_service::gas_service {
     use axelar_gateway::message_ticket::MessageTicket;
     use gas_service::gas_service_v0::{Self, GasService_v0};
     use std::ascii::{Self, String};
-    use sui::{coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
+    use sui::{balance::Balance, coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
     use version_control::version_control::{Self, VersionControl};
 
     // -------
@@ -54,6 +54,12 @@ module gas_service::gas_service {
         let value = gas_service.inner.load_value_mut<GasService_v0>();
         value.version_control().check(VERSION, ascii::string($function_name));
         value
+    }
+
+    // We do not need to check version control for getters.
+    macro fun value($self: &GasService): &GasService_v0 {
+        let gas_service = $self;
+        gas_service.inner.load_value<GasService_v0>()
     }
 
     // ---------------
@@ -134,6 +140,10 @@ module gas_service::gas_service {
             );
     }
 
+    public fun balance<T>(self: &GasService): &Balance<T> {
+        self.value!().balance<T>()
+    }
+
     // -----------------
     // Private Functions
     // -----------------
@@ -150,12 +160,6 @@ module gas_service::gas_service {
     // -----
     #[test_only]
     use sui::{coin, sui::SUI};
-
-    #[test_only]
-    macro fun value($self: &GasService): &GasService_v0 {
-        let gas_service = $self;
-        gas_service.inner.load_value<GasService_v0>()
-    }
 
     #[test_only]
     fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {

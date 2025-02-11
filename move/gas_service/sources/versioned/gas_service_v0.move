@@ -103,6 +103,10 @@ module gas_service::gas_service_v0 {
         self.version_control.disallow_function(version, function_name);
     }
 
+    public(package) fun balance<T>(self: &GasService_v0): &Balance<T> {
+        self.balances.borrow<TypeName, Balance<T>>(type_name::get<T>())
+    }
+
     // -----------------
     // Private Functions
     // -----------------
@@ -130,11 +134,6 @@ module gas_service::gas_service_v0 {
     #[test_only]
     public(package) fun version_control_mut(self: &mut GasService_v0): &mut VersionControl {
         &mut self.version_control
-    }
-
-    #[test_only]
-    public(package) fun balance<T>(self: &GasService_v0): &Balance<T> {
-        self.balances.borrow<TypeName, Balance<T>>(type_name::get<T>())
     }
 
     #[test_only]
