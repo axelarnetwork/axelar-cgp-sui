@@ -29,7 +29,8 @@ const {
     ITSMessageType,
     TxBuilder,
 } = require('../dist/cjs');
-const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes, arrayify } = require('ethers/lib/utils');
+const { bcs } = require('@mysten/sui/bcs');
 
 describe('ITS', () => {
     // Sui Client
@@ -168,6 +169,29 @@ describe('ITS', () => {
             itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
+    });
+
+    it('should check that the unregistered token id is derived consistently', async () => {
+        const symbol = 'symbol';
+        const decimals = 9;
+        const prefix = arrayify('0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50');
+
+        const encoded = new Uint8Array(33 + symbol.length);
+
+        encoded.set(prefix.reverse(), 0);
+        encoded[32] = decimals;
+        encoded.set(Buffer.from(symbol), 33);
+
+        const txBuilder = new TxBuilder(client);
+
+        await txBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::token_id::unregistered_token_id`,
+            arguments: [symbol, decimals],
+        });
+        const resp = await txBuilder.devInspect(keypair.toSuiAddress());
+        const result = bcs.Address.parse(new Uint8Array(resp.results[0].returnValues[0][0]));
+
+        expect(result).to.equal(keccak256(encoded));
     });
 
     it('should call register_transaction successfully', async () => {
