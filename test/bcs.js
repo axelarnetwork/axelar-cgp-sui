@@ -11,7 +11,7 @@ const hexData = {
     GatewayV0:
         'c15879de64dc6678674e5ad1a32c47319a1e9100bf21408173590455d01f9d160000000000000000196e295da7fe769ff56d2627c38252ee603f90829ea777bce36ce676b5e3d9d5a7f4b2d4c193987e5f01122bc9cce22a791447d10bc58299ced9e4e18db4c2c503000000000000000100000000000000537d294cfaa7dc649e43cab6a2d829674ea9c11c86517fec9e3984cdedaee42501000000000000000e59feaeb543924fabfbeb667efe707290cf4de9e667796b132260f33a84c26ee803000000000000b23c626b920100000f00000000000000010610617070726f76655f6d657373616765730e726f746174655f7369676e6572731369735f6d6573736167655f617070726f7665641369735f6d6573736167655f65786563757465641574616b655f617070726f7665645f6d6573736167650c73656e645f6d657373616765',
     GasServiceV0:
-        '0178ed64520e2e76bfbfc5551ac9b60acc59b00d6148c9db446a9d7462a96eba000000000000000000000000000000000104077061795f676173076164645f6761730b636f6c6c6563745f67617306726566756e64',
+        'bcb70c9fabd166e2af35e90048df65bebfea2619c862087aa8dfc4d571b96aeb0000000000000000db70b4c23ee7bc791972273843aa80edfcb47f0db3d3c93afa99f791588cf43101000000000000000106077061795f676173076164645f6761730b636f6c6c6563745f67617306726566756e640e616c6c6f775f66756e6374696f6e11646973616c6c6f775f66756e6374696f6e',
     RelayerDiscoveryV0:
         '5dcab278dc93438e0705fc32023808927e09a29b1ae52eef6cb33b9250d9b87100000000000000005339d11ffc9ae10e448b36b776533e1f08c646ad0441c7a0d410b1e0e5d28e58010000000000000001031472656769737465725f7472616e73616374696f6e1272656d6f76655f7472616e73616374696f6e0f6765745f7472616e73616374696f6e',
 };
@@ -97,14 +97,14 @@ describe('BCS', () => {
 
     it('should decode GasService_v0 object successfully', () => {
         const gasServiceV0 = bcsStructs.gasService.GasService.parse(fromHEX(hexData.GasServiceV0));
-
-        expect(gasServiceV0.id).to.equal('0178ed64520e2e76bfbfc5551ac9b60acc59b00d6148c9db446a9d7462a96eba');
+        expect(gasServiceV0.id).to.equal('bcb70c9fabd166e2af35e90048df65bebfea2619c862087aa8dfc4d571b96aeb');
         expect(gasServiceV0.name).to.equal('0');
-        expect(gasServiceV0.value.balance).to.equal('0');
+        expect(gasServiceV0.value.balances.id).to.equal('db70b4c23ee7bc791972273843aa80edfcb47f0db3d3c93afa99f791588cf431');
+        expect(gasServiceV0.value.balances.size).to.equal('1');
         expect(gasServiceV0.value.version_control.allowed_functions[0].contents)
             .to.be.an('array')
-            .with.lengthOf(4)
-            .that.includes('pay_gas', 'add_gas', 'collect_gas', 'refund');
+            .with.lengthOf(6)
+            .that.includes('pay_gas', 'add_gas', 'collect_gas', 'refund', 'allow_function', 'disallow_function');
     });
 
     it('should decode RelayerDiscovery_v0 object successfully', async () => {

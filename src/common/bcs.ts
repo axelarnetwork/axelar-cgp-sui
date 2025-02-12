@@ -309,10 +309,11 @@ function getGMPStructs() {
 }
 
 function getGasServiceStructs() {
+    const { Bag } = getCommonStructs();
     const { VersionControl } = getVersionControlStructs();
 
     const GasServiceV0 = bcs.struct('GasService_v0', {
-        balance: bcs.U64,
+        balances: Bag,
         version_control: VersionControl,
     });
 
