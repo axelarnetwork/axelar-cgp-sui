@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.1.1
+
+### Patch Changes
+
+- 2aa0674: Change the bcs script to include the new GasServiceV0 structure
+
 ## 1.1.0
 
 ### Minor Changes
