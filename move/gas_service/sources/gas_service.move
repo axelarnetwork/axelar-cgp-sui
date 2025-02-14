@@ -1,6 +1,7 @@
 module gas_service::gas_service {
     use axelar_gateway::message_ticket::MessageTicket;
     use gas_service::gas_service_v0::{Self, GasService_v0};
+    use gas_service::operator_cap::{OperatorCap, Self};
     use std::ascii::{Self, String};
     use sui::{balance::Balance, coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
     use version_control::version_control::{Self, VersionControl};
@@ -16,10 +17,6 @@ module gas_service::gas_service {
     public struct GasService has key, store {
         id: UID,
         inner: Versioned,
-    }
-
-    public struct OperatorCap has key, store {
-        id: UID,
     }
 
     // -----
@@ -39,9 +36,7 @@ module gas_service::gas_service {
         });
 
         transfer::public_transfer(
-            OperatorCap {
-                id: object::new(ctx),
-            },
+            operator_cap::create(ctx),
             ctx.sender(),
         );
     }
@@ -168,9 +163,7 @@ module gas_service::gas_service {
             ),
         };
 
-        let cap = OperatorCap {
-            id: object::new(ctx),
-        };
+        let cap = operator_cap::create(ctx);
 
         (service, cap)
     }
@@ -181,12 +174,6 @@ module gas_service::gas_service {
         id.delete();
         let data = inner.destroy<GasService_v0>();
         data.destroy_for_testing();
-    }
-
-    #[test_only]
-    fun destroy_cap(self: OperatorCap) {
-        let OperatorCap { id } = self;
-        id.delete();
     }
 
     /// -----

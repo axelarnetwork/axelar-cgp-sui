@@ -16,19 +16,6 @@
           "type": "Versioned"
         }
       ]
-    },
-    "OperatorCap": {
-      "name": "OperatorCap",
-      "abilities": [
-        "store",
-        "key"
-      ],
-      "fields": [
-        {
-          "name": "id",
-          "type": "UID"
-        }
-      ]
     }
   },
   "publicFunctions": {
