@@ -1,7 +1,6 @@
 module gas_service::gas_service {
     use axelar_gateway::message_ticket::MessageTicket;
-    use gas_service::gas_service_v0::{Self, GasService_v0};
-    use gas_service::operator_cap::{OperatorCap, Self};
+    use gas_service::{gas_service_v0::{Self, GasService_v0}, operator_cap::{Self, OperatorCap}};
     use std::ascii::{Self, String};
     use sui::{balance::Balance, coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
     use version_control::version_control::{Self, VersionControl};
