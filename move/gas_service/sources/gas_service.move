@@ -1,6 +1,6 @@
 module gas_service::gas_service {
     use axelar_gateway::message_ticket::MessageTicket;
-    use gas_service::{gas_service_v0::{Self, GasService_v0}, operator_cap::{Self, OperatorCap}};
+    use gas_service::{gas_service_v0::{Self, GasService_v0}, operator_cap::{Self, OperatorCap}, owner_cap::{Self, OwnerCap}};
     use std::ascii::{Self, String};
     use sui::{balance::Balance, coin::Coin, hash::keccak256, versioned::{Self, Versioned}};
     use version_control::version_control::{Self, VersionControl};
@@ -38,6 +38,11 @@ module gas_service::gas_service {
             operator_cap::create(ctx),
             ctx.sender(),
         );
+
+        transfer::public_transfer(
+            owner_cap::create(ctx),
+            ctx.sender(),
+        );
     }
 
     // ------
@@ -59,11 +64,11 @@ module gas_service::gas_service {
     // ---------------
     // Entry Functions
     // ---------------
-    entry fun allow_function(self: &mut GasService, _: &OperatorCap, version: u64, function_name: String) {
+    entry fun allow_function(self: &mut GasService, _: &OwnerCap, version: u64, function_name: String) {
         self.value_mut!(b"allow_function").allow_function(version, function_name);
     }
 
-    entry fun disallow_function(self: &mut GasService, _: &OperatorCap, version: u64, function_name: String) {
+    entry fun disallow_function(self: &mut GasService, _: &OwnerCap, version: u64, function_name: String) {
         self.value_mut!(b"disallow_function").disallow_function(version, function_name);
     }
 
@@ -358,26 +363,29 @@ module gas_service::gas_service {
     #[test]
     fun test_allow_function() {
         let ctx = &mut sui::tx_context::dummy();
-        let (mut self, cap) = new(ctx);
+        let (mut self, operator_cap) = new(ctx);
         let version = 0;
         let function_name = b"function_name".to_ascii_string();
-
+        let cap = owner_cap::create(ctx);
         self.allow_function(&cap, version, function_name);
 
         sui::test_utils::destroy(self);
+        operator_cap.destroy_cap();
         cap.destroy_cap();
     }
 
     #[test]
     fun test_disallow_function() {
         let ctx = &mut sui::tx_context::dummy();
-        let (mut self, cap) = new(ctx);
+        let (mut self, operator_cap) = new(ctx);
         let version = 0;
         let function_name = b"pay_gas".to_ascii_string();
 
+        let cap = owner_cap::create(ctx);
         self.disallow_function(&cap, version, function_name);
 
         sui::test_utils::destroy(self);
+        operator_cap.destroy_cap();
         cap.destroy_cap();
     }
 }
