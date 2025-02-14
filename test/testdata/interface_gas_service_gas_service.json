@@ -16,19 +16,6 @@
           "type": "Versioned"
         }
       ]
-    },
-    "GasCollectorCap": {
-      "name": "GasCollectorCap",
-      "abilities": [
-        "store",
-        "key"
-      ],
-      "fields": [
-        {
-          "name": "id",
-          "type": "UID"
-        }
-      ]
     }
   },
   "publicFunctions": {
