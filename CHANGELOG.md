@@ -1,5 +1,12 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.1.2
+
+### Patch Changes
+
+- 2efe9a2: Renamed GasCollectorCap to OperatorCap to have more consistent roles across contracts
+- 8cc6b8f: Add an owner cap to the GasService and change allow/dissalow_function to work with it.
+
 ## 1.1.1
 
 ### Patch Changes
