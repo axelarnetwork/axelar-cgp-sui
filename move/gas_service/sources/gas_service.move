@@ -18,7 +18,7 @@ module gas_service::gas_service {
         inner: Versioned,
     }
 
-    public struct GasCollectorCap has key, store {
+    public struct OperatorCap has key, store {
         id: UID,
     }
 
@@ -39,7 +39,7 @@ module gas_service::gas_service {
         });
 
         transfer::public_transfer(
-            GasCollectorCap {
+            OperatorCap {
                 id: object::new(ctx),
             },
             ctx.sender(),
@@ -65,11 +65,11 @@ module gas_service::gas_service {
     // ---------------
     // Entry Functions
     // ---------------
-    entry fun allow_function(self: &mut GasService, _: &GasCollectorCap, version: u64, function_name: String) {
+    entry fun allow_function(self: &mut GasService, _: &OperatorCap, version: u64, function_name: String) {
         self.value_mut!(b"allow_function").allow_function(version, function_name);
     }
 
-    entry fun disallow_function(self: &mut GasService, _: &GasCollectorCap, version: u64, function_name: String) {
+    entry fun disallow_function(self: &mut GasService, _: &OperatorCap, version: u64, function_name: String) {
         self.value_mut!(b"disallow_function").disallow_function(version, function_name);
     }
 
@@ -112,7 +112,7 @@ module gas_service::gas_service {
             );
     }
 
-    public fun collect_gas<T>(self: &mut GasService, _: &GasCollectorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
+    public fun collect_gas<T>(self: &mut GasService, _: &OperatorCap, receiver: address, amount: u64, ctx: &mut TxContext) {
         self
             .value_mut!(b"collect_gas")
             .collect_gas<T>(
@@ -122,14 +122,7 @@ module gas_service::gas_service {
             )
     }
 
-    public fun refund<T>(
-        self: &mut GasService,
-        _: &GasCollectorCap,
-        message_id: String,
-        receiver: address,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
+    public fun refund<T>(self: &mut GasService, _: &OperatorCap, message_id: String, receiver: address, amount: u64, ctx: &mut TxContext) {
         self
             .value_mut!(b"refund")
             .refund<T>(
@@ -162,7 +155,7 @@ module gas_service::gas_service {
     use sui::{coin, sui::SUI};
 
     #[test_only]
-    fun new(ctx: &mut TxContext): (GasService, GasCollectorCap) {
+    fun new(ctx: &mut TxContext): (GasService, OperatorCap) {
         let service = GasService {
             id: object::new(ctx),
             inner: versioned::create(
@@ -175,7 +168,7 @@ module gas_service::gas_service {
             ),
         };
 
-        let cap = GasCollectorCap {
+        let cap = OperatorCap {
             id: object::new(ctx),
         };
 
@@ -191,8 +184,8 @@ module gas_service::gas_service {
     }
 
     #[test_only]
-    fun destroy_cap(self: GasCollectorCap) {
-        let GasCollectorCap { id } = self;
+    fun destroy_cap(self: OperatorCap) {
+        let OperatorCap { id } = self;
         id.delete();
     }
 

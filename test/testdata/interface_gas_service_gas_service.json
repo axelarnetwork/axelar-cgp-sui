@@ -17,8 +17,8 @@
         }
       ]
     },
-    "GasCollectorCap": {
-      "name": "GasCollectorCap",
+    "OperatorCap": {
+      "name": "OperatorCap",
       "abilities": [
         "store",
         "key"
