@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.1.2
+
+### Patch Changes
+
+- 2efe9a2: Renamed GasCollectorCap to OperatorCap to have more consistent roles across contracts
+
 ## 1.1.1
 
 ### Patch Changes
