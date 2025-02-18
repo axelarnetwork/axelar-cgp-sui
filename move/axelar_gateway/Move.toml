@@ -14,4 +14,3 @@ Utils = { local = "../utils" }
 
 [addresses]
 axelar_gateway = "0x936c1f0714a06fac58edc57bb95276bb0ad1e6ae930e5c232fdfec4a18f65818"
-clock = "0x6"
