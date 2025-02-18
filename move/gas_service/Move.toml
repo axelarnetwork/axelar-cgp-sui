@@ -12,4 +12,4 @@ VersionControl = { local = "../version_control" }
 AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-gas_service = "0xa2"
+gas_service = "0xef105cb526865ac558c3ee5e0ef6b63cffb730b4a784bca8ff40dcba66576ca8"
