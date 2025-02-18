@@ -12,5 +12,4 @@ VersionControl = { local = "../version_control" }
 AxelarGateway = { local = "../axelar_gateway" }
 
 [addresses]
-relayer_discovery = "0xaa"
-clock = "0x4075fefb4216afcdeef604aa9880830720316156025c9addcb6b04a3f4a4c00c"
+relayer_discovery = "0x4075fefb4216afcdeef604aa9880830720316156025c9addcb6b04a3f4a4c00c"
