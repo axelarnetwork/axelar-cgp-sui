@@ -11,7 +11,7 @@ module example::its {
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::{Self, Transaction}};
     use std::{ascii::{Self, String}, type_name};
-    use sui::{address, clock::Clock, coin::{CoinMetadata, Coin}, event, hex, sui::SUI};
+    use sui::{address, clock::Clock, coin::{CoinMetadata, Coin, TreasuryCap}, event, hex, sui::SUI};
 
     // -------
     // Structs
@@ -129,6 +129,22 @@ module example::its {
             coin_metadata.get_decimals(),
         );
         let coin_management = coin_management::new_locked();
+
+        its.register_coin(
+            coin_info,
+            coin_management,
+        )
+    }
+
+    /// Registers a coin with the Interchain Token Service (ITS), using the provided `TreasuryCap` to manage the coin.
+    /// The `TreasuryCap` gives the ITS control over minting and burning of this coin.
+    public fun register_coin_with_cap<TOKEN>(its: &mut InterchainTokenService, coin_metadata: &CoinMetadata<TOKEN>, treasury_cap: &TreasuryCap<TOKEN>): TokenId {
+        let coin_info = coin_info::from_info<TOKEN>(
+            coin_metadata.get_name(),
+            coin_metadata.get_symbol(),
+            coin_metadata.get_decimals(),
+        );
+        let coin_management = coin_management::new_with_cap(treasury_cap);
 
         its.register_coin(
             coin_info,
