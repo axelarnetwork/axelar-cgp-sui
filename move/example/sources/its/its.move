@@ -138,7 +138,11 @@ module example::its {
 
     /// Registers a coin with the Interchain Token Service (ITS), using the provided `TreasuryCap` to manage the coin.
     /// The `TreasuryCap` gives the ITS control over minting and burning of this coin.
-    public fun register_coin_with_cap<TOKEN>(its: &mut InterchainTokenService, coin_metadata: &CoinMetadata<TOKEN>, treasury_cap: TreasuryCap<TOKEN>): TokenId {
+    public fun register_coin_with_cap<TOKEN>(
+        its: &mut InterchainTokenService,
+        coin_metadata: &CoinMetadata<TOKEN>,
+        treasury_cap: TreasuryCap<TOKEN>,
+    ): TokenId {
         let coin_info = coin_info::from_info<TOKEN>(
             coin_metadata.get_name(),
             coin_metadata.get_symbol(),
