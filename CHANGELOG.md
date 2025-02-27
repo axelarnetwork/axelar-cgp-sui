@@ -1,5 +1,11 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.1.3
+
+### Patch Changes
+
+- 6356a95: Support mint/burn token register mode in Example module
+
 ## 1.1.2
 
 ### Patch Changes
