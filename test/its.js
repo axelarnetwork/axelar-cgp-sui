@@ -29,7 +29,8 @@ const {
     ITSMessageType,
     TxBuilder,
 } = require('../dist/cjs');
-const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes, arrayify } = require('ethers/lib/utils');
+const { bcs } = require('@mysten/sui/bcs');
 
 describe('ITS', () => {
     // Sui Client
@@ -56,8 +57,10 @@ describe('ITS', () => {
     const nonce = 0;
 
     // Parameters for Trusted Addresses
-    const trustedSourceChain = 'Avalanche';
-    const trustedSourceAddress = hexlify(randomBytes(20));
+    const trustedSourceChain = 'axelar';
+    const trustedSourceAddress = 'hub_address';
+    const otherChain = 'Avalanche';
+    const chainName = 'Chain Name';
 
     async function setupGateway() {
         calculateNextSigners(gatewayInfo, nonce);
@@ -89,11 +92,25 @@ describe('ITS', () => {
         discoveryInfo.discovery = objectIds.relayerDiscovery;
     }
 
+    async function setupIts() {
+        const itsSetupTxBuilder = new TxBuilder(client);
+
+        await itsSetupTxBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::setup`,
+            arguments: [objectIds.itsCreatorCap, chainName, trustedSourceAddress],
+        });
+
+        const itsSetupReceipt = await itsSetupTxBuilder.signAndExecute(deployer);
+
+        objectIds.its = findObjectId(itsSetupReceipt, 'interchain_token_service::InterchainTokenService');
+        objectIds.itsV0 = findObjectId(itsSetupReceipt, 'interchain_token_service_v0::InterchainTokenService_v0');
+    }
+
     async function registerItsTransaction() {
         const registerTransactionBuilder = new TxBuilder(client);
 
         await registerTransactionBuilder.moveCall({
-            target: `${deployments.its.packageId}::discovery::register_transaction`,
+            target: `${deployments.interchain_token_service.packageId}::discovery::register_transaction`,
             arguments: [objectIds.its, objectIds.relayerDiscovery],
         });
 
@@ -119,15 +136,20 @@ describe('ITS', () => {
             singleton: findObjectId(deployments.example.publishTxn, 'its::Singleton'),
             tokenTreasuryCap: findObjectId(deployments.example.publishTxn, `TreasuryCap<${coinType}>`),
             tokenCoinMetadata: findObjectId(deployments.example.publishTxn, `CoinMetadata<${coinType}>`),
-            its: findObjectId(deployments.its.publishTxn, 'its::ITS'),
-            itsV0: findObjectId(deployments.its.publishTxn, 'its_v0::ITS_v0'),
             relayerDiscovery: findObjectId(
                 deployments.relayer_discovery.publishTxn,
                 `${deployments.relayer_discovery.packageId}::discovery::RelayerDiscovery`,
             ),
             gasService: findObjectId(deployments.gas_service.publishTxn, `${deployments.gas_service.packageId}::gas_service::GasService`),
             creatorCap: findObjectId(deployments.axelar_gateway.publishTxn, 'OwnerCap'),
-            itsOwnerCap: findObjectId(deployments.its.publishTxn, `${deployments.its.packageId}::owner_cap::OwnerCap`),
+            itsOwnerCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::owner_cap::OwnerCap`,
+            ),
+            itsCreatorCap: findObjectId(
+                deployments.interchain_token_service.publishTxn,
+                `${deployments.interchain_token_service.packageId}::creator_cap::CreatorCap`,
+            ),
         };
         // Mint some coins for tests
         const tokenTxBuilder = new TxBuilder(client);
@@ -139,12 +161,37 @@ describe('ITS', () => {
 
         const mintReceipt = await tokenTxBuilder.signAndExecute(deployer);
 
+        await setupIts();
+
         // Find the object ids from the publish transactions
         objectIds = {
             ...objectIds,
             itsChannel: await getVersionedChannelId(client, objectIds.itsV0),
             token: findObjectId(mintReceipt, 'token::TOKEN'),
         };
+    });
+
+    it('should check that the unregistered token id is derived consistently', async () => {
+        const symbol = 'symbol';
+        const decimals = 9;
+        const prefix = arrayify('0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50');
+
+        const encoded = new Uint8Array(33 + symbol.length);
+
+        encoded.set(prefix.reverse(), 0);
+        encoded[32] = decimals;
+        encoded.set(Buffer.from(symbol), 33);
+
+        const txBuilder = new TxBuilder(client);
+
+        await txBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::token_id::unregistered_token_id`,
+            arguments: [symbol, decimals],
+        });
+        const resp = await txBuilder.devInspect(keypair.toSuiAddress());
+        const result = bcs.Address.parse(new Uint8Array(resp.results[0].returnValues[0][0]));
+
+        expect(result).to.equal(keccak256(encoded));
     });
 
     it('should call register_transaction successfully', async () => {
@@ -183,7 +230,7 @@ describe('ITS', () => {
         before(async () => {
             await setupGateway();
             await registerItsTransaction();
-            await setupTrustedAddresses(client, deployer, objectIds, deployments, [trustedSourceAddress], [trustedSourceChain]);
+            await setupTrustedAddresses(client, deployer, objectIds, deployments, [otherChain]);
         });
 
         describe('Interchain Token Transfer', () => {
@@ -194,10 +241,11 @@ describe('ITS', () => {
                 const tx = txBuilder.tx;
 
                 const coin = tx.splitCoins(objectIds.token, [1e9]);
+                const destinationAddress = '0x1234';
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
                     arguments: [objectIds.tokenId],
                 });
 
@@ -210,8 +258,8 @@ describe('ITS', () => {
                         objectIds.gasService,
                         TokenId,
                         coin,
-                        trustedSourceChain,
-                        trustedSourceAddress,
+                        otherChain,
+                        destinationAddress,
                         '0x', // its token metadata
                         deployer.toSuiAddress(),
                         gas,
@@ -229,7 +277,7 @@ describe('ITS', () => {
                 // Approve ITS transfer message
                 const messageType = ITSMessageType.InterchainTokenTransfer;
                 const tokenId = objectIds.tokenId;
-                const sourceAddress = trustedSourceAddress;
+                const sourceAddress = '0x1234';
                 const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
                 const amount = 1e9;
                 const data = '0x1234';
@@ -238,14 +286,15 @@ describe('ITS', () => {
                     packageId: deployments.relayer_discovery.packageId,
                     discovery: objectIds.relayerDiscovery,
                 };
-
                 // Channel ID for the ITS example. This will be encoded in the payload
                 const itsExampleChannelId = await getSingletonChannelId(client, objectIds.singleton);
+
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, sourceAddress, itsExampleChannelId, amount, data],
                 );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,
@@ -267,7 +316,7 @@ describe('ITS', () => {
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::token_id::from_u256`,
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
                     arguments: [objectIds.tokenId],
                 });
 
@@ -277,7 +326,7 @@ describe('ITS', () => {
                         objectIds.its,
                         objectIds.gateway,
                         objectIds.gasService,
-                        trustedSourceChain,
+                        otherChain,
                         TokenId,
                         gas,
                         '0x',
@@ -310,7 +359,7 @@ describe('ITS', () => {
                 const txBuilder = new TxBuilder(client);
 
                 await txBuilder.moveCall({
-                    target: `${deployments.its.packageId}::its::give_unregistered_coin`,
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::give_unregistered_coin`,
                     arguments: [objectIds.its, treasuryCap, metadata],
                     typeArguments: [typeArg],
                 });
@@ -326,10 +375,11 @@ describe('ITS', () => {
                 const distributor = '0x';
 
                 // ITS transfer payload from Ethereum to Sui
-                const payload = defaultAbiCoder.encode(
+                let payload = defaultAbiCoder.encode(
                     ['uint256', 'uint256', 'bytes', 'bytes', 'uint256', 'bytes'],
                     [messageType, tokenId, byteName, byteSymbol, decimals, distributor],
                 );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
 
                 const message = {
                     source_chain: trustedSourceChain,

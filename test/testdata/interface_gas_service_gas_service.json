@@ -16,20 +16,16 @@
           "type": "Versioned"
         }
       ]
-    },
-    "GasCollectorCap": {
-      "name": "GasCollectorCap",
-      "abilities": [
-        "store",
-        "key"
-      ],
-      "fields": [
-        {
-          "name": "id",
-          "type": "UID"
-        }
-      ]
     }
   },
-  "publicFunctions": {}
+  "publicFunctions": {
+    "balance<T>": {
+      "name": "balance<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&GasService"
+      },
+      "returnType": "&Balance<T>"
+    }
+  }
 }

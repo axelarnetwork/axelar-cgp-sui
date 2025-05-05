@@ -1,0 +1,31 @@
+{
+  "structs": {
+    "TrustedChainAdded": {
+      "name": "TrustedChainAdded",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "chain_name",
+          "type": "String"
+        }
+      ]
+    },
+    "TrustedChainRemoved": {
+      "name": "TrustedChainRemoved",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "chain_name",
+          "type": "String"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}
