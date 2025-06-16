@@ -1,11 +1,14 @@
 module interchain_token_service::token_id {
-    use axelar_gateway::bytes32::Bytes32;
+    use axelar_gateway::{bytes32::Bytes32, channel::Channel};
     use interchain_token_service::{coin_info::CoinInfo, coin_management::CoinManagement};
     use std::{ascii, string::String, type_name};
     use sui::{address, bcs, hash::keccak256};
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
+
+    // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))));
+    const PREFIX_SUI_CUSTOM_TOKEN_ID: u256 = 0xca5638c222d80aeaee69358fc5c11c4b3862bd9becdce249fcab9c679dbad781;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))));
     const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50;
@@ -62,6 +65,18 @@ module interchain_token_service::token_id {
             &option::is_some(coin_info.metadata()),
             &coin_management.has_treasury_cap(),
         )
+    }
+
+    public(package) fun custom(
+        chain_name_hash: &Bytes32, 
+        deployer: &Channel, 
+        salt: &Bytes32
+    ): TokenId {
+        let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
+        vec.append(bcs::to_bytes(chain_name_hash));
+        vec.append(bcs::to_bytes(deployer));
+        vec.append(bcs::to_bytes(salt));
+        TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
 
     public fun unregistered_token_id(symbol: &ascii::String, decimals: u8): UnregisteredTokenId {

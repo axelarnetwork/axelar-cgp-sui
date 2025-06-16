@@ -175,6 +175,20 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
+    public(package) fun register_custom_coin<T>(
+        self: &mut InterchainTokenService_v0,
+        deployer: &Channel,
+        salt: Bytes32,
+        coin_info: CoinInfo<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let token_id = token_id::custom(&self.chain_name_hash, deployer, &salt);
+
+        self.add_registered_coin(token_id, coin_management, coin_info);
+
+        token_id
+    }
+
     public(package) fun deploy_remote_interchain_token<T>(
         self: &InterchainTokenService_v0,
         token_id: TokenId,
