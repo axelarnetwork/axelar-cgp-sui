@@ -184,6 +184,8 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let token_id = token_id::custom(&self.chain_name_hash, deployer, &salt);
 
+        events::interchain_token_id_claimed<T>(token_id, deployer, salt);
+
         self.add_registered_coin(token_id, coin_management, coin_info);
 
         token_id

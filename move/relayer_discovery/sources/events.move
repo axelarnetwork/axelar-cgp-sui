@@ -2,23 +2,23 @@ module relayer_discovery::events {
     use relayer_discovery::transaction::Transaction;
     use sui::event;
 
-    /// ------
-    /// Events
-    /// ------
-    // Emitted when a transaction is registered
+    // ------
+    // Events
+    // ------
+    /// Emitted when a transaction is registered
     public struct TransactionRegistered has copy, drop {
         channel_id: ID,
         transaction: Transaction,
     }
 
-    // Emitted when a transaction is removed
+    /// Emitted when a transaction is removed
     public struct TransactionRemoved has copy, drop {
         channel_id: ID,
     }
 
-    /// -----------------
-    /// Package Functions
-    /// -----------------
+    // -----------------
+    // Package Functions
+    // -----------------
     public(package) fun transaction_registered(channel_id: ID, transaction: Transaction) {
         event::emit(TransactionRegistered {
             channel_id,
