@@ -1,5 +1,5 @@
 module interchain_token_service::interchain_token_service {
-    use axelar_gateway::{channel::{ApprovedMessage, Channel}, message_ticket::MessageTicket, bytes32::Bytes32};
+    use axelar_gateway::{bytes32::Bytes32, channel::{ApprovedMessage, Channel}, message_ticket::MessageTicket};
     use interchain_token_service::{
         coin_data::CoinData,
         coin_info::CoinInfo,
@@ -110,7 +110,13 @@ module interchain_token_service::interchain_token_service {
         value.register_coin(coin_info, coin_management)
     }
 
-    public fun register_custom_coin<T>(self: &mut InterchainTokenService, deployer: &Channel, salt: Bytes32, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
+    public fun register_custom_coin<T>(
+        self: &mut InterchainTokenService,
+        deployer: &Channel,
+        salt: Bytes32,
+        coin_info: CoinInfo<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
         let value = self.value_mut!(b"register_custom_coin");
 
         value.register_custom_coin(deployer, salt, coin_info, coin_management)

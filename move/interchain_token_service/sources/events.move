@@ -183,11 +183,7 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun interchain_token_id_claimed<T> (
-        token_id: TokenId,
-        deployer: &Channel,
-        salt: Bytes32,
-    ) {
+    public(package) fun interchain_token_id_claimed<T>(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
         event::emit(InterchainTokenIdClaimed<T> {
             token_id,
             deployer: deployer.id(),

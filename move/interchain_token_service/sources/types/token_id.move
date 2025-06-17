@@ -67,11 +67,7 @@ module interchain_token_service::token_id {
         )
     }
 
-    public(package) fun custom(
-        chain_name_hash: &Bytes32, 
-        deployer: &Channel, 
-        salt: &Bytes32
-    ): TokenId {
+    public(package) fun custom(chain_name_hash: &Bytes32, deployer: &Channel, salt: &Bytes32): TokenId {
         let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));
         vec.append(bcs::to_bytes(deployer));
