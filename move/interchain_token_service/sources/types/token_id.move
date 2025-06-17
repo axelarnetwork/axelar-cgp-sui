@@ -13,7 +13,14 @@ module interchain_token_service::token_id {
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))));
     const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50;
 
+    // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unlinked-interchain-token-id"))));
+    const PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID: u256 = 0x875e1b812d4076e924370972217812584b40adad67b8f43380d25b27f0482219;
+
     public struct TokenId has copy, drop, store {
+        id: address,
+    }
+
+    public struct UnlinkedTokenId has copy, drop, store {
         id: address,
     }
 
@@ -67,11 +74,7 @@ module interchain_token_service::token_id {
         )
     }
 
-    public(package) fun custom(
-        chain_name_hash: &Bytes32, 
-        deployer: &Channel, 
-        salt: &Bytes32
-    ): TokenId {
+    public(package) fun custom(chain_name_hash: &Bytes32, deployer: &Channel, salt: &Bytes32): TokenId {
         let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));
         vec.append(bcs::to_bytes(deployer));
@@ -86,6 +89,16 @@ module interchain_token_service::token_id {
         v.append(*ascii::as_bytes(symbol));
         let id = address::from_bytes(keccak256(&v));
         UnregisteredTokenId { id }
+    }
+
+    public(package) fun unlinked_token_id<T>(token_id: TokenId, has_treasury_cap: bool): UnlinkedTokenId {
+        let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
+        let mut v = bcs::to_bytes(&prefix);
+        v.append(bcs::to_bytes(&token_id));
+        v.append(bcs::to_bytes(&type_name::get<T>()));
+        v.append(bcs::to_bytes(&has_treasury_cap));
+        let id = address::from_bytes(keccak256(&v));
+        UnlinkedTokenId { id }
     }
 
     // === Tests ===

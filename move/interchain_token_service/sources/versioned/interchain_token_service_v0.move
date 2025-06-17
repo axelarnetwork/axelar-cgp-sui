@@ -7,7 +7,7 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_management::{Self, CoinManagement},
         events,
         interchain_transfer_ticket::InterchainTransferTicket,
-        token_id::{Self, TokenId, UnregisteredTokenId},
+        token_id::{Self, TokenId, UnregisteredTokenId, UnlinkedTokenId},
         trusted_chains::{Self, TrustedChains},
         unregistered_coin_data::{Self, UnregisteredCoinData},
         utils as its_utils
@@ -387,6 +387,21 @@ module interchain_token_service::interchain_token_service_v0 {
         );
     }
 
+    public(package) fun give_unlinked_coin<T>(
+        self: &mut InterchainTokenService_v0,
+        token_id: TokenId,
+        coin_metadata: &CoinMetadata<T>,
+        treasury_cap: Option<TreasuryCap<T>>,
+    ) {
+        let has_treasury_cap = treasury_cap.is_some();
+
+        let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, has_treasury_cap);
+
+        events::unlinked_coin_received<T>(unlinked_token_id, token_id, has_treasury_cap);
+
+        self.add_unlinked_coin(unlinked_token_id, coin_metadata, treasury_cap);
+    }
+
     public(package) fun mint_as_distributor<T>(
         self: &mut InterchainTokenService_v0,
         channel: &Channel,
@@ -521,6 +536,33 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let type_name = type_name::get<T>();
         add_unregistered_coin_type(self, token_id, type_name);
+    }
+
+    fun add_unlinked_coin<T>(
+        self: &mut InterchainTokenService_v0,
+        token_id: UnlinkedTokenId,
+        coin_metadata: &CoinMetadata<T>,
+        treasury_cap: Option<TreasuryCap<T>>,
+    ) {
+        let coin_info = coin_info::from_info<T>(coin_metadata.get_name(), coin_metadata.get_symbol(), coin_metadata.get_decimals());
+
+        let coin_management = if (treasury_cap.is_some()) {
+            coin_management::new_with_cap(treasury_cap.destroy_some())
+        } else {
+            treasury_cap.destroy_none();
+            coin_management::new_locked<T>()
+        };
+
+        let coin_data = coin_data::new(coin_management, coin_info);
+
+        // Use the same bag for this to not alter storage.
+        // Since there should not be any collisions to the token ids because different prefixes are used this will not be a problem.
+        self
+            .unregistered_coins
+            .add(
+                token_id,
+                coin_data,
+            );
     }
 
     fun remove_unregistered_coin<T>(
