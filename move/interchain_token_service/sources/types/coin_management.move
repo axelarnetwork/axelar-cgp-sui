@@ -11,6 +11,10 @@ module interchain_token_service::coin_management {
         b"trying to add a distributor to a `CoinManagement` that does not have a `TreasuryCap`";
     #[error]
     const ENotOperator: vector<u8> = b"channel provided is not the operator";
+    #[error]
+    const ENoTreasuryCapPresent: vector<u8> = b"trying to remove a treasury cap that does not exist";
+    #[error]
+    const ENotMintBurn: vector<u8> = b"trying to add a treasury cap to a lock unlock token";
 
     /// Struct that stores information about the InterchainTokenService Coin.
     public struct CoinManagement<phantom T> has store {
@@ -141,6 +145,18 @@ module interchain_token_service::coin_management {
     public(package) fun update_operatorship<T>(self: &mut CoinManagement<T>, channel: &Channel, new_operator: Option<address>) {
         assert!(self.operator.contains(&channel.to_address()), ENotOperator);
         self.operator = new_operator;
+    }
+
+    public(package) fun remove_cap<T>(self: &mut CoinManagement<T>): TreasuryCap<T> {
+        assert!(self.has_treasury_cap(), ENoTreasuryCapPresent);
+
+        self.treasury_cap.extract()
+    }
+
+    public(package) fun add_cap<T>(self: &mut CoinManagement<T>, treasury_cap: TreasuryCap<T>) {
+        assert!(self.balance.is_none(), ENotMintBurn);
+
+        self.treasury_cap.fill(treasury_cap);
     }
 
     // === Views ===

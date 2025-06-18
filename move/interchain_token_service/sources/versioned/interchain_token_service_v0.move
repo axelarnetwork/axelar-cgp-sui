@@ -8,6 +8,7 @@ module interchain_token_service::interchain_token_service_v0 {
         events,
         interchain_transfer_ticket::InterchainTransferTicket,
         token_id::{Self, TokenId, UnregisteredTokenId, UnlinkedTokenId},
+        treasury_cap_reclaimer::{Self, TreasuryCapReclaimer},
         trusted_chains::{Self, TrustedChains},
         unregistered_coin_data::{Self, UnregisteredCoinData},
         utils as its_utils
@@ -175,20 +176,28 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
+    #[allow(lint(self_transfer))]
     public(package) fun register_custom_coin<T>(
         self: &mut InterchainTokenService_v0,
         deployer: &Channel,
         salt: Bytes32,
         coin_info: CoinInfo<T>,
         coin_management: CoinManagement<T>,
-    ): TokenId {
+        ctx: &mut TxContext,
+    ): (TokenId, Option<TreasuryCapReclaimer<T>>) {
         let token_id = token_id::custom(&self.chain_name_hash, deployer, &salt);
 
         events::interchain_token_id_claimed<T>(token_id, deployer, salt);
 
+        let treasury_cap_reclaimer = if (coin_management.has_treasury_cap()) {
+            option::some(treasury_cap_reclaimer::create<T>(ctx))
+        } else {
+            option::none()
+        };
+
         self.add_registered_coin(token_id, coin_management, coin_info);
 
-        token_id
+        (token_id, treasury_cap_reclaimer)
     }
 
     public(package) fun deploy_remote_interchain_token<T>(
@@ -392,7 +401,8 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id: TokenId,
         coin_metadata: &CoinMetadata<T>,
         treasury_cap: Option<TreasuryCap<T>>,
-    ) {
+        ctx: &mut TxContext,
+    ): Option<TreasuryCapReclaimer<T>> {
         let has_treasury_cap = treasury_cap.is_some();
 
         let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, has_treasury_cap);
@@ -400,6 +410,12 @@ module interchain_token_service::interchain_token_service_v0 {
         events::unlinked_coin_received<T>(unlinked_token_id, token_id, has_treasury_cap);
 
         self.add_unlinked_coin(unlinked_token_id, coin_metadata, treasury_cap);
+
+        if (has_treasury_cap) {
+            option::some(treasury_cap_reclaimer::create<T>(ctx))
+        } else {
+            option::none()
+        }
     }
 
     public(package) fun mint_as_distributor<T>(
@@ -486,6 +502,31 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_management.update_operatorship<T>(channel, new_operator);
 
         events::operatorship_transfered<T>(token_id, new_operator);
+    }
+
+    public(package) fun remove_treasury_cap<T>(
+        self: &mut InterchainTokenService_v0,
+        treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
+        token_id: TokenId,
+    ): TreasuryCap<T> {
+        let coin_management = self.coin_management_mut<T>(token_id);
+
+        treasury_cap_reclaimer.destroy();
+
+        coin_management.remove_cap()
+    }
+
+    public(package) fun restore_treasury_cap<T>(
+        self: &mut InterchainTokenService_v0,
+        treasury_cap: TreasuryCap<T>,
+        token_id: TokenId,
+        ctx: &mut TxContext,
+    ): TreasuryCapReclaimer<T> {
+        let coin_management = self.coin_management_mut<T>(token_id);
+
+        coin_management.add_cap(treasury_cap);
+
+        treasury_cap_reclaimer::create<T>(ctx)
     }
 
     public(package) fun allow_function(self: &mut InterchainTokenService_v0, version: u64, function_name: String) {
