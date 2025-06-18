@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "B42F61019F82CD818F2BA9772475684AF7EC56ED0D88B4441EE2A8552F9DC1F6"
+manifest_digest = "EB26A23AC9BA75DD020BA798CEE39F75A32F4BA2CF849771B6800FB5B5D896F8"
 deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { id = "AxelarGateway", name = "AxelarGateway" },
@@ -23,11 +23,11 @@ dependencies = [
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.38.3", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.50.1", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.38.3", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.50.1", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -50,6 +50,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.38.2"
+compiler-version = "1.50.1"
 edition = "2024"
 flavor = "sui"
