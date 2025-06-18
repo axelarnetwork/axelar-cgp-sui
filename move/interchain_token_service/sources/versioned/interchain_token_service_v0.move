@@ -176,7 +176,6 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
-    #[allow(lint(self_transfer))]
     public(package) fun register_custom_coin<T>(
         self: &mut InterchainTokenService_v0,
         deployer: &Channel,
