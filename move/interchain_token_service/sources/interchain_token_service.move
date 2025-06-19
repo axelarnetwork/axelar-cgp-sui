@@ -375,7 +375,6 @@ module interchain_token_service::interchain_token_service {
             // Version 0
             vector[
                 b"register_coin",
-                b"register_custom_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
@@ -399,6 +398,7 @@ module interchain_token_service::interchain_token_service {
             // Version 1
             vector[
                 b"register_coin",
+                b"register_custom_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
