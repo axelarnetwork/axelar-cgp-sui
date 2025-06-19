@@ -124,6 +124,20 @@ module interchain_token_service::interchain_token_service {
         value.register_custom_coin(deployer, salt, coin_metadata, coin_management, ctx)
     }
 
+    public fun link_coin(
+        self: &InterchainTokenService,
+        deployer: &Channel,
+        salt: Bytes32,
+        destination_chain: String,        
+        destination_token_address: vector<u8>,
+        token_manager_type: u8,
+        link_params: vector<u8>,
+    ): MessageTicket {
+        let value = self.value!(b"link_coin");
+
+        value.link_coin(deployer, salt, destination_chain, destination_token_address, token_manager_type, link_params)
+    }
+
     public fun deploy_remote_interchain_token<T>(
         self: &InterchainTokenService,
         token_id: TokenId,
@@ -440,6 +454,7 @@ module interchain_token_service::interchain_token_service {
             vector[
                 b"register_coin",
                 b"register_custom_coin",
+                b"link_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
@@ -471,11 +486,15 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     use interchain_token_service::coin::COIN;
     #[test_only]
+    use interchain_token_service::token_manager_types;
+    #[test_only]
     use axelar_gateway::bytes32;
     #[test_only]
     use axelar_gateway::channel;
     #[test_only]
     use std::string;
+    #[test_only]
+    use std::type_name;
     #[test_only]
     use abi::abi;
     #[test_only]
@@ -487,6 +506,9 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     // const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+    #[test_only]
+    const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
+    // const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
     #[test_only]
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
@@ -629,6 +651,61 @@ module interchain_token_service::interchain_token_service {
         deployer.destroy();
         treasury_cap_reclaimer.destroy();
         sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_link_coin() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        //
+        let value = its.value_mut!(b"");
+        let token_id = interchain_token_service::token_id::custom_token_id(&value.chain_name_hash(), &deployer, &salt);
+        let source_token_type = type_name::get<COIN>();
+        its.add_registered_coin_type_for_testing(token_id, source_token_type);
+
+        let destination_chain = ascii::string(b"Chain Name");
+        let destination_token_address = b"destination_token_address";
+        let token_manager_type = token_manager_types::lock_unlock();
+        let source_token_address = source_token_type.into_string().into_bytes();
+        let link_params = b"link_params";
+
+        let message_ticket = its.link_coin(
+            &deployer,
+            salt,
+            destination_chain,        
+            destination_token_address,
+            token_manager_type,
+            link_params,
+        );
+
+        utils::assert_event<interchain_token_service::events::InterchainTokenIdClaimed>();
+        utils::assert_event<interchain_token_service::events::LinkTokenStarted>();
+
+        let mut writer = abi::new_writer(6);
+
+        writer
+            .write_u256(MESSAGE_TYPE_LINK_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_u8(token_manager_type)
+            .write_bytes(source_token_address)
+            .write_bytes(destination_token_address)
+            .write_bytes(link_params);
+
+        let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
+
+        assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+        assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
+        assert!(message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string());
+        assert!(message_ticket.payload() == payload);
+        assert!(message_ticket.version() == 0);
+
+        deployer.destroy();
+        sui::test_utils::destroy(message_ticket);
         sui::test_utils::destroy(its);
     }
 

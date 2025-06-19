@@ -73,10 +73,19 @@ module interchain_token_service::events {
         new_operator: Option<address>,
     }
 
-    public struct InterchainTokenIdClaimed<phantom T> has copy, drop {
+    public struct InterchainTokenIdClaimed has copy, drop {
         token_id: TokenId,
         deployer: ID,
         salt: Bytes32,
+    }
+
+    public struct LinkTokenStarted has copy, drop {
+        tokenId: TokenId, 
+        destination_chain: String, 
+        source_token_address: vector<u8>, 
+        destination_token_address: vector<u8>, 
+        token_manager_type: u8,
+        link_params: vector<u8>,
     }
 
     // -----------------
@@ -197,11 +206,29 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun interchain_token_id_claimed<T>(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
-        event::emit(InterchainTokenIdClaimed<T> {
+    public(package) fun interchain_token_id_claimed(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
+        event::emit(InterchainTokenIdClaimed {
             token_id,
             deployer: deployer.id(),
             salt,
+        });
+    }
+
+    public(package) fun link_token_started (
+        tokenId: TokenId, 
+        destination_chain: String, 
+        source_token_address: vector<u8>, 
+        destination_token_address: vector<u8>, 
+        token_manager_type: u8,
+        link_params: vector<u8>,
+    ) {
+        event::emit(LinkTokenStarted {
+            tokenId, 
+            destination_chain, 
+            source_token_address,
+            destination_token_address, 
+            token_manager_type,
+            link_params,
         });
     }
 
