@@ -558,6 +558,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         // Use the same bag for this to not alter storage.
         // Since there should not be any collisions to the token ids because different prefixes are used this will not be a problem.
+        // TODO: When doing a storage upgrade, move this to a separate Bag for clarity
         self
             .unregistered_coins
             .add(
