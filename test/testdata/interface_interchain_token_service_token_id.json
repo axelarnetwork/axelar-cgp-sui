@@ -14,6 +14,20 @@
         }
       ]
     },
+    "UnlinkedTokenId": {
+      "name": "UnlinkedTokenId",
+      "abilities": [
+        "copy",
+        "drop",
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "address"
+        }
+      ]
+    },
     "UnregisteredTokenId": {
       "name": "UnregisteredTokenId",
       "abilities": [

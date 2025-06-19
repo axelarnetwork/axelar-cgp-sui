@@ -436,7 +436,6 @@ module interchain_token_service::interchain_token_service {
                 b"allow_function",
                 b"disallow_function",
             ].map!(|function_name| function_name.to_ascii_string()),
-
             // Version 1
             vector[
                 b"register_coin",
