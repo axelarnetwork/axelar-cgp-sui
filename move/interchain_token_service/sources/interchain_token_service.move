@@ -128,7 +128,7 @@ module interchain_token_service::interchain_token_service {
         self: &InterchainTokenService,
         deployer: &Channel,
         salt: Bytes32,
-        destination_chain: String,        
+        destination_chain: String,
         destination_token_address: vector<u8>,
         token_manager_type: u8,
         link_params: vector<u8>,
@@ -677,7 +677,7 @@ module interchain_token_service::interchain_token_service {
         let message_ticket = its.link_coin(
             &deployer,
             salt,
-            destination_chain,        
+            destination_chain,
             destination_token_address,
             token_manager_type,
             link_params,

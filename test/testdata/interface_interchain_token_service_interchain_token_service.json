@@ -41,6 +41,20 @@
       },
       "returnType": "TokenId * Option<TreasuryCapReclaimer<T>>"
     },
+    "link_coin": {
+      "name": "link_coin",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&InterchainTokenService",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "Bytes32",
+        "destination_chain#0#0": "String",
+        "destination_token_address#0#0": "vector<u8>",
+        "token_manager_type#0#0": "u8",
+        "link_params#0#0": "vector<u8>"
+      },
+      "returnType": "MessageTicket"
+    },
     "deploy_remote_interchain_token<T>": {
       "name": "deploy_remote_interchain_token<T>",
       "visibility": "public",

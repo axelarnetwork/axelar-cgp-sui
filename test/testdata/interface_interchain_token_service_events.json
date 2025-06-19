@@ -25,6 +25,60 @@
           "type": "String"
         }
       ]
+    },
+    "InterchainTokenIdClaimed": {
+      "name": "InterchainTokenIdClaimed",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "deployer",
+          "type": "ID"
+        },
+        {
+          "name": "salt",
+          "type": "Bytes32"
+        }
+      ]
+    },
+    "LinkTokenStarted": {
+      "name": "LinkTokenStarted",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "tokenId",
+          "type": "TokenId"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "destination_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "u8"
+        },
+        {
+          "name": "link_params",
+          "type": "vector<u8>"
+        }
+      ]
     }
   },
   "publicFunctions": {}
