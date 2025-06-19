@@ -19,7 +19,7 @@ module interchain_token_service::interchain_token_service {
     // -------
     // Version
     // -------
-    const VERSION: u64 = 0;
+    const VERSION: u64 = 1;
     const DATA_VERSION: u64 = 0;
 
     // -------
@@ -382,6 +382,29 @@ module interchain_token_service::interchain_token_service {
                 b"allow_function",
                 b"disallow_function",
             ].map!(|function_name| function_name.to_ascii_string()),
+
+            // Version 1
+            vector[
+                b"register_coin",
+                b"deploy_remote_interchain_token",
+                b"send_interchain_transfer",
+                b"receive_interchain_transfer",
+                b"receive_interchain_transfer_with_data",
+                b"receive_deploy_interchain_token",
+                b"give_unregistered_coin",
+                b"mint_as_distributor",
+                b"mint_to_as_distributor",
+                b"burn_as_distributor",
+                b"add_trusted_chains",
+                b"remove_trusted_chains",
+                b"register_transaction",
+                b"set_flow_limit",
+                b"set_flow_limit_as_token_operator",
+                b"transfer_distributorship",
+                b"transfer_operatorship",
+                b"allow_function",
+                b"disallow_function",
+            ].map!(|function_name| function_name.to_ascii_string()),
         ])
     }
 
@@ -419,7 +442,7 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
         let mut version_control = version_control();
-        version_control.allowed_functions()[0].insert(b"".to_ascii_string());
+        version_control.allowed_functions()[VERSION].insert(b"".to_ascii_string());
 
         let mut value = interchain_token_service_v0::new(
             version_control,
