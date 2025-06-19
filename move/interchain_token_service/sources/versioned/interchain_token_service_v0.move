@@ -179,10 +179,11 @@ module interchain_token_service::interchain_token_service_v0 {
         self: &mut InterchainTokenService_v0,
         deployer: &Channel,
         salt: Bytes32,
-        coin_info: CoinInfo<T>,
+        coin_metadata: &CoinMetadata<T>,
         coin_management: CoinManagement<T>,
     ): TokenId {
-        let token_id = token_id::custom(&self.chain_name_hash, deployer, &salt);
+        let token_id = token_id::custom_token_id(&self.chain_name_hash, deployer, &salt);
+        let coin_info = coin_info::from_info(coin_metadata.get_name(), coin_metadata.get_symbol(), coin_metadata.get_decimals());
 
         events::interchain_token_id_claimed<T>(token_id, deployer, salt);
 
