@@ -28,6 +28,18 @@
       },
       "returnType": "TokenId"
     },
+    "register_custom_coin<T>": {
+      "name": "register_custom_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "Bytes32",
+        "coin_metadata#0#0": "&CoinMetadata<T>",
+        "coin_management#0#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
     "deploy_remote_interchain_token<T>": {
       "name": "deploy_remote_interchain_token<T>",
       "visibility": "public",
