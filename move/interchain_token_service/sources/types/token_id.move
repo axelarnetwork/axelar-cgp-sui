@@ -100,7 +100,7 @@ module interchain_token_service::token_id {
         let id = address::from_bytes(keccak256(&v));
         UnlinkedTokenId { id }
     }
-    
+
     // === Test Only ===
     #[test_only]
     use axelar_gateway::channel;
@@ -113,10 +113,14 @@ module interchain_token_service::token_id {
         let prefix_sui_token_id = address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
         assert!(prefix_sui_token_id == PREFIX_SUI_TOKEN_ID);
 
-        let prefix_custom_token_id = address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))));
+        let prefix_custom_token_id = address::to_u256(
+            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))),
+        );
         assert!(prefix_custom_token_id == PREFIX_SUI_CUSTOM_TOKEN_ID);
 
-        let prefix_unregistered_interchain_token_id = address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))));
+        let prefix_unregistered_interchain_token_id = address::to_u256(
+            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))),
+        );
         assert!(prefix_unregistered_interchain_token_id == PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID);
     }
 
@@ -124,7 +128,7 @@ module interchain_token_service::token_id {
     fun test_from_info() {
         let chain_name_hash = &axelar_gateway::bytes32::new(address::from_u256(0x1234));
         let name = &std::string::utf8(b"name");
-        let symbol =  &ascii::string(b"symbol");
+        let symbol = &ascii::string(b"symbol");
         let decimals = &9;
         let has_metadata = &true;
         let has_treasury = &false;
@@ -156,7 +160,7 @@ module interchain_token_service::token_id {
         vec.append(bcs::to_bytes(chain_name_hash));
         vec.append(bcs::to_bytes(&deployer.id()));
         vec.append(bcs::to_bytes(salt));
-        
+
         let calculated_token_id = TokenId { id: address::from_bytes(keccak256(&vec)) };
 
         let token_id = custom_token_id(chain_name_hash, &deployer, salt);
