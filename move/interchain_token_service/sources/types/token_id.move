@@ -8,10 +8,10 @@ module interchain_token_service::token_id {
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))));
-    const PREFIX_SUI_CUSTOM_TOKEN_ID: u256 = 0x7a454fb572b39b912711c86f250aee7a511b90683baf041e789c9038875c5ab7;
+    const PREFIX_SUI_CUSTOM_TOKEN_ID: u256 = 0xca5638c222d80aeaee69358fc5c11c4b3862bd9becdce249fcab9c679dbad782;
 
-    // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))));
-    const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xeec780f2ed3602bd5c0f7423f182d09301608d2572ba5a9c07a5dbf6e5091e7a;
+    // address::from_bytes(keccak256(&b"prefix-unregistered-interchain-token-id"));
+    const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unlinked-interchain-token-id"))));
     const PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID: u256 = 0x875e1b812d4076e924370972217812584b40adad67b8f43380d25b27f0482219;
@@ -114,12 +114,12 @@ module interchain_token_service::token_id {
         assert!(prefix_sui_token_id == PREFIX_SUI_TOKEN_ID);
 
         let prefix_custom_token_id = address::to_u256(
-            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))),
+            address::from_bytes(keccak256(&b"prefix-sui-custom-token-id")),
         );
         assert!(prefix_custom_token_id == PREFIX_SUI_CUSTOM_TOKEN_ID);
 
         let prefix_unregistered_interchain_token_id = address::to_u256(
-            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))),
+            address::from_bytes(keccak256(&b"prefix-unregistered-interchain-token-id")),
         );
         assert!(prefix_unregistered_interchain_token_id == PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID);
     }
