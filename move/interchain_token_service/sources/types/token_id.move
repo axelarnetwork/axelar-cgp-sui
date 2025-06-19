@@ -132,7 +132,7 @@ module interchain_token_service::token_id {
     }
 
     #[test]
-    fun test_custom() {
+    fun test_custom_token_id() {
         let ctx = &mut sui::tx_context::dummy();
 
         let chain_name_hash = &axelar_gateway::bytes32::new(address::from_u256(0x1234));
