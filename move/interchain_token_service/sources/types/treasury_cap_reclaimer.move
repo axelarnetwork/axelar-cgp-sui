@@ -12,7 +12,7 @@ module interchain_token_service::treasury_cap_reclaimer {
         }
     }
 
-    // Maybe make this entry to allow users to destroy this.
+    // Maybe make this an entry function to allow users to destroy this.
     public(package) fun destroy<T>(self: TreasuryCapReclaimer<T>) {
         let TreasuryCapReclaimer { id } = self;
         id.delete();
