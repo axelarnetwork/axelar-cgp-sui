@@ -2,4 +2,4 @@
 '@axelar-network/axelar-cgp-sui': minor
 ---
 
-Add ability to reclain treasury caps out of the its
+Add ability to reclaim treasury caps for custom tokens out of the ITS
