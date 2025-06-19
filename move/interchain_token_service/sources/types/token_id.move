@@ -8,10 +8,10 @@ module interchain_token_service::token_id {
     const PREFIX_SUI_TOKEN_ID: u256 = 0x72efd4f4a47bdb9957673d9d0fabc22cad1544bc247ac18367ac54985919bfa3;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))));
-    const PREFIX_SUI_CUSTOM_TOKEN_ID: u256 = 0xca5638c222d80aeaee69358fc5c11c4b3862bd9becdce249fcab9c679dbad781;
+    const PREFIX_SUI_CUSTOM_TOKEN_ID: u256 = 0x7a454fb572b39b912711c86f250aee7a511b90683baf041e789c9038875c5ab7;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))));
-    const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50;
+    const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xeec780f2ed3602bd5c0f7423f182d09301608d2572ba5a9c07a5dbf6e5091e7a;
 
     // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unlinked-interchain-token-id"))));
     const PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID: u256 = 0x875e1b812d4076e924370972217812584b40adad67b8f43380d25b27f0482219;
@@ -74,10 +74,10 @@ module interchain_token_service::token_id {
         )
     }
 
-    public(package) fun custom(chain_name_hash: &Bytes32, deployer: &Channel, salt: &Bytes32): TokenId {
+    public(package) fun custom_token_id(chain_name_hash: &Bytes32, deployer: &Channel, salt: &Bytes32): TokenId {
         let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));
-        vec.append(bcs::to_bytes(deployer));
+        vec.append(bcs::to_bytes(&deployer.id()));
         vec.append(bcs::to_bytes(salt));
         TokenId { id: address::from_bytes(keccak256(&vec)) }
     }
@@ -101,30 +101,89 @@ module interchain_token_service::token_id {
         UnlinkedTokenId { id }
     }
 
+    // === Test Only ===
+    #[test_only]
+    use axelar_gateway::channel;
+    #[test_only]
+    use interchain_token_service::coin::COIN;
+
     // === Tests ===
     #[test]
-    fun test() {
-        use std::string;
-        use interchain_token_service::coin_info;
+    fun test_prefixes() {
+        let prefix_sui_token_id = address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id"))));
+        assert!(prefix_sui_token_id == PREFIX_SUI_TOKEN_ID);
 
-        let prefix = address::to_u256(
-            address::from_bytes(
-                keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-token-id")),
-            ),
+        let prefix_custom_token_id = address::to_u256(
+            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-sui-custom-token-id"))),
         );
-        assert!(prefix == PREFIX_SUI_TOKEN_ID);
+        assert!(prefix_custom_token_id == PREFIX_SUI_CUSTOM_TOKEN_ID);
 
-        let name = string::utf8(b"Name");
-        let symbol = ascii::string(b"Symbol");
-        let decimals: u8 = 9;
-        let coin_info = coin_info::from_info<String>(
-            name,
-            symbol,
-            decimals,
+        let prefix_unregistered_interchain_token_id = address::to_u256(
+            address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unregistered-interchain-token-id"))),
         );
+        assert!(prefix_unregistered_interchain_token_id == PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID);
+    }
+
+    #[test]
+    fun test_from_info() {
+        let chain_name_hash = &axelar_gateway::bytes32::new(address::from_u256(0x1234));
+        let name = &std::string::utf8(b"name");
+        let symbol = &ascii::string(b"symbol");
+        let decimals = &9;
+        let has_metadata = &true;
+        let has_treasury = &false;
+
         let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
+        vec.append(bcs::to_bytes(chain_name_hash));
+        vec.append(bcs::to_bytes(&type_name::get<COIN>()));
+        vec.append(bcs::to_bytes(name));
+        vec.append(bcs::to_bytes(symbol));
+        vec.append(bcs::to_bytes(decimals));
+        vec.append(bcs::to_bytes(has_metadata));
+        vec.append(bcs::to_bytes(has_treasury));
+        let calculated_token_id = TokenId { id: address::from_bytes(keccak256(&vec)) };
 
-        vec.append<u8>(bcs::to_bytes<CoinInfo<String>>(&coin_info));
-        coin_info.drop();
+        let token_id = from_info<COIN>(chain_name_hash, name, symbol, decimals, has_metadata, has_treasury);
+
+        assert!(token_id == calculated_token_id);
+    }
+
+    #[test]
+    fun test_custom() {
+        let ctx = &mut sui::tx_context::dummy();
+
+        let chain_name_hash = &axelar_gateway::bytes32::new(address::from_u256(0x1234));
+        let deployer = channel::new(ctx);
+        let salt = &axelar_gateway::bytes32::new(address::from_u256(0x5678));
+
+        let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
+        vec.append(bcs::to_bytes(chain_name_hash));
+        vec.append(bcs::to_bytes(&deployer.id()));
+        vec.append(bcs::to_bytes(salt));
+
+        let calculated_token_id = TokenId { id: address::from_bytes(keccak256(&vec)) };
+
+        let token_id = custom_token_id(chain_name_hash, &deployer, salt);
+
+        assert!(calculated_token_id == token_id);
+
+        deployer.destroy();
+    }
+
+    #[test]
+    fun test_unregistered_token_id() {
+        let symbol = &ascii::string(b"symbol");
+        let decimals = 9;
+        let prefix = PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID;
+        let mut v = bcs::to_bytes(&prefix);
+        v.push_back(decimals);
+        v.append(*ascii::as_bytes(symbol));
+        let id = address::from_bytes(keccak256(&v));
+
+        let calculated_token_id = UnregisteredTokenId { id };
+
+        let token_id = unregistered_token_id(symbol, decimals);
+
+        assert!(token_id == calculated_token_id);
     }
 }
