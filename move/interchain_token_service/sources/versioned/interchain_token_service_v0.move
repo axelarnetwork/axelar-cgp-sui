@@ -724,11 +724,7 @@ module interchain_token_service::interchain_token_service_v0 {
         self.registered_coin_types.add(token_id, type_name);
     }
 
-    fun add_registered_coin<T>(
-        self: &mut InterchainTokenService_v0,
-        token_id: TokenId,
-        coin_data: CoinData<T>,
-    ) {
+    fun add_registered_coin<T>(self: &mut InterchainTokenService_v0, token_id: TokenId, coin_data: CoinData<T>) {
         self
             .registered_coins
             .add(
@@ -835,14 +831,21 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     #[test_only]
-    public fun create_unlinked_coin(self: &mut InterchainTokenService_v0, token_id: TokenId, symbol: vector<u8>, decimals: u8, has_treasury_cap: bool, ctx: &mut TxContext) {
+    public fun create_unlinked_coin(
+        self: &mut InterchainTokenService_v0,
+        token_id: TokenId,
+        symbol: vector<u8>,
+        decimals: u8,
+        has_treasury_cap: bool,
+        ctx: &mut TxContext,
+    ) {
         let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
             symbol,
             decimals,
             ctx,
         );
         let token_id = token_id::unlinked_token_id<COIN>(token_id, has_treasury_cap);
-        
+
         let treasury_cap = if (has_treasury_cap) {
             option::some(treasury_cap)
         } else {
