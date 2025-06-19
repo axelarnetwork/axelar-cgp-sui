@@ -114,12 +114,12 @@ module interchain_token_service::interchain_token_service {
         self: &mut InterchainTokenService,
         deployer: &Channel,
         salt: Bytes32,
-        coin_info: CoinInfo<T>,
+        coin_metadata: &CoinMetadata<T>,
         coin_management: CoinManagement<T>,
     ): TokenId {
         let value = self.value_mut!(b"register_custom_coin");
 
-        value.register_custom_coin(deployer, salt, coin_info, coin_management)
+        value.register_custom_coin(deployer, salt, coin_metadata, coin_management)
     }
 
     public fun deploy_remote_interchain_token<T>(
@@ -531,21 +531,18 @@ module interchain_token_service::interchain_token_service {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = create_for_testing(ctx);
 
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(b"symbol", 9, ctx);
         let coin_management = interchain_token_service::coin_management::new_locked();
 
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        register_custom_coin(&mut its, &deployer, salt, coin_info, coin_management);
+        register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management);
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         deployer.destroy();
+        sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
 
