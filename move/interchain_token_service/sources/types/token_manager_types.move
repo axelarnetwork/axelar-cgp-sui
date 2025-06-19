@@ -6,9 +6,14 @@ module interchain_token_service::token_manager_types {
         MINT_BURN, // The token will be minted/burned on transfers. The token needs to give mint and burn permission to the token manager.
     }
 
+    // === Constants ===
     const NATIVE_INTERCHAIN_TOKEN: u8 = 0;
     const LOCK_UNLOCK: u8 = 1;
     const MINT_BURN: u8 = 2;
+
+    // === Errors ===
+    #[error]
+    const ETokenManagerTypeUnsupported: vector<u8> = b"token manager type out of bounds";
 
     public fun native_interchain_token(): u8 {
         NATIVE_INTERCHAIN_TOKEN
@@ -20,5 +25,11 @@ module interchain_token_service::token_manager_types {
 
     public fun mint_burn(): u8 {
         MINT_BURN
+    }
+
+    public fun should_have_treasry_cap_for_link_token(token_manager_type: u8): bool {
+        assert!(token_manager_type != NATIVE_INTERCHAIN_TOKEN && token_manager_type <= MINT_BURN, ETokenManagerTypeUnsupported);
+
+        token_manager_type == MINT_BURN
     }
 }
