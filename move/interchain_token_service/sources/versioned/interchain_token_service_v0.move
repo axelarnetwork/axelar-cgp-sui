@@ -63,6 +63,8 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotSupported: vector<u8> = b"not supported";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_token instead";
+    #[error]
+    const ENotCannonicalToken: vector<u8> = b"cannot deploy remote interchain token for a custom token";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -283,7 +285,13 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id: TokenId,
         destination_chain: String,
     ): MessageTicket {
-        let coin_info = self.coin_info<T>(token_id);
+        let coin_data = self.coin_data<T>(token_id);
+        let coin_info = coin_data.coin_info();
+        let coin_management = coin_data.coin_management();
+
+        let derived_token_id = token_id::from_coin_data(&self.chain_name_hash, coin_info, coin_management);
+
+        assert!(token_id == derived_token_id, ENotCannonicalToken);
 
         let name = coin_info.name();
         let symbol = coin_info.symbol();
@@ -650,10 +658,6 @@ module interchain_token_service::interchain_token_service_v0 {
     // -----------------
     // Private Functions
     // -----------------
-
-    fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo<T> {
-        coin_data<T>(self, token_id).coin_info()
-    }
 
     fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
         self.trusted_chains.is_trusted(source_chain)
