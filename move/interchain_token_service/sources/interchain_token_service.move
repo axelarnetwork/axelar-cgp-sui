@@ -1061,7 +1061,7 @@ module interchain_token_service::interchain_token_service {
         let source_token_address = b"source_token_address";
         let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
         let operator = sui::address::from_u256(5678);
-        let link_params = (*&operator).to_bytes();
+        let link_params = (copy operator).to_bytes();
         let symbol = b"Symbol";
         let decimals = 9;
         let token_id = interchain_token_service::token_id::from_u256(1234);
