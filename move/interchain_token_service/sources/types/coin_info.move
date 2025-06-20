@@ -8,6 +8,7 @@ module interchain_token_service::coin_info {
         name: String,
         symbol: ascii::String,
         decimals: u8,
+        /// Field `metadata` is deprecated and will always be None
         metadata: Option<CoinMetadata<T>>,
     }
 
@@ -21,14 +22,24 @@ module interchain_token_service::coin_info {
         }
     }
 
-    /// Create a new coin info from the given `CoinMetadata` object.
+    /// Create a new coin info from the given `CoinMetadata` object and publicly freeze the metadata object.
     public fun from_metadata<T>(metadata: CoinMetadata<T>): CoinInfo<T> {
-        CoinInfo {
+        let coin_info = CoinInfo {
             name: metadata.get_name(),
             symbol: metadata.get_symbol(),
             decimals: metadata.get_decimals(),
-            metadata: option::some(metadata),
-        }
+            metadata: option::none(),
+        };
+        transfer::public_freeze_object(metadata);
+        coin_info
+    }
+
+    /// Publicly freeze metadata for a coin from the given `CoinMetadata` and return a new `CoinInfo`
+    /// with its `metadata` field set to None
+    public fun release_metadata<T>(mut coin_info: CoinInfo<T>): CoinInfo<T> {
+        let metadata = coin_info.metadata.extract();
+        transfer::public_freeze_object(metadata);
+        coin_info
     }
 
     // -----
@@ -70,11 +81,12 @@ module interchain_token_service::coin_info {
         }
     }
 
+    /// XXX TODO: re-determine test goal and refactor accordingly now that metadata is always None 
     #[test]
     fun test_from_metadata() {
         let ctx = &mut tx_context::dummy();
         let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
-        let metadata_bytes = sui::bcs::to_bytes(&metadata);
+        // let metadata_bytes = sui::bcs::to_bytes(&metadata);
 
         let name = metadata.get_name();
         let symbol = metadata.get_symbol();
@@ -85,7 +97,8 @@ module interchain_token_service::coin_info {
         assert!(coin_info.name() == name);
         assert!(coin_info.symbol() == symbol);
         assert!(coin_info.decimals() == decimals);
-        assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes);
+        assert!(coin_info.metadata().is_none());
+        // assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes);
 
         sui::test_utils::destroy(coin_info);
     }

@@ -82,6 +82,11 @@ module interchain_token_service::interchain_token_service_v0 {
         version_control: VersionControl,
     }
 
+    // ---------------
+    // Entry Functions
+    // ---------------
+    // TODO: write entry point for manually migrating token metadata
+
     // -----------------
     // Package Functions
     // -----------------
@@ -611,6 +616,45 @@ module interchain_token_service::interchain_token_service_v0 {
         add_registered_coin_type(self, token_id, type_name);
 
         events::coin_registered<T>(
+            token_id,
+        );
+    }
+
+    // XXX TODO: (fix me) Right now we're storing the original token id
+    // but we won't be able to re-calculate it since `coin_info` changed
+    // but, before messing with it, we need to determine if it will mess 
+    // up anything for the token creators
+    // WIP
+    #[allow(unused_function)]
+    fun migrate_coin_metadata<T>(
+        self: &mut InterchainTokenService_v0,
+        migration_coin: CoinInfo<T>,
+        coin_management: CoinManagement<T>,
+    ) {
+        let token_id: TokenId = token_id::from_coin_data(
+            &self.chain_name_hash, 
+            &migration_coin, 
+            &coin_management
+        );
+        let updated_coin_info = coin_info::release_metadata(migration_coin);
+
+        // XXX: Token ID cannot be changed 
+        // self
+        //     .registered_coins
+        //     .remove(token_id);
+            
+        // XXX TODO: determine how to use updated_coin_info as it doesn't have drop
+        self
+            .registered_coins
+            .add(
+                token_id,
+                coin_data::new(
+                    coin_management,
+                    updated_coin_info,
+                ),
+            );
+
+        events::coin_registration_updated<T>(
             token_id,
         );
     }

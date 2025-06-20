@@ -88,6 +88,12 @@ module interchain_token_service::events {
         });
     }
 
+    public(package) fun coin_registration_updated<T>(token_id: TokenId) {
+        event::emit(CoinRegistered<T> {
+            token_id,
+        });
+    }
+
     public(package) fun interchain_transfer<T>(
         token_id: TokenId,
         source_address: address,
