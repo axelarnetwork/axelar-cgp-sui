@@ -407,7 +407,6 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     public(package) fun receive_deploy_interchain_token<T>(self: &mut InterchainTokenService_v0, approved_message: ApprovedMessage) {
-        
         let (_, payload, _) = self.decode_approved_message(approved_message);
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EInvalidMessageType);
@@ -436,7 +435,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
     public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService_v0, approved_message: ApprovedMessage) {
         let (_, payload, _) = self.decode_approved_message(approved_message);
-        
+
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_LINK_TOKEN, EInvalidMessageType);
 
