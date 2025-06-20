@@ -32,4 +32,17 @@ module interchain_token_service::token_manager_types {
 
         token_manager_type == MINT_BURN
     }
+
+    // === Tests ===
+    #[test]
+    #[expected_failure(abort_code=ETokenManagerTypeUnsupported)]
+    fun test_should_have_treasry_cap_for_link_token_native_interchain() {
+        should_have_treasry_cap_for_link_token(0);
+    }
+
+    #[test]
+    #[expected_failure(abort_code=ETokenManagerTypeUnsupported)]
+    fun test_should_have_treasry_cap_for_link_token_non_existent() {
+        should_have_treasry_cap_for_link_token(100);
+    }
 }

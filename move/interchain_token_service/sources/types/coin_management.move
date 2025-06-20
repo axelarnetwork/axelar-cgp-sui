@@ -170,22 +170,24 @@ module interchain_token_service::coin_management {
         &distributor == self.distributor.borrow()
     }
 
-    // === Tests ===
+    // === Test Only ===
     #[test_only]
-    public struct COIN_MANAGEMENT has drop {}
+    use interchain_token_service::coin::COIN;
 
     #[test_only]
-    fun create_currency(): (TreasuryCap<COIN_MANAGEMENT>, sui::coin::CoinMetadata<COIN_MANAGEMENT>) {
-        sui::coin::create_currency<COIN_MANAGEMENT>(
-        sui::test_utils::create_one_time_witness<COIN_MANAGEMENT>(),
-        6,
-        b"TT",
-        b"Test Token",
-        b"",
-        option::none<sui::url::Url>(),
-        &mut sui::tx_context::dummy(),
-    )
+    fun create_currency(): (TreasuryCap<COIN>, sui::coin::CoinMetadata<COIN>) {
+        sui::coin::create_currency<COIN>(
+            sui::test_utils::create_one_time_witness<COIN>(),
+            6,
+            b"TT",
+            b"Test Token",
+            b"",
+            option::none<sui::url::Url>(),
+            &mut sui::tx_context::dummy(),
+        )
     }
+
+    // === Tests ===
     #[test]
     fun test_take_balance() {
         let (mut cap, metadata) = create_currency();
@@ -194,14 +196,14 @@ module interchain_token_service::coin_management {
         let amount2 = 20;
 
         let mut coin = cap.mint(amount1, ctx);
-        let mut management1 = new_locked<COIN_MANAGEMENT>();
+        let mut management1 = new_locked<COIN>();
         let clock = sui::clock::create_for_testing(ctx);
         management1.take_balance(coin.into_balance(), &clock);
 
         assert!(management1.balance.borrow().value() == amount1);
 
         coin = cap.mint(amount2, ctx);
-        let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
+        let mut management2 = new_with_cap<COIN>(cap);
         management2.take_balance(coin.into_balance(), &clock);
 
         sui::test_utils::destroy(metadata);
@@ -218,7 +220,7 @@ module interchain_token_service::coin_management {
         let amount2 = 20;
 
         let mut coin = cap.mint(amount1, ctx);
-        let mut management1 = new_locked<COIN_MANAGEMENT>();
+        let mut management1 = new_locked<COIN>();
         let clock = sui::clock::create_for_testing(ctx);
         management1.take_balance(coin.into_balance(), &clock);
         coin = management1.give_coin(amount1, &clock, ctx);
@@ -228,7 +230,7 @@ module interchain_token_service::coin_management {
 
         sui::test_utils::destroy(coin);
 
-        let mut management2 = new_with_cap<COIN_MANAGEMENT>(cap);
+        let mut management2 = new_with_cap<COIN>(cap);
         coin = management2.give_coin(amount2, &clock, ctx);
 
         assert!(coin.value() == amount2);
@@ -243,7 +245,7 @@ module interchain_token_service::coin_management {
     #[test]
     #[expected_failure(abort_code = EDistributorNeedsTreasuryCap)]
     fun test_add_distributor_no_capability() {
-        let mut management = new_locked<COIN_MANAGEMENT>();
+        let mut management = new_locked<COIN>();
         let distributor = @0x1;
 
         management.add_distributor(distributor);
@@ -253,7 +255,7 @@ module interchain_token_service::coin_management {
 
     #[test]
     fun test_add_operator() {
-        let mut management = new_locked<COIN_MANAGEMENT>();
+        let mut management = new_locked<COIN>();
         let operator = @0x1;
 
         management.add_operator(operator);
@@ -265,7 +267,7 @@ module interchain_token_service::coin_management {
     fun test_set_flow_limit() {
         let ctx = &mut sui::tx_context::dummy();
 
-        let mut management = new_locked<COIN_MANAGEMENT>();
+        let mut management = new_locked<COIN>();
         let channel = axelar_gateway::channel::new(ctx);
 
         management.add_operator(channel.to_address());
@@ -280,7 +282,7 @@ module interchain_token_service::coin_management {
     fun test_set_flow_limit_not_operator() {
         let ctx = &mut sui::tx_context::dummy();
 
-        let mut management = new_locked<COIN_MANAGEMENT>();
+        let mut management = new_locked<COIN>();
         let channel = axelar_gateway::channel::new(ctx);
         let operator = @0x1;
 
@@ -301,6 +303,79 @@ module interchain_token_service::coin_management {
         let mut coin_management = new_locked();
 
         coin_management.add_cap(treasury_cap);
+
+        sui::test_utils::destroy(coin_management);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENoTreasuryCapPresent)]
+    fun test_remove_cap_empty_cap() {
+        let mut coin_management = new_locked<COIN>();
+
+        let treasury_cap = coin_management.remove_cap();
+
+        sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_management);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ETreasuryCapRemovedFromMintBurnToken)]
+    fun test_take_balance_removed_cap() {
+        let ctx = &mut sui::tx_context::dummy();
+        let clock = sui::clock::create_for_testing(ctx);
+
+        let treasury_cap = interchain_token_service::coin::create_treasury(b"symbol", 9, ctx);
+
+        let mut coin_management = new_with_cap(treasury_cap);
+        
+        let treasury_cap = coin_management.remove_cap();
+
+        coin_management.take_balance(balance::create_for_testing<COIN>(1), &clock);
+
+        sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_management);
+        sui::test_utils::destroy(clock);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ETreasuryCapRemovedFromMintBurnToken)]
+    fun test_give_coin_removed_cap() {
+        let ctx = &mut sui::tx_context::dummy();
+        let clock = sui::clock::create_for_testing(ctx);
+
+        let treasury_cap = interchain_token_service::coin::create_treasury(b"symbol", 9, ctx);
+
+        let mut coin_management = new_with_cap(treasury_cap);
+        
+        let treasury_cap = coin_management.remove_cap();
+
+        let coin = coin_management.give_coin(1, &clock, ctx);
+
+        sui::test_utils::destroy(coin);
+        sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_management);
+        sui::test_utils::destroy(clock);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotOperator)]
+    fun test_update_operatorship_not_operator() {
+        let ctx = &mut sui::tx_context::dummy();
+
+        let mut coin_management = new_locked<COIN>();
+        let operator = axelar_gateway::channel::new(ctx);
+
+        coin_management.update_operatorship(&operator, option::none());
+
+        operator.destroy();
+        sui::test_utils::destroy(coin_management);
+    }
+
+    #[test]
+    fun test_getters() {
+        let mut coin_management = new_locked<COIN>();
+        assert!(coin_management.distributor().is_none());
+        assert!(coin_management.treasury_cap().is_none());
 
         sui::test_utils::destroy(coin_management);
     }
