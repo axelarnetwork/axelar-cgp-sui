@@ -229,6 +229,8 @@ module interchain_token_service::interchain_token_service {
         value.give_unregistered_coin<T>(treasury_cap, coin_metadata);
     }
 
+    /// This function needs to be called before receiving a link token message.
+    /// It ensures the coin metadata is recorded with the ITS, and that the treasury cap is present in case of mint_burn.
     public fun give_unlinked_coin<T>(
         self: &mut InterchainTokenService,
         token_id: TokenId,

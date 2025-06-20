@@ -286,4 +286,18 @@ module interchain_token_service::coin_management {
         sui::test_utils::destroy(management);
         sui::test_utils::destroy(channel);
     }
+
+    #[test]
+    #[expected_failure(abort_code = ENotMintBurn)]
+    fun test_add_cap_not_mint_burn() {
+        let ctx = &mut sui::tx_context::dummy();
+
+        let treasury_cap = interchain_token_service::coin::create_treasury(b"symbol", 9, ctx);
+
+        let mut coin_management = new_locked();
+
+        coin_management.add_cap(treasury_cap);
+
+        sui::test_utils::destroy(coin_management);
+    }
 }
