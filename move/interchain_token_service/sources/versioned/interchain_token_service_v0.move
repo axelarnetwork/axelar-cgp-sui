@@ -8,7 +8,7 @@ module interchain_token_service::interchain_token_service_v0 {
         events,
         interchain_transfer_ticket::InterchainTransferTicket,
         token_id::{Self, TokenId, UnregisteredTokenId, UnlinkedTokenId},
-        token_manager_types,
+        token_manager_type::{Self, TokenManagerType},
         treasury_cap_reclaimer::{Self, TreasuryCapReclaimer},
         trusted_chains::{Self, TrustedChains},
         unregistered_coin_data::{Self, UnregisteredCoinData},
@@ -62,7 +62,7 @@ module interchain_token_service::interchain_token_service_v0 {
     #[error]
     const ENotSupported: vector<u8> = b"not supported";
     #[error]
-    const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_token instead";
+    const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
     #[error]
     const EWrongTreasuryCapReclaimer: vector<u8> = b"trying to retreive a TreasuryCap with a miasmatching TreasuryCapReclaimer";
 
@@ -200,7 +200,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let token_id = token_id::custom_token_id(&self.chain_name_hash, deployer, &salt);
         let coin_info = coin_info::from_info(coin_metadata.get_name(), coin_metadata.get_symbol(), coin_metadata.get_decimals());
 
-        events::interchain_token_id_claimed(token_id, deployer, salt);
+        events::interchain_token_id_claimed<T>(token_id, deployer, salt);
 
         let treasury_cap_reclaimer = if (coin_management.has_treasury_cap()) {
             option::some(treasury_cap_reclaimer::create<T>(copy token_id, ctx))
@@ -219,13 +219,13 @@ module interchain_token_service::interchain_token_service_v0 {
         salt: Bytes32,
         destination_chain: String,
         destination_token_address: vector<u8>,
-        token_manager_type: u8,
+        token_manager_type: TokenManagerType,
         link_params: vector<u8>,
     ): MessageTicket {
         assert!(destination_token_address.length() != 0, EEmptyTokenAddress);
 
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
-        assert!(token_manager_type != token_manager_types::native_interchain_token(), ECannotDeployInterchainTokenManager);
+        assert!(token_manager_type != token_manager_type::native_interchain_token(), ECannotDeployInterchainTokenManager);
 
         // Cannot deploy to this chain using linkToken
         assert!(destination_chain.as_bytes().length() != 0, ENotSupported);
@@ -237,8 +237,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let token_id = token_id::custom_token_id(&chain_name_hash, deployer, &salt);
 
-        events::interchain_token_id_claimed(token_id, deployer, salt);
-
+        // This ensures that the token is registered as a custom token specifically, since the token_id is derived as one
         let source_token_address = (*self.registered_coin_type(token_id)).into_string().into_bytes();
 
         let mut writer = abi::new_writer(6);
@@ -246,7 +245,7 @@ module interchain_token_service::interchain_token_service_v0 {
         writer
             .write_u256(MESSAGE_TYPE_LINK_TOKEN)
             .write_u256(token_id.to_u256())
-            .write_u8(token_manager_type)
+            .write_u256(token_manager_type.to_u256())
             .write_bytes(source_token_address)
             .write_bytes(destination_token_address)
             .write_bytes(link_params);
@@ -468,15 +467,19 @@ module interchain_token_service::interchain_token_service_v0 {
         treasury_cap: Option<TreasuryCap<T>>,
         ctx: &mut TxContext,
     ): Option<TreasuryCapReclaimer<T>> {
-        let has_treasury_cap = treasury_cap.is_some();
+        let token_manager_type = if (treasury_cap.is_some()) {
+            token_manager_type::mint_burn()
+        } else {
+            token_manager_type::lock_unlock()
+        };
 
-        let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, has_treasury_cap);
+        let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, token_manager_type);
 
-        events::unlinked_coin_received<T>(unlinked_token_id, token_id, has_treasury_cap);
+        events::unlinked_coin_received<T>(unlinked_token_id, token_id, token_manager_type);
 
         self.add_unlinked_coin(unlinked_token_id, coin_metadata, treasury_cap);
 
-        if (has_treasury_cap) {
+        if (token_manager_type == token_manager_type::mint_burn()) {
             option::some(treasury_cap_reclaimer::create<T>(token_id, ctx))
         } else {
             option::none()
@@ -1701,7 +1704,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let destination_chain = ascii::string(b"Chain Name");
         let destination_token_address = b"";
-        let token_manager_type = token_manager_types::lock_unlock();
+        let token_manager_type = token_manager_type::lock_unlock();
         let link_params = b"link_params";
 
         let message_ticket = its.link_coin(
@@ -1729,7 +1732,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let destination_chain = ascii::string(b"Chain Name");
         let destination_token_address = b"destination_token_address";
-        let token_manager_type = token_manager_types::native_interchain_token();
+        let token_manager_type = token_manager_type::native_interchain_token();
         let link_params = b"link_params";
 
         let message_ticket = its.link_coin(
@@ -1757,7 +1760,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let destination_chain = ascii::string(b"");
         let destination_token_address = b"destination_token_address";
-        let token_manager_type = token_manager_types::lock_unlock();
+        let token_manager_type = token_manager_type::lock_unlock();
         let link_params = b"link_params";
 
         let message_ticket = its.link_coin(
@@ -1785,7 +1788,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let destination_chain = ascii::string(b"chain name");
         let destination_token_address = b"destination_token_address";
-        let token_manager_type = token_manager_types::lock_unlock();
+        let token_manager_type = token_manager_type::lock_unlock();
         let link_params = b"link_params";
 
         let message_ticket = its.link_coin(

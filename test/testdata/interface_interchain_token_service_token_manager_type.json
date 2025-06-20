@@ -1,0 +1,49 @@
+{
+  "structs": {
+    "TokenManagerType": {
+      "name": "TokenManagerType",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_manager_type",
+          "type": "u256"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "native_interchain_token": {
+      "name": "native_interchain_token",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    },
+    "mint_burn_from": {
+      "name": "mint_burn_from",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    },
+    "lock_unlock": {
+      "name": "lock_unlock",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    },
+    "lock_unlock_fee": {
+      "name": "lock_unlock_fee",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    },
+    "mint_burn": {
+      "name": "mint_burn",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    }
+  }
+}
