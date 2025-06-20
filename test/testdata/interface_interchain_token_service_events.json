@@ -25,6 +25,39 @@
           "type": "String"
         }
       ]
+    },
+    "LinkTokenStarted": {
+      "name": "LinkTokenStarted",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "tokenId",
+          "type": "TokenId"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "destination_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "TokenManagerType"
+        },
+        {
+          "name": "link_params",
+          "type": "vector<u8>"
+        }
+      ]
     }
   },
   "publicFunctions": {}

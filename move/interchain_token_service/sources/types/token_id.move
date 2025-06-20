@@ -1,6 +1,6 @@
 module interchain_token_service::token_id {
     use axelar_gateway::{bytes32::Bytes32, channel::Channel};
-    use interchain_token_service::{coin_info::CoinInfo, coin_management::CoinManagement};
+    use interchain_token_service::{coin_info::CoinInfo, coin_management::CoinManagement, token_manager_type::TokenManagerType};
     use std::{ascii, string::String, type_name};
     use sui::{address, bcs, hash::keccak256};
 
@@ -91,12 +91,12 @@ module interchain_token_service::token_id {
         UnregisteredTokenId { id }
     }
 
-    public(package) fun unlinked_token_id<T>(token_id: TokenId, has_treasury_cap: bool): UnlinkedTokenId {
+    public(package) fun unlinked_token_id<T>(token_id: TokenId, token_manager_type: TokenManagerType): UnlinkedTokenId {
         let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
         let mut v = bcs::to_bytes(&prefix);
         v.append(bcs::to_bytes(&token_id));
         v.append(bcs::to_bytes(&type_name::get<T>()));
-        v.append(bcs::to_bytes(&has_treasury_cap));
+        v.append(bcs::to_bytes(&token_manager_type.to_u256()));
         let id = address::from_bytes(keccak256(&v));
         UnlinkedTokenId { id }
     }
@@ -192,19 +192,19 @@ module interchain_token_service::token_id {
 
     #[test]
     fun test_unlinked_token_id() {
-        let has_treasury_cap = false;
+        let token_manager_type = interchain_token_service::token_manager_type::lock_unlock();
         let token_id = from_u256(1234);
 
         let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
         let mut v = bcs::to_bytes(&prefix);
         v.append(bcs::to_bytes(&token_id));
         v.append(bcs::to_bytes(&type_name::get<COIN>()));
-        v.append(bcs::to_bytes(&has_treasury_cap));
+        v.append(bcs::to_bytes(&token_manager_type.to_u256()));
         let id = address::from_bytes(keccak256(&v));
 
         let calculated_token_id = UnlinkedTokenId { id };
 
-        let unlinked_token_id = unlinked_token_id<COIN>(token_id, has_treasury_cap);
+        let unlinked_token_id = unlinked_token_id<COIN>(token_id, token_manager_type);
 
         assert!(unlinked_token_id == calculated_token_id);
     }
