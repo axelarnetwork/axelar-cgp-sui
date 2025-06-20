@@ -88,6 +88,10 @@ module interchain_token_service::events {
         link_params: vector<u8>,
     }
 
+    public struct CoinMetadataRegistered<phantom T> has copy, drop {
+        decimals: u8,
+    }
+
     // -----------------
     // Package Functions
     // -----------------
@@ -229,6 +233,14 @@ module interchain_token_service::events {
             destination_token_address,
             token_manager_type,
             link_params,
+        });
+    }
+
+    public(package) fun coin_metadata_registered<T>(
+        decimals: u8,
+    ) {
+        event::emit(CoinMetadataRegistered<T> {
+            decimals,
         });
     }
 
