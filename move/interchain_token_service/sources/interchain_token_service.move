@@ -1013,7 +1013,7 @@ module interchain_token_service::interchain_token_service {
         let decimals = 9;
         let token_id = interchain_token_service::token_id::from_u256(1234);
         let has_treasury_cap = false;
-        let token_manager_type = token_manager_types::lock_unlock();
+        let token_manager_type = token_manager_type::lock_unlock();
 
         its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
@@ -1021,7 +1021,7 @@ module interchain_token_service::interchain_token_service {
         writer
             .write_u256(MESSAGE_TYPE_LINK_TOKEN)
             .write_u256(token_id.to_u256())
-            .write_u8(token_manager_type)
+            .write_u256(token_manager_type.to_u256())
             .write_bytes(source_token_address)
             .write_bytes(destination_token_address)
             .write_bytes(link_params);
@@ -1062,7 +1062,7 @@ module interchain_token_service::interchain_token_service {
         let decimals = 9;
         let token_id = interchain_token_service::token_id::from_u256(1234);
         let has_treasury_cap = true;
-        let token_manager_type = token_manager_types::mint_burn();
+        let token_manager_type = token_manager_type::mint_burn();
 
         its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
@@ -1070,7 +1070,7 @@ module interchain_token_service::interchain_token_service {
         writer
             .write_u256(MESSAGE_TYPE_LINK_TOKEN)
             .write_u256(token_id.to_u256())
-            .write_u8(token_manager_type)
+            .write_u256(token_manager_type.to_u256())
             .write_bytes(source_token_address)
             .write_bytes(destination_token_address)
             .write_bytes(link_params);

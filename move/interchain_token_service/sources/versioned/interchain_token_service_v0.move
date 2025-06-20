@@ -439,17 +439,18 @@ module interchain_token_service::interchain_token_service_v0 {
         assert!(reader.read_u256() == MESSAGE_TYPE_LINK_TOKEN, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
-        let token_manager_type = reader.read_u8();
+        let token_manager_type = reader.read_u256();
         reader.skip_slot();
         let destination_token_address = reader.read_bytes();
         let link_params = reader.read_bytes();
 
         assert!(destination_token_address == type_name::get<T>().into_string().into_bytes());
 
-        let has_treasury_cap = token_manager_types::should_have_treasry_cap_for_link_token(token_manager_type);
+        let token_manager_type = token_manager_type::from_u256(token_manager_type);
 
+        // This implicitely validates token_manager type because we only ever register lock_unlock and mint_burn unlicked coins
         let mut coin_data = self.remove_unlinked_coin<T>(
-            token_id::unlinked_token_id<T>(token_id, has_treasury_cap),
+            token_id::unlinked_token_id<T>(token_id, token_manager_type),
         );
 
         if (link_params.length() > 0) {
@@ -852,7 +853,13 @@ module interchain_token_service::interchain_token_service_v0 {
             decimals,
             ctx,
         );
-        let token_id = token_id::unlinked_token_id<COIN>(token_id, has_treasury_cap);
+        let token_manager_type = if (has_treasury_cap) {
+            token_manager_type::mint_burn()
+        } else {
+            token_manager_type::lock_unlock()
+        };
+
+        let token_id = token_id::unlinked_token_id<COIN>(token_id, token_manager_type);
 
         let treasury_cap = if (has_treasury_cap) {
             option::some(treasury_cap)
