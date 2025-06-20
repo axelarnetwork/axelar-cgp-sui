@@ -13,8 +13,8 @@ module interchain_token_service::token_id {
     // address::from_bytes(keccak256(&b"prefix-unregistered-interchain-token-id"));
     const PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID: u256 = 0xe95d1bd561a97aa5be610da1f641ee43729dd8c5aab1c7f8e90ea6d904901a50;
 
-    // address::to_u256(address::from_bytes(keccak256(&bcs::to_bytes<vector<u8>>(&b"prefix-unlinked-interchain-token-id"))));
-    const PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID: u256 = 0x875e1b812d4076e924370972217812584b40adad67b8f43380d25b27f0482219;
+    // address::to_u256(address::from_bytes(keccak256(&b"prefix-unlinked-interchain-token-id")));
+    const PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID: u256 = 0x875e1b812d4076e924370972217812584b40adad67b8f43380d25b27f048221a;
 
     public struct TokenId has copy, drop, store {
         id: address,
@@ -122,6 +122,10 @@ module interchain_token_service::token_id {
             address::from_bytes(keccak256(&b"prefix-unregistered-interchain-token-id")),
         );
         assert!(prefix_unregistered_interchain_token_id == PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID);
+
+        let prefix_unlinked_interchain_token_id = address::to_u256(address::from_bytes(keccak256(&b"prefix-unlinked-interchain-token-id")));
+        std::debug::print(&prefix_unlinked_interchain_token_id);
+        assert!(prefix_unlinked_interchain_token_id == PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID);
     }
 
     #[test]
@@ -185,5 +189,24 @@ module interchain_token_service::token_id {
         let token_id = unregistered_token_id(symbol, decimals);
 
         assert!(token_id == calculated_token_id);
+    }
+
+    #[test]
+    fun test_unlinked_token_id() {
+        let has_treasury_cap = false;
+        let token_id = from_u256(1234);
+
+        let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
+        let mut v = bcs::to_bytes(&prefix);
+        v.append(bcs::to_bytes(&token_id));
+        v.append(bcs::to_bytes(&type_name::get<COIN>()));
+        v.append(bcs::to_bytes(&has_treasury_cap));
+        let id = address::from_bytes(keccak256(&v));
+
+        let calculated_token_id = UnlinkedTokenId { id };
+
+        let unlinked_token_id = unlinked_token_id<COIN>(token_id, has_treasury_cap);
+
+        assert!(unlinked_token_id == calculated_token_id);
     }
 }
