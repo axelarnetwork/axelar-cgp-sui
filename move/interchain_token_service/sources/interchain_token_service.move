@@ -207,6 +207,19 @@ module interchain_token_service::interchain_token_service {
         value.give_unregistered_coin<T>(treasury_cap, coin_metadata);
     }
 
+    /// This function needs to be called before receiving a link token message.
+    /// It ensures the coin metadata is recorded with the ITS, and that the treasury cap is present in case of mint_burn.
+    public fun give_unlinked_coin<T>(
+        self: &mut InterchainTokenService,
+        token_id: TokenId,
+        coin_metadata: &CoinMetadata<T>,
+        treasury_cap: Option<TreasuryCap<T>>,
+    ) {
+        let value = self.value_mut!(b"give_unlinked_coin");
+
+        value.give_unlinked_coin(token_id, coin_metadata, treasury_cap);
+    }
+
     public fun mint_as_distributor<T>(
         self: &mut InterchainTokenService,
         channel: &Channel,
@@ -404,6 +417,7 @@ module interchain_token_service::interchain_token_service {
                 b"receive_interchain_transfer_with_data",
                 b"receive_deploy_interchain_token",
                 b"give_unregistered_coin",
+                b"give_unlinked_coin",
                 b"mint_as_distributor",
                 b"mint_to_as_distributor",
                 b"burn_as_distributor",
@@ -849,6 +863,28 @@ module interchain_token_service::interchain_token_service {
 
         give_unregistered_coin<COIN>(&mut its, treasury_cap, coin_metadata);
 
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_give_unlinked_coin() {
+        let symbol = b"COIN";
+        let decimals = 12;
+        let ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+
+        let token_id = interchain_token_service::token_id::from_u256(1234);
+
+        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none());
+        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap));
+
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
 

@@ -1,6 +1,6 @@
 module interchain_token_service::events {
     use axelar_gateway::{bytes32::{Self, Bytes32}, channel::Channel};
-    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId};
+    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId};
     use std::{ascii::String, string};
     use sui::{address, event, hash::keccak256};
 
@@ -42,6 +42,12 @@ module interchain_token_service::events {
         token_id: UnregisteredTokenId,
         symbol: String,
         decimals: u8,
+    }
+
+    public struct UnlinkedCoinReceived<phantom T> has copy, drop {
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        has_treasury_cap: bool,
     }
 
     public struct TrustedChainAdded has copy, drop {
@@ -147,6 +153,14 @@ module interchain_token_service::events {
             token_id,
             symbol,
             decimals,
+        });
+    }
+
+    public(package) fun unlinked_coin_received<T>(unlinked_token_id: UnlinkedTokenId, token_id: TokenId, has_treasury_cap: bool) {
+        event::emit(UnlinkedCoinReceived<T> {
+            unlinked_token_id,
+            token_id,
+            has_treasury_cap,
         });
     }
 
