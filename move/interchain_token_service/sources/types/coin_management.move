@@ -11,6 +11,10 @@ module interchain_token_service::coin_management {
         b"trying to add a distributor to a `CoinManagement` that does not have a `TreasuryCap`";
     #[error]
     const ENotOperator: vector<u8> = b"channel provided is not the operator";
+    #[error]
+    const ENoTreasuryCapPresent: vector<u8> = b"trying to remove a treasury cap that does not exist";
+    #[error]
+    const ENotMintBurn: vector<u8> = b"trying to add a treasury cap to a lock unlock token";
 
     /// Struct that stores information about the InterchainTokenService Coin.
     public struct CoinManagement<phantom T> has store {
@@ -143,6 +147,18 @@ module interchain_token_service::coin_management {
         self.operator = new_operator;
     }
 
+    public(package) fun remove_cap<T>(self: &mut CoinManagement<T>): TreasuryCap<T> {
+        assert!(self.has_treasury_cap(), ENoTreasuryCapPresent);
+
+        self.treasury_cap.extract()
+    }
+
+    public(package) fun restore_cap<T>(self: &mut CoinManagement<T>, treasury_cap: TreasuryCap<T>) {
+        assert!(self.balance.is_none(), ENotMintBurn);
+
+        self.treasury_cap.fill(treasury_cap);
+    }
+
     // === Views ===
 
     /// Checks if the given address is a `distributor`.
@@ -269,5 +285,19 @@ module interchain_token_service::coin_management {
 
         sui::test_utils::destroy(management);
         sui::test_utils::destroy(channel);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotMintBurn)]
+    fun test_add_cap_not_mint_burn() {
+        let ctx = &mut sui::tx_context::dummy();
+
+        let treasury_cap = interchain_token_service::coin::create_treasury(b"symbol", 9, ctx);
+
+        let mut coin_management = new_locked();
+
+        coin_management.restore_cap(treasury_cap);
+
+        sui::test_utils::destroy(coin_management);
     }
 }

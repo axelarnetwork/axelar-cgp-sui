@@ -30,6 +30,7 @@ coverage
 .trace
 *.mvcov
 .coverage.info
+.coverage.extended.info
 
 # Dependency directories
 node_modules/
