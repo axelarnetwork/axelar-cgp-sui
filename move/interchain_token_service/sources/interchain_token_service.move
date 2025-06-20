@@ -525,6 +525,8 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
     #[test_only]
+    const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
+    #[test_only]
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
     // === HUB CONSTANTS ===
