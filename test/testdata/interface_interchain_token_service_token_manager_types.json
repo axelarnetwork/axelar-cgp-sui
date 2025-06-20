@@ -18,6 +18,14 @@
       "visibility": "public",
       "params": {},
       "returnType": "u8"
+    },
+    "should_have_treasry_cap_for_link_token": {
+      "name": "should_have_treasry_cap_for_link_token",
+      "visibility": "public",
+      "params": {
+        "token_manager_type#0#0": "u8"
+      },
+      "returnType": "bool"
     }
   }
 }
