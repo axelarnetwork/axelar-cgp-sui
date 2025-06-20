@@ -2,7 +2,7 @@ module squid::discovery {
     use axelar_gateway::gateway::Gateway;
     use interchain_token_service::interchain_token_service::InterchainTokenService;
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::{Self, MoveCall, Transaction}};
-    use squid::{deepbook_v3, squid::Squid, swap_type, transfers};
+    use squid::{deepbook_v3, squid::Squid, swap_type, transfers, post_hook};
     use std::ascii::{Self, String};
     use sui::bcs;
 
@@ -81,12 +81,18 @@ module squid::discovery {
                     bcs,
                     swap_info_arg,
                 )
-            } else {
-                assert!(swap_type == swap_type::its_transfer(), EInvalidSwapType);
+            } else if (swap_type == swap_type::its_transfer()) {
                 transfers::its_estimate_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
+                )
+            } else {
+                assert!(swap_type == swap_type::post_hook(), EInvalidSwapType);
+                post_hook::estimate_move_call(
+                    package_id,
+                    bcs,
+                    swap_info_arg
                 )
             };
             move_calls.push_back(call);
@@ -109,8 +115,7 @@ module squid::discovery {
                     bcs,
                     swap_info_arg,
                 )
-            } else {
-                assert!(swap_type == swap_type::its_transfer(), EInvalidSwapType);
+            } else if (swap_type == swap_type::its_transfer()) {
                 transfers::its_transfer_move_call(
                     package_id,
                     bcs,
@@ -118,6 +123,11 @@ module squid::discovery {
                     squid_arg,
                     gateway_arg,
                     its_arg,
+                )
+            } else {
+                assert!(swap_type == swap_type::post_hook(), EInvalidSwapType);
+                post_hook::post_hook_move_call(
+                    bcs,
                 )
             };
             move_calls.push_back(call);

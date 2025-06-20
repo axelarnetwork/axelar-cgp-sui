@@ -14,6 +14,7 @@ module squid::swap_type {
         DeepbookV3,
         SuiTransfer,
         ItsTransfer,
+        PostHook,
     }
 
     // -----------------
@@ -30,6 +31,10 @@ module squid::swap_type {
     public(package) fun its_transfer(): SwapType {
         SwapType::ItsTransfer
     }
+    
+    public(package) fun post_hook(): SwapType {
+        SwapType::PostHook
+    }
 
     public(package) fun peel(bcs: &mut BCS): SwapType {
         let swap_type = bcs.peel_u8();
@@ -39,6 +44,8 @@ module squid::swap_type {
             SwapType::SuiTransfer
         } else if (swap_type == 2) {
             SwapType::ItsTransfer
+        } else if (swap_type == 3) {
+            SwapType::PostHook
         } else {
             abort (EInvalidSwapType)
         }
