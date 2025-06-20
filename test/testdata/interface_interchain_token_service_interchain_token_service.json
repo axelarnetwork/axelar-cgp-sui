@@ -50,7 +50,7 @@
         "salt#0#0": "Bytes32",
         "destination_chain#0#0": "String",
         "destination_token_address#0#0": "vector<u8>",
-        "token_manager_type#0#0": "u8",
+        "token_manager_type#0#0": "TokenManagerType",
         "link_params#0#0": "vector<u8>"
       },
       "returnType": "MessageTicket"

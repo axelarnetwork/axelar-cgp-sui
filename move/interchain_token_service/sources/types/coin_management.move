@@ -153,7 +153,7 @@ module interchain_token_service::coin_management {
         self.treasury_cap.extract()
     }
 
-    public(package) fun add_cap<T>(self: &mut CoinManagement<T>, treasury_cap: TreasuryCap<T>) {
+    public(package) fun restore_cap<T>(self: &mut CoinManagement<T>, treasury_cap: TreasuryCap<T>) {
         assert!(self.balance.is_none(), ENotMintBurn);
 
         self.treasury_cap.fill(treasury_cap);
@@ -296,7 +296,7 @@ module interchain_token_service::coin_management {
 
         let mut coin_management = new_locked();
 
-        coin_management.add_cap(treasury_cap);
+        coin_management.restore_cap(treasury_cap);
 
         sui::test_utils::destroy(coin_management);
     }
