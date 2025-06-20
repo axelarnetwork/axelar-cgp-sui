@@ -138,10 +138,7 @@ module interchain_token_service::interchain_token_service {
         value.link_coin(deployer, salt, destination_chain, destination_token_address, token_manager_type, link_params)
     }
 
-    public fun register_coin_metadata<T>(
-        self: &InterchainTokenService,
-        coin_metadata: &CoinMetadata<T>,
-    ): MessageTicket {
+    public fun register_coin_metadata<T>(self: &InterchainTokenService, coin_metadata: &CoinMetadata<T>): MessageTicket {
         let value = self.value!(b"register_coin_metadata");
 
         value.register_coin_metadata(coin_metadata)
@@ -1466,5 +1463,4 @@ module interchain_token_service::interchain_token_service {
         sui::test_utils::destroy(message_ticket);
         sui::test_utils::destroy(its);
     }
-
 }

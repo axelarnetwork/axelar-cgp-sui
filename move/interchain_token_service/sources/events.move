@@ -236,9 +236,7 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun coin_metadata_registered<T>(
-        decimals: u8,
-    ) {
+    public(package) fun coin_metadata_registered<T>(decimals: u8) {
         event::emit(CoinMetadataRegistered<T> {
             decimals,
         });
