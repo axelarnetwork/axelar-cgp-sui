@@ -18,6 +18,7 @@ module interchain_token_service::discovery {
     // onst MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
     // onst MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
+    const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
 
     public fun interchain_transfer_info(payload: vector<u8>): (TokenId, address, u64, vector<u8>) {
         let mut reader = abi::new_reader(payload);
@@ -77,6 +78,8 @@ module interchain_token_service::discovery {
 
         if (message_type == MESSAGE_TYPE_INTERCHAIN_TRANSFER) {
             interchain_transfer_tx(its, &mut reader)
+        } else if (message_type == MESSAGE_TYPE_LINK_TOKEN) {
+            link_token_tx(its, &mut reader)
         } else {
             assert!(message_type == MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN, EUnsupportedMessageType);
             deploy_interchain_token_tx(its, &mut reader)
@@ -160,6 +163,33 @@ module interchain_token_service::discovery {
             ),
             arguments,
             vector[type_name::into_string(*type_name)],
+        );
+
+        transaction::new_transaction(
+            true,
+            vector[move_call],
+        )
+    }
+
+    fun link_token_tx(its: &InterchainTokenService, reader: &mut AbiReader): Transaction {
+        let mut arg = vector[0];
+        arg.append(object::id_address(its).to_bytes());
+
+        let arguments = vector[arg, vector[2]];
+
+        reader.skip_slot(); // skip token_id
+        reader.skip_slot(); // skip name
+        reader.skip_slot(); // skip source_token_address
+        let destination_token_address = ascii::string(reader.read_bytes());
+
+        let move_call = transaction::new_move_call(
+            transaction::new_function(
+                package_id<InterchainTokenService>(),
+                ascii::string(b"interchain_token_service"),
+                ascii::string(b"receive_link_coin"),
+            ),
+            arguments,
+            vector[destination_token_address],
         );
 
         transaction::new_transaction(
@@ -362,6 +392,54 @@ module interchain_token_service::discovery {
     }
 
     #[test]
+    fun test_discovery_link_token() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
+        let mut discovery = relayer_discovery::discovery::new(ctx);
+
+        register_transaction(&mut its, &mut discovery);
+
+        let token_id = @0x1234;
+        let token_manager_type = interchain_token_service::token_manager_type::lock_unlock();
+        let source_token_address = b"source_token_address";
+        let destination_token_address = type_name::get<interchain_token_service::coin::COIN>().into_string().into_bytes();
+        let link_params = b"";
+        let mut writer = abi::new_writer(6);
+        writer
+            .write_u256(MESSAGE_TYPE_LINK_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_u256(token_manager_type.to_u256())
+            .write_bytes(source_token_address)
+            .write_bytes(destination_token_address)
+            .write_bytes(link_params);
+        let payload = writer.into_bytes();
+
+        let tx_block = call_info(&its, payload);
+
+        let mut reader = abi::new_reader(payload);
+        reader.skip_slot(); // skip message_type
+
+        assert!(tx_block == link_token_tx(&its, &mut reader));
+
+        assert!(tx_block.is_final());
+        let mut move_calls = tx_block.move_calls();
+        assert!(move_calls.length() == 1);
+        let call_info = move_calls.pop_back();
+        assert!(call_info.function().package_id_from_function() == package_id<InterchainTokenService>());
+        assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
+        assert!(call_info.function().name() == ascii::string(b"receive_link_coin"));
+        let mut arg = vector[0];
+        arg.append(object::id_address(&its).to_bytes());
+
+        let arguments = vector[arg, vector[2]];
+        assert!(call_info.arguments() == arguments);
+        assert!(call_info.type_arguments() == vector[ascii::string(destination_token_address)]);
+
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(discovery);
+    }
+
+    #[test]
     fun test_interchain_transfer_info() {
         let message_type = MESSAGE_TYPE_INTERCHAIN_TRANSFER;
         let token_id = 1;
@@ -470,7 +548,7 @@ module interchain_token_service::discovery {
         let its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
 
         let mut writer = abi::new_writer(1);
-        writer.write_u256(5);
+        writer.write_u256(10);
         let payload = writer.into_bytes();
 
         call_info(&its, payload);
