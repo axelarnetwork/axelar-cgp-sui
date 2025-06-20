@@ -124,7 +124,6 @@ module interchain_token_service::token_id {
         assert!(prefix_unregistered_interchain_token_id == PREFIX_UNREGISTERED_INTERCHAIN_TOKEN_ID);
 
         let prefix_unlinked_interchain_token_id = address::to_u256(address::from_bytes(keccak256(&b"prefix-unlinked-interchain-token-id")));
-        std::debug::print(&prefix_unlinked_interchain_token_id);
         assert!(prefix_unlinked_interchain_token_id == PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID);
     }
 

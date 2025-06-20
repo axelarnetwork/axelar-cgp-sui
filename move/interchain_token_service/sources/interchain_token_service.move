@@ -345,6 +345,8 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// This can be used bye the person who added the treasury cap to reclaim mint/burn permission from ITS.
+    /// Doing so will render the coin unusable by ITS until restore_treasury_cap is called.
     public fun remove_treasury_cap<T>(
         self: &mut InterchainTokenService,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
@@ -358,6 +360,7 @@ module interchain_token_service::interchain_token_service {
         )
     }
 
+    /// This can only be called for coins that have had remove_treasury_cap called on them, to restore their functionality
     public fun restore_treasury_cap<T>(
         self: &mut InterchainTokenService,
         treasury_cap: TreasuryCap<T>,

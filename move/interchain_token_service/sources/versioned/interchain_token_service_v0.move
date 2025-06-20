@@ -63,6 +63,8 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotSupported: vector<u8> = b"not supported";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_token instead";
+    #[error]
+    const EWrongTreasuryCapReclaimer: vector<u8> = b"trying to retreive a TreasuryCap with a miasmatching TreasuryCapReclaimer";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -201,7 +203,7 @@ module interchain_token_service::interchain_token_service_v0 {
         events::interchain_token_id_claimed(token_id, deployer, salt);
 
         let treasury_cap_reclaimer = if (coin_management.has_treasury_cap()) {
-            option::some(treasury_cap_reclaimer::create<T>(ctx))
+            option::some(treasury_cap_reclaimer::create<T>(copy token_id, ctx))
         } else {
             option::none()
         };
@@ -475,7 +477,7 @@ module interchain_token_service::interchain_token_service_v0 {
         self.add_unlinked_coin(unlinked_token_id, coin_metadata, treasury_cap);
 
         if (has_treasury_cap) {
-            option::some(treasury_cap_reclaimer::create<T>(ctx))
+            option::some(treasury_cap_reclaimer::create<T>(token_id, ctx))
         } else {
             option::none()
         }
@@ -572,6 +574,8 @@ module interchain_token_service::interchain_token_service_v0 {
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
         token_id: TokenId,
     ): TreasuryCap<T> {
+        assert!(token_id == treasury_cap_reclaimer.token_id(), EWrongTreasuryCapReclaimer);
+
         let coin_management = self.coin_management_mut<T>(token_id);
 
         treasury_cap_reclaimer.destroy();
@@ -587,9 +591,9 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TreasuryCapReclaimer<T> {
         let coin_management = self.coin_management_mut<T>(token_id);
 
-        coin_management.add_cap(treasury_cap);
+        coin_management.restore_cap(treasury_cap);
 
-        treasury_cap_reclaimer::create<T>(ctx)
+        treasury_cap_reclaimer::create<T>(token_id, ctx)
     }
 
     public(package) fun allow_function(self: &mut InterchainTokenService_v0, version: u64, function_name: String) {
@@ -661,6 +665,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         // Use the same bag for this to not alter storage.
         // Since there should not be any collisions to the token ids because different prefixes are used this will not be a problem.
+        // TODO: When doing a storage upgrade, move this to a separate Bag for clarity
         self
             .unregistered_coins
             .add(
