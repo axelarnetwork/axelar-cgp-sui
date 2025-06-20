@@ -841,10 +841,10 @@ module interchain_token_service::interchain_token_service {
 
         let coin_info =
             interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
+                string::utf8(b"Name"),
+                ascii::string(b"Symbol"),
+                10,
+            );
 
         let amount = 1234;
         let mut coin_management = interchain_token_service::coin_management::new_locked();
@@ -858,6 +858,7 @@ module interchain_token_service::interchain_token_service {
         let destination_address = @0x1;
 
         let mut writer = abi::new_writer(6);
+
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
@@ -865,6 +866,7 @@ module interchain_token_service::interchain_token_service {
             .write_bytes(destination_address.to_bytes())
             .write_u256((amount as u256))
             .write_bytes(b"");
+
         let mut payload = writer.into_bytes();
         writer = abi::new_writer(3);
         writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(source_chain.into_bytes()).write_bytes(payload);
@@ -1040,6 +1042,7 @@ module interchain_token_service::interchain_token_service {
 
         receive_link_coin<COIN>(&mut its, approved_message);
 
+        utils::assert_event<interchain_token_service::events::LinkTokenReceived<COIN>>();
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().is_none());

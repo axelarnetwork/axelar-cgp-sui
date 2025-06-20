@@ -80,10 +80,18 @@ module interchain_token_service::events {
     }
 
     public struct LinkTokenStarted has copy, drop {
-        tokenId: TokenId,
+        token_id: TokenId,
         destination_chain: String,
         source_token_address: vector<u8>,
         destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    }
+
+    public struct LinkTokenReceived<phantom T> has copy, drop {
+        token_id: TokenId,
+        source_chain: String,
+        source_token_address: vector<u8>,
         token_manager_type: TokenManagerType,
         link_params: vector<u8>,
     }
@@ -219,7 +227,7 @@ module interchain_token_service::events {
     }
 
     public(package) fun link_token_started(
-        tokenId: TokenId,
+        token_id: TokenId,
         destination_chain: String,
         source_token_address: vector<u8>,
         destination_token_address: vector<u8>,
@@ -227,10 +235,26 @@ module interchain_token_service::events {
         link_params: vector<u8>,
     ) {
         event::emit(LinkTokenStarted {
-            tokenId,
+            token_id,
             destination_chain,
             source_token_address,
             destination_token_address,
+            token_manager_type,
+            link_params,
+        });
+    }
+
+    public(package) fun link_token_received<T>(
+        token_id: TokenId,
+        source_chain: String,
+        source_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    ) {
+        event::emit(LinkTokenReceived<T> {
+            token_id,
+            source_chain,
+            source_token_address,
             token_manager_type,
             link_params,
         });

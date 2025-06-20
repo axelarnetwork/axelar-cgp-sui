@@ -434,14 +434,14 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService_v0, approved_message: ApprovedMessage) {
-        let (_, payload, _) = self.decode_approved_message(approved_message);
+        let (source_chain, payload, _) = self.decode_approved_message(approved_message);
 
         let mut reader = abi::new_reader(payload);
         assert!(reader.read_u256() == MESSAGE_TYPE_LINK_TOKEN, EInvalidMessageType);
 
         let token_id = token_id::from_u256(reader.read_u256());
         let token_manager_type = reader.read_u256();
-        reader.skip_slot();
+        let source_token_address = reader.read_bytes();
         let destination_token_address = reader.read_bytes();
         let link_params = reader.read_bytes();
 
@@ -458,6 +458,8 @@ module interchain_token_service::interchain_token_service_v0 {
             let operator = address::from_bytes(link_params);
             coin_data.coin_management_mut().add_operator(operator);
         };
+
+        events::link_token_received<T>(token_id, source_chain, source_token_address, token_manager_type, link_params);
 
         self.add_registered_coin<T>(token_id, coin_data);
     }
