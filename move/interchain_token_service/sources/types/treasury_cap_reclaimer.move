@@ -1,20 +1,28 @@
 module interchain_token_service::treasury_cap_reclaimer {
+    use interchain_token_service::token_id::TokenId;
+
     // -----
     // Types
     // -----
     public struct TreasuryCapReclaimer<phantom T> has key, store {
         id: UID,
+        token_id: TokenId,
     }
 
-    public(package) fun create<T>(ctx: &mut TxContext): TreasuryCapReclaimer<T> {
+    public(package) fun create<T>(token_id: TokenId, ctx: &mut TxContext): TreasuryCapReclaimer<T> {
         TreasuryCapReclaimer<T> {
             id: object::new(ctx),
+            token_id,
         }
+    }
+
+    public(package) fun token_id<T>(self: &TreasuryCapReclaimer<T>): TokenId {
+        self.token_id
     }
 
     // Maybe make this an entry function to allow users to destroy this.
     public(package) fun destroy<T>(self: TreasuryCapReclaimer<T>) {
-        let TreasuryCapReclaimer { id } = self;
+        let TreasuryCapReclaimer { id, token_id: _ } = self;
         id.delete();
     }
 }

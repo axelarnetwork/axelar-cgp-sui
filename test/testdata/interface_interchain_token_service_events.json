@@ -26,27 +26,6 @@
         }
       ]
     },
-    "InterchainTokenIdClaimed": {
-      "name": "InterchainTokenIdClaimed",
-      "abilities": [
-        "copy",
-        "drop"
-      ],
-      "fields": [
-        {
-          "name": "token_id",
-          "type": "TokenId"
-        },
-        {
-          "name": "deployer",
-          "type": "ID"
-        },
-        {
-          "name": "salt",
-          "type": "Bytes32"
-        }
-      ]
-    },
     "LinkTokenStarted": {
       "name": "LinkTokenStarted",
       "abilities": [
@@ -55,7 +34,7 @@
       ],
       "fields": [
         {
-          "name": "tokenId",
+          "name": "token_id",
           "type": "TokenId"
         },
         {
@@ -72,7 +51,7 @@
         },
         {
           "name": "token_manager_type",
-          "type": "u8"
+          "type": "TokenManagerType"
         },
         {
           "name": "link_params",
