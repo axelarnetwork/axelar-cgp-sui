@@ -1,6 +1,6 @@
 module interchain_token_service::events {
     use axelar_gateway::{bytes32::{Self, Bytes32}, channel::Channel};
-    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId};
+    use interchain_token_service::{token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId}, token_manager_type::TokenManagerType};
     use std::{ascii::String, string};
     use sui::{address, event, hash::keccak256};
 
@@ -47,7 +47,7 @@ module interchain_token_service::events {
     public struct UnlinkedCoinReceived<phantom T> has copy, drop {
         unlinked_token_id: UnlinkedTokenId,
         token_id: TokenId,
-        has_treasury_cap: bool,
+        token_manager_type: TokenManagerType,
     }
 
     public struct TrustedChainAdded has copy, drop {
@@ -73,7 +73,7 @@ module interchain_token_service::events {
         new_operator: Option<address>,
     }
 
-    public struct InterchainTokenIdClaimed has copy, drop {
+    public struct InterchainTokenIdClaimed<phantom T> has copy, drop {
         token_id: TokenId,
         deployer: ID,
         salt: Bytes32,
@@ -84,7 +84,7 @@ module interchain_token_service::events {
         destination_chain: String,
         source_token_address: vector<u8>,
         destination_token_address: vector<u8>,
-        token_manager_type: u8,
+        token_manager_type: TokenManagerType,
         link_params: vector<u8>,
     }
 
@@ -165,11 +165,15 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun unlinked_coin_received<T>(unlinked_token_id: UnlinkedTokenId, token_id: TokenId, has_treasury_cap: bool) {
+    public(package) fun unlinked_coin_received<T>(
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    ) {
         event::emit(UnlinkedCoinReceived<T> {
             unlinked_token_id,
             token_id,
-            has_treasury_cap,
+            token_manager_type,
         });
     }
 
@@ -206,8 +210,8 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun interchain_token_id_claimed(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
-        event::emit(InterchainTokenIdClaimed {
+    public(package) fun interchain_token_id_claimed<T>(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
+        event::emit(InterchainTokenIdClaimed<T> {
             token_id,
             deployer: deployer.id(),
             salt,
@@ -219,7 +223,7 @@ module interchain_token_service::events {
         destination_chain: String,
         source_token_address: vector<u8>,
         destination_token_address: vector<u8>,
-        token_manager_type: u8,
+        token_manager_type: TokenManagerType,
         link_params: vector<u8>,
     ) {
         event::emit(LinkTokenStarted {

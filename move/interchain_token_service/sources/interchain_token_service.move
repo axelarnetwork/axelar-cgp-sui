@@ -10,6 +10,7 @@ module interchain_token_service::interchain_token_service {
         operator_cap::{Self, OperatorCap},
         owner_cap::{Self, OwnerCap},
         token_id::TokenId,
+        token_manager_type::TokenManagerType,
         treasury_cap_reclaimer::TreasuryCapReclaimer
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::Transaction};
@@ -130,7 +131,7 @@ module interchain_token_service::interchain_token_service {
         salt: Bytes32,
         destination_chain: String,
         destination_token_address: vector<u8>,
-        token_manager_type: u8,
+        token_manager_type: TokenManagerType,
         link_params: vector<u8>,
     ): MessageTicket {
         let value = self.value!(b"link_coin");
@@ -351,6 +352,8 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// This can be used bye the person who added the treasury cap to reclaim mint/burn permission from ITS.
+    /// Doing so will render the coin unusable by ITS until restore_treasury_cap is called.
     public fun remove_treasury_cap<T>(
         self: &mut InterchainTokenService,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
@@ -364,6 +367,7 @@ module interchain_token_service::interchain_token_service {
         )
     }
 
+    /// This can only be called for coins that have had remove_treasury_cap called on them, to restore their functionality
     public fun restore_treasury_cap<T>(
         self: &mut InterchainTokenService,
         treasury_cap: TreasuryCap<T>,
@@ -495,7 +499,7 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     use interchain_token_service::coin::COIN;
     #[test_only]
-    use interchain_token_service::token_manager_types;
+    use interchain_token_service::token_manager_type;
     #[test_only]
     use axelar_gateway::bytes32;
     #[test_only]
@@ -679,7 +683,7 @@ module interchain_token_service::interchain_token_service {
 
         let destination_chain = ascii::string(b"Chain Name");
         let destination_token_address = b"destination_token_address";
-        let token_manager_type = token_manager_types::lock_unlock();
+        let token_manager_type = token_manager_type::lock_unlock();
         let source_token_address = source_token_type.into_string().into_bytes();
         let link_params = b"link_params";
 
@@ -692,7 +696,6 @@ module interchain_token_service::interchain_token_service {
             link_params,
         );
 
-        utils::assert_event<interchain_token_service::events::InterchainTokenIdClaimed>();
         utils::assert_event<interchain_token_service::events::LinkTokenStarted>();
 
         let mut writer = abi::new_writer(6);
@@ -700,7 +703,7 @@ module interchain_token_service::interchain_token_service {
         writer
             .write_u256(MESSAGE_TYPE_LINK_TOKEN)
             .write_u256(token_id.to_u256())
-            .write_u8(token_manager_type)
+            .write_u256(token_manager_type.to_u256())
             .write_bytes(source_token_address)
             .write_bytes(destination_token_address)
             .write_bytes(link_params);
