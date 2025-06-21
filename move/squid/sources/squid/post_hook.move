@@ -1,9 +1,9 @@
 module squid::post_hook {
     use axelar_gateway::channel::Channel;
     use relayer_discovery::transaction::{Self, MoveCall};
-    use squid::{squid::Squid, swap_info::SwapInfo, swap_type::{Self, SwapType}};
+    use squid::{swap_info::SwapInfo, swap_type::{Self, SwapType}};
     use std::{ascii::{Self, String}, type_name};
-    use sui::{bcs::BCS, clock::Clock, coin, balance::Balance};
+    use sui::{balance::Balance, bcs::BCS};
     use utils::utils::peel;
 
     #[error]
@@ -16,23 +16,24 @@ module squid::post_hook {
     public struct PostHookSwapData has drop {
         swap_type: SwapType,
         coin_type: String,
+        fallback: bool,
         destination_address: address,
-        move_call: MoveCall,
-        fallback: bool
+        move_calls: vector<MoveCall>,
     }
 
     fun new_post_hook_swap_data(bcs: &mut BCS): PostHookSwapData {
         PostHookSwapData {
             swap_type: swap_type::peel(bcs),
             coin_type: ascii::string(bcs.peel_vec_u8()),
-            destination_address: bcs.peel_address(),
-            move_call: transaction::new_move_call_from_bcs(bcs),
             fallback: bcs.peel_bool(),
+            destination_address: bcs.peel_address(),
+            move_calls: vector::tabulate!(bcs.peel_vec_length(), |_| transaction::new_move_call_from_bcs(bcs)),
         }
     }
 
     public fun estimate<T>(swap_info: &mut SwapInfo) {
         let (data, fallback) = swap_info.data_estimating();
+        // TODO: Maybe peel data manually to avoid peeling move_calls, which could be expnsive
         let swap_data = peel!(data, |data| new_post_hook_swap_data(data));
         if (fallback != swap_data.fallback) return;
 
@@ -43,10 +44,11 @@ module squid::post_hook {
         swap_info.coin_bag().estimate<T>();
     }
 
-    // Call this from the move call defined in the post hook. 
+    // Call this from the move call defined in the post hook.
     // If the swap's fallback state matces the post_hook's, then a balance should be returned.
-    public fun consume_post_hook<T>(swap_info: &mut SwapInfo, channel: &Channel, ctx: &mut TxContext): Option<Balance<T>> {
+    public fun consume_post_hook<T>(swap_info: &mut SwapInfo, channel: &Channel): Option<Balance<T>> {
         let (data, fallback) = swap_info.data_swapping();
+        // TODO: Maybe peel data manually to avoid peeling move_calls, which could be expnsive
         let swap_data = peel!(data, |data| new_post_hook_swap_data(data));
 
         // This check allows to skip the transfer if the `fallback` state does not
@@ -75,11 +77,12 @@ module squid::post_hook {
         )
     }
 
-    public(package) fun post_hook_move_call(mut bcs: BCS): MoveCall {
-        let _type_arg = ascii::string(bcs.peel_vec_u8());
+    public(package) fun post_hook_move_calls(mut bcs: BCS): vector<MoveCall> {
+        let _swap_type = ascii::string(bcs.peel_vec_u8());
+        let _fallback = bcs.peel_bool();
         let _destination_address = bcs.peel_address();
-        let move_call = transaction::new_move_call_from_bcs(&mut bcs);
-        
-        move_call
+        let move_calls = vector::tabulate!(bcs.peel_vec_length(), |_| transaction::new_move_call_from_bcs(&mut bcs));
+
+        move_calls
     }
 }

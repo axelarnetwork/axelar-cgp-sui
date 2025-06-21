@@ -2,7 +2,7 @@ module squid::discovery {
     use axelar_gateway::gateway::Gateway;
     use interchain_token_service::interchain_token_service::InterchainTokenService;
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::{Self, MoveCall, Transaction}};
-    use squid::{deepbook_v3, squid::Squid, swap_type, transfers, post_hook};
+    use squid::{deepbook_v3, post_hook, squid::Squid, swap_type, transfers};
     use std::ascii::{Self, String};
     use sui::bcs;
 
@@ -92,7 +92,7 @@ module squid::discovery {
                 post_hook::estimate_move_call(
                     package_id,
                     bcs,
-                    swap_info_arg
+                    swap_info_arg,
                 )
             };
             move_calls.push_back(call);
@@ -102,35 +102,35 @@ module squid::discovery {
             let mut bcs = bcs::new(data);
             let swap_type = swap_type::peel(&mut bcs);
 
-            let call = if (swap_type == swap_type::deepbook_v3()) {
-                deepbook_v3::swap_move_call(
+            let calls = if (swap_type == swap_type::deepbook_v3()) {
+                vector[deepbook_v3::swap_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
                     squid_arg,
-                )
+                )]
             } else if (swap_type == swap_type::sui_transfer()) {
-                transfers::sui_transfer_move_call(
+                vector[transfers::sui_transfer_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
-                )
+                )]
             } else if (swap_type == swap_type::its_transfer()) {
-                transfers::its_transfer_move_call(
+                vector[transfers::its_transfer_move_call(
                     package_id,
                     bcs,
                     swap_info_arg,
                     squid_arg,
                     gateway_arg,
                     its_arg,
-                )
+                )]
             } else {
                 assert!(swap_type == swap_type::post_hook(), EInvalidSwapType);
-                post_hook::post_hook_move_call(
+                post_hook::post_hook_move_calls(
                     bcs,
                 )
             };
-            move_calls.push_back(call);
+            move_calls.append(calls);
         });
 
         move_calls.push_back(finalize(package_id, swap_info_arg));

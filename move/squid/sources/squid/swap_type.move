@@ -31,7 +31,7 @@ module squid::swap_type {
     public(package) fun its_transfer(): SwapType {
         SwapType::ItsTransfer
     }
-    
+
     public(package) fun post_hook(): SwapType {
         SwapType::PostHook
     }
