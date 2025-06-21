@@ -1,0 +1,43 @@
+{
+  "structs": {
+    "PostHookSwapData": {
+      "name": "PostHookSwapData",
+      "abilities": [
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "swap_type",
+          "type": "SwapType"
+        },
+        {
+          "name": "coin_type",
+          "type": "String"
+        },
+        {
+          "name": "fallback",
+          "type": "bool"
+        },
+        {
+          "name": "destination_address",
+          "type": "address"
+        },
+        {
+          "name": "move_calls",
+          "type": "vector<MoveCall>"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "consume_post_hook<T>": {
+      "name": "consume_post_hook<T>",
+      "visibility": "public",
+      "params": {
+        "swap_info#0#0": "&mut SwapInfo",
+        "channel#0#0": "&Channel"
+      },
+      "returnType": "Option<Balance<T>>"
+    }
+  }
+}
