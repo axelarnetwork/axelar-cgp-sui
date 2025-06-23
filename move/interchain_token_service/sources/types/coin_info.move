@@ -83,7 +83,7 @@ module interchain_token_service::coin_info {
         }
     }
 
-    // XXX TODO: re-determine test goal and refactor accordingly now that metadata is always None 
+    // XXX TODO: re-determine test goal and refactor accordingly now that metadata is always None
     #[test]
     fun test_from_metadata() {
         let ctx = &mut tx_context::dummy();
