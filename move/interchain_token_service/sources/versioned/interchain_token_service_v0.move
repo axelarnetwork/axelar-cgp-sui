@@ -63,8 +63,6 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotSupported: vector<u8> = b"not supported";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
-    #[error]
-    const EWrongTreasuryCapReclaimer: vector<u8> = b"trying to retreive a TreasuryCap with a miasmatching TreasuryCapReclaimer";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -203,7 +201,7 @@ module interchain_token_service::interchain_token_service_v0 {
         events::interchain_token_id_claimed<T>(token_id, deployer, salt);
 
         let treasury_cap_reclaimer = if (coin_management.has_treasury_cap()) {
-            option::some(treasury_cap_reclaimer::create<T>(copy token_id, ctx))
+            option::some(treasury_cap_reclaimer::create<T>(token_id, ctx))
         } else {
             option::none()
         };
@@ -575,11 +573,8 @@ module interchain_token_service::interchain_token_service_v0 {
     public(package) fun remove_treasury_cap<T>(
         self: &mut InterchainTokenService_v0,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
-        token_id: TokenId,
     ): TreasuryCap<T> {
-        assert!(token_id == treasury_cap_reclaimer.token_id(), EWrongTreasuryCapReclaimer);
-
-        let coin_management = self.coin_management_mut<T>(token_id);
+        let coin_management = self.coin_management_mut<T>(treasury_cap_reclaimer.token_id());
 
         treasury_cap_reclaimer.destroy();
 
