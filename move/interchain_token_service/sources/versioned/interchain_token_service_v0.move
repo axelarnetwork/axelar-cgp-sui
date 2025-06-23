@@ -653,6 +653,7 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.registered_coins[token_id]
     }
 
+    // XXX TODO: version control?
     public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, id: address) {
         self.migrate_coin_metadata<T>(id);
     }

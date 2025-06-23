@@ -103,10 +103,9 @@ module interchain_token_service::interchain_token_service {
         self.value_mut!(b"disallow_function").disallow_function(version, function_name);
     }
 
-    // entry fun migrate_coin(self: &mut InterchainTokenService, ) {
-    //     // self.value_mut!(b"disallow_function").disallow_function(version, function_name);
-
-    // }
+    entry fun migrate_coin<T>(self: &mut InterchainTokenService, _: &OwnerCap, token_address: address) {
+        self.value_mut!(b"migrate_coin").migrate_coin<T>(token_address);
+    }
 
     // ----------------
     // Public Functions
