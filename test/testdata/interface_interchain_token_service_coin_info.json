@@ -1,5 +1,31 @@
 {
-  "structs": {},
+  "structs": {
+    "CoinInfo": {
+      "name": "CoinInfo",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "symbol",
+          "type": "String"
+        },
+        {
+          "name": "decimals",
+          "type": "u8"
+        },
+        {
+          "name": "metadata",
+          "type": "Option<CoinMetadata<T>>"
+        }
+      ]
+    }
+  },
   "publicFunctions": {
     "from_info<T>": {
       "name": "from_info<T>",

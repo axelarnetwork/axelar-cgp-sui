@@ -1,5 +1,39 @@
 {
-  "structs": {},
+  "structs": {
+    "CoinManagement": {
+      "name": "CoinManagement",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "treasury_cap",
+          "type": "Option<TreasuryCap<T>>"
+        },
+        {
+          "name": "balance",
+          "type": "Option<Balance<T>>"
+        },
+        {
+          "name": "distributor",
+          "type": "Option<address>"
+        },
+        {
+          "name": "operator",
+          "type": "Option<address>"
+        },
+        {
+          "name": "flow_limit",
+          "type": "FlowLimit"
+        },
+        {
+          "name": "dust",
+          "type": "u256"
+        }
+      ]
+    }
+  },
   "publicFunctions": {
     "new_with_cap<T>": {
       "name": "new_with_cap<T>",
