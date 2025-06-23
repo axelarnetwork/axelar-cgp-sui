@@ -34,12 +34,14 @@ module interchain_token_service::coin_info {
         coin_info
     }
 
-    /// Publicly freeze metadata for a coin from the given `CoinMetadata` and return a new `CoinInfo`
-    /// with its `metadata` field set to None
-    public fun release_metadata<T>(mut coin_info: CoinInfo<T>): CoinInfo<T> {
+    // -----------------
+    // Package Functions
+    // -----------------
+
+    /// Publicly freeze metadata for a coin from the given `CoinInfo<T>`
+    public(package) fun release_metadata<T>(coin_info: &mut CoinInfo<T>) {
         let metadata = coin_info.metadata.extract();
-        transfer::public_freeze_object(metadata);
-        coin_info
+        transfer::public_freeze_object(metadata)
     }
 
     // -----

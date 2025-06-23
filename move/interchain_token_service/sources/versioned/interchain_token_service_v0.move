@@ -85,7 +85,12 @@ module interchain_token_service::interchain_token_service_v0 {
     // ---------------
     // Entry Functions
     // ---------------
-    // TODO: write entry point for manually migrating token metadata
+    // public entry fun migrate_coin(self: &mut InterchainTokenService_v0, token_id: TokenId) {
+    //     let coin_data = self.registered_coins.borrow(&token_id);
+    //     let mut migration_coin = coin_data.coin_info();
+
+    //     self.migrate_coin_metadata(&migration_coin, token_id);
+    // }
 
     // -----------------
     // Package Functions
@@ -620,39 +625,12 @@ module interchain_token_service::interchain_token_service_v0 {
         );
     }
 
-    // XXX TODO: (fix me) Right now we're storing the original token id
-    // but we won't be able to re-calculate it since `coin_info` changed
-    // but, before messing with it, we need to determine if it will mess 
-    // up anything for the token creators
-    // WIP
-    #[allow(unused_function)]
+    // XXX here
     fun migrate_coin_metadata<T>(
-        self: &mut InterchainTokenService_v0,
-        migration_coin: CoinInfo<T>,
-        coin_management: CoinManagement<T>,
+        migration_coin: &mut CoinInfo<T>,
+        token_id: TokenId,
     ) {
-        let token_id: TokenId = token_id::from_coin_data(
-            &self.chain_name_hash, 
-            &migration_coin, 
-            &coin_management
-        );
-        let updated_coin_info = coin_info::release_metadata(migration_coin);
-
-        // XXX: Token ID cannot be changed 
-        // self
-        //     .registered_coins
-        //     .remove(token_id);
-            
-        // XXX TODO: determine how to use updated_coin_info as it doesn't have drop
-        self
-            .registered_coins
-            .add(
-                token_id,
-                coin_data::new(
-                    coin_management,
-                    updated_coin_info,
-                ),
-            );
+        coin_info::release_metadata(migration_coin);
 
         events::coin_registration_updated<T>(
             token_id,

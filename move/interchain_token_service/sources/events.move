@@ -11,6 +11,10 @@ module interchain_token_service::events {
         token_id: TokenId,
     }
 
+    public struct CoinRegistrationUpdated<phantom T> has copy, drop {
+        token_id: TokenId,
+    }
+
     public struct InterchainTransfer<phantom T> has copy, drop {
         token_id: TokenId,
         source_address: address,
@@ -89,7 +93,7 @@ module interchain_token_service::events {
     }
 
     public(package) fun coin_registration_updated<T>(token_id: TokenId) {
-        event::emit(CoinRegistered<T> {
+        event::emit(CoinRegistrationUpdated<T> {
             token_id,
         });
     }
