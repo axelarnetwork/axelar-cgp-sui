@@ -16,11 +16,6 @@ module interchain_token_service::coin_data {
         &self.coin_info
     }
 
-    // XXX: this exposese mutability of CoinInfo (a requirement for updating metadata of existing tokens)
-    public fun coin_info_mut<T>(self: &mut CoinData<T>): &mut CoinInfo<T> {
-        &mut self.coin_info
-    }
-
     public fun coin_management<T>(self: &CoinData<T>): &CoinManagement<T> {
         &self.coin_management
     }
@@ -37,5 +32,10 @@ module interchain_token_service::coin_data {
 
     public(package) fun coin_management_mut<T>(self: &mut CoinData<T>): &mut CoinManagement<T> {
         &mut self.coin_management
+    }
+
+    // XXX: this exposes mutability of CoinInfo (a requirement for updating metadata of existing tokens)
+    public(package) fun coin_info_mut<T>(self: &mut CoinData<T>): &mut CoinInfo<T> {
+        &mut self.coin_info
     }
 }
