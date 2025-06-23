@@ -15,6 +15,8 @@ module interchain_token_service::coin_management {
     const ENoTreasuryCapPresent: vector<u8> = b"trying to remove a treasury cap that does not exist";
     #[error]
     const ENotMintBurn: vector<u8> = b"trying to add a treasury cap to a lock unlock token";
+    #[error]
+    const ETreasuryCapRemovedFromMintBurnToken: vector<u8> = b"treasury cap for mint/burn token was removed";
 
     /// Struct that stores information about the InterchainTokenService Coin.
     public struct CoinManagement<phantom T> has store {
@@ -101,6 +103,7 @@ module interchain_token_service::coin_management {
         if (self.has_treasury_cap()) {
             self.burn(to_take);
         } else {
+            assert!(self.balance.is_some(), ETreasuryCapRemovedFromMintBurnToken);
             self.balance.borrow_mut().join(to_take);
         };
         amount
@@ -113,6 +116,7 @@ module interchain_token_service::coin_management {
         if (self.has_treasury_cap()) {
             self.mint(amount, ctx)
         } else {
+            assert!(self.balance.is_some(), ETreasuryCapRemovedFromMintBurnToken);
             coin::take(self.balance.borrow_mut(), amount, ctx)
         }
     }
