@@ -103,6 +103,11 @@ module interchain_token_service::interchain_token_service {
         self.value_mut!(b"disallow_function").disallow_function(version, function_name);
     }
 
+    // entry fun migrate_coin(self: &mut InterchainTokenService, ) {
+    //     // self.value_mut!(b"disallow_function").disallow_function(version, function_name);
+
+    // }
+
     // ----------------
     // Public Functions
     // ----------------

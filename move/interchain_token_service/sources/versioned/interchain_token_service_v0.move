@@ -653,7 +653,6 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.registered_coins[token_id]
     }
 
-    // XXX TODO: verify we want this (public pkg) visibility
     public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, id: address) {
         self.migrate_coin_metadata<T>(id);
     }
@@ -762,7 +761,6 @@ module interchain_token_service::interchain_token_service_v0 {
         );
     }
 
-    // XXX 
     fun migrate_coin_metadata<T>(self: &mut InterchainTokenService_v0, id: address) {
         let migration_token_id = token_id::from_address(id);
         let migration_coin_data = self.coin_data_mut<T>(migration_token_id);
