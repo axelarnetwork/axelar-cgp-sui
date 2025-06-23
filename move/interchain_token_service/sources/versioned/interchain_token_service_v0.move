@@ -60,8 +60,6 @@ module interchain_token_service::interchain_token_service_v0 {
     #[error]
     const ECannotDeployInterchainTokenManager: vector<u8> = b"cannot deploy an interchain token token manager type remotely";
     #[error]
-    const ENotSupported: vector<u8> = b"not supported";
-    #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
 
     // === MESSAGE TYPES ===
