@@ -54,8 +54,6 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENewerTicket: vector<u8> = b"cannot proccess newer tickets";
     #[error]
     const EOverflow: vector<u8> = b"cannot receive more than 2^64-1 coins";
-    #[error]
-    const EWrongTreasuryCapReclaimer: vector<u8> = b"trying to retreive a TreasuryCap with a miasmatching TreasuryCapReclaimer";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -509,11 +507,8 @@ module interchain_token_service::interchain_token_service_v0 {
     public(package) fun remove_treasury_cap<T>(
         self: &mut InterchainTokenService_v0,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
-        token_id: TokenId,
     ): TreasuryCap<T> {
-        assert!(token_id == treasury_cap_reclaimer.token_id(), EWrongTreasuryCapReclaimer);
-
-        let coin_management = self.coin_management_mut<T>(token_id);
+        let coin_management = self.coin_management_mut<T>(treasury_cap_reclaimer.token_id());
 
         treasury_cap_reclaimer.destroy();
 

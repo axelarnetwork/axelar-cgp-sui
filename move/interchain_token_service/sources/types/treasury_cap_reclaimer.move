@@ -4,6 +4,8 @@ module interchain_token_service::treasury_cap_reclaimer {
     // -----
     // Types
     // -----
+    /// Allow a user to reclaim a `TreasuryCap` from ITS.
+    /// Phantom type `T` is the type of the token that the `TreasuryCap` is being reclaimed for.
     public struct TreasuryCapReclaimer<phantom T> has key, store {
         id: UID,
         /// The `token_id` for which the `TreasuryCap` is being stored by ITS
