@@ -764,6 +764,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
     fun migrate_coin_metadata<T>(self: &mut InterchainTokenService_v0, id: address) {
         let migration_token_id = token_id::from_address(id);
+        assert!(self.registered_coins.contains(migration_token_id), EUnregisteredCoin);
         let migration_coin_data = self.coin_data_mut<T>(migration_token_id);
         let migration_coin_info: &mut CoinInfo<T> = coin_data::coin_info_mut(migration_coin_data);
 
