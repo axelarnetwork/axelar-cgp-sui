@@ -14,6 +14,20 @@
         }
       ]
     },
+    "CoinRegistrationUpdated": {
+      "name": "CoinRegistrationUpdated",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        }
+      ]
+    },
     "InterchainTransfer": {
       "name": "InterchainTransfer",
       "typeParams": "<phantom T>",
