@@ -8,9 +8,7 @@ module interchain_token_service::coin_info {
     // Errors
     // ------
     #[error]
-    const ECoinMetadataPresent: vector<u8> =
-        b"trying to destory a coin_info that has coin_metadata";
-    
+    const ECoinMetadataPresent: vector<u8> = b"trying to destory a coin_info that has coin_metadata";
 
     public struct CoinInfo<phantom T> has store {
         name: String,

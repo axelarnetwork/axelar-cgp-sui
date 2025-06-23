@@ -164,7 +164,7 @@ module interchain_token_service::coin_management {
     }
 
     public(package) fun destroy<T>(self: CoinManagement<T>): (Option<TreasuryCap<T>>, Option<Balance<T>>) {
-        let CoinManagement {        
+        let CoinManagement {
             treasury_cap,
             balance,
             distributor: _,
