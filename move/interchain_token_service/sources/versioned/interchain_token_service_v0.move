@@ -225,15 +225,10 @@ module interchain_token_service::interchain_token_service_v0 {
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         assert!(token_manager_type != token_manager_type::native_interchain_token(), ECannotDeployInterchainTokenManager);
 
-        // Cannot deploy to this chain using linkToken
-        assert!(destination_chain.as_bytes().length() != 0, ENotSupported);
+        // Cannot link token to the origin chain
+        assert!(self.chain_name_hash != bytes32::from_bytes(keccak256(destination_chain.as_bytes())), ECannotDeployRemotelyToSelf);
 
-        let chain_name_hash = self.chain_name_hash;
-
-        // Cannot deploy to this chain using linkToken remotely
-        assert!(chain_name_hash != bytes32::from_bytes(keccak256(destination_chain.as_bytes())), ECannotDeployRemotelyToSelf);
-
-        let token_id = token_id::custom_token_id(&chain_name_hash, deployer, &salt);
+        let token_id = token_id::custom_token_id(&self.chain_name_hash, deployer, &salt);
 
         // This ensures that the token is registered as a custom token specifically, since the token_id is derived as one
         let source_token_address = (*self.registered_coin_type(token_id)).into_string().into_bytes();
@@ -1727,34 +1722,6 @@ module interchain_token_service::interchain_token_service_v0 {
         let destination_chain = ascii::string(b"Chain Name");
         let destination_token_address = b"destination_token_address";
         let token_manager_type = token_manager_type::native_interchain_token();
-        let link_params = b"link_params";
-
-        let message_ticket = its.link_coin(
-            &deployer,
-            salt,
-            destination_chain,
-            destination_token_address,
-            token_manager_type,
-            link_params,
-        );
-
-        deployer.destroy();
-        sui::test_utils::destroy(message_ticket);
-        sui::test_utils::destroy(its);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotSupported)]
-    fun test_link_coin_empty_destination() {
-        let ctx = &mut sui::tx_context::dummy();
-        let its = create_for_testing(ctx);
-
-        let deployer = channel::new(ctx);
-        let salt = bytes32::new(deployer.id().to_address());
-
-        let destination_chain = ascii::string(b"");
-        let destination_token_address = b"destination_token_address";
-        let token_manager_type = token_manager_type::lock_unlock();
         let link_params = b"link_params";
 
         let message_ticket = its.link_coin(
