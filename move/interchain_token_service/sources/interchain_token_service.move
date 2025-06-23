@@ -250,7 +250,7 @@ module interchain_token_service::interchain_token_service {
         value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
     }
 
-    public(package) fun remove_unlinked_coin<T>(
+    public fun remove_unlinked_coin<T>(
         self: &mut InterchainTokenService,
         token_id: TokenId,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
