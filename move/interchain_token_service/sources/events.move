@@ -1,6 +1,6 @@
 module interchain_token_service::events {
     use axelar_gateway::{bytes32::{Self, Bytes32}, channel::Channel};
-    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId};
+    use interchain_token_service::{token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId}, token_manager_type::TokenManagerType};
     use std::{ascii::String, string};
     use sui::{address, event, hash::keccak256};
 
@@ -47,7 +47,7 @@ module interchain_token_service::events {
     public struct UnlinkedCoinReceived<phantom T> has copy, drop {
         unlinked_token_id: UnlinkedTokenId,
         token_id: TokenId,
-        has_treasury_cap: bool,
+        token_manager_type: TokenManagerType,
     }
 
     public struct TrustedChainAdded has copy, drop {
@@ -77,6 +77,15 @@ module interchain_token_service::events {
         token_id: TokenId,
         deployer: ID,
         salt: Bytes32,
+    }
+
+    public struct LinkTokenStarted has copy, drop {
+        tokenId: TokenId,
+        destination_chain: String,
+        source_token_address: vector<u8>,
+        destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
     }
 
     // -----------------
@@ -156,11 +165,15 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun unlinked_coin_received<T>(unlinked_token_id: UnlinkedTokenId, token_id: TokenId, has_treasury_cap: bool) {
+    public(package) fun unlinked_coin_received<T>(
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    ) {
         event::emit(UnlinkedCoinReceived<T> {
             unlinked_token_id,
             token_id,
-            has_treasury_cap,
+            token_manager_type,
         });
     }
 
@@ -202,6 +215,24 @@ module interchain_token_service::events {
             token_id,
             deployer: deployer.id(),
             salt,
+        });
+    }
+
+    public(package) fun link_token_started(
+        tokenId: TokenId,
+        destination_chain: String,
+        source_token_address: vector<u8>,
+        destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    ) {
+        event::emit(LinkTokenStarted {
+            tokenId,
+            destination_chain,
+            source_token_address,
+            destination_token_address,
+            token_manager_type,
+            link_params,
         });
     }
 
