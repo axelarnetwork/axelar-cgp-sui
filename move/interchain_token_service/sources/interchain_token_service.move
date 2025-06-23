@@ -9,7 +9,8 @@ module interchain_token_service::interchain_token_service {
         interchain_transfer_ticket::{Self, InterchainTransferTicket},
         operator_cap::{Self, OperatorCap},
         owner_cap::{Self, OwnerCap},
-        token_id::TokenId
+        token_id::TokenId,
+        treasury_cap_reclaimer::TreasuryCapReclaimer
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::Transaction};
     use std::{ascii::{Self, String}, type_name::TypeName};
@@ -116,10 +117,11 @@ module interchain_token_service::interchain_token_service {
         salt: Bytes32,
         coin_metadata: &CoinMetadata<T>,
         coin_management: CoinManagement<T>,
-    ): TokenId {
+        ctx: &mut TxContext,
+    ): (TokenId, Option<TreasuryCapReclaimer<T>>) {
         let value = self.value_mut!(b"register_custom_coin");
 
-        value.register_custom_coin(deployer, salt, coin_metadata, coin_management)
+        value.register_custom_coin(deployer, salt, coin_metadata, coin_management, ctx)
     }
 
     public fun deploy_remote_interchain_token<T>(
@@ -214,10 +216,11 @@ module interchain_token_service::interchain_token_service {
         token_id: TokenId,
         coin_metadata: &CoinMetadata<T>,
         treasury_cap: Option<TreasuryCap<T>>,
-    ) {
+        ctx: &mut TxContext,
+    ): Option<TreasuryCapReclaimer<T>> {
         let value = self.value_mut!(b"give_unlinked_coin");
 
-        value.give_unlinked_coin(token_id, coin_metadata, treasury_cap);
+        value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
     }
 
     public fun mint_as_distributor<T>(
@@ -328,6 +331,30 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// This can be used by the `deployer` who added the treasury cap to reclaim mint/burn permission from ITS for that `token_id`.
+    /// Doing so will render the coin unusable by ITS until `restore_treasury_cap` is called.
+    public fun remove_treasury_cap<T>(self: &mut InterchainTokenService, treasury_cap_reclaimer: TreasuryCapReclaimer<T>): TreasuryCap<T> {
+        let value = self.value_mut!(b"remove_treasury_cap");
+
+        value.remove_treasury_cap<T>(treasury_cap_reclaimer)
+    }
+
+    /// This can only be called for coins that have had `remove_treasury_cap` called on them, to restore their functionality
+    public fun restore_treasury_cap<T>(
+        self: &mut InterchainTokenService,
+        treasury_cap: TreasuryCap<T>,
+        token_id: TokenId,
+        ctx: &mut TxContext,
+    ): TreasuryCapReclaimer<T> {
+        let value = self.value_mut!(b"restore_treasury_cap");
+
+        value.restore_treasury_cap<T>(
+            treasury_cap,
+            token_id,
+            ctx,
+        )
+    }
+
     // ---------------
     // Owner Functions
     // ---------------
@@ -428,6 +455,8 @@ module interchain_token_service::interchain_token_service {
                 b"set_flow_limit_as_token_operator",
                 b"transfer_distributorship",
                 b"transfer_operatorship",
+                b"remove_treasury_cap",
+                b"restore_treasury_cap",
                 b"allow_function",
                 b"disallow_function",
             ].map!(|function_name| function_name.to_ascii_string()),
@@ -551,7 +580,7 @@ module interchain_token_service::interchain_token_service {
     }
 
     #[test]
-    fun test_register_custom_coin() {
+    fun test_register_custom_lock_unlock_coin() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = create_for_testing(ctx);
 
@@ -561,11 +590,42 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management);
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
+
+        treasury_cap_reclaimer.destroy_none();
+
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         deployer.destroy();
         sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_register_custom_mint_burn_coin() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            b"Symbol",
+            10,
+            ctx,
+        );
+
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
+
+        let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        deployer.destroy();
+        treasury_cap_reclaimer.destroy();
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
@@ -881,8 +941,10 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none());
-        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap));
+        let empty_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
+        empty_option.destroy_none();
+        let full_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        full_option.destroy_some().destroy();
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
@@ -1140,5 +1202,36 @@ module interchain_token_service::interchain_token_service {
 
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
+    }
+
+    #[test]
+    fun test_remove_restore_treasury_cap() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            b"Symbol",
+            10,
+            ctx,
+        );
+
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        let (token_id, treasury_cap_reclaimer) = its.register_custom_coin(&deployer, salt, &coin_metadata, coin_management, ctx);
+
+        let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        let treasury_cap = its.remove_treasury_cap(treasury_cap_reclaimer);
+        let treasury_cap_reclaimer = its.restore_treasury_cap(treasury_cap, token_id, ctx);
+
+        deployer.destroy();
+        treasury_cap_reclaimer.destroy();
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
     }
 }
