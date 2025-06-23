@@ -430,6 +430,7 @@ module interchain_token_service::interchain_token_service {
                 b"transfer_operatorship",
                 b"allow_function",
                 b"disallow_function",
+                b"migrate_coin",
             ].map!(|function_name| function_name.to_ascii_string()),
         ])
     }

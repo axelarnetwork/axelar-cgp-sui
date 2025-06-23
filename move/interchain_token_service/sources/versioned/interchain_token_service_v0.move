@@ -82,16 +82,6 @@ module interchain_token_service::interchain_token_service_v0 {
         version_control: VersionControl,
     }
 
-    // ---------------
-    // Entry Functions
-    // ---------------
-    // public entry fun migrate_coin(self: &mut InterchainTokenService_v0, token_id: TokenId) {
-    //     let coin_data = self.registered_coins.borrow(&token_id);
-    //     let mut migration_coin = coin_data.coin_info();
-
-    //     self.migrate_coin_metadata(&migration_coin, token_id);
-    // }
-
     // -----------------
     // Package Functions
     // -----------------
@@ -512,12 +502,23 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.registered_coins[token_id]
     }
 
+    // XXX TODO: verify we want this (public pkg) visibility
+    public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, id: address) {
+        self.migrate_coin_metadata<T>(id);
+    }
+
     // -----------------
     // Private Functions
     // -----------------
-
     fun coin_info<T>(self: &InterchainTokenService_v0, token_id: TokenId): &CoinInfo<T> {
         coin_data<T>(self, token_id).coin_info()
+    }
+
+    // XXX: exposes mutating coin_data to the ITS v0 package (but, for updating CoinInfo
+    // metadata, we actually need to mutate CoinInfo -- there may be a better way around this)
+    fun coin_data_mut<T>(self: &mut InterchainTokenService_v0, token_id: TokenId): &mut CoinData<T> {
+        assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
+        &mut self.registered_coins[token_id]
     }
 
     fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
@@ -625,15 +626,16 @@ module interchain_token_service::interchain_token_service_v0 {
         );
     }
 
-    // XXX here
-    fun migrate_coin_metadata<T>(
-        migration_coin: &mut CoinInfo<T>,
-        token_id: TokenId,
-    ) {
-        coin_info::release_metadata(migration_coin);
+    // XXX 
+    fun migrate_coin_metadata<T>(self: &mut InterchainTokenService_v0, id: address) {
+        let migration_token_id = token_id::from_address(id);
+        let migration_coin_data = self.coin_data_mut<T>(migration_token_id);
+        let migration_coin_info: &mut CoinInfo<T> = coin_data::coin_info_mut(migration_coin_data);
+
+        coin_info::release_metadata(migration_coin_info);
 
         events::coin_registration_updated<T>(
-            token_id,
+            migration_token_id,
         );
     }
 
