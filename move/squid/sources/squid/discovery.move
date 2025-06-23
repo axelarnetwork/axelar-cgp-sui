@@ -103,27 +103,33 @@ module squid::discovery {
             let swap_type = swap_type::peel(&mut bcs);
 
             let calls = if (swap_type == swap_type::deepbook_v3()) {
-                vector[deepbook_v3::swap_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                    squid_arg,
-                )]
+                vector[
+                    deepbook_v3::swap_move_call(
+                        package_id,
+                        bcs,
+                        swap_info_arg,
+                        squid_arg,
+                    ),
+                ]
             } else if (swap_type == swap_type::sui_transfer()) {
-                vector[transfers::sui_transfer_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                )]
+                vector[
+                    transfers::sui_transfer_move_call(
+                        package_id,
+                        bcs,
+                        swap_info_arg,
+                    ),
+                ]
             } else if (swap_type == swap_type::its_transfer()) {
-                vector[transfers::its_transfer_move_call(
-                    package_id,
-                    bcs,
-                    swap_info_arg,
-                    squid_arg,
-                    gateway_arg,
-                    its_arg,
-                )]
+                vector[
+                    transfers::its_transfer_move_call(
+                        package_id,
+                        bcs,
+                        swap_info_arg,
+                        squid_arg,
+                        gateway_arg,
+                        its_arg,
+                    ),
+                ]
             } else {
                 assert!(swap_type == swap_type::post_hook(), EInvalidSwapType);
                 post_hook::post_hook_move_calls(
