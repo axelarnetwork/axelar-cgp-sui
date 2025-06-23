@@ -45,7 +45,7 @@ describe('Packages', () => {
                         throw new Error(`Failed to disassemble ${mvFilePath}: ${error}`);
                     }
 
-                    const publicInterface = parseDisassembledOutput(disassembledOutput);
+                    const publicInterface = parsePublicInterfaces(disassembledOutput);
 
                     goldenTest(publicInterface, `interface_${packageName}_${moduleName}`);
                 });
@@ -59,7 +59,7 @@ const structFieldRegex = /^(\w+): (.*?),?$/;
 const publicFunctionRegex = /^public (.+?)\((.*)\): (.*?) {$/;
 
 // Function to parse the disassembled output and extract structs and public functions
-function parseDisassembledOutput(disassembledOutput) {
+function parsePublicInterfaces(disassembledOutput) {
     const lines = disassembledOutput.split('\n');
     const structs = {};
     const publicFunctions = {};
