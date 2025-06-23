@@ -15,18 +15,6 @@
     }
   },
   "publicFunctions": {
-    "native_interchain_token": {
-      "name": "native_interchain_token",
-      "visibility": "public",
-      "params": {},
-      "returnType": "TokenManagerType"
-    },
-    "mint_burn_from": {
-      "name": "mint_burn_from",
-      "visibility": "public",
-      "params": {},
-      "returnType": "TokenManagerType"
-    },
     "lock_unlock": {
       "name": "lock_unlock",
       "visibility": "public",

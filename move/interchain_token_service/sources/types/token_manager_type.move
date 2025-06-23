@@ -1,17 +1,28 @@
 module interchain_token_service::token_manager_type {
-    // === Constancts ===
-    // These have to match the enum.
+    // ---------
+    // Constants
+    // ---------
+
+    // The TokenManager type values must match across chains
+    // https://github.com/axelarnetwork/interchain-token-service/blob/v2.1.0/contracts/interfaces/ITokenManagerType.sol#L10
     const NATIVE_INTERCHAIN_TOKEN: u256 = 0;
+    #[allow(unused_const)]
     const MINT_BURN_FROM: u256 = 1;
     const LOCK_UNLOCK: u256 = 2;
+    #[allow(unused_const)]
     const LOCK_UNLOCK_FEE: u256 = 3;
     const MINT_BURN: u256 = 4;
+    const MAX_TOKEN_MANAGER_TYPE: u256 = MINT_BURN;
 
-    // === Errors ===
+    // ------
+    // Errors
+    // ------
     #[error]
     const EInvalidTokenManagerType: vector<u8> = b"invalid token manager type";
 
-    // === Types ===
+    // -----
+    // Types
+    // -----
     public struct TokenManagerType has copy, drop {
         token_manager_type: u256,
     }
