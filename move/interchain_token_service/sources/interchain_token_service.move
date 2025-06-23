@@ -9,7 +9,9 @@ module interchain_token_service::interchain_token_service {
         interchain_transfer_ticket::{Self, InterchainTransferTicket},
         operator_cap::{Self, OperatorCap},
         owner_cap::{Self, OwnerCap},
-        token_id::TokenId
+        token_id::TokenId,
+        token_manager_type::TokenManagerType,
+        treasury_cap_reclaimer::TreasuryCapReclaimer
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::Transaction};
     use std::{ascii::{Self, String}, type_name::TypeName};
@@ -116,10 +118,31 @@ module interchain_token_service::interchain_token_service {
         salt: Bytes32,
         coin_metadata: &CoinMetadata<T>,
         coin_management: CoinManagement<T>,
-    ): TokenId {
+        ctx: &mut TxContext,
+    ): (TokenId, Option<TreasuryCapReclaimer<T>>) {
         let value = self.value_mut!(b"register_custom_coin");
 
-        value.register_custom_coin(deployer, salt, coin_metadata, coin_management)
+        value.register_custom_coin(deployer, salt, coin_metadata, coin_management, ctx)
+    }
+
+    public fun link_coin(
+        self: &InterchainTokenService,
+        deployer: &Channel,
+        salt: Bytes32,
+        destination_chain: String,
+        destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    ): MessageTicket {
+        let value = self.value!(b"link_coin");
+
+        value.link_coin(deployer, salt, destination_chain, destination_token_address, token_manager_type, link_params)
+    }
+
+    public fun register_coin_metadata<T>(self: &InterchainTokenService, coin_metadata: &CoinMetadata<T>): MessageTicket {
+        let value = self.value!(b"register_coin_metadata");
+
+        value.register_coin_metadata(coin_metadata)
     }
 
     public fun deploy_remote_interchain_token<T>(
@@ -199,6 +222,12 @@ module interchain_token_service::interchain_token_service {
         value.receive_deploy_interchain_token<T>(approved_message);
     }
 
+    public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService, approved_message: ApprovedMessage) {
+        let value = self.value_mut!(b"receive_link_coin");
+
+        value.receive_link_coin<T>(approved_message);
+    }
+
     // We need an coin with zero supply that has the proper decimals and typing, and
     // no Url.
     public fun give_unregistered_coin<T>(self: &mut InterchainTokenService, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
@@ -214,10 +243,11 @@ module interchain_token_service::interchain_token_service {
         token_id: TokenId,
         coin_metadata: &CoinMetadata<T>,
         treasury_cap: Option<TreasuryCap<T>>,
-    ) {
+        ctx: &mut TxContext,
+    ): Option<TreasuryCapReclaimer<T>> {
         let value = self.value_mut!(b"give_unlinked_coin");
 
-        value.give_unlinked_coin(token_id, coin_metadata, treasury_cap);
+        value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
     }
 
     public fun mint_as_distributor<T>(
@@ -328,6 +358,30 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    /// This can be used by the `deployer` who added the treasury cap to reclaim mint/burn permission from ITS for that `token_id`.
+    /// Doing so will render the coin unusable by ITS until `restore_treasury_cap` is called.
+    public fun remove_treasury_cap<T>(self: &mut InterchainTokenService, treasury_cap_reclaimer: TreasuryCapReclaimer<T>): TreasuryCap<T> {
+        let value = self.value_mut!(b"remove_treasury_cap");
+
+        value.remove_treasury_cap<T>(treasury_cap_reclaimer)
+    }
+
+    /// This can only be called for coins that have had `remove_treasury_cap` called on them, to restore their functionality
+    public fun restore_treasury_cap<T>(
+        self: &mut InterchainTokenService,
+        treasury_cap: TreasuryCap<T>,
+        token_id: TokenId,
+        ctx: &mut TxContext,
+    ): TreasuryCapReclaimer<T> {
+        let value = self.value_mut!(b"restore_treasury_cap");
+
+        value.restore_treasury_cap<T>(
+            treasury_cap,
+            token_id,
+            ctx,
+        )
+    }
+
     // ---------------
     // Owner Functions
     // ---------------
@@ -411,11 +465,14 @@ module interchain_token_service::interchain_token_service {
             vector[
                 b"register_coin",
                 b"register_custom_coin",
+                b"link_coin",
+                b"register_coin_metadata",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
                 b"receive_interchain_transfer_with_data",
                 b"receive_deploy_interchain_token",
+                b"receive_link_coin",
                 b"give_unregistered_coin",
                 b"give_unlinked_coin",
                 b"mint_as_distributor",
@@ -428,6 +485,8 @@ module interchain_token_service::interchain_token_service {
                 b"set_flow_limit_as_token_operator",
                 b"transfer_distributorship",
                 b"transfer_operatorship",
+                b"remove_treasury_cap",
+                b"restore_treasury_cap",
                 b"allow_function",
                 b"disallow_function",
                 b"migrate_coin",
@@ -441,11 +500,15 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     use interchain_token_service::coin::COIN;
     #[test_only]
+    use interchain_token_service::token_manager_type;
+    #[test_only]
     use axelar_gateway::bytes32;
     #[test_only]
     use axelar_gateway::channel;
     #[test_only]
     use std::string;
+    #[test_only]
+    use std::type_name;
     #[test_only]
     use abi::abi;
     #[test_only]
@@ -457,6 +520,10 @@ module interchain_token_service::interchain_token_service {
     #[test_only]
     const MESSAGE_TYPE_DEPLOY_INTERCHAIN_TOKEN: u256 = 1;
     // const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
+    #[test_only]
+    const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
+    #[test_only]
+    const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
     #[test_only]
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
@@ -552,7 +619,7 @@ module interchain_token_service::interchain_token_service {
     }
 
     #[test]
-    fun test_register_custom_coin() {
+    fun test_register_custom_lock_unlock_coin() {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = create_for_testing(ctx);
 
@@ -562,12 +629,97 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management);
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
+
+        treasury_cap_reclaimer.destroy_none();
+
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         deployer.destroy();
         sui::test_utils::destroy(treasury_cap);
         sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_register_custom_mint_burn_coin() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            b"Symbol",
+            10,
+            ctx,
+        );
+
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
+
+        let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        deployer.destroy();
+        treasury_cap_reclaimer.destroy();
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_link_coin() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        //
+        let value = its.value_mut!(b"");
+        let token_id = interchain_token_service::token_id::custom_token_id(&value.chain_name_hash(), &deployer, &salt);
+        let source_token_type = type_name::get<COIN>();
+        its.add_registered_coin_type_for_testing(token_id, source_token_type);
+
+        let destination_chain = ascii::string(b"Chain Name");
+        let destination_token_address = b"destination_token_address";
+        let token_manager_type = token_manager_type::lock_unlock();
+        let source_token_address = source_token_type.into_string().into_bytes();
+        let link_params = b"link_params";
+
+        let message_ticket = its.link_coin(
+            &deployer,
+            salt,
+            destination_chain,
+            destination_token_address,
+            token_manager_type,
+            link_params,
+        );
+
+        utils::assert_event<interchain_token_service::events::LinkTokenStarted>();
+
+        let mut writer = abi::new_writer(6);
+
+        writer
+            .write_u256(MESSAGE_TYPE_LINK_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_u256(token_manager_type.to_u256())
+            .write_bytes(source_token_address)
+            .write_bytes(destination_token_address)
+            .write_bytes(link_params);
+
+        let payload = interchain_token_service_v0::wrap_payload_sending(writer.into_bytes(), destination_chain);
+
+        assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+        assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
+        assert!(message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string());
+        assert!(message_ticket.payload() == payload);
+        assert!(message_ticket.version() == 0);
+
+        deployer.destroy();
+        sui::test_utils::destroy(message_ticket);
         sui::test_utils::destroy(its);
     }
 
@@ -691,10 +843,10 @@ module interchain_token_service::interchain_token_service {
 
         let coin_info =
             interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
+                string::utf8(b"Name"),
+                ascii::string(b"Symbol"),
+                10,
+            );
 
         let amount = 1234;
         let mut coin_management = interchain_token_service::coin_management::new_locked();
@@ -708,6 +860,7 @@ module interchain_token_service::interchain_token_service {
         let destination_address = @0x1;
 
         let mut writer = abi::new_writer(6);
+
         writer
             .write_u256(MESSAGE_TYPE_INTERCHAIN_TRANSFER)
             .write_u256(token_id.to_u256())
@@ -715,6 +868,7 @@ module interchain_token_service::interchain_token_service {
             .write_bytes(destination_address.to_bytes())
             .write_u256((amount as u256))
             .write_bytes(b"");
+
         let mut payload = writer.into_bytes();
         writer = abi::new_writer(3);
         writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(source_chain.into_bytes()).write_bytes(payload);
@@ -850,6 +1004,104 @@ module interchain_token_service::interchain_token_service {
     }
 
     #[test]
+    fun test_receive_link_token_lock_unlock() {
+        let ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let source_chain = ascii::string(b"Chain Name");
+        let message_id = ascii::string(b"Message Id");
+        let source_token_address = b"source_token_address";
+        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let link_params = b"";
+        let symbol = b"Symbol";
+        let decimals = 9;
+        let token_id = interchain_token_service::token_id::from_u256(1234);
+        let has_treasury_cap = false;
+        let token_manager_type = token_manager_type::lock_unlock();
+
+        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+
+        let mut writer = abi::new_writer(6);
+        writer
+            .write_u256(MESSAGE_TYPE_LINK_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_u256(token_manager_type.to_u256())
+            .write_bytes(source_token_address)
+            .write_bytes(destination_token_address)
+            .write_bytes(link_params);
+        let mut payload = writer.into_bytes();
+        writer = abi::new_writer(3);
+        writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(source_chain.into_bytes()).write_bytes(payload);
+        payload = writer.into_bytes();
+
+        let approved_message = channel::new_approved_message(
+            ITS_HUB_CHAIN_NAME.to_ascii_string(),
+            message_id,
+            ITS_HUB_ADDRESS.to_ascii_string(),
+            its.value!(b"").channel().to_address(),
+            payload,
+        );
+
+        receive_link_coin<COIN>(&mut its, approved_message);
+
+        utils::assert_event<interchain_token_service::events::LinkTokenReceived<COIN>>();
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().is_none());
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_receive_link_token_mint_burn() {
+        let ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let source_chain = ascii::string(b"Chain Name");
+        let message_id = ascii::string(b"Message Id");
+        let source_token_address = b"source_token_address";
+        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let operator = sui::address::from_u256(5678);
+        let link_params = (copy operator).to_bytes();
+        let symbol = b"Symbol";
+        let decimals = 9;
+        let token_id = interchain_token_service::token_id::from_u256(1234);
+        let has_treasury_cap = true;
+        let token_manager_type = token_manager_type::mint_burn();
+
+        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+
+        let mut writer = abi::new_writer(6);
+        writer
+            .write_u256(MESSAGE_TYPE_LINK_TOKEN)
+            .write_u256(token_id.to_u256())
+            .write_u256(token_manager_type.to_u256())
+            .write_bytes(source_token_address)
+            .write_bytes(destination_token_address)
+            .write_bytes(link_params);
+        let mut payload = writer.into_bytes();
+        writer = abi::new_writer(3);
+        writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(source_chain.into_bytes()).write_bytes(payload);
+        payload = writer.into_bytes();
+
+        let approved_message = channel::new_approved_message(
+            ITS_HUB_CHAIN_NAME.to_ascii_string(),
+            message_id,
+            ITS_HUB_ADDRESS.to_ascii_string(),
+            its.value!(b"").channel().to_address(),
+            payload,
+        );
+
+        receive_link_coin<COIN>(&mut its, approved_message);
+
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().contains(&operator));
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
     fun test_give_unregistered_coin() {
         let symbol = b"COIN";
         let decimals = 12;
@@ -882,8 +1134,10 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none());
-        give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap));
+        let empty_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
+        empty_option.destroy_none();
+        let full_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        full_option.destroy_some().destroy();
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
@@ -1141,5 +1395,73 @@ module interchain_token_service::interchain_token_service {
 
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
+    }
+
+    #[test]
+    fun test_remove_restore_treasury_cap() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            b"Symbol",
+            10,
+            ctx,
+        );
+
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::new(deployer.id().to_address());
+
+        let (token_id, treasury_cap_reclaimer) = its.register_custom_coin(&deployer, salt, &coin_metadata, coin_management, ctx);
+
+        let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        let treasury_cap = its.remove_treasury_cap(treasury_cap_reclaimer);
+        let treasury_cap_reclaimer = its.restore_treasury_cap(treasury_cap, token_id, ctx);
+
+        deployer.destroy();
+        treasury_cap_reclaimer.destroy();
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_register_coin_metadata() {
+        let ctx = &mut sui::tx_context::dummy();
+        let its = create_for_testing(ctx);
+
+        let decimals = 8;
+
+        let coin_metadata = interchain_token_service::coin::create_metadata(
+            b"Symbol",
+            decimals,
+            ctx,
+        );
+
+        let message_ticket = its.register_coin_metadata<COIN>(&coin_metadata);
+
+        utils::assert_event<interchain_token_service::events::CoinMetadataRegistered<COIN>>();
+
+        let mut writer = abi::new_writer(3);
+
+        writer
+            .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
+            .write_bytes(type_name::get<COIN>().into_string().into_bytes())
+            .write_u8(decimals);
+
+        let payload = writer.into_bytes();
+
+        assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+        assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
+        assert!(message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string());
+        assert!(message_ticket.payload() == payload);
+        assert!(message_ticket.version() == 0);
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(message_ticket);
+        sui::test_utils::destroy(its);
     }
 }

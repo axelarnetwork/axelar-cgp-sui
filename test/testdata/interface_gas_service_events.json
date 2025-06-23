@@ -1,4 +1,109 @@
 {
-  "structs": {},
+  "structs": {
+    "GasPaid": {
+      "name": "GasPaid",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "destination_address",
+          "type": "String"
+        },
+        {
+          "name": "payload_hash",
+          "type": "address"
+        },
+        {
+          "name": "value",
+          "type": "u64"
+        },
+        {
+          "name": "refund_address",
+          "type": "address"
+        },
+        {
+          "name": "params",
+          "type": "vector<u8>"
+        }
+      ]
+    },
+    "GasAdded": {
+      "name": "GasAdded",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "message_id",
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "u64"
+        },
+        {
+          "name": "refund_address",
+          "type": "address"
+        },
+        {
+          "name": "params",
+          "type": "vector<u8>"
+        }
+      ]
+    },
+    "Refunded": {
+      "name": "Refunded",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "message_id",
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "u64"
+        },
+        {
+          "name": "refund_address",
+          "type": "address"
+        }
+      ]
+    },
+    "GasCollected": {
+      "name": "GasCollected",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "name": "value",
+          "type": "u64"
+        }
+      ]
+    }
+  },
   "publicFunctions": {}
 }

@@ -45,7 +45,7 @@ describe('Packages', () => {
                         throw new Error(`Failed to disassemble ${mvFilePath}: ${error}`);
                     }
 
-                    const publicInterface = parseDisassembledOutput(disassembledOutput);
+                    const publicInterface = parsePublicInterfaces(disassembledOutput);
 
                     goldenTest(publicInterface, `interface_${packageName}_${moduleName}`);
                 });
@@ -54,12 +54,12 @@ describe('Packages', () => {
     });
 });
 
-const structRegex = /^struct (\w+) has (.*) {$/;
+const structRegex = /^struct (\w+)([<].+[>])? has (.*) {$/;
 const structFieldRegex = /^(\w+): (.*?),?$/;
 const publicFunctionRegex = /^public (.+?)\((.*)\): (.*?) {$/;
 
 // Function to parse the disassembled output and extract structs and public functions
-function parseDisassembledOutput(disassembledOutput) {
+function parsePublicInterfaces(disassembledOutput) {
     const lines = disassembledOutput.split('\n');
     const structs = {};
     const publicFunctions = {};
@@ -76,7 +76,8 @@ function parseDisassembledOutput(disassembledOutput) {
             if (structMatch) {
                 currentStruct = {
                     name: structMatch[1],
-                    abilities: structMatch[2].trim().split(', '),
+                    typeParams: structMatch[2],
+                    abilities: structMatch[3].trim().split(', '),
                     fields: [],
                 };
                 structs[currentStruct.name] = currentStruct;

@@ -1,5 +1,165 @@
 {
   "structs": {
+    "CoinRegistered": {
+      "name": "CoinRegistered",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        }
+      ]
+    },
+    "InterchainTransfer": {
+      "name": "InterchainTransfer",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "source_address",
+          "type": "address"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "destination_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "data_hash",
+          "type": "Bytes32"
+        }
+      ]
+    },
+    "InterchainTokenDeploymentStarted": {
+      "name": "InterchainTokenDeploymentStarted",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "symbol",
+          "type": "String"
+        },
+        {
+          "name": "decimals",
+          "type": "u8"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        }
+      ]
+    },
+    "InterchainTransferReceived": {
+      "name": "InterchainTransferReceived",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "message_id",
+          "type": "String"
+        },
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "source_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "destination_address",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "data_hash",
+          "type": "Bytes32"
+        }
+      ]
+    },
+    "UnregisteredCoinReceived": {
+      "name": "UnregisteredCoinReceived",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "UnregisteredTokenId"
+        },
+        {
+          "name": "symbol",
+          "type": "String"
+        },
+        {
+          "name": "decimals",
+          "type": "u8"
+        }
+      ]
+    },
+    "UnlinkedCoinReceived": {
+      "name": "UnlinkedCoinReceived",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "unlinked_token_id",
+          "type": "UnlinkedTokenId"
+        },
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "TokenManagerType"
+        }
+      ]
+    },
     "TrustedChainAdded": {
       "name": "TrustedChainAdded",
       "abilities": [
@@ -23,6 +183,159 @@
         {
           "name": "chain_name",
           "type": "String"
+        }
+      ]
+    },
+    "FlowLimitSet": {
+      "name": "FlowLimitSet",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "flow_limit",
+          "type": "Option<u64>"
+        }
+      ]
+    },
+    "DistributorshipTransfered": {
+      "name": "DistributorshipTransfered",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "new_distributor",
+          "type": "Option<address>"
+        }
+      ]
+    },
+    "OperatorshipTransfered": {
+      "name": "OperatorshipTransfered",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "new_operator",
+          "type": "Option<address>"
+        }
+      ]
+    },
+    "InterchainTokenIdClaimed": {
+      "name": "InterchainTokenIdClaimed",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "deployer",
+          "type": "ID"
+        },
+        {
+          "name": "salt",
+          "type": "Bytes32"
+        }
+      ]
+    },
+    "LinkTokenStarted": {
+      "name": "LinkTokenStarted",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "destination_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "destination_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "TokenManagerType"
+        },
+        {
+          "name": "link_params",
+          "type": "vector<u8>"
+        }
+      ]
+    },
+    "LinkTokenReceived": {
+      "name": "LinkTokenReceived",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "source_chain",
+          "type": "String"
+        },
+        {
+          "name": "source_token_address",
+          "type": "vector<u8>"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "TokenManagerType"
+        },
+        {
+          "name": "link_params",
+          "type": "vector<u8>"
+        }
+      ]
+    },
+    "CoinMetadataRegistered": {
+      "name": "CoinMetadataRegistered",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "decimals",
+          "type": "u8"
         }
       ]
     }
