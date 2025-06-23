@@ -139,6 +139,12 @@ module interchain_token_service::interchain_token_service {
         value.link_coin(deployer, salt, destination_chain, destination_token_address, token_manager_type, link_params)
     }
 
+    public fun register_coin_metadata<T>(self: &InterchainTokenService, coin_metadata: &CoinMetadata<T>): MessageTicket {
+        let value = self.value!(b"register_coin_metadata");
+
+        value.register_coin_metadata(coin_metadata)
+    }
+
     public fun deploy_remote_interchain_token<T>(
         self: &InterchainTokenService,
         token_id: TokenId,
@@ -460,6 +466,7 @@ module interchain_token_service::interchain_token_service {
                 b"register_coin",
                 b"register_custom_coin",
                 b"link_coin",
+                b"register_coin_metadata",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
@@ -514,7 +521,8 @@ module interchain_token_service::interchain_token_service {
     // const MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER: u256 = 2;
     #[test_only]
     const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
-    // const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
+    #[test_only]
+    const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
     #[test_only]
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
 
@@ -1416,6 +1424,43 @@ module interchain_token_service::interchain_token_service {
         deployer.destroy();
         treasury_cap_reclaimer.destroy();
         sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_register_coin_metadata() {
+        let ctx = &mut sui::tx_context::dummy();
+        let its = create_for_testing(ctx);
+
+        let decimals = 8;
+
+        let coin_metadata = interchain_token_service::coin::create_metadata(
+            b"Symbol",
+            decimals,
+            ctx,
+        );
+
+        let message_ticket = its.register_coin_metadata<COIN>(&coin_metadata);
+
+        utils::assert_event<interchain_token_service::events::CoinMetadataRegistered<COIN>>();
+
+        let mut writer = abi::new_writer(3);
+
+        writer
+            .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
+            .write_bytes(type_name::get<COIN>().into_string().into_bytes())
+            .write_u8(decimals);
+
+        let payload = writer.into_bytes();
+
+        assert!(message_ticket.source_id() == its.value!(b"").channel().to_address());
+        assert!(message_ticket.destination_chain() == ITS_HUB_CHAIN_NAME.to_ascii_string());
+        assert!(message_ticket.destination_address() == ITS_HUB_ADDRESS.to_ascii_string());
+        assert!(message_ticket.payload() == payload);
+        assert!(message_ticket.version() == 0);
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(message_ticket);
         sui::test_utils::destroy(its);
     }
 }

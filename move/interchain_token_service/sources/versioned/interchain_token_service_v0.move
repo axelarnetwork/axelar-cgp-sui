@@ -69,7 +69,7 @@ module interchain_token_service::interchain_token_service_v0 {
     const MESSAGE_TYPE_SEND_TO_HUB: u256 = 3;
     const MESSAGE_TYPE_RECEIVE_FROM_HUB: u256 = 4;
     const MESSAGE_TYPE_LINK_TOKEN: u256 = 5;
-    // const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
+    const MESSAGE_TYPE_REGISTER_TOKEN_METADATA: u256 = 6;
 
     // === HUB CONSTANTS ===
     // Chain name for Axelar. This is used for routing InterchainTokenService calls via InterchainTokenService hub on
@@ -253,6 +253,21 @@ module interchain_token_service::interchain_token_service_v0 {
         );
 
         self.prepare_hub_message(payload, destination_chain)
+    }
+
+    public(package) fun register_coin_metadata<T>(self: &InterchainTokenService_v0, coin_metadata: &CoinMetadata<T>): MessageTicket {
+        let decimals = coin_metadata.get_decimals();
+
+        let mut writer = abi::new_writer(3);
+        writer
+            .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
+            .write_bytes(type_name::get<T>().into_string().into_bytes())
+            .write_u8(decimals);
+        let payload = writer.into_bytes();
+
+        events::coin_metadata_registered<T>(decimals);
+
+        self.prepare_message(payload)
     }
 
     public(package) fun deploy_remote_interchain_token<T>(
