@@ -470,7 +470,6 @@ module interchain_token_service::interchain_token_service_v0 {
         } else {
             token_manager_type::lock_unlock()
         };
-
         let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, token_manager_type);
 
         events::unlinked_coin_received<T>(unlinked_token_id, token_id, token_manager_type);
