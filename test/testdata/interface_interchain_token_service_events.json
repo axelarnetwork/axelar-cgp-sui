@@ -160,6 +160,28 @@
         }
       ]
     },
+    "UnlinkedCoinRemoved": {
+      "name": "UnlinkedCoinRemoved",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "unlinked_token_id",
+          "type": "UnlinkedTokenId"
+        },
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        },
+        {
+          "name": "token_manager_type",
+          "type": "TokenManagerType"
+        }
+      ]
+    },
     "TrustedChainAdded": {
       "name": "TrustedChainAdded",
       "abilities": [
