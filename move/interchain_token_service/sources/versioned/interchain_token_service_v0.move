@@ -766,7 +766,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let migration_token_id = token_id::from_address(id);
         assert!(self.registered_coins.contains(migration_token_id), EUnregisteredCoin);
         let migration_coin_data = self.coin_data_mut<T>(migration_token_id);
-        let migration_coin_info: &mut CoinInfo<T> = coin_data::coin_info_mut(migration_coin_data);
+        let migration_coin_info = coin_data::coin_info_mut(migration_coin_data);
 
         coin_info::release_metadata(migration_coin_info);
 
@@ -823,7 +823,7 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     // XXX: exposes mutating coin_data to the ITS v0 package (but, for updating CoinInfo
-    // metadata, we actually need to mutate CoinInfo -- there may be a better way around this)
+    // metadata, but we only need to mutate CoinInfo -- there may be a better way around this)
     fun coin_data_mut<T>(self: &mut InterchainTokenService_v0, token_id: TokenId): &mut CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &mut self.registered_coins[token_id]
