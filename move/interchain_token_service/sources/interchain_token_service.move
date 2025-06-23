@@ -352,22 +352,15 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
-    /// This can be used bye the person who added the treasury cap to reclaim mint/burn permission from ITS.
-    /// Doing so will render the coin unusable by ITS until restore_treasury_cap is called.
-    public fun remove_treasury_cap<T>(
-        self: &mut InterchainTokenService,
-        treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
-        token_id: TokenId,
-    ): TreasuryCap<T> {
+    /// This can be used by the `deployer` who added the treasury cap to reclaim mint/burn permission from ITS for that `token_id`.
+    /// Doing so will render the coin unusable by ITS until `restore_treasury_cap` is called.
+    public fun remove_treasury_cap<T>(self: &mut InterchainTokenService, treasury_cap_reclaimer: TreasuryCapReclaimer<T>): TreasuryCap<T> {
         let value = self.value_mut!(b"remove_treasury_cap");
 
-        value.remove_treasury_cap<T>(
-            treasury_cap_reclaimer,
-            token_id,
-        )
+        value.remove_treasury_cap<T>(treasury_cap_reclaimer)
     }
 
-    /// This can only be called for coins that have had remove_treasury_cap called on them, to restore their functionality
+    /// This can only be called for coins that have had `remove_treasury_cap` called on them, to restore their functionality
     public fun restore_treasury_cap<T>(
         self: &mut InterchainTokenService,
         treasury_cap: TreasuryCap<T>,
@@ -1417,7 +1410,7 @@ module interchain_token_service::interchain_token_service {
 
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
-        let treasury_cap = its.remove_treasury_cap(treasury_cap_reclaimer, token_id);
+        let treasury_cap = its.remove_treasury_cap(treasury_cap_reclaimer);
         let treasury_cap_reclaimer = its.restore_treasury_cap(treasury_cap, token_id, ctx);
 
         deployer.destroy();
