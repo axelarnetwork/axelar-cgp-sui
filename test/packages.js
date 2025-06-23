@@ -54,7 +54,7 @@ describe('Packages', () => {
     });
 });
 
-const structRegex = /^struct (\w+) has (.*) {$/;
+const structRegex = /^struct (\w+)([<].+[>])? has (.*) {$/;
 const structFieldRegex = /^(\w+): (.*?),?$/;
 const publicFunctionRegex = /^public (.+?)\((.*)\): (.*?) {$/;
 
@@ -76,7 +76,8 @@ function parsePublicInterfaces(disassembledOutput) {
             if (structMatch) {
                 currentStruct = {
                     name: structMatch[1],
-                    abilities: structMatch[2].trim().split(', '),
+                    typeParams: structMatch[2],
+                    abilities: structMatch[3].trim().split(', '),
                     fields: [],
                 };
                 structs[currentStruct.name] = currentStruct;

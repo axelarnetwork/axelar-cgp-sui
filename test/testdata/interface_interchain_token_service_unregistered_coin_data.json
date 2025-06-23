@@ -1,4 +1,22 @@
 {
-  "structs": {},
+  "structs": {
+    "UnregisteredCoinData": {
+      "name": "UnregisteredCoinData",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "treasury_cap",
+          "type": "TreasuryCap<T>"
+        },
+        {
+          "name": "coin_metadata",
+          "type": "CoinMetadata<T>"
+        }
+      ]
+    }
+  },
   "publicFunctions": {}
 }
