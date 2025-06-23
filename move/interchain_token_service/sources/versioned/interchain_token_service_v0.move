@@ -192,7 +192,7 @@ module interchain_token_service::interchain_token_service_v0 {
         events::interchain_token_id_claimed<T>(token_id, deployer, salt);
 
         let treasury_cap_reclaimer = if (coin_management.has_treasury_cap()) {
-            option::some(treasury_cap_reclaimer::create<T>(copy token_id, ctx))
+            option::some(treasury_cap_reclaimer::create<T>(token_id, ctx))
         } else {
             option::none()
         };

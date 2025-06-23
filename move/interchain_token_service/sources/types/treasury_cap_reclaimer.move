@@ -6,6 +6,7 @@ module interchain_token_service::treasury_cap_reclaimer {
     // -----
     public struct TreasuryCapReclaimer<phantom T> has key, store {
         id: UID,
+        /// The `token_id` for which the `TreasuryCap` is being stored by ITS
         token_id: TokenId,
     }
 

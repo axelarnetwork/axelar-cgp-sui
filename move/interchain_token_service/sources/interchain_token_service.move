@@ -331,7 +331,7 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
-    /// This can be used bye the person who added the treasury cap to reclaim mint/burn permission from ITS.
+    /// This can be used by the `deployer` who added the treasury cap to reclaim mint/burn permission from ITS for that `token_id`.
     /// Doing so will render the coin unusable by ITS until restore_treasury_cap is called.
     public fun remove_treasury_cap<T>(
         self: &mut InterchainTokenService,
