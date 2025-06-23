@@ -14,8 +14,8 @@
         }
       ]
     },
-    "CoinRegistrationUpdated": {
-      "name": "CoinRegistrationUpdated",
+    "CoinMetadataRemoved": {
+      "name": "CoinMetadataRemoved",
       "typeParams": "<phantom T>",
       "abilities": [
         "copy",

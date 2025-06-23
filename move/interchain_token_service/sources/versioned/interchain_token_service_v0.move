@@ -769,7 +769,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         migration_coin_info.release_metadata();
 
-        events::coin_registration_updated<T>(
+        events::coin_metadata_removed<T>(
             migration_token_id,
         );
     }

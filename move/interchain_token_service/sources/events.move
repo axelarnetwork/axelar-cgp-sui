@@ -113,7 +113,7 @@ module interchain_token_service::events {
         });
     }
 
-    public(package) fun coin_registration_updated<T>(token_id: TokenId) {
+    public(package) fun coin_metadata_removed<T>(token_id: TokenId) {
         event::emit(CoinMetadataRemoved<T> {
             token_id,
         });
