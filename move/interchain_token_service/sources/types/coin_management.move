@@ -17,9 +17,7 @@ module interchain_token_service::coin_management {
     const ENotMintBurn: vector<u8> = b"trying to add a treasury cap to a lock unlock token";
     #[error]
     const ETreasuryCapRemovedFromMintBurnToken: vector<u8> = b"the token was registered as mint/burn, but its treasury cap was removed";
-    #[error]
-    const ETreasuryCapRemovedFromMintBurnToken: vector<u8> = b"treasury cap for mint/burn token was removed";
-
+    
     /// Struct that stores information about the InterchainTokenService Coin.
     public struct CoinManagement<phantom T> has store {
         treasury_cap: Option<TreasuryCap<T>>,

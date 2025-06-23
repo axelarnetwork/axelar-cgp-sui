@@ -65,12 +65,6 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotCannonicalToken: vector<u8> = b"cannot deploy remote interchain token for a custom token";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
-    #[error]
-    const EWrongTreasuryCapReclaimer: vector<u8> = b"trying to retreive a TreasuryCap with a miasmatching TreasuryCapReclaimer";
-    #[error]
-    const ENotCannonicalToken: vector<u8> = b"cannot deploy remote interchain token for a custom token";
-    #[error]
-    const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;

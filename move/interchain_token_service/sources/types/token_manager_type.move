@@ -50,7 +50,7 @@ module interchain_token_service::token_manager_type {
 
     // === Package Functions ===
     public(package) fun from_u256(token_manager_type: u256): TokenManagerType {
-        assert!(token_manager_type <= MINT_BURN, EInvalidTokenManagerType);
+        assert!(token_manager_type <= MAX_TOKEN_MANAGER_TYPE, EInvalidTokenManagerType);
         TokenManagerType {
             token_manager_type,
         }
