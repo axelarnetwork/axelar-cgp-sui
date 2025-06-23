@@ -440,7 +440,7 @@ module interchain_token_service::interchain_token_service_v0 {
 
         let token_manager_type = token_manager_type::from_u256(token_manager_type);
 
-        // This implicitely validates token_manager type because we only ever register lock_unlock and mint_burn unlicked coins
+        // This implicitly validates token_manager_type because we only ever register lock_unlock and mint_burn unlinked coins
         let mut coin_data = self.remove_unlinked_coin<T>(
             token_id::unlinked_token_id<T>(token_id, token_manager_type),
         );
