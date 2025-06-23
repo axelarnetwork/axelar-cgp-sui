@@ -4,6 +4,9 @@ module interchain_token_service::coin_info {
     use std::{ascii, string::String};
     use sui::coin::CoinMetadata;
 
+    #[error]
+    const EMetadataEmpty: vector<u8> = b"metadata empty, nothing to release";
+
     public struct CoinInfo<phantom T> has store {
         name: String,
         symbol: ascii::String,
@@ -40,6 +43,7 @@ module interchain_token_service::coin_info {
 
     /// Publicly freeze metadata for a coin from the given `CoinInfo<T>`
     public(package) fun release_metadata<T>(coin_info: &mut CoinInfo<T>) {
+        assert!(coin_info.metadata.is_some(), EMetadataEmpty);
         let metadata = coin_info.metadata.extract();
         transfer::public_freeze_object(metadata)
     }
