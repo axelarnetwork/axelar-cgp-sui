@@ -180,7 +180,7 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
 
-        self.add_registered_coin(token_id, coin_management, coin_info);
+        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
         token_id
     }
@@ -204,7 +204,7 @@ module interchain_token_service::interchain_token_service_v0 {
             option::none()
         };
 
-        self.add_registered_coin(token_id, coin_management, coin_info);
+        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
         (token_id, treasury_cap_reclaimer)
     }
@@ -421,7 +421,38 @@ module interchain_token_service::interchain_token_service_v0 {
             coin_management.add_distributor(distributor);
         };
 
-        self.add_registered_coin<T>(token_id, coin_management, coin_info);
+        self.add_registered_coin<T>(token_id, coin_data::new(coin_management, coin_info));
+    }
+
+    public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService_v0, approved_message: ApprovedMessage) {
+        let (source_chain, payload, _) = self.decode_approved_message(approved_message);
+
+        let mut reader = abi::new_reader(payload);
+        assert!(reader.read_u256() == MESSAGE_TYPE_LINK_TOKEN, EInvalidMessageType);
+
+        let token_id = token_id::from_u256(reader.read_u256());
+        let token_manager_type = reader.read_u256();
+        let source_token_address = reader.read_bytes();
+        let destination_token_address = reader.read_bytes();
+        let link_params = reader.read_bytes();
+
+        assert!(destination_token_address == type_name::get<T>().into_string().into_bytes());
+
+        let token_manager_type = token_manager_type::from_u256(token_manager_type);
+
+        // This implicitly validates token_manager_type because we only ever register lock_unlock and mint_burn unlinked coins
+        let mut coin_data = self.remove_unlinked_coin<T>(
+            token_id::unlinked_token_id<T>(token_id, token_manager_type),
+        );
+
+        if (link_params.length() > 0) {
+            let operator = address::from_bytes(link_params);
+            coin_data.coin_management_mut().add_operator(operator);
+        };
+
+        events::link_token_received<T>(token_id, source_chain, source_token_address, token_manager_type, link_params);
+
+        self.add_registered_coin<T>(token_id, coin_data);
     }
 
     public(package) fun give_unregistered_coin<T>(
@@ -664,6 +695,10 @@ module interchain_token_service::interchain_token_service_v0 {
             );
     }
 
+    fun remove_unlinked_coin<T>(self: &mut InterchainTokenService_v0, token_id: UnlinkedTokenId): CoinData<T> {
+        self.unregistered_coins.remove(token_id)
+    }
+
     fun remove_unregistered_coin<T>(
         self: &mut InterchainTokenService_v0,
         token_id: UnregisteredTokenId,
@@ -688,20 +723,12 @@ module interchain_token_service::interchain_token_service_v0 {
         self.registered_coin_types.add(token_id, type_name);
     }
 
-    fun add_registered_coin<T>(
-        self: &mut InterchainTokenService_v0,
-        token_id: TokenId,
-        coin_management: CoinManagement<T>,
-        coin_info: CoinInfo<T>,
-    ) {
+    fun add_registered_coin<T>(self: &mut InterchainTokenService_v0, token_id: TokenId, coin_data: CoinData<T>) {
         self
             .registered_coins
             .add(
                 token_id,
-                coin_data::new(
-                    coin_management,
-                    coin_info,
-                ),
+                coin_data,
             );
 
         let type_name = type_name::get<T>();
@@ -800,6 +827,40 @@ module interchain_token_service::interchain_token_service_v0 {
         );
 
         self.add_unregistered_coin(token_id, treasury_cap, coin_metadata);
+    }
+
+    #[test_only]
+    public fun create_unlinked_coin(
+        self: &mut InterchainTokenService_v0,
+        token_id: TokenId,
+        symbol: vector<u8>,
+        decimals: u8,
+        has_treasury_cap: bool,
+        ctx: &mut TxContext,
+    ) {
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+        let token_manager_type = if (has_treasury_cap) {
+            token_manager_type::mint_burn()
+        } else {
+            token_manager_type::lock_unlock()
+        };
+
+        let token_id = token_id::unlinked_token_id<COIN>(token_id, token_manager_type);
+
+        let treasury_cap = if (has_treasury_cap) {
+            option::some(treasury_cap)
+        } else {
+            sui::test_utils::destroy(treasury_cap);
+            option::none()
+        };
+
+        self.add_unlinked_coin(token_id, &coin_metadata, treasury_cap);
+
+        sui::test_utils::destroy(coin_metadata);
     }
 
     #[test_only]

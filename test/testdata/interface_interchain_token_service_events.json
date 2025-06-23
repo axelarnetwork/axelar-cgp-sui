@@ -34,7 +34,7 @@
       ],
       "fields": [
         {
-          "name": "tokenId",
+          "name": "token_id",
           "type": "TokenId"
         },
         {
