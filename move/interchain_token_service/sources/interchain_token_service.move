@@ -112,7 +112,7 @@ module interchain_token_service::interchain_token_service {
     // Public Functions
     // ----------------
 
-    // XXX (deprecated)
+    // XXX (to be deprecated)
     // TODO: disable this in version control
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         let value = self.value_mut!(b"register_coin");
