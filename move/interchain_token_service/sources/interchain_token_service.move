@@ -126,7 +126,7 @@ module interchain_token_service::interchain_token_service {
         symbol: ascii::String,
         decimals: u8,
         metadata: Option<CoinMetadata<T>>,
-        coin_management: CoinManagement<T>
+        coin_management: CoinManagement<T>,
     ): TokenId {
         let mut metadata = move metadata;
 
