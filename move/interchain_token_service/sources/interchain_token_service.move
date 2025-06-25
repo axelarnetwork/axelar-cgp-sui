@@ -148,7 +148,7 @@ module interchain_token_service::interchain_token_service {
         self: &mut InterchainTokenService,
         deployer: &Channel,
         salt: Bytes32,
-        coin_metadata: CoinMetadata<T>,
+        coin_metadata: &CoinMetadata<T>,
         coin_management: CoinManagement<T>,
         ctx: &mut TxContext,
     ): (TokenId, Option<TreasuryCapReclaimer<T>>) {
@@ -662,7 +662,7 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, coin_metadata, coin_management, ctx);
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
 
         treasury_cap_reclaimer.destroy_none();
 
@@ -670,6 +670,7 @@ module interchain_token_service::interchain_token_service {
 
         deployer.destroy();
         sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
 
@@ -689,7 +690,7 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, coin_metadata, coin_management, ctx);
+        let (_, treasury_cap_reclaimer) = register_custom_coin(&mut its, &deployer, salt, &coin_metadata, coin_management, ctx);
 
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
 
@@ -697,6 +698,7 @@ module interchain_token_service::interchain_token_service {
 
         deployer.destroy();
         treasury_cap_reclaimer.destroy();
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
 
@@ -1444,7 +1446,7 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        let (token_id, treasury_cap_reclaimer) = its.register_custom_coin(&deployer, salt, coin_metadata, coin_management, ctx);
+        let (token_id, treasury_cap_reclaimer) = its.register_custom_coin(&deployer, salt, &coin_metadata, coin_management, ctx);
 
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
 
@@ -1455,6 +1457,7 @@ module interchain_token_service::interchain_token_service {
 
         deployer.destroy();
         treasury_cap_reclaimer.destroy();
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
     }
 

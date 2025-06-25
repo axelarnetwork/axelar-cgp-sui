@@ -48,7 +48,7 @@
         "self#0#0": "&mut InterchainTokenService",
         "deployer#0#0": "&Channel",
         "salt#0#0": "Bytes32",
-        "coin_metadata#0#0": "CoinMetadata<T>",
+        "coin_metadata#0#0": "&CoinMetadata<T>",
         "coin_management#0#0": "CoinManagement<T>",
         "ctx#0#0": "&mut TxContext"
       },
