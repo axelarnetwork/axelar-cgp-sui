@@ -181,8 +181,12 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_management: CoinManagement<T>,
     ): TokenId {
         let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
+        let mut coin_data = coin_data::new(coin_management, coin_info);
+        let coin_info = coin_data.coin_info_mut();
 
-        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+        coin_info.release_metadata();
+
+        self.add_registered_coin(token_id, coin_data);
 
         token_id
     }
