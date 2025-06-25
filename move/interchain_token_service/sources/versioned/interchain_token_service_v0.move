@@ -184,6 +184,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let mut coin_data = coin_data::new(coin_management, coin_info);
         let coin_info = coin_data.coin_info_mut();
 
+        // This will no-op if coin_info.metadata is None
         coin_info.release_metadata();
 
         self.add_registered_coin(token_id, coin_data);

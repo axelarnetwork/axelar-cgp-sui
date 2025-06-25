@@ -2,7 +2,7 @@ module interchain_token_service::interchain_token_service {
     use axelar_gateway::{bytes32::Bytes32, channel::{ApprovedMessage, Channel}, message_ticket::MessageTicket};
     use interchain_token_service::{
         coin_data::CoinData,
-        coin_info::CoinInfo,
+        coin_info::{Self, CoinInfo},
         coin_management::CoinManagement,
         creator_cap::{Self, CreatorCap},
         interchain_token_service_v0::{Self, InterchainTokenService_v0},
@@ -111,7 +111,34 @@ module interchain_token_service::interchain_token_service {
     // ----------------
     // Public Functions
     // ----------------
+
+    // XXX (deprecated)
+    // TODO: disable this in version control
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
+        let value = self.value_mut!(b"register_coin");
+
+        value.register_coin(coin_info, coin_management)
+    }
+
+    public fun register_canonical_coin<T>(
+        self: &mut InterchainTokenService,
+        name: std::string::String,
+        symbol: ascii::String,
+        decimals: u8,
+        metadata: Option<CoinMetadata<T>>,
+        coin_management: CoinManagement<T>
+    ): TokenId {
+        let mut metadata = move metadata;
+
+        let coin_info = if (metadata.is_some()) {
+            let metadata = metadata.extract();
+            coin_info::from_metadata<T>(metadata)
+        } else {
+            coin_info::from_info<T>(name, symbol, decimals)
+        };
+
+        metadata.destroy_none();
+
         let value = self.value_mut!(b"register_coin");
 
         value.register_coin(coin_info, coin_management)
