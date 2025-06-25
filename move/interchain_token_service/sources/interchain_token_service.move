@@ -139,9 +139,9 @@ module interchain_token_service::interchain_token_service {
 
         metadata.destroy_none();
 
-        let value = self.value_mut!(b"register_coin");
+        let value = self.value_mut!(b"register_canonical_coin");
 
-        value.register_coin(coin_info, coin_management)
+        value.register_canonical_coin(coin_info, coin_management)
     }
 
     public fun register_custom_coin<T>(

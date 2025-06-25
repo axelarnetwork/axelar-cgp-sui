@@ -192,6 +192,20 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
+    public(package) fun register_canonical_coin<T>(
+        self: &mut InterchainTokenService_v0,
+        coin_info: CoinInfo<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        if (coin_info.metadata().is_some()) {
+            self.register_coin(coin_info, coin_management)
+        } else {
+            let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
+            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+            token_id
+        }
+    }
+
     public(package) fun register_custom_coin<T>(
         self: &mut InterchainTokenService_v0,
         deployer: &Channel,
