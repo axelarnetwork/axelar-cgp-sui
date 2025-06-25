@@ -28,6 +28,19 @@
       },
       "returnType": "TokenId"
     },
+    "register_canonical_coin<T>": {
+      "name": "register_canonical_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "name#0#0": "String",
+        "symbol#0#0": "String",
+        "decimals#0#0": "u8",
+        "metadata#0#0": "Option<CoinMetadata<T>>",
+        "coin_management#0#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
     "register_custom_coin<T>": {
       "name": "register_custom_coin<T>",
       "visibility": "public",
@@ -35,7 +48,7 @@
         "self#0#0": "&mut InterchainTokenService",
         "deployer#0#0": "&Channel",
         "salt#0#0": "Bytes32",
-        "coin_metadata#0#0": "&CoinMetadata<T>",
+        "coin_metadata#0#0": "CoinMetadata<T>",
         "coin_management#0#0": "CoinManagement<T>",
         "ctx#0#0": "&mut TxContext"
       },
