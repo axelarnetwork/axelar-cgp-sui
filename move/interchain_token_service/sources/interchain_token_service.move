@@ -104,7 +104,7 @@ module interchain_token_service::interchain_token_service {
     }
 
     entry fun migrate_coin<T>(self: &mut InterchainTokenService, _: &OperatorCap, token_id: address) {
-        let token_id = token_id::from_address(token_id);//here
+        let token_id = token_id::from_address(token_id);
         self.value_mut!(b"migrate_coin").migrate_coin<T>(token_id);
     }
 
