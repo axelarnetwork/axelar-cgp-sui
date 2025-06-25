@@ -196,7 +196,7 @@ module interchain_token_service::interchain_token_service_v0 {
         self: &mut InterchainTokenService_v0,
         deployer: &Channel,
         salt: Bytes32,
-        coin_metadata: &CoinMetadata<T>,
+        coin_metadata: CoinMetadata<T>,
         coin_management: CoinManagement<T>,
         ctx: &mut TxContext,
     ): (TokenId, Option<TreasuryCapReclaimer<T>>) {
@@ -210,6 +210,8 @@ module interchain_token_service::interchain_token_service_v0 {
         } else {
             option::none()
         };
+
+        transfer::public_freeze_object(coin_metadata);
 
         self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
