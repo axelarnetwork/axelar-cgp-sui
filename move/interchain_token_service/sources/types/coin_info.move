@@ -4,9 +4,6 @@ module interchain_token_service::coin_info {
     use std::{ascii, string::String};
     use sui::coin::CoinMetadata;
 
-    #[error]
-    const EMetadataEmpty: vector<u8> = b"metadata empty, nothing to release";
-
     public struct CoinInfo<phantom T> has store {
         name: String,
         symbol: ascii::String,
@@ -43,9 +40,10 @@ module interchain_token_service::coin_info {
 
     /// Publicly freeze metadata for a coin from the given `CoinInfo<T>`
     public(package) fun release_metadata<T>(coin_info: &mut CoinInfo<T>) {
-        assert!(coin_info.metadata.is_some(), EMetadataEmpty);
-        let metadata = coin_info.metadata.extract();
-        transfer::public_freeze_object(metadata)
+        if (coin_info.metadata.is_some()) {
+            let metadata = coin_info.metadata.extract();
+            transfer::public_freeze_object(metadata)
+        }
     }
 
     // -----
@@ -76,9 +74,6 @@ module interchain_token_service::coin_info {
     const EMetadataNotReleased: vector<u8> = b"metadata was expected to be released";
 
     #[test_only]
-    use interchain_token_service::coin::COIN;
-
-    #[test_only]
     public fun drop<T>(coin_info: CoinInfo<T>) {
         let CoinInfo {
             name: _,
@@ -93,12 +88,10 @@ module interchain_token_service::coin_info {
         }
     }
 
-    // XXX TODO: re-determine test goal and refactor accordingly now that metadata is always None
     #[test]
     fun test_from_metadata() {
         let ctx = &mut tx_context::dummy();
         let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
-        // let metadata_bytes = sui::bcs::to_bytes(&metadata);
 
         let name = metadata.get_name();
         let symbol = metadata.get_symbol();
@@ -110,7 +103,6 @@ module interchain_token_service::coin_info {
         assert!(coin_info.symbol() == symbol);
         assert!(coin_info.decimals() == decimals);
         assert!(coin_info.metadata().is_none());
-        // assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes);
 
         sui::test_utils::destroy(coin_info);
     }
@@ -124,13 +116,6 @@ module interchain_token_service::coin_info {
         let symbol = metadata.get_symbol();
         let decimals = metadata.get_decimals();
 
-        let expected_mutation: CoinInfo<COIN> = CoinInfo {
-            name,
-            symbol,
-            decimals,
-            metadata: option::none(),
-        };
-
         let mut coin_info = CoinInfo {
             name,
             symbol,
@@ -139,9 +124,8 @@ module interchain_token_service::coin_info {
         };
 
         release_metadata(&mut coin_info);
-        assert!(&coin_info == &expected_mutation, EMetadataNotReleased);
+        assert!(coin_info.metadata.is_none(), EMetadataNotReleased);
 
-        sui::test_utils::destroy(expected_mutation);
         sui::test_utils::destroy(coin_info);
     }
 }

@@ -11,10 +11,6 @@ module interchain_token_service::events {
         token_id: TokenId,
     }
 
-    public struct CoinMetadataRemoved<phantom T> has copy, drop {
-        token_id: TokenId,
-    }
-
     public struct InterchainTransfer<phantom T> has copy, drop {
         token_id: TokenId,
         source_address: address,
@@ -109,12 +105,6 @@ module interchain_token_service::events {
     // -----------------
     public(package) fun coin_registered<T>(token_id: TokenId) {
         event::emit(CoinRegistered<T> {
-            token_id,
-        });
-    }
-
-    public(package) fun coin_metadata_removed<T>(token_id: TokenId) {
-        event::emit(CoinMetadataRemoved<T> {
             token_id,
         });
     }

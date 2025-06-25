@@ -653,14 +653,17 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.registered_coins[token_id]
     }
 
-    // XXX TODO: version control?
-    public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, id: address) {
-        self.migrate_coin_metadata<T>(id);
+    public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, token_id: TokenId) {
+        let migration_coin_data = self.coin_data_mut<T>(token_id);
+        let migration_coin_info = migration_coin_data.coin_info_mut();
+
+        migration_coin_info.release_metadata();
     }
 
     // -----------------
     // Private Functions
     // -----------------
+
     fun is_trusted_chain(self: &InterchainTokenService_v0, source_chain: String): bool {
         self.trusted_chains.is_trusted(source_chain)
     }
@@ -762,18 +765,6 @@ module interchain_token_service::interchain_token_service_v0 {
         );
     }
 
-    fun migrate_coin_metadata<T>(self: &mut InterchainTokenService_v0, id: address) {
-        let migration_token_id = token_id::from_address(id);
-        let migration_coin_data = self.coin_data_mut<T>(migration_token_id);
-        let migration_coin_info = migration_coin_data.coin_info_mut();
-
-        migration_coin_info.release_metadata();
-
-        events::coin_metadata_removed<T>(
-            migration_token_id,
-        );
-    }
-
     fun prepare_hub_message(self: &InterchainTokenService_v0, mut payload: vector<u8>, destination_chain: String): MessageTicket {
         assert!(self.is_trusted_chain(destination_chain), EUntrustedChain);
 
@@ -821,8 +812,6 @@ module interchain_token_service::interchain_token_service_v0 {
         amount.destroy_some()
     }
 
-    // XXX: exposes mutating coin_data to the ITS v0 package (but, for updating CoinInfo
-    // metadata, but we only need to mutate CoinInfo -- there may be a better way around this)
     fun coin_data_mut<T>(self: &mut InterchainTokenService_v0, token_id: TokenId): &mut CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &mut self.registered_coins[token_id]
