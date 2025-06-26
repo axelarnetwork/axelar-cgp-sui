@@ -104,7 +104,7 @@ module interchain_token_service::interchain_token_service {
     }
 
     /// Publicly freeze `CoinMetadata` for a token id and remove it from `CoinInfo` storage.
-    /// Can be used to migrate an existing coin from v0 to v1
+    /// Needs to be called after the v0 -> v1 upgrade
     entry fun migrate_coin_metadata<T>(self: &mut InterchainTokenService, _: &OperatorCap, token_id: address) {
         self.value_mut!(b"migrate_coin_metadata").migrate_coin_metadata<T>(token_id);
     }
@@ -113,7 +113,6 @@ module interchain_token_service::interchain_token_service {
     // Public Functions
     // ----------------
 
-    // TODO: disable this in version control
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         let value = self.value_mut!(b"register_coin");
 
@@ -471,7 +470,6 @@ module interchain_token_service::interchain_token_service {
         version_control::new(vector[
             // Version 0
             vector[
-                b"register_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
