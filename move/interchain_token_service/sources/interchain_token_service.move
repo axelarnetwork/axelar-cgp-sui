@@ -119,15 +119,24 @@ module interchain_token_service::interchain_token_service {
         value.register_coin(coin_info, coin_management)
     }
 
-    public fun register_canonical_coin<T>(
+    public fun register_coin_from_info<T>(
         self: &mut InterchainTokenService,
         token_metadata: &TokenMetadata<T>,
-        metadata: Option<CoinMetadata<T>>,
         coin_management: CoinManagement<T>,
     ): TokenId {
-        let value = self.value_mut!(b"register_canonical_coin");
+        let value = self.value_mut!(b"register_coin_from_info");
 
-        value.register_canonical_coin(token_metadata, metadata, coin_management)
+        value.register_coin_from_info(token_metadata, coin_management)
+    }
+
+    public fun register_coin_from_metadata<T>(
+        self: &mut InterchainTokenService,
+        metadata: &CoinMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let value = self.value_mut!(b"register_coin_from_metadata");
+
+        value.register_coin_from_metadata(metadata, coin_management)
     }
 
     public fun register_custom_coin<T>(

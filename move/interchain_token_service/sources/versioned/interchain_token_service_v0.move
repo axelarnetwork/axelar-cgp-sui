@@ -193,30 +193,29 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
-    public(package) fun register_canonical_coin<T>(
+    public(package) fun register_coin_from_info<T>(
         self: &mut InterchainTokenService_v0,
         token_metadata: &TokenMetadata<T>,
-        mut metadata: Option<CoinMetadata<T>>,
         coin_management: CoinManagement<T>,
     ): TokenId {
-        let token_id = if (metadata.is_some()) {
-            let metadata = metadata.extract();
-            let coin_info = coin_info::from_metadata<T>(metadata);
-            let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
+        let coin_info = coin_info::from_info<T>(
+            token_metadata.name(),
+            token_metadata.symbol(),
+            token_metadata.decimals(),
+        );
 
-            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+        self.register_coin(coin_info, coin_management)
+    }
 
-            token_id
-        } else {
-            let coin_info = coin_info::from_info<T>(
-                token_metadata.name(),
-                token_metadata.symbol(),
-                token_metadata.decimals(),
-            );
-            self.register_coin(coin_info, coin_management)
-        };
+    public(package) fun register_coin_from_metadata<T>(
+        self: &mut InterchainTokenService_v0,
+        metadata: &CoinMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let coin_info = coin_info::from_metadata_ref<T>(metadata);
+        let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
 
-        metadata.destroy_none();
+        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
         token_id
     }
