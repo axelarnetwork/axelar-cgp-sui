@@ -491,7 +491,8 @@ module interchain_token_service::interchain_token_service {
             // Version 1
             vector[
                 b"register_coin",
-                b"register_canonical_coin",
+                b"register_coin_from_info",
+                b"register_coin_from_metadata",
                 b"register_custom_coin",
                 b"link_coin",
                 b"register_coin_metadata",
