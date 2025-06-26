@@ -74,6 +74,22 @@ module interchain_token_service::token_id {
         )
     }
 
+    public(package) fun from_coin_data_v1<T>(
+        chain_name_hash: &Bytes32,
+        coin_info: &CoinInfo<T>,
+        coin_management: &CoinManagement<T>,
+        has_metadata: bool,
+    ): TokenId {
+        from_info<T>(
+            chain_name_hash,
+            &coin_info.name(),
+            &coin_info.symbol(),
+            &coin_info.decimals(),
+            &has_metadata,
+            &coin_management.has_treasury_cap(),
+        )
+    }
+
     public(package) fun custom_token_id(chain_name_hash: &Bytes32, deployer: &Channel, salt: &Bytes32): TokenId {
         let mut vec = address::from_u256(PREFIX_SUI_CUSTOM_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));

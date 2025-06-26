@@ -24,6 +24,12 @@ module interchain_token_service::interchain_token_service {
     const VERSION: u64 = 1;
     const DATA_VERSION: u64 = 0;
 
+    // ------
+    // Errors
+    // ------
+    #[error]
+    const EUnsupported: vector<u8> = b"legacy method is no longer supported";
+
     // -------
     // Structs
     // -------
@@ -112,10 +118,10 @@ module interchain_token_service::interchain_token_service {
     // ----------------
     // Public Functions
     // ----------------
-
+    #[allow(dead_code)]
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
+        abort EUnsupported;
         let value = self.value_mut!(b"register_coin");
-
         value.register_coin(coin_info, coin_management)
     }
 
@@ -470,6 +476,7 @@ module interchain_token_service::interchain_token_service {
         version_control::new(vector[
             // Version 0
             vector[
+                b"register_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
@@ -491,7 +498,6 @@ module interchain_token_service::interchain_token_service {
             ].map!(|function_name| function_name.to_ascii_string()),
             // Version 1
             vector[
-                b"register_coin",
                 b"register_coin_from_info",
                 b"register_coin_from_metadata",
                 b"register_custom_coin",

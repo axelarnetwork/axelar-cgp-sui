@@ -180,14 +180,9 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_info: CoinInfo<T>,
         coin_management: CoinManagement<T>,
     ): TokenId {
-        let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
-        let mut coin_data = coin_data::new(coin_management, coin_info);
-        let coin_info = coin_data.coin_info_mut();
+        let token_id = token_id::from_coin_data_v1(&self.chain_name_hash, &coin_info, &coin_management, false);
 
-        // This will no-op if coin_info.metadata is None
-        coin_info.release_metadata();
-
-        self.add_registered_coin(token_id, coin_data);
+        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
         token_id
     }
@@ -213,11 +208,8 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_management: CoinManagement<T>,
     ): TokenId {
         let coin_info = coin_info::from_metadata_ref<T>(metadata);
-        let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
-
-        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
-
-        token_id
+        
+        self.register_coin(coin_info, coin_management)
     }
 
     public(package) fun register_custom_coin<T>(
