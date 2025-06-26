@@ -1,4 +1,4 @@
-/// Defines the `TokenMetadata` type which allows to store information metadata a token.
+/// Defines the `TokenMetadata` type which allows to store information about a token
 /// This type is like `CoinInfo` but doesn't allow storing the `CoinMetadata`
 module interchain_token_service::token_metadata {
     use interchain_token_service::coin_info::CoinInfo;
