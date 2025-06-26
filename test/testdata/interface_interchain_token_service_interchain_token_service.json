@@ -28,13 +28,22 @@
       },
       "returnType": "TokenId"
     },
-    "register_canonical_coin<T>": {
-      "name": "register_canonical_coin<T>",
+    "register_coin_from_info<T>": {
+      "name": "register_coin_from_info<T>",
       "visibility": "public",
       "params": {
         "self#0#0": "&mut InterchainTokenService",
         "token_metadata#0#0": "&TokenMetadata<T>",
-        "metadata#0#0": "Option<CoinMetadata<T>>",
+        "coin_management#0#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
+    "register_coin_from_metadata<T>": {
+      "name": "register_coin_from_metadata<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "metadata#0#0": "&CoinMetadata<T>",
         "coin_management#0#0": "CoinManagement<T>"
       },
       "returnType": "TokenId"
