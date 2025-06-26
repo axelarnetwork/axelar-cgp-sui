@@ -104,8 +104,10 @@ module interchain_token_service::interchain_token_service {
         self.value_mut!(b"disallow_function").disallow_function(version, function_name);
     }
 
-    entry fun migrate_coin<T>(self: &mut InterchainTokenService, _: &OperatorCap, token_id: address) {
-        self.value_mut!(b"migrate_coin").migrate_coin<T>(token_id);
+    /// Publicly freeze `CoinMetadata` for a token id and remove it from `CoinInfo` storage.
+    /// Can be used to migrate an existing coin from v0 to v1
+    entry fun migrate_coin_metadata<T>(self: &mut InterchainTokenService, _: &OperatorCap, token_id: address) {
+        self.value_mut!(b"migrate_coin_metadata").migrate_coin_metadata<T>(token_id);
     }
 
     // ----------------
@@ -518,7 +520,7 @@ module interchain_token_service::interchain_token_service {
                 b"restore_treasury_cap",
                 b"allow_function",
                 b"disallow_function",
-                b"migrate_coin",
+                b"migrate_coin_metadata",
             ].map!(|function_name| function_name.to_ascii_string()),
         ])
     }
