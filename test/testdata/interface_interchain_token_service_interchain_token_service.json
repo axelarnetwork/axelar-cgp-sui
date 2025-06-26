@@ -33,9 +33,7 @@
       "visibility": "public",
       "params": {
         "self#0#0": "&mut InterchainTokenService",
-        "name#0#0": "String",
-        "symbol#0#0": "String",
-        "decimals#0#0": "u8",
+        "token_metadata#0#0": "&TokenMetadata<T>",
         "metadata#0#0": "Option<CoinMetadata<T>>",
         "coin_management#0#0": "CoinManagement<T>"
       },

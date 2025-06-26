@@ -11,6 +11,15 @@ module interchain_token_service::token_metadata {
         decimals: u8,
     }
 
+    /// Create a token metadata from the given `CoinInfo` object
+    public fun from_coin_info<T>(coin_info: &CoinInfo<T>): TokenMetadata<T> {
+        TokenMetadata {
+            name: coin_info.name(),
+            symbol: coin_info.symbol(),
+            decimals: coin_info.decimals(),
+        }
+    }
+
     /// Create a token metadata from the given name, symbol and decimals.
     public fun from_info<T>(name: String, symbol: ascii::String, decimals: u8): TokenMetadata<T> {
         TokenMetadata {
@@ -26,15 +35,6 @@ module interchain_token_service::token_metadata {
             name: metadata.get_name(),
             symbol: metadata.get_symbol(),
             decimals: metadata.get_decimals(),
-        }
-    }
-
-    /// Create a token metadata from the given `CoinInfo` object
-    public fun from_coin_info<T>(coin_info: &CoinInfo<T>): TokenMetadata<T> {
-        TokenMetadata {
-            name: coin_info.name(),
-            symbol: coin_info.symbol(),
-            decimals: coin_info.decimals(),
         }
     }
 
