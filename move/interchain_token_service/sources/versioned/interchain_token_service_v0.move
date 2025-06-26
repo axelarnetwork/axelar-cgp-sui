@@ -653,11 +653,11 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.registered_coins[token_id]
     }
 
-    public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, token_id: TokenId) {
-        let migration_coin_data = self.coin_data_mut<T>(token_id);
-        let migration_coin_info = migration_coin_data.coin_info_mut();
+    public(package) fun migrate_coin<T>(self: &mut InterchainTokenService_v0, token_id: address) {
+        let token_id = token_id::from_address(token_id);
+        let coin_info = self.coin_data_mut<T>(token_id).coin_info_mut();
 
-        migration_coin_info.release_metadata();
+        coin_info.release_metadata();
     }
 
     // -----------------

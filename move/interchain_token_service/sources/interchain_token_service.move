@@ -9,7 +9,7 @@ module interchain_token_service::interchain_token_service {
         interchain_transfer_ticket::{Self, InterchainTransferTicket},
         operator_cap::{Self, OperatorCap},
         owner_cap::{Self, OwnerCap},
-        token_id::{Self, TokenId},
+        token_id::TokenId,
         token_manager_type::TokenManagerType,
         treasury_cap_reclaimer::TreasuryCapReclaimer
     };
@@ -104,7 +104,6 @@ module interchain_token_service::interchain_token_service {
     }
 
     entry fun migrate_coin<T>(self: &mut InterchainTokenService, _: &OperatorCap, token_id: address) {
-        let token_id = token_id::from_address(token_id);
         self.value_mut!(b"migrate_coin").migrate_coin<T>(token_id);
     }
 
