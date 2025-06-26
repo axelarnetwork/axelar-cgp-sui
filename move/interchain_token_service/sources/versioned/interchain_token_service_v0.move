@@ -209,9 +209,9 @@ module interchain_token_service::interchain_token_service_v0 {
             token_id
         } else {
             let coin_info = coin_info::from_info<T>(
-                token_metadata.name(), 
-                token_metadata.symbol(), 
-                token_metadata.decimals()
+                token_metadata.name(),
+                token_metadata.symbol(),
+                token_metadata.decimals(),
             );
             self.register_coin(coin_info, coin_management)
         };
