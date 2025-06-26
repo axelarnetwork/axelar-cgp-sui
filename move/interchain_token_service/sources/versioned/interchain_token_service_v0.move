@@ -9,7 +9,6 @@ module interchain_token_service::interchain_token_service_v0 {
         interchain_transfer_ticket::InterchainTransferTicket,
         token_id::{Self, TokenId, UnregisteredTokenId, UnlinkedTokenId},
         token_manager_type::{Self, TokenManagerType},
-        token_metadata::TokenMetadata,
         treasury_cap_reclaimer::{Self, TreasuryCapReclaimer},
         trusted_chains::{Self, TrustedChains},
         unregistered_coin_data::{Self, UnregisteredCoinData},
@@ -195,14 +194,12 @@ module interchain_token_service::interchain_token_service_v0 {
 
     public(package) fun register_coin_from_info<T>(
         self: &mut InterchainTokenService_v0,
-        token_metadata: &TokenMetadata<T>,
+        name: std::string::String,
+        symbol: ascii::String,
+        decimals: u8,
         coin_management: CoinManagement<T>,
     ): TokenId {
-        let coin_info = coin_info::from_info<T>(
-            token_metadata.name(),
-            token_metadata.symbol(),
-            token_metadata.decimals(),
-        );
+        let coin_info = coin_info::from_info<T>(name, symbol, decimals);
 
         self.register_coin(coin_info, coin_management)
     }

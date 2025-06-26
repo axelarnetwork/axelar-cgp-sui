@@ -11,7 +11,6 @@ module interchain_token_service::interchain_token_service {
         owner_cap::{Self, OwnerCap},
         token_id::TokenId,
         token_manager_type::TokenManagerType,
-        token_metadata::TokenMetadata,
         treasury_cap_reclaimer::TreasuryCapReclaimer
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::Transaction};
@@ -123,12 +122,14 @@ module interchain_token_service::interchain_token_service {
 
     public fun register_coin_from_info<T>(
         self: &mut InterchainTokenService,
-        token_metadata: &TokenMetadata<T>,
+        name: std::string::String,
+        symbol: ascii::String,
+        decimals: u8,
         coin_management: CoinManagement<T>,
     ): TokenId {
         let value = self.value_mut!(b"register_coin_from_info");
 
-        value.register_coin_from_info(token_metadata, coin_management)
+        value.register_coin_from_info(name, symbol, decimals, coin_management)
     }
 
     public fun register_coin_from_metadata<T>(
