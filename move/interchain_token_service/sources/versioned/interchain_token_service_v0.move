@@ -208,7 +208,7 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_management: CoinManagement<T>,
     ): TokenId {
         let coin_info = coin_info::from_metadata_ref<T>(metadata);
-        
+
         self.register_coin(coin_info, coin_management)
     }
 
