@@ -1,7 +1,7 @@
 /// Defines the `TokenMetadata` type which allows to store information metadata a token.
 /// This type is like `CoinInfo` but doesn't allow storing the `CoinMetadata`
 module interchain_token_service::token_metadata {
-    use interchain_token_service::coin_info::{Self, CoinInfo};
+    use interchain_token_service::coin_info::CoinInfo;
     use std::{ascii, string::String};
     use sui::coin::CoinMetadata;
 
@@ -56,14 +56,17 @@ module interchain_token_service::token_metadata {
     // === Tests ===
     #[test_only]
     use interchain_token_service::coin::COIN;
+    #[test_only]
+    use interchain_token_service::coin_info::Self;
 
     #[test]
-    fun test_from() {
+    fun test_from_conversions() {
         let ctx = &mut tx_context::dummy();
         let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
         let name = metadata.get_name();
         let symbol = metadata.get_symbol();
         let decimals = metadata.get_decimals();
+        let coin_info: CoinInfo<COIN> = coin_info::from_info(name, symbol, decimals);
 
         // from_info
         let from_info = from_info(name, symbol, decimals);
@@ -72,13 +75,12 @@ module interchain_token_service::token_metadata {
         let from_metadata = from_metadata(&metadata);
 
         // from coin_info
-        let coin_info: CoinInfo<COIN> = coin_info::from_info(name, symbol, decimals);
         let from_coin_info = from_coin_info(&coin_info);
 
         assert!(from_metadata.name() == name);
         assert!(from_metadata.symbol() == symbol);
         assert!(from_metadata.decimals() == decimals);
-        assert!(&from_info == &from_metadata);
+        assert!(&from_info == &from_metadata && &from_info == &from_coin_info);
 
         sui::test_utils::destroy(metadata);
         sui::test_utils::destroy(coin_info);
