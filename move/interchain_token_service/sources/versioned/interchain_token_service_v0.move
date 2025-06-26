@@ -9,6 +9,7 @@ module interchain_token_service::interchain_token_service_v0 {
         interchain_transfer_ticket::InterchainTransferTicket,
         token_id::{Self, TokenId, UnregisteredTokenId, UnlinkedTokenId},
         token_manager_type::{Self, TokenManagerType},
+        token_metadata::TokenMetadata,
         treasury_cap_reclaimer::{Self, TreasuryCapReclaimer},
         trusted_chains::{Self, TrustedChains},
         unregistered_coin_data::{Self, UnregisteredCoinData},
@@ -180,6 +181,38 @@ module interchain_token_service::interchain_token_service_v0 {
         coin_info: CoinInfo<T>,
         coin_management: CoinManagement<T>,
     ): TokenId {
+        let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
+        let mut coin_data = coin_data::new(coin_management, coin_info);
+        let coin_info = coin_data.coin_info_mut();
+
+        // This will no-op if coin_info.metadata is None
+        coin_info.release_metadata();
+
+        self.add_registered_coin(token_id, coin_data);
+
+        token_id
+    }
+
+    public(package) fun register_coin_from_info<T>(
+        self: &mut InterchainTokenService_v0,
+        token_metadata: &TokenMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let coin_info = coin_info::from_info<T>(
+            token_metadata.name(),
+            token_metadata.symbol(),
+            token_metadata.decimals(),
+        );
+
+        self.register_coin(coin_info, coin_management)
+    }
+
+    public(package) fun register_coin_from_metadata<T>(
+        self: &mut InterchainTokenService_v0,
+        metadata: &CoinMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let coin_info = coin_info::from_metadata_ref<T>(metadata);
         let token_id = token_id::from_coin_data(&self.chain_name_hash, &coin_info, &coin_management);
 
         self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));

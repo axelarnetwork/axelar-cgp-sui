@@ -11,6 +11,7 @@ module interchain_token_service::interchain_token_service {
         owner_cap::{Self, OwnerCap},
         token_id::TokenId,
         token_manager_type::TokenManagerType,
+        token_metadata::TokenMetadata,
         treasury_cap_reclaimer::TreasuryCapReclaimer
     };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::Transaction};
@@ -110,10 +111,32 @@ module interchain_token_service::interchain_token_service {
     // ----------------
     // Public Functions
     // ----------------
+
+    // TODO: disable this in version control
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         let value = self.value_mut!(b"register_coin");
 
         value.register_coin(coin_info, coin_management)
+    }
+
+    public fun register_coin_from_info<T>(
+        self: &mut InterchainTokenService,
+        token_metadata: &TokenMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let value = self.value_mut!(b"register_coin_from_info");
+
+        value.register_coin_from_info(token_metadata, coin_management)
+    }
+
+    public fun register_coin_from_metadata<T>(
+        self: &mut InterchainTokenService,
+        metadata: &CoinMetadata<T>,
+        coin_management: CoinManagement<T>,
+    ): TokenId {
+        let value = self.value_mut!(b"register_coin_from_metadata");
+
+        value.register_coin_from_metadata(metadata, coin_management)
     }
 
     public fun register_custom_coin<T>(
@@ -468,6 +491,8 @@ module interchain_token_service::interchain_token_service {
             // Version 1
             vector[
                 b"register_coin",
+                b"register_coin_from_info",
+                b"register_coin_from_metadata",
                 b"register_custom_coin",
                 b"link_coin",
                 b"register_coin_metadata",

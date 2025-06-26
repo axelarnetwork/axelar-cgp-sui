@@ -34,6 +34,16 @@ module interchain_token_service::coin_info {
         coin_info
     }
 
+    /// Create a new coin info from the given `&CoinMetadata` object.
+    public fun from_metadata_ref<T>(metadata: &CoinMetadata<T>): CoinInfo<T> {
+        CoinInfo {
+            name: metadata.get_name(),
+            symbol: metadata.get_symbol(),
+            decimals: metadata.get_decimals(),
+            metadata: option::none(),
+        }
+    }
+
     // -----------------
     // Package Functions
     // -----------------

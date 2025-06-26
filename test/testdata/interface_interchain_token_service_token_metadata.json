@@ -1,7 +1,7 @@
 {
   "structs": {
-    "CoinInfo": {
-      "name": "CoinInfo",
+    "TokenMetadata": {
+      "name": "TokenMetadata",
       "typeParams": "<phantom T>",
       "abilities": [
         "store"
@@ -18,15 +18,19 @@
         {
           "name": "decimals",
           "type": "u8"
-        },
-        {
-          "name": "metadata",
-          "type": "Option<CoinMetadata<T>>"
         }
       ]
     }
   },
   "publicFunctions": {
+    "from_coin_info<T>": {
+      "name": "from_coin_info<T>",
+      "visibility": "public",
+      "params": {
+        "coin_info#0#0": "&CoinInfo<T>"
+      },
+      "returnType": "TokenMetadata<T>"
+    },
     "from_info<T>": {
       "name": "from_info<T>",
       "visibility": "public",
@@ -35,29 +39,21 @@
         "symbol#0#0": "String",
         "decimals#0#0": "u8"
       },
-      "returnType": "CoinInfo<T>"
+      "returnType": "TokenMetadata<T>"
     },
     "from_metadata<T>": {
       "name": "from_metadata<T>",
       "visibility": "public",
       "params": {
-        "metadata#0#0": "CoinMetadata<T>"
-      },
-      "returnType": "CoinInfo<T>"
-    },
-    "from_metadata_ref<T>": {
-      "name": "from_metadata_ref<T>",
-      "visibility": "public",
-      "params": {
         "metadata#0#0": "&CoinMetadata<T>"
       },
-      "returnType": "CoinInfo<T>"
+      "returnType": "TokenMetadata<T>"
     },
     "name<T>": {
       "name": "name<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&CoinInfo<T>"
+        "self#0#0": "&TokenMetadata<T>"
       },
       "returnType": "String"
     },
@@ -65,7 +61,7 @@
       "name": "symbol<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&CoinInfo<T>"
+        "self#0#0": "&TokenMetadata<T>"
       },
       "returnType": "String"
     },
@@ -73,17 +69,9 @@
       "name": "decimals<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&CoinInfo<T>"
+        "self#0#0": "&TokenMetadata<T>"
       },
       "returnType": "u8"
-    },
-    "metadata<T>": {
-      "name": "metadata<T>",
-      "visibility": "public",
-      "params": {
-        "self#0#0": "&CoinInfo<T>"
-      },
-      "returnType": "&Option<CoinMetadata<T>>"
     }
   }
 }
