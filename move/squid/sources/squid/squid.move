@@ -162,23 +162,16 @@ module squid::squid {
         let clock = sui::clock::create_for_testing(ctx);
         let mut its = interchain_token_service::interchain_token_service::create_for_testing(ctx);
         let mut squid = new_for_testing(ctx);
-
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        std::string::utf8(b"Name"),
-        std::ascii::string(b"Symbol"),
-        10,
-    );
+        let token_name = std::string::utf8(b"Name");
+        let token_symbol = std::ascii::string(b"Symbol");
+        let token_decimals = 10u8;
 
         let amount = 1234;
         let data = std::bcs::to_bytes(&vector<vector<u8>>[]);
-        let coin_management = interchain_token_service::coin_management::new_locked();
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
 
-        let token_id = its.register_coin(
-            coin_info,
-            coin_management,
-        );
+        let token_id = its.register_coin_from_info(token_name, token_symbol, token_decimals, coin_management);
 
         // This gives some coin to InterchainTokenService
         let interchain_transfer_ticket = interchain_token_service::interchain_token_service::prepare_interchain_transfer(
