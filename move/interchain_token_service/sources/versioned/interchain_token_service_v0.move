@@ -179,8 +179,14 @@ module interchain_token_service::interchain_token_service_v0 {
         self: &mut InterchainTokenService_v0,
         coin_info: CoinInfo<T>,
         coin_management: CoinManagement<T>,
+        has_metadata: bool,
     ): TokenId {
-        let token_id = token_id::from_coin_data_v1(&self.chain_name_hash, &coin_info, &coin_management, false);
+        let token_id = token_id::from_coin_data(
+            &self.chain_name_hash,
+            &coin_info,
+            &coin_management,
+            has_metadata
+        );
 
         self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
@@ -197,7 +203,7 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let coin_info = coin_info::from_info<T>(name, symbol, decimals);
 
-        self.register_coin(coin_info, coin_management)
+        self.register_coin(coin_info, coin_management, false)
     }
 
     /// Register a coin using the coin's metadata
@@ -209,7 +215,7 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let coin_info = coin_info::from_metadata_ref<T>(metadata);
 
-        self.register_coin(coin_info, coin_management)
+        self.register_coin(coin_info, coin_management, true)
     }
 
     public(package) fun register_custom_coin<T>(
@@ -305,8 +311,14 @@ module interchain_token_service::interchain_token_service_v0 {
         let coin_data = self.coin_data<T>(token_id);
         let coin_info = coin_data.coin_info();
         let coin_management = coin_data.coin_management();
+        let has_metadata = option::is_some(coin_info.metadata());
 
-        let derived_token_id = token_id::from_coin_data(&self.chain_name_hash, coin_info, coin_management);
+        let derived_token_id = token_id::from_coin_data(
+            &self.chain_name_hash, 
+            coin_info, 
+            coin_management,
+            has_metadata,
+        );
 
         assert!(token_id == derived_token_id, ENotCannonicalToken);
 

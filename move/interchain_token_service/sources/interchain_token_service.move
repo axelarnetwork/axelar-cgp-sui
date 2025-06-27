@@ -122,7 +122,7 @@ module interchain_token_service::interchain_token_service {
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         abort EUnsupported;
         let value = self.value_mut!(b"register_coin");
-        value.register_coin(coin_info, coin_management)
+        value.register_coin(coin_info, coin_management, option::is_some(coin_info.metadata()))
     }
 
     public fun register_coin_from_info<T>(
@@ -476,7 +476,6 @@ module interchain_token_service::interchain_token_service {
         version_control::new(vector[
             // Version 0
             vector[
-                b"register_coin",
                 b"deploy_remote_interchain_token",
                 b"send_interchain_transfer",
                 b"receive_interchain_transfer",
