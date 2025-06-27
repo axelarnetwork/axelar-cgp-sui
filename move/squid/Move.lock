@@ -2,11 +2,11 @@
 
 [move]
 version = 3
-manifest_digest = "2DB6D2C862CE139572342A8CF12D41839A4CF29EE80459E7BBA8F26C12F6C145"
+manifest_digest = "DB11ACB0F4E4DA583CCEA1F271BD1DC92657A9AA3CA46FB0E9C085351DB7BE0A"
 deps_digest = "04732BFEF428F74DE262001DC455D76B909EBC394B034A9A15CC095E4BDD9CEF"
 dependencies = [
   { id = "AxelarGateway", name = "AxelarGateway" },
-  { id = "ITS", name = "ITS" },
+  { id = "InterchainTokenService", name = "InterchainTokenService" },
   { id = "RelayerDiscovery", name = "RelayerDiscovery" },
   { id = "Sui", name = "Sui" },
   { id = "Utils", name = "Utils" },
@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [[move.package]]
-id = "ITS"
-source = { local = "../its" }
+id = "InterchainTokenService"
+source = { local = "../interchain_token_service" }
 
 dependencies = [
   { id = "Abi", name = "Abi" },
@@ -103,6 +103,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.38.2"
+compiler-version = "1.38.3"
 edition = "2024"
 flavor = "sui"

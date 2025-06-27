@@ -45,6 +45,14 @@
       },
       "returnType": "CoinInfo<T>"
     },
+    "from_metadata_ref<T>": {
+      "name": "from_metadata_ref<T>",
+      "visibility": "public",
+      "params": {
+        "metadata#0#0": "&CoinMetadata<T>"
+      },
+      "returnType": "CoinInfo<T>"
+    },
     "name<T>": {
       "name": "name<T>",
       "visibility": "public",
