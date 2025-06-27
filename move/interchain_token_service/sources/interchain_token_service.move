@@ -709,7 +709,6 @@ module interchain_token_service::interchain_token_service {
         let deployer = channel::new(ctx);
         let salt = bytes32::new(deployer.id().to_address());
 
-        //
         let value = its.value_mut!(b"");
         let token_id = interchain_token_service::token_id::custom_token_id(&value.chain_name_hash(), &deployer, &salt);
         let source_token_type = type_name::get<COIN>();
