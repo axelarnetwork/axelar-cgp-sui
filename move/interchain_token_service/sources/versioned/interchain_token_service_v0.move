@@ -185,7 +185,7 @@ module interchain_token_service::interchain_token_service_v0 {
             &self.chain_name_hash,
             &coin_info,
             &coin_management,
-            has_metadata
+            has_metadata,
         );
 
         self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
@@ -314,8 +314,8 @@ module interchain_token_service::interchain_token_service_v0 {
         let has_metadata = option::is_some(coin_info.metadata());
 
         let derived_token_id = token_id::from_coin_data(
-            &self.chain_name_hash, 
-            coin_info, 
+            &self.chain_name_hash,
+            coin_info,
             coin_management,
             has_metadata,
         );
