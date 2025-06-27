@@ -175,7 +175,7 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.version_control
     }
 
-    /// Originally, the versioned function for public fun interchain_token_service::register_coin. 
+    /// Originally, the versioned function for public fun interchain_token_service::register_coin.
     /// Now, a worker function to process registering a coin (modified in version 1.0).
     /// @see self.register_coin_from_info
     /// @see self.register_coin_from_metadata
