@@ -175,6 +175,10 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.version_control
     }
 
+    /// Originally, the versioned function for public fun interchain_token_service::register_coin. 
+    /// Now, a worker function to process registering a coin (modified in version 1.0).
+    /// @see self.register_coin_from_info
+    /// @see self.register_coin_from_metadata
     public(package) fun register_coin<T>(
         self: &mut InterchainTokenService_v0,
         coin_info: CoinInfo<T>,
@@ -193,7 +197,7 @@ module interchain_token_service::interchain_token_service_v0 {
         token_id
     }
 
-    /// Register a coin using the coin's name, symbol and decimals
+    /// Register a coin using the coin's name, symbol and decimals.
     public(package) fun register_coin_from_info<T>(
         self: &mut InterchainTokenService_v0,
         name: std::string::String,
@@ -206,7 +210,7 @@ module interchain_token_service::interchain_token_service_v0 {
         self.register_coin(coin_info, coin_management, false)
     }
 
-    /// Register a coin using the coin's metadata
+    /// Register a coin using the coin's metadata.
     /// @see sui::coin::CoinMetadata
     public(package) fun register_coin_from_metadata<T>(
         self: &mut InterchainTokenService_v0,

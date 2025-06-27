@@ -118,6 +118,9 @@ module interchain_token_service::interchain_token_service {
     // ----------------
     // Public Functions
     // ----------------
+
+    /// Legacy function to register a coin from the given `CoinInfo`.
+    /// @deprecated since version 1.0
     #[allow(dead_code)]
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         abort EUnsupported;
@@ -125,6 +128,8 @@ module interchain_token_service::interchain_token_service {
         value.register_coin(coin_info, coin_management, option::is_some(coin_info.metadata()))
     }
 
+    /// Register a coin from user supplied values. Replaces legacy function `register_coin`.
+    /// @since version 1.0
     public fun register_coin_from_info<T>(
         self: &mut InterchainTokenService,
         name: std::string::String,
@@ -137,6 +142,8 @@ module interchain_token_service::interchain_token_service {
         value.register_coin_from_info(name, symbol, decimals, coin_management)
     }
 
+    /// Register a coin from the given `CoinMetadata` reference. Replaces legacy function `register_coin`.
+    /// @since version 1.0
     public fun register_coin_from_metadata<T>(
         self: &mut InterchainTokenService,
         metadata: &CoinMetadata<T>,
