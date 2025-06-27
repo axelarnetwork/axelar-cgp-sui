@@ -639,15 +639,12 @@ module interchain_token_service::interchain_token_service {
         let ctx = &mut sui::tx_context::dummy();
         let mut its = create_for_testing(ctx);
 
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
-        let coin_management = interchain_token_service::coin_management::new_locked();
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
 
-        register_coin(&mut its, coin_info, coin_management);
+        register_coin_from_info(&mut its, name, symbol, decimals, coin_management);
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         sui::test_utils::destroy(its);
@@ -764,17 +761,11 @@ module interchain_token_service::interchain_token_service {
         let mut its = create_for_testing(ctx);
         let token_name = string::utf8(b"Name");
         let token_symbol = ascii::string(b"Symbol");
-        let token_decimals = 10;
+        let token_decimals = 10u8;
 
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        token_name,
-        token_symbol,
-        token_decimals,
-    );
-        let coin_management = interchain_token_service::coin_management::new_locked();
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_info(&mut its, token_name, token_symbol, token_decimals, coin_management);
         let destination_chain = ascii::string(b"Chain Name");
         let message_ticket = deploy_remote_interchain_token<COIN>(
             &its,
@@ -810,16 +801,13 @@ module interchain_token_service::interchain_token_service {
     fun test_deploy_interchain_token() {
         let ctx = &mut tx_context::dummy();
         let mut its = create_for_testing(ctx);
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
 
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
-        let coin_management = interchain_token_service::coin_management::new_locked();
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_info(&mut its, name, symbol, decimals, coin_management);
 
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
@@ -875,20 +863,16 @@ module interchain_token_service::interchain_token_service {
         let ctx = &mut tx_context::dummy();
         let clock = sui::clock::create_for_testing(ctx);
         let mut its = create_for_testing(ctx);
-
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-                string::utf8(b"Name"),
-                ascii::string(b"Symbol"),
-                10,
-            );
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
 
         let amount = 1234;
         let mut coin_management = interchain_token_service::coin_management::new_locked();
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
         coin_management.take_balance(coin.into_balance(), &clock);
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_info(&mut its, name, symbol, decimals, coin_management);
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let its_source_address = b"Source Address";
@@ -930,13 +914,9 @@ module interchain_token_service::interchain_token_service {
         let ctx = &mut tx_context::dummy();
         let clock = sui::clock::create_for_testing(ctx);
         let mut its = create_for_testing(ctx);
-
-        let coin_info =
-            interchain_token_service::coin_info::from_info<COIN>(
-        string::utf8(b"Name"),
-        ascii::string(b"Symbol"),
-        10,
-    );
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
 
         let amount = 1234;
         let data = b"some_data";
@@ -944,7 +924,7 @@ module interchain_token_service::interchain_token_service {
         let coin = sui::coin::mint_for_testing<COIN>(amount, ctx);
         coin_management.take_balance(coin.into_balance(), &clock);
 
-        let token_id = its.register_coin(coin_info, coin_management);
+        let token_id = its.register_coin_from_info(name, symbol, decimals, coin_management);
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let its_source_address = b"Source Address";
@@ -1190,16 +1170,14 @@ module interchain_token_service::interchain_token_service {
             decimals,
             ctx,
         );
-        let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
-        coin_metadata,
-    );
+
         let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let channel = channel::new(ctx);
         coin_management.add_distributor(channel.to_address());
         let amount = 1234;
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
         let coin = mint_as_distributor<COIN>(
             &mut its,
             &channel,
@@ -1210,8 +1188,9 @@ module interchain_token_service::interchain_token_service {
 
         assert!(coin.value() == amount);
 
-        sui::test_utils::destroy(its);
         sui::test_utils::destroy(coin);
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
         channel.destroy();
     }
 
@@ -1227,16 +1206,14 @@ module interchain_token_service::interchain_token_service {
             decimals,
             ctx,
         );
-        let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
-        coin_metadata,
-    );
+
         let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let channel = channel::new(ctx);
         coin_management.add_distributor(channel.to_address());
         let amount = 1234;
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
         mint_to_as_distributor<COIN>(
             &mut its,
             &channel,
@@ -1246,6 +1223,7 @@ module interchain_token_service::interchain_token_service {
             ctx,
         );
 
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
         channel.destroy();
     }
@@ -1260,17 +1238,16 @@ module interchain_token_service::interchain_token_service {
 
         let (mut treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(symbol, decimals, ctx);
         let coin = treasury_cap.mint(amount, ctx);
-        let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
-        coin_metadata,
-    );
+
         let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let channel = channel::new(ctx);
         coin_management.add_distributor(channel.to_address());
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
         burn_as_distributor<COIN>(&mut its, &channel, token_id, coin);
 
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
         channel.destroy();
     }
@@ -1306,17 +1283,16 @@ module interchain_token_service::interchain_token_service {
             decimals,
             ctx,
         );
-        let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
-        coin_metadata,
-    );
+
         let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let channel = channel::new(ctx);
         coin_management.add_operator(channel.to_address());
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
         its.set_flow_limit_as_token_operator<COIN>(&channel, token_id, limit);
 
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
         channel.destroy();
     }
@@ -1334,16 +1310,15 @@ module interchain_token_service::interchain_token_service {
             decimals,
             ctx,
         );
-        let coin_info = interchain_token_service::coin_info::from_metadata<COIN>(
-        coin_metadata,
-    );
+
         let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let operator_cap = operator_cap::create(ctx);
 
-        let token_id = register_coin(&mut its, coin_info, coin_management);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
         its.set_flow_limit<COIN>(&operator_cap, token_id, limit);
 
+        sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
         sui::test_utils::destroy(operator_cap);
     }
