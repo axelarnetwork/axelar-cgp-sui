@@ -210,10 +210,17 @@ describe('ITS', () => {
 
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
+
+        const coinType = `${deployments.example.packageId}::token::TOKEN`;
+        const coinManagment = await builder.moveCall({
+            target: `${deployments.example.packageId}::coin_management::new_locked`,
+            arguments: [],
+            typeArguments: [coinType],
+        });
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its::register_coin_from_metadata`,
-            arguments: [objectIds.its, objectIds.tokenCoinMetadata],
-            typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
+            arguments: [objectIds.its, objectIds.tokenCoinMetadata, coinManagment],
+            typeArguments: [coinType],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer, {
