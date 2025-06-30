@@ -176,7 +176,7 @@ module example::its {
         );
     }
 
-    /// This should trigger an interchain trasnfer.
+    /// This should trigger an interchain transfer.
     public fun send_interchain_transfer_call<TOKEN>(
         singleton: &Singleton,
         its: &mut InterchainTokenService,

@@ -215,6 +215,7 @@ describe('ITS', () => {
 
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
+
         await txBuilder.moveCall({
             target: `${deployments.example.packageId}::its::register_coin`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata],
@@ -225,10 +226,10 @@ describe('ITS', () => {
             showEvents: true,
         });
 
-        objectIds.tokenId = txResult.events[0].parsedJson.token_id.id;
+        objectIds.tokenId = txResult.events[0].parsedJson.token_id;
 
         expect(txResult.events.length).to.equal(1);
-        expect(objectIds.tokenId).to.be.not.null;
+        expect(objectIds.tokenId.id).to.be.not.null;
     });
 
     describe('Two-way Calls', () => {
@@ -251,7 +252,7 @@ describe('ITS', () => {
 
                 const TokenId = await txBuilder.moveCall({
                     target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
-                    arguments: [objectIds.tokenId],
+                    arguments: [objectIds.tokenId.id],
                 });
 
                 await txBuilder.moveCall({
@@ -281,7 +282,7 @@ describe('ITS', () => {
             it('should receive interchain transfer successfully', async () => {
                 // Approve ITS transfer message
                 const messageType = ITSMessageType.InterchainTokenTransfer;
-                const tokenId = objectIds.tokenId;
+                const tokenId = objectIds.tokenId.id;
                 const sourceAddress = '0x1234';
                 const destinationAddress = objectIds.itsChannel; // The ITS Channel ID. All ITS messages are sent to this channel
                 const amount = 1e9;
@@ -314,16 +315,16 @@ describe('ITS', () => {
         });
 
         describe('Interchain Token Deployment', () => {
-            it('should deploy remote interchain token to other chain successfully', async () => {
+            it('should deploy remote interchain token to other chain successfully', async () => {//here
                 const txBuilder = new TxBuilder(client);
 
                 const tx = txBuilder.tx;
                 const gas = tx.splitCoins(tx.gas, [1e8]);
 
-                const TokenId = await txBuilder.moveCall({
-                    target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
-                    arguments: [objectIds.tokenId],
-                });
+                // const TokenId = await txBuilder.moveCall({
+                //     target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
+                //     arguments: [objectIds.tokenId],
+                // });
 
                 await txBuilder.moveCall({
                     target: `${deployments.example.packageId}::its::deploy_remote_interchain_token`,
@@ -332,7 +333,7 @@ describe('ITS', () => {
                         objectIds.gateway,
                         objectIds.gasService,
                         otherChain,
-                        TokenId,
+                        objectIds.tokenId,
                         gas,
                         '0x',
                         deployer.toSuiAddress(),
