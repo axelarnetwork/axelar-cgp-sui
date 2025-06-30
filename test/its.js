@@ -1,9 +1,14 @@
 /*
 This is a short spec for what there is to be done. You can check https://github.com/axelarnetwork/interchain-token-service/blob/main/test/InterchainTokenService.js for some details.
+Note that this test suite uses the example Move contract in some cases (`/move/example`), and the production 
+move contract in other cases (`/move/interchain_token_service`). 
+
+TODO: move the example contract tests to their own test file (example.js), and keep this test file for ITS tests
+
 [x] Test deployment of interchain token service.
 [x] Test `register_transaction` (this tells relayers how to execute contract calls).
 [x] Test owner functions (mint/burn).
-[x] Test public functions (`register_token` etc.).
+[x] Test public functions (`register_coin_from_metadata` etc.).
 [x] Write an ITS example.
 [x] Use the ITS example for end to end tests.
 */
@@ -210,17 +215,10 @@ describe('ITS', () => {
 
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
-
-        const coinType = `${deployments.example.packageId}::token::TOKEN`;
-        const coinManagment = await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::coin_management::new_locked`,
-            arguments: [],
-            typeArguments: [coinType],
-        });
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::interchain_token_service::register_coin_from_metadata`,
-            arguments: [objectIds.its, objectIds.tokenCoinMetadata, coinManagment],
-            typeArguments: [coinType],
+            target: `${deployments.example.packageId}::its::register_coin`,
+            arguments: [objectIds.its, objectIds.tokenCoinMetadata],
+            typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
 
         const txResult = await txBuilder.signAndExecute(deployer, {
