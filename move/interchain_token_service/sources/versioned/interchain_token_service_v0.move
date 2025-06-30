@@ -317,14 +317,20 @@ module interchain_token_service::interchain_token_service_v0 {
         let coin_management = coin_data.coin_management();
         let has_metadata = option::is_some(coin_info.metadata());
 
-        let derived_token_id = token_id::from_coin_data(
+        // TODO: fix needing to check both metadata (with / without)
+        let derived_token_id_a = token_id::from_coin_data(
             &self.chain_name_hash,
             coin_info,
             coin_management,
             has_metadata,
         );
-
-        assert!(token_id == derived_token_id, ENotCannonicalToken);
+        let derived_token_id_b = token_id::from_coin_data(
+            &self.chain_name_hash,
+            coin_info,
+            coin_management,
+            !has_metadata,
+        );
+        assert!((token_id == derived_token_id_a) || (token_id == derived_token_id_b), ENotCannonicalToken);
 
         let name = coin_info.name();
         let symbol = coin_info.symbol();

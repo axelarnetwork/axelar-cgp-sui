@@ -8,7 +8,7 @@ TODO: move the example contract tests to their own test file (example.js), and k
 [x] Test deployment of interchain token service.
 [x] Test `register_transaction` (this tells relayers how to execute contract calls).
 [x] Test owner functions (mint/burn).
-[x] Test public functions (`register_coin_from_metadata` etc.).
+[x] Test public functions (`register_coin` etc.).
 [x] Write an ITS example.
 [x] Use the ITS example for end to end tests.
 */
@@ -319,7 +319,7 @@ describe('ITS', () => {
                 const txBuilder = new TxBuilder(client);
 
                 const tx = txBuilder.tx;
-                const gas = tx.splitCoins(tx.gas, [1e9]);
+                const gas = tx.splitCoins(tx.gas, [1e8]);
 
                 const TokenId = await txBuilder.moveCall({
                     target: `${deployments.interchain_token_service.packageId}::token_id::from_u256`,
