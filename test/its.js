@@ -212,7 +212,7 @@ describe('ITS', () => {
         const txBuilder = new TxBuilder(client);
 
         const coinType = `${deployments.example.packageId}::token::TOKEN`;
-        const coinManagment = await builder.moveCall({
+        const coinManagment = await txBuilder.moveCall({
             target: `${deployments.example.packageId}::coin_management::new_locked`,
             arguments: [],
             typeArguments: [coinType],
