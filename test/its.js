@@ -315,7 +315,7 @@ describe('ITS', () => {
         });
 
         describe('Interchain Token Deployment', () => {
-            it('should deploy remote interchain token to other chain successfully', async () => {//here
+            it('should deploy remote interchain token to other chain successfully', async () => {
                 const txBuilder = new TxBuilder(client);
 
                 const tx = txBuilder.tx;
