@@ -218,7 +218,7 @@ describe('ITS', () => {
             typeArguments: [coinType],
         });
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::its::register_coin_from_metadata`,
+            target: `${deployments.example.packageId}::interchain_token_service::register_coin_from_metadata`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata, coinManagment],
             typeArguments: [coinType],
         });
