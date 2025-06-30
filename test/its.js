@@ -1,6 +1,6 @@
 /*
 This is a short spec for what there is to be done. You can check https://github.com/axelarnetwork/interchain-token-service/blob/main/test/InterchainTokenService.js for some details.
-[x] Test deployment of interchian token service.
+[x] Test deployment of interchain token service.
 [x] Test `register_transaction` (this tells relayers how to execute contract calls).
 [x] Test owner functions (mint/burn).
 [x] Test public functions (`register_token` etc.).
@@ -211,7 +211,7 @@ describe('ITS', () => {
     it('should register a coin successfully', async () => {
         const txBuilder = new TxBuilder(client);
         await txBuilder.moveCall({
-            target: `${deployments.example.packageId}::its::register_coin`,
+            target: `${deployments.example.packageId}::its::register_coin_from_metadata`,
             arguments: [objectIds.its, objectIds.tokenCoinMetadata],
             typeArguments: [`${deployments.example.packageId}::token::TOKEN`],
         });
