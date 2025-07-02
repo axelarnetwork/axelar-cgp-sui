@@ -175,10 +175,6 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.version_control
     }
 
-    /// Originally, the versioned function for public fun interchain_token_service::register_coin.
-    /// Now, a worker function to process registering a coin (modified in version 1.0).
-    /// @see self.register_coin_from_info
-    /// @see self.register_coin_from_metadata
     public(package) fun register_coin<T>(
         self: &mut InterchainTokenService_v0,
         coin_info: CoinInfo<T>,
@@ -318,19 +314,19 @@ module interchain_token_service::interchain_token_service_v0 {
         let has_metadata = option::is_some(coin_info.metadata());
 
         // TODO: fix needing to check both metadata (with / without)
-        let derived_token_id_a = token_id::from_coin_data(
+        let derived_token_id_with_metadata = token_id::from_coin_data(
             &self.chain_name_hash,
             coin_info,
             coin_management,
             has_metadata,
         );
-        let derived_token_id_b = token_id::from_coin_data(
+        let derived_token_id_without_metadata = token_id::from_coin_data(
             &self.chain_name_hash,
             coin_info,
             coin_management,
             !has_metadata,
         );
-        assert!((token_id == derived_token_id_a) || (token_id == derived_token_id_b), ENotCannonicalToken);
+        assert!((token_id == derived_token_id_with_metadata) || (token_id == derived_token_id_without_metadata), ENotCannonicalToken);
 
         let name = coin_info.name();
         let symbol = coin_info.symbol();
