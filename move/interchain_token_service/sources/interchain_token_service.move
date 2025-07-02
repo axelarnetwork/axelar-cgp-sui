@@ -545,6 +545,8 @@ module interchain_token_service::interchain_token_service {
     use abi::abi;
     #[test_only]
     use utils::utils;
+    #[test_only]
+    use version_control::version_control::EFunctionNotSupported;
 
     // === MESSAGE TYPES ===
     #[test_only]
@@ -642,6 +644,24 @@ module interchain_token_service::interchain_token_service {
         let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
 
         register_coin_from_info(&mut its, name, symbol, decimals, coin_management);
+        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EFunctionNotSupported)]
+    fun test_deprecated_register_coin_should_fail() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
+        let coin_info = interchain_token_service::coin_info::from_info<COIN>(name, symbol, decimals);
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
+
+        register_coin(&mut its, coin_info, coin_management);
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         sui::test_utils::destroy(its);
