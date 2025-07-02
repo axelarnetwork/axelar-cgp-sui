@@ -311,22 +311,21 @@ module interchain_token_service::interchain_token_service_v0 {
         let coin_data = self.coin_data<T>(token_id);
         let coin_info = coin_data.coin_info();
         let coin_management = coin_data.coin_management();
-        let has_metadata = option::is_some(coin_info.metadata());
 
         // TODO: fix needing to check both metadata (with / without)
-        let derived_token_id_with_metadata = token_id::from_coin_data(
-            &self.chain_name_hash,
-            coin_info,
-            coin_management,
-            has_metadata,
-        );
         let derived_token_id_without_metadata = token_id::from_coin_data(
             &self.chain_name_hash,
             coin_info,
             coin_management,
-            !has_metadata,
+            false,
         );
-        assert!((token_id == derived_token_id_with_metadata) || (token_id == derived_token_id_without_metadata), ENotCannonicalToken);
+        let derived_token_id_with_metadata = token_id::from_coin_data(
+            &self.chain_name_hash,
+            coin_info,
+            coin_management,
+            true,
+        );
+        assert!((token_id == derived_token_id_without_metadata) || (token_id == derived_token_id_with_metadata), ENotCannonicalToken);
 
         let name = coin_info.name();
         let symbol = coin_info.symbol();
