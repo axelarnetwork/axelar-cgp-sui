@@ -121,9 +121,7 @@ module interchain_token_service::interchain_token_service {
 
     /// Legacy function to register a coin from the given `CoinInfo`.
     /// @deprecated
-    #[allow(dead_code)]
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
-        abort EUnsupported;
         let value = self.value_mut!(b"register_coin");
         value.register_coin(coin_info, coin_management)
     }

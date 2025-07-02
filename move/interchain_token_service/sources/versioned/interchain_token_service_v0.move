@@ -175,6 +175,8 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.version_control
     }
 
+    /// Legacy function to register a coin from the given `CoinInfo`.
+    /// @deprecated
     public(package) fun register_coin<T>(
         self: &mut InterchainTokenService_v0,
         coin_info: CoinInfo<T>,
