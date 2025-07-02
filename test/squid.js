@@ -273,19 +273,14 @@ describe('Squid', () => {
     async function registerCoin(coin) {
         const builder = new TxBuilder(client);
 
-        const coinInfo = await builder.moveCall({
-            target: `${deployments.interchain_token_service.packageId}::coin_info::from_metadata`,
-            arguments: [coins[coin].coinMetadata],
-            typeArguments: [coins[coin].type],
-        });
         const coinManagment = await builder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::coin_management::new_locked`,
             arguments: [],
             typeArguments: [coins[coin].type],
         });
         await builder.moveCall({
-            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::register_coin`,
-            arguments: [objectIds.its, coinInfo, coinManagment],
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::register_coin_from_metadata`,
+            arguments: [objectIds.its, coins[coin].coinMetadata, coinManagment],
             typeArguments: [coins[coin].type],
         });
 

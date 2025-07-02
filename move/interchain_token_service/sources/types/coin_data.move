@@ -33,4 +33,8 @@ module interchain_token_service::coin_data {
     public(package) fun coin_management_mut<T>(self: &mut CoinData<T>): &mut CoinManagement<T> {
         &mut self.coin_management
     }
+
+    public(package) fun coin_info_mut<T>(self: &mut CoinData<T>): &mut CoinInfo<T> {
+        &mut self.coin_info
+    }
 }
