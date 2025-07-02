@@ -24,12 +24,6 @@ module interchain_token_service::interchain_token_service {
     const VERSION: u64 = 1;
     const DATA_VERSION: u64 = 0;
 
-    // ------
-    // Errors
-    // ------
-    #[error]
-    const EUnsupported: vector<u8> = b"legacy method is no longer supported";
-
     // -------
     // Structs
     // -------
