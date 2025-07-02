@@ -125,7 +125,7 @@ module interchain_token_service::interchain_token_service {
     public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
         abort EUnsupported;
         let value = self.value_mut!(b"register_coin");
-        value.register_coin(coin_info, coin_management, option::is_some(coin_info.metadata()))
+        value.register_coin(coin_info, coin_management)
     }
 
     /// Register a coin from user supplied values. Replaces legacy function `register_coin`.
