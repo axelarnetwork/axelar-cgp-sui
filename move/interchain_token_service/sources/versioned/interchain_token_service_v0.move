@@ -207,17 +207,20 @@ module interchain_token_service::interchain_token_service_v0 {
             let mut coin_info_mut = move coin_info;
             coin_info_mut.release_metadata();
 
+            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info_mut));
+
             token_id
         } else {
-            token_id::from_coin_data(
+            let token_id = token_id::from_coin_data(
                 &self.chain_name_hash,
                 &coin_info,
                 &coin_management,
                 false,
-            )
-        };
+            );
+            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
-        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+            token_id
+        };
 
         token_id
     }
