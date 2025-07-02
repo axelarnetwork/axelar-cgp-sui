@@ -38,7 +38,7 @@ module interchain_token_service::coin_data {
         let CoinData { coin_management, coin_info } = self;
         (coin_management, coin_info)
     }
-    
+
     public(package) fun coin_info_mut<T>(self: &mut CoinData<T>): &mut CoinInfo<T> {
         &mut self.coin_info
     }
