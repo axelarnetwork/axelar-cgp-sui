@@ -14,6 +14,7 @@ module interchain_token_service::coin_info {
         name: String,
         symbol: ascii::String,
         decimals: u8,
+        /// Field `metadata` is deprecated and will always be None
         metadata: Option<CoinMetadata<T>>,
     }
 
@@ -27,13 +28,37 @@ module interchain_token_service::coin_info {
         }
     }
 
-    /// Create a new coin info from the given `CoinMetadata` object.
+    /// Create a new coin info from the given `CoinMetadata` object and publicly freeze the metadata object.
     public fun from_metadata<T>(metadata: CoinMetadata<T>): CoinInfo<T> {
+        let coin_info = CoinInfo {
+            name: metadata.get_name(),
+            symbol: metadata.get_symbol(),
+            decimals: metadata.get_decimals(),
+            metadata: option::none(),
+        };
+        transfer::public_freeze_object(metadata);
+        coin_info
+    }
+
+    /// Create a new coin info from the given `&CoinMetadata` object.
+    public fun from_metadata_ref<T>(metadata: &CoinMetadata<T>): CoinInfo<T> {
         CoinInfo {
             name: metadata.get_name(),
             symbol: metadata.get_symbol(),
             decimals: metadata.get_decimals(),
-            metadata: option::some(metadata),
+            metadata: option::none(),
+        }
+    }
+
+    // -----------------
+    // Package Functions
+    // -----------------
+
+    /// Publicly freeze metadata for a coin from the given `CoinInfo<T>`
+    public(package) fun release_metadata<T>(coin_info: &mut CoinInfo<T>) {
+        if (coin_info.metadata.is_some()) {
+            let metadata = coin_info.metadata.extract();
+            transfer::public_freeze_object(metadata)
         }
     }
 
@@ -74,6 +99,9 @@ module interchain_token_service::coin_info {
     #[error]
     #[test_only]
     const EMetadataExists: vector<u8> = b"metadata was expected to be empty";
+    #[error]
+    #[test_only]
+    const EMetadataNotReleased: vector<u8> = b"metadata was expected to be released";
 
     #[test_only]
     public fun drop<T>(coin_info: CoinInfo<T>) {
@@ -94,7 +122,6 @@ module interchain_token_service::coin_info {
     fun test_from_metadata() {
         let ctx = &mut tx_context::dummy();
         let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
-        let metadata_bytes = sui::bcs::to_bytes(&metadata);
 
         let name = metadata.get_name();
         let symbol = metadata.get_symbol();
@@ -105,7 +132,29 @@ module interchain_token_service::coin_info {
         assert!(coin_info.name() == name);
         assert!(coin_info.symbol() == symbol);
         assert!(coin_info.decimals() == decimals);
-        assert!(sui::bcs::to_bytes(coin_info.metadata().borrow()) == metadata_bytes);
+        assert!(coin_info.metadata().is_none());
+
+        sui::test_utils::destroy(coin_info);
+    }
+
+    #[test]
+    fun test_release_metadata() {
+        let ctx = &mut tx_context::dummy();
+        let metadata = interchain_token_service::coin::create_metadata(b"Symbol", 8, ctx);
+
+        let name = metadata.get_name();
+        let symbol = metadata.get_symbol();
+        let decimals = metadata.get_decimals();
+
+        let mut coin_info = CoinInfo {
+            name,
+            symbol,
+            decimals,
+            metadata: option::some(metadata),
+        };
+
+        release_metadata(&mut coin_info);
+        assert!(coin_info.metadata.is_none(), EMetadataNotReleased);
 
         sui::test_utils::destroy(coin_info);
     }
