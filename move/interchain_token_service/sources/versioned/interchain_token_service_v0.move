@@ -175,22 +175,39 @@ module interchain_token_service::interchain_token_service_v0 {
         &self.version_control
     }
 
+    /// Legacy function to register a coin from the given `CoinInfo`, provides backwards compatibility.
+    /// Freezing the metadata in legacy function prevents the coin's metadata from needing to be migrated
+    /// later with migrate_coin_metadata
+    /// @deprecated
     public(package) fun register_coin<T>(
         self: &mut InterchainTokenService_v0,
         coin_info: CoinInfo<T>,
         coin_management: CoinManagement<T>,
-        has_metadata: bool,
     ): TokenId {
-        let token_id = token_id::from_coin_data(
-            &self.chain_name_hash,
-            &coin_info,
-            &coin_management,
-            has_metadata,
-        );
+        if (coin_info.metadata().is_some()) {
+            let token_id = token_id::from_coin_data(
+                &self.chain_name_hash,
+                &coin_info,
+                &coin_management,
+                true,
+            );
+            let mut coin_info = move coin_info;
+            coin_info.release_metadata();
 
-        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
 
-        token_id
+            token_id
+        } else {
+            let token_id = token_id::from_coin_data(
+                &self.chain_name_hash,
+                &coin_info,
+                &coin_management,
+                false,
+            );
+            self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+
+            token_id
+        }
     }
 
     /// Register a coin using the coin's name, symbol and decimals.
@@ -203,7 +220,7 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let coin_info = coin_info::from_info<T>(name, symbol, decimals);
 
-        self.register_coin(coin_info, coin_management, false)
+        self.register_coin_from_coin_info(coin_info, coin_management, false)
     }
 
     /// Register a coin using the coin's metadata.
@@ -215,7 +232,7 @@ module interchain_token_service::interchain_token_service_v0 {
     ): TokenId {
         let coin_info = coin_info::from_metadata_ref<T>(metadata);
 
-        self.register_coin(coin_info, coin_management, true)
+        self.register_coin_from_coin_info(coin_info, coin_management, true)
     }
 
     public(package) fun register_custom_coin<T>(
@@ -857,6 +874,25 @@ module interchain_token_service::interchain_token_service_v0 {
     fun coin_data_mut<T>(self: &mut InterchainTokenService_v0, token_id: TokenId): &mut CoinData<T> {
         assert!(self.registered_coins.contains(token_id), EUnregisteredCoin);
         &mut self.registered_coins[token_id]
+    }
+
+    /// Helper function for register_coin_from_info and register_coin_from_metadata that registers a coin
+    fun register_coin_from_coin_info<T>(
+        self: &mut InterchainTokenService_v0,
+        coin_info: CoinInfo<T>,
+        coin_management: CoinManagement<T>,
+        has_metadata: bool,
+    ): TokenId {
+        let token_id = token_id::from_coin_data(
+            &self.chain_name_hash,
+            &coin_info,
+            &coin_management,
+            has_metadata,
+        );
+
+        self.add_registered_coin(token_id, coin_data::new(coin_management, coin_info));
+
+        token_id
     }
 
     // ---------
