@@ -176,7 +176,7 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     /// Legacy function to register a coin from the given `CoinInfo`, provides backwards compatibility.
-    /// Freezing the metadata in legacy function prevents the coin's metadata from needing to be migrated 
+    /// Freezing the metadata in legacy function prevents the coin's metadata from needing to be migrated
     /// later with migrate_coin_metadata
     /// @deprecated
     public(package) fun register_coin<T>(
