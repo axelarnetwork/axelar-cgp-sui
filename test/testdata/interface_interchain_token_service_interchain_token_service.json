@@ -22,9 +22,9 @@
       "name": "register_coin<T>",
       "visibility": "public",
       "params": {
-        "self#0#0": "&mut InterchainTokenService",
-        "coin_info#0#0": "CoinInfo<T>",
-        "coin_management#0#0": "CoinManagement<T>"
+        "_#0#0": "&mut InterchainTokenService",
+        "_#1#0": "CoinInfo<T>",
+        "_#2#0": "CoinManagement<T>"
       },
       "returnType": "TokenId"
     },

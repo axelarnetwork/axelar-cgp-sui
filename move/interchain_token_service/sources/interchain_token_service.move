@@ -121,11 +121,8 @@ module interchain_token_service::interchain_token_service {
 
     /// Legacy function to register a coin from the given `CoinInfo`.
     /// @deprecated
-    #[allow(dead_code)]
-    public fun register_coin<T>(self: &mut InterchainTokenService, coin_info: CoinInfo<T>, coin_management: CoinManagement<T>): TokenId {
-        abort EUnsupported;
-        let value = self.value_mut!(b"register_coin");
-        value.register_coin(coin_info, coin_management, option::is_some(coin_info.metadata()))
+    public fun register_coin<T>(_: &mut InterchainTokenService, _: CoinInfo<T>, _: CoinManagement<T>): TokenId {
+        abort EUnsupported
     }
 
     /// Register a coin from user supplied values. Replaces legacy function `register_coin`.
@@ -651,6 +648,23 @@ module interchain_token_service::interchain_token_service {
 
         register_coin_from_info(&mut its, name, symbol, decimals, coin_management);
         utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUnsupported)]
+    fun test_deprecated_register_coin_should_fail() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
+        let coin_info = interchain_token_service::coin_info::from_info<COIN>(name, symbol, decimals);
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
+
+        register_coin(&mut its, coin_info, coin_management);
 
         sui::test_utils::destroy(its);
     }
