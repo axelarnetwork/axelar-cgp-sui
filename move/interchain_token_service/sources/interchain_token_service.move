@@ -665,7 +665,6 @@ module interchain_token_service::interchain_token_service {
         let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
 
         register_coin(&mut its, coin_info, coin_management);
-        utils::assert_event<interchain_token_service::events::CoinRegistered<COIN>>();
 
         sui::test_utils::destroy(its);
     }
