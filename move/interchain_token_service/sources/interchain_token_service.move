@@ -115,6 +115,13 @@ module interchain_token_service::interchain_token_service {
         self.value_mut!(b"migrate_coin_metadata").migrate_coin_metadata<T>(token_id);
     }
 
+    /// This function should only be called once
+    /// (checks should be made on versioned to ensure this)
+    /// It upgrades the version control to the new version control.
+    entry fun migrate(self: &mut InterchainTokenService, _: &OwnerCap, data: vector<u8>) {
+        self.inner.load_value_mut<InterchainTokenService_v0>().migrate(version_control(), data);
+    }
+
     // ----------------
     // Public Functions
     // ----------------

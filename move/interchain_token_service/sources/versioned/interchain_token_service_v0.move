@@ -63,6 +63,10 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotCannonicalToken: vector<u8> = b"cannot deploy remote interchain token for a custom token";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
+    #[error]
+    const ECannotMigrateTwice: vector<u8> = b"attempting to migrate a even though migration is complete";
+    #[error]
+    const ENoDataAllowedOnMigrate: vector<u8> = b"no data should be passed to migrate to this version";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -119,6 +123,16 @@ module interchain_token_service::interchain_token_service_v0 {
         }
     }
 
+    public(package) fun version_control(self: &InterchainTokenService_v0): &VersionControl {
+        &self.version_control
+    }
+
+    public(package) fun migrate(self: &mut InterchainTokenService_v0, mut version_control: VersionControl, data: vector<u8>) {
+        assert!(self.version_control.allowed_functions().length() == version_control.allowed_functions().length() - 1, ECannotMigrateTwice);
+        assert!(data.length() == 0, ENoDataAllowedOnMigrate);
+        self.version_control = version_control;
+    }
+
     public(package) fun unregistered_coin_type(self: &InterchainTokenService_v0, symbol: &String, decimals: u8): &TypeName {
         let key = token_id::unregistered_token_id(symbol, decimals);
 
@@ -169,10 +183,6 @@ module interchain_token_service::interchain_token_service_v0 {
 
     public(package) fun channel(self: &InterchainTokenService_v0): &Channel {
         &self.channel
-    }
-
-    public(package) fun version_control(self: &InterchainTokenService_v0): &VersionControl {
-        &self.version_control
     }
 
     public(package) fun register_coin<T>(
