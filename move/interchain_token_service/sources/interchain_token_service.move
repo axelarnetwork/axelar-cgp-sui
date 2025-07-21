@@ -286,12 +286,11 @@ module interchain_token_service::interchain_token_service {
 
     public fun remove_unlinked_coin<T>(
         self: &mut InterchainTokenService,
-        token_id: TokenId,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
     ): TreasuryCap<T> {
         let value = self.value_mut!(b"remove_unlinked_coin");
 
-        value.remove_unlinked_coin(token_id, treasury_cap_reclaimer)
+        value.remove_unlinked_coin(treasury_cap_reclaimer)
     }
 
     public fun mint_as_distributor<T>(
@@ -1191,7 +1190,7 @@ module interchain_token_service::interchain_token_service {
         let treasury_cap_reclaimer = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
 
-        let treasury_cap: TreasuryCap<COIN> = remove_unlinked_coin(&mut its, token_id, treasury_cap_reclaimer);
+        let treasury_cap: TreasuryCap<COIN> = remove_unlinked_coin(&mut its, treasury_cap_reclaimer);
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(treasury_cap);

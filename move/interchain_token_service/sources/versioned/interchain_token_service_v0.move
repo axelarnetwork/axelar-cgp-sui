@@ -574,10 +574,10 @@ module interchain_token_service::interchain_token_service_v0 {
 
     public(package) fun remove_unlinked_coin<T>(
         self: &mut InterchainTokenService_v0,
-        token_id: TokenId,
         treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
     ): TreasuryCap<T> {
         let token_manager_type = token_manager_type::mint_burn();
+        let token_id = treasury_cap_reclaimer.token_id();
 
         let unlinked_token_id = token_id::unlinked_token_id<T>(token_id, token_manager_type);
 
