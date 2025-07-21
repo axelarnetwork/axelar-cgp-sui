@@ -1520,7 +1520,40 @@ module interchain_token_service::interchain_token_service {
         let owner_cap = owner_cap::create(ctx);
 
         // migration_data is a vector of the v0 bytes
-        let migration_data = vector[48,21,139,72,35,79,1,27,187,55,29,237,250,194,176,60,98,132,190,164,18,73,145,88,83,150,195,55,98,7,183,204];
+        let migration_data = vector[
+            48,
+            21,
+            139,
+            72,
+            35,
+            79,
+            1,
+            27,
+            187,
+            55,
+            29,
+            237,
+            250,
+            194,
+            176,
+            60,
+            98,
+            132,
+            190,
+            164,
+            18,
+            73,
+            145,
+            88,
+            83,
+            150,
+            195,
+            55,
+            98,
+            7,
+            183,
+            204,
+        ];
         self.migrate(&owner_cap, migration_data);
 
         sui::test_utils::destroy(self);
