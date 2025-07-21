@@ -128,7 +128,7 @@ module interchain_token_service::interchain_token_service_v0 {
     }
 
     public(package) fun migrate(self: &mut InterchainTokenService_v0, version_control: VersionControl, data: vector<u8>) {
-        // TODO: enforcing `ECannotMigrateTwice` assertion will block unit tests 
+        // TODO: enforcing `ECannotMigrateTwice` assertion will block unit tests
         // e.g. since the vector is always the same as the current migration
         // assert!(self.version_control.allowed_functions().length() == version_control.allowed_functions().length() - 10, ECannotMigrateTwice);
         assert!(data.length() == 0, ENoDataAllowedOnMigrate);
