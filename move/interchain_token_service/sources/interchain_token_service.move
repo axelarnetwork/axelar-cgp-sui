@@ -284,10 +284,7 @@ module interchain_token_service::interchain_token_service {
         value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
     }
 
-    public fun remove_unlinked_coin<T>(
-        self: &mut InterchainTokenService,
-        treasury_cap_reclaimer: TreasuryCapReclaimer<T>,
-    ): TreasuryCap<T> {
+    public fun remove_unlinked_coin<T>(self: &mut InterchainTokenService, treasury_cap_reclaimer: TreasuryCapReclaimer<T>): TreasuryCap<T> {
         let value = self.value_mut!(b"remove_unlinked_coin");
 
         value.remove_unlinked_coin(treasury_cap_reclaimer)
