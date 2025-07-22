@@ -118,8 +118,8 @@ module interchain_token_service::interchain_token_service {
     /// This function should only be called once
     /// (checks should be made on versioned to ensure this)
     /// It upgrades the version control to the new version control.
-    entry fun migrate(self: &mut InterchainTokenService, _: &OwnerCap, data: vector<u8>) {
-        self.inner.load_value_mut<InterchainTokenService_v0>().migrate(version_control(), data);
+    entry fun migrate(self: &mut InterchainTokenService, _: &OwnerCap) {
+        self.inner.load_value_mut<InterchainTokenService_v0>().migrate(version_control());
     }
 
     // ----------------
@@ -583,6 +583,56 @@ module interchain_token_service::interchain_token_service {
     public fun create_for_testing(ctx: &mut TxContext): InterchainTokenService {
         let mut version_control = version_control();
         version_control.allowed_functions()[VERSION].insert(b"".to_ascii_string());
+
+        let mut value = interchain_token_service_v0::new(
+            version_control,
+            b"chain name".to_ascii_string(),
+            ITS_HUB_ADDRESS.to_ascii_string(),
+            ctx,
+        );
+        value.add_trusted_chain(
+            std::ascii::string(b"Chain Name"),
+        );
+
+        let inner = versioned::create(
+            DATA_VERSION,
+            value,
+            ctx,
+        );
+
+        InterchainTokenService {
+            id: object::new(ctx),
+            inner,
+        }
+    }
+
+    /// Creates an InterchainTokenService instance that simulates the state
+    /// before a package upgrade (with version 0 only)
+    #[test_only]
+    public fun create_pre_upgrade_for_testing(ctx: &mut TxContext): InterchainTokenService {
+        let mut version_control = version_control::new(vector[
+            vector[
+                b"deploy_remote_interchain_token",
+                b"send_interchain_transfer",
+                b"receive_interchain_transfer",
+                b"receive_interchain_transfer_with_data",
+                b"receive_deploy_interchain_token",
+                b"give_unregistered_coin",
+                b"mint_as_distributor",
+                b"mint_to_as_distributor",
+                b"burn_as_distributor",
+                b"add_trusted_chains",
+                b"remove_trusted_chains",
+                b"register_transaction",
+                b"set_flow_limit",
+                b"set_flow_limit_as_token_operator",
+                b"transfer_distributorship",
+                b"transfer_operatorship",
+                b"allow_function",
+                b"disallow_function",
+            ].map!(|function_name| function_name.to_ascii_string())
+        ]);
+        version_control.allowed_functions()[0].insert(b"".to_ascii_string());
 
         let mut value = interchain_token_service_v0::new(
             version_control,
@@ -1503,58 +1553,25 @@ module interchain_token_service::interchain_token_service {
     #[test]
     fun test_migrate_version_control() {
         let ctx = &mut sui::tx_context::dummy();
-        let mut self = create_for_testing(ctx);
+        
+        // Create ITS in pre-upgrade state
+        let mut self = create_pre_upgrade_for_testing(ctx);
         let owner_cap = owner_cap::create(ctx);
 
-        self.migrate(&owner_cap, vector[]);
-
+        self.migrate(&owner_cap);
+        
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
     }
 
     #[test]
-    #[expected_failure(abort_code = interchain_token_service_v0::ENoDataAllowedOnMigrate)]
-    fun test_migrate_with_data_should_fail() {
+    #[expected_failure(abort_code = interchain_token_service_v0::ECannotMigrateTwice)]
+    fun test_cannot_migrate_twice() {
         let ctx = &mut sui::tx_context::dummy();
         let mut self = create_for_testing(ctx);
         let owner_cap = owner_cap::create(ctx);
 
-        // migration_data is a vector of the v0 bytes
-        let migration_data = vector[
-            48,
-            21,
-            139,
-            72,
-            35,
-            79,
-            1,
-            27,
-            187,
-            55,
-            29,
-            237,
-            250,
-            194,
-            176,
-            60,
-            98,
-            132,
-            190,
-            164,
-            18,
-            73,
-            145,
-            88,
-            83,
-            150,
-            195,
-            55,
-            98,
-            7,
-            183,
-            204,
-        ];
-        self.migrate(&owner_cap, migration_data);
+        self.migrate(&owner_cap);
 
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
