@@ -630,7 +630,7 @@ module interchain_token_service::interchain_token_service {
                 b"transfer_operatorship",
                 b"allow_function",
                 b"disallow_function",
-            ].map!(|function_name| function_name.to_ascii_string())
+            ].map!(|function_name| function_name.to_ascii_string()),
         ]);
         version_control.allowed_functions()[0].insert(b"".to_ascii_string());
 
@@ -1553,13 +1553,13 @@ module interchain_token_service::interchain_token_service {
     #[test]
     fun test_migrate_version_control() {
         let ctx = &mut sui::tx_context::dummy();
-        
+
         // Create ITS in pre-upgrade state
         let mut self = create_pre_upgrade_for_testing(ctx);
         let owner_cap = owner_cap::create(ctx);
 
         self.migrate(&owner_cap);
-        
+
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
     }
