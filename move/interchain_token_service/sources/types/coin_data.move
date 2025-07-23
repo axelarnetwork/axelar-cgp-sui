@@ -34,6 +34,11 @@ module interchain_token_service::coin_data {
         &mut self.coin_management
     }
 
+    public(package) fun destroy<T>(self: CoinData<T>): (CoinManagement<T>, CoinInfo<T>) {
+        let CoinData { coin_management, coin_info } = self;
+        (coin_management, coin_info)
+    }
+
     public(package) fun coin_info_mut<T>(self: &mut CoinData<T>): &mut CoinInfo<T> {
         &mut self.coin_info
     }

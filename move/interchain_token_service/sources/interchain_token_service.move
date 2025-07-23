@@ -259,12 +259,6 @@ module interchain_token_service::interchain_token_service {
         value.receive_deploy_interchain_token<T>(approved_message);
     }
 
-    public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService, approved_message: ApprovedMessage) {
-        let value = self.value_mut!(b"receive_link_coin");
-
-        value.receive_link_coin<T>(approved_message);
-    }
-
     // We need an coin with zero supply that has the proper decimals and typing, and
     // no Url.
     public fun give_unregistered_coin<T>(self: &mut InterchainTokenService, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
@@ -285,6 +279,12 @@ module interchain_token_service::interchain_token_service {
         let value = self.value_mut!(b"give_unlinked_coin");
 
         value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
+    }
+
+    public fun remove_unlinked_coin<T>(self: &mut InterchainTokenService, treasury_cap_reclaimer: TreasuryCapReclaimer<T>): TreasuryCap<T> {
+        let value = self.value_mut!(b"remove_unlinked_coin");
+
+        value.remove_unlinked_coin(treasury_cap_reclaimer)
     }
 
     public fun mint_as_distributor<T>(
@@ -471,6 +471,12 @@ module interchain_token_service::interchain_token_service {
         );
     }
 
+    public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService, approved_message: ApprovedMessage) {
+        let value = self.value_mut!(b"receive_link_coin");
+
+        value.receive_link_coin<T>(approved_message);
+    }
+
     // -----------------
     // Private Functions
     // -----------------
@@ -512,6 +518,7 @@ module interchain_token_service::interchain_token_service {
                 b"receive_link_coin",
                 b"give_unregistered_coin",
                 b"give_unlinked_coin",
+                b"remove_unlinked_coin",
                 b"mint_as_distributor",
                 b"mint_to_as_distributor",
                 b"burn_as_distributor",
@@ -1173,6 +1180,31 @@ module interchain_token_service::interchain_token_service {
         full_option.destroy_some().destroy();
 
         sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_remove_unlinked_coin() {
+        let symbol = b"COIN";
+        let decimals = 12;
+        let ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+
+        let token_id = interchain_token_service::token_id::from_u256(1234);
+
+        let treasury_cap_reclaimer = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+
+        let treasury_cap: TreasuryCap<COIN> = remove_unlinked_coin(&mut its, treasury_cap_reclaimer);
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(treasury_cap);
         sui::test_utils::destroy(its);
     }
 

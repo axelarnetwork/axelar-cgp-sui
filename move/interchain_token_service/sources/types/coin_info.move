@@ -4,6 +4,12 @@ module interchain_token_service::coin_info {
     use std::{ascii, string::String};
     use sui::coin::CoinMetadata;
 
+    // ------
+    // Errors
+    // ------
+    #[error]
+    const ECoinMetadataPresent: vector<u8> = b"trying to destory a coin_info that has coin_metadata";
+
     public struct CoinInfo<phantom T> has store {
         name: String,
         symbol: ascii::String,
@@ -73,6 +79,20 @@ module interchain_token_service::coin_info {
 
     public fun metadata<T>(self: &CoinInfo<T>): &Option<CoinMetadata<T>> {
         &self.metadata
+    }
+
+    // === Package Functions
+    public(package) fun destroy_empty<T>(self: CoinInfo<T>) {
+        assert!(self.metadata.is_none(), ECoinMetadataPresent);
+
+        let CoinInfo {
+            name: _,
+            symbol: _,
+            decimals: _,
+            metadata,
+        } = self;
+
+        metadata.destroy_none();
     }
 
     // === Tests ===

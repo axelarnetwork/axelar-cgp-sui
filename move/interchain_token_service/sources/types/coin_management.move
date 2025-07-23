@@ -163,6 +163,19 @@ module interchain_token_service::coin_management {
         self.treasury_cap.fill(treasury_cap);
     }
 
+    public(package) fun destroy<T>(self: CoinManagement<T>): (Option<TreasuryCap<T>>, Option<Balance<T>>) {
+        let CoinManagement {
+            treasury_cap,
+            balance,
+            distributor: _,
+            operator: _,
+            flow_limit: _,
+            dust: _,
+        } = self;
+
+        (treasury_cap, balance)
+    }
+
     // === Views ===
 
     /// Checks if the given address is a `distributor`.

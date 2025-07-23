@@ -50,6 +50,12 @@ module interchain_token_service::events {
         token_manager_type: TokenManagerType,
     }
 
+    public struct UnlinkedCoinRemoved<phantom T> has copy, drop {
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    }
+
     public struct TrustedChainAdded has copy, drop {
         chain_name: String,
     }
@@ -183,6 +189,18 @@ module interchain_token_service::events {
         token_manager_type: TokenManagerType,
     ) {
         event::emit(UnlinkedCoinReceived<T> {
+            unlinked_token_id,
+            token_id,
+            token_manager_type,
+        });
+    }
+
+    public(package) fun unlinked_coin_removed<T>(
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    ) {
+        event::emit(UnlinkedCoinRemoved<T> {
             unlinked_token_id,
             token_id,
             token_manager_type,
