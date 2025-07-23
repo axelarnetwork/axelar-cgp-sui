@@ -143,6 +143,15 @@
       },
       "returnType": "Option<TreasuryCapReclaimer<T>>"
     },
+    "remove_unlinked_coin<T>": {
+      "name": "remove_unlinked_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "treasury_cap_reclaimer#0#0": "TreasuryCapReclaimer<T>"
+      },
+      "returnType": "TreasuryCap<T>"
+    },
     "mint_as_distributor<T>": {
       "name": "mint_as_distributor<T>",
       "visibility": "public",
