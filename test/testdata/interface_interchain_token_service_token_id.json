@@ -81,6 +81,26 @@
       },
       "returnType": "TokenId"
     },
+    "custom_token_id": {
+      "name": "custom_token_id",
+      "visibility": "public",
+      "params": {
+        "chain_name_hash#0#0": "&Bytes32",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "&Bytes32"
+      },
+      "returnType": "TokenId"
+    },
+    "custom_token_id_data": {
+      "name": "custom_token_id_data",
+      "visibility": "public",
+      "params": {
+        "chain_name_hash#0#0": "&Bytes32",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "&Bytes32"
+      },
+      "returnType": "address"
+    },
     "unregistered_token_id": {
       "name": "unregistered_token_id",
       "visibility": "public",

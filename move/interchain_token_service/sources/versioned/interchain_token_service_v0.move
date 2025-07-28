@@ -63,6 +63,8 @@ module interchain_token_service::interchain_token_service_v0 {
     const ENotCannonicalToken: vector<u8> = b"cannot deploy remote interchain token for a custom token";
     #[error]
     const ECannotDeployRemotelyToSelf: vector<u8> = b"cannot deploy custom token to this chain remotely, use register_custom_coin instead";
+    #[error]
+    const ECoinTypeMissmatch: vector<u8> = b"receiving coin type does not match the coin type specified";
 
     // === MESSAGE TYPES ===
     const MESSAGE_TYPE_INTERCHAIN_TRANSFER: u256 = 0;
@@ -501,7 +503,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let destination_token_address = reader.read_bytes();
         let link_params = reader.read_bytes();
 
-        assert!(destination_token_address == type_name::get<T>().into_string().into_bytes());
+        assert!(destination_token_address == type_name::get<T>().into_string().into_bytes(), ECoinTypeMissmatch);
 
         let token_manager_type = token_manager_type::from_u256(token_manager_type);
 

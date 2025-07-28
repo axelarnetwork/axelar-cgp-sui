@@ -259,6 +259,12 @@ module interchain_token_service::interchain_token_service {
         value.receive_deploy_interchain_token<T>(approved_message);
     }
 
+    public fun receive_link_coin<T>(self: &mut InterchainTokenService, approved_message: ApprovedMessage) {
+        let value = self.value_mut!(b"receive_link_coin");
+
+        value.receive_link_coin<T>(approved_message);
+    }
+
     // We need an coin with zero supply that has the proper decimals and typing, and
     // no Url.
     public fun give_unregistered_coin<T>(self: &mut InterchainTokenService, treasury_cap: TreasuryCap<T>, coin_metadata: CoinMetadata<T>) {
@@ -447,6 +453,10 @@ module interchain_token_service::interchain_token_service {
         self.package_value().coin_data<T>(token_id)
     }
 
+    public fun chain_name_hash(self: &InterchainTokenService): Bytes32 {
+        self.package_value().chain_name_hash()
+    }
+
     // -----------------
     // Package Functions
     // -----------------
@@ -469,12 +479,6 @@ module interchain_token_service::interchain_token_service {
             value.channel(),
             transaction,
         );
-    }
-
-    public(package) fun receive_link_coin<T>(self: &mut InterchainTokenService, approved_message: ApprovedMessage) {
-        let value = self.value_mut!(b"receive_link_coin");
-
-        value.receive_link_coin<T>(approved_message);
     }
 
     // -----------------

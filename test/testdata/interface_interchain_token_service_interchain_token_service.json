@@ -209,6 +209,14 @@
         "token_id#0#0": "TokenId"
       },
       "returnType": "&CoinData<T>"
+    },
+    "chain_name_hash": {
+      "name": "chain_name_hash",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&InterchainTokenService"
+      },
+      "returnType": "Bytes32"
     }
   }
 }
