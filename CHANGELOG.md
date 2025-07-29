@@ -1,5 +1,23 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.x.x
+
+### Major Changes
+
+- 6fe375a: Added ITS version control managed upgrade v0 -> v1
+
+### Minor Changes
+
+- 6721872: Retired ITS `register_coin` and replaced it with new functions `register_coin_from_info` and `register_coin_from_metadata`
+- 7733c47: Added custom token linking
+- 8443a18: Added types and management functions for linked and unlinked tokens
+- 0137059: Added support for coin deployers to manage and reclaim their coin's `TreasuryCap`
+
+### Patch Changes
+
+- 6007ce9: `CoinInfo` field `metadata` is deprecated and will always be [None](https://docs.sui.io/references/framework/std/option#std_option_none)
+- 6007ce9: Added function for coins registered in ITS v0, with `Some(metadata)` in their `CoinInfo`, to migrate their [metadata] out of ITS (e.g. so they'll display correctly in wallets)
+
 ## 1.1.3
 
 ### Patch Changes
