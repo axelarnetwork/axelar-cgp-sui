@@ -460,10 +460,6 @@ module interchain_token_service::interchain_token_service {
         self.package_value().coin_data<T>(token_id)
     }
 
-    public fun chain_name_hash(self: &InterchainTokenService): Bytes32 {
-        self.package_value().chain_name_hash()
-    }
-
     // -----------------
     // Package Functions
     // -----------------
