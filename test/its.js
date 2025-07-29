@@ -207,6 +207,7 @@ describe('ITS', () => {
         });
 
         let treasuryCapReclaimer;
+
         if (mintBurn) {
             treasuryCapReclaimer = await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_some`,
@@ -328,6 +329,7 @@ describe('ITS', () => {
         });
 
         let treasuryCapReclaimer;
+
         if (mintBurn) {
             treasuryCapReclaimer = await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_some`,
