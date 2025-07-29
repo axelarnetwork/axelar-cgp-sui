@@ -25,7 +25,16 @@ export enum ITSMessageType {
     InterchainTokenDeployment = 1,
     SendToItsHub = 3,
     ReceiveFromItsHub = 4,
+    LinkToken = 5,
     RegisdterTokenMetadata = 6,
+}
+
+export enum ITSTokenManagerType {
+    NativeInterchainToken = 0,
+    MintBurnFrom = 1,
+    LockUnlock = 2,
+    LockUnlockFee = 3,
+    MintBurn = 4,
 }
 
 export enum GatewayMessageType {

@@ -33,9 +33,15 @@ const {
     bcsStructs,
     ITSMessageType,
     TxBuilder,
+    SUI_PACKAGE_ID,
+    STD_PACKAGE_ID,
+    ITSTokenManagerType,
 } = require('../dist/cjs');
 const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify, randomBytes, arrayify } = require('ethers/lib/utils');
 const { bcs } = require('@mysten/sui/bcs');
+const { SUI_CLOCK_OBJECT_ID } = require('@mysten/sui/utils');
+
+const PREFIX_SUI_CUSTOM_TOKEN_ID = '0xca5638c222d80aeaee69358fc5c11c4b3862bd9becdce249fcab9c679dbad782';
 
 describe('ITS', () => {
     // Sui Client
@@ -120,6 +126,251 @@ describe('ITS', () => {
         });
 
         await registerTransactionBuilder.signAndExecute(deployer);
+    }
+
+    async function createChannel() {
+        const createChannelBuilder = new TxBuilder(client);
+
+        const channel = await createChannelBuilder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::channel::new`,
+            arguments: [],
+        });
+
+        await createChannelBuilder.moveCall({
+            target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+            arguments: [channel, deployer.toSuiAddress()],
+            typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
+        });
+
+        const receipt = await createChannelBuilder.signAndExecute(deployer);
+
+        return findObjectId(receipt, `${deployments.axelar_gateway.packageId}::channel::Channel`);
+    }
+
+    async function registerCustomCoin(
+        mintBurn,
+        mintAmount = 0,
+        tokenOptions = {
+            symbol: 'CT',
+            name: 'Custom Token',
+            decimals: 6,
+        },
+    ) {
+        // Deploy the interchain token and store object ids for treasury cap and metadata
+        const { packageId, publishTxn } = await publishInterchainToken(client, deployer, tokenOptions);
+
+        const symbol = tokenOptions.symbol.toUpperCase();
+
+        const coinType = `${packageId}::${symbol.toLowerCase()}::${symbol}`;
+
+        const treasuryCap = findObjectId(publishTxn, `TreasuryCap<${coinType}>`);
+        const coinMetadata = findObjectId(publishTxn, `CoinMetadata<${coinType}>`);
+
+        const channel = await createChannel();
+        const salt = getRandomBytes32();
+
+        const txBuilder = new TxBuilder(client);
+
+        if (mintAmount > 0) {
+            await txBuilder.moveCall({
+                target: `${SUI_PACKAGE_ID}::coin::mint_and_transfer`,
+                arguments: [treasuryCap, mintAmount, deployer.toSuiAddress()],
+                typeArguments: [coinType],
+            });
+        }
+
+        let coinManagement;
+
+        if (mintBurn) {
+            coinManagement = await txBuilder.moveCall({
+                target: `${deployments.interchain_token_service.packageId}::coin_management::new_with_cap`,
+                arguments: [treasuryCap],
+                typeArguments: [coinType],
+            });
+        } else {
+            coinManagement = await txBuilder.moveCall({
+                target: `${deployments.interchain_token_service.packageId}::coin_management::new_locked`,
+                arguments: [],
+                typeArguments: [coinType],
+            });
+        }
+
+        const saltObject = await txBuilder.moveCall({
+            target: `${deployments.axelar_gateway.packageId}::bytes32::new`,
+            arguments: [salt],
+        });
+
+        const [, reclaimerOption] = await txBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::register_custom_coin`,
+            arguments: [objectIds.its, channel, saltObject, coinMetadata, coinManagement],
+            typeArguments: [coinType],
+        });
+
+        let treasuryCapReclaimer;
+
+        if (mintBurn) {
+            treasuryCapReclaimer = await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_some`,
+                arguments: [reclaimerOption],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+
+            await txBuilder.moveCall({
+                target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+                arguments: [treasuryCapReclaimer, deployer.toSuiAddress()],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+        } else {
+            await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_none`,
+                arguments: [reclaimerOption],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+        }
+
+        const receipt = await txBuilder.signAndExecute(deployer);
+        let coinObject;
+
+        if (mintAmount > 0) {
+            coinObject = await findObjectId(receipt, `${SUI_PACKAGE_ID}::coin::Coin<${coinType}>`);
+        }
+
+        if (mintBurn) {
+            treasuryCapReclaimer = await findObjectId(
+                receipt,
+                `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+            );
+        }
+
+        const customTokenId = bcs.struct('CustomTokenId', {
+            prefix: bcs.Address,
+            chain_name_hash: bcs.Address,
+            deployer: bcs.Address,
+            salt: bcs.Address,
+        });
+
+        const tokenIdData = customTokenId
+            .serialize({
+                prefix: PREFIX_SUI_CUSTOM_TOKEN_ID,
+                chain_name_hash: keccak256('0x' + Buffer.from(chainName, 'utf8').toString('hex')),
+                deployer: channel,
+                salt,
+            })
+            .toBytes();
+
+        const tokenId = keccak256(hexlify(tokenIdData));
+
+        return { coinType, tokenId, coinObject, channel, treasuryCapReclaimer };
+    }
+
+    async function giveUnlinkedCoin(
+        mintBurn,
+        mintAmount = 0,
+        tokenOptions = {
+            symbol: 'UC',
+            name: 'Unlinked Coin',
+            decimals: 6,
+        },
+    ) {
+        // Deploy the interchain token and store object ids for treasury cap and metadata
+        const { packageId, publishTxn } = await publishInterchainToken(client, deployer, tokenOptions);
+
+        const symbol = tokenOptions.symbol.toUpperCase();
+
+        const coinType = `${packageId}::${symbol.toLowerCase()}::${symbol}`;
+
+        const treasuryCap = findObjectId(publishTxn, `TreasuryCap<${coinType}>`);
+        const coinMetadata = findObjectId(publishTxn, `CoinMetadata<${coinType}>`);
+
+        const channel = await createChannel();
+        const tokenId = getRandomBytes32();
+
+        const txBuilder = new TxBuilder(client);
+
+        if (mintAmount > 0) {
+            await txBuilder.moveCall({
+                target: `${SUI_PACKAGE_ID}::coin::mint_and_transfer`,
+                arguments: [treasuryCap, mintAmount, deployer.toSuiAddress()],
+                typeArguments: [coinType],
+            });
+        }
+
+        let treasuryCapOption;
+
+        if (mintBurn) {
+            treasuryCapOption = await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::some`,
+                arguments: [treasuryCap],
+                typeArguments: [`${SUI_PACKAGE_ID}::coin::TreasuryCap<${coinType}>`],
+            });
+        } else {
+            treasuryCapOption = await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::none`,
+                arguments: [],
+                typeArguments: [`${SUI_PACKAGE_ID}::coin::TreasuryCap<${coinType}>`],
+            });
+        }
+
+        const tokenIdObject = await txBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+            arguments: [tokenId],
+        });
+
+        const reclaimerOption = await txBuilder.moveCall({
+            target: `${deployments.interchain_token_service.packageId}::interchain_token_service::give_unlinked_coin`,
+            arguments: [objectIds.its, tokenIdObject, coinMetadata, treasuryCapOption],
+            typeArguments: [coinType],
+        });
+
+        let treasuryCapReclaimer;
+
+        if (mintBurn) {
+            treasuryCapReclaimer = await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_some`,
+                arguments: [reclaimerOption],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+
+            await txBuilder.moveCall({
+                target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+                arguments: [treasuryCapReclaimer, deployer.toSuiAddress()],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+        } else {
+            await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_none`,
+                arguments: [reclaimerOption],
+                typeArguments: [
+                    `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                ],
+            });
+        }
+
+        const receipt = await txBuilder.signAndExecute(deployer);
+        let coinObject;
+
+        if (mintAmount > 0) {
+            coinObject = await findObjectId(receipt, `${SUI_PACKAGE_ID}::coin::Coin<${coinType}>`);
+        }
+
+        if (mintBurn) {
+            treasuryCapReclaimer = await findObjectId(
+                receipt,
+                `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+            );
+        }
+
+        return { coinType, tokenId, coinObject, channel, treasuryCapReclaimer };
     }
 
     before(async () => {
@@ -397,6 +648,187 @@ describe('ITS', () => {
                 };
 
                 await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
+            });
+        });
+
+        describe('Custom Token Deployment', () => {
+            it('should register a custom lock/unlock token successfully', async () => {
+                const { coinType, tokenId } = await registerCustomCoin(false);
+
+                const queryTypeBuilder = new TxBuilder(client);
+
+                const tokenIdObject = await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+                    arguments: [tokenId],
+                });
+                await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::registered_coin_type`,
+                    arguments: [objectIds.its, tokenIdObject],
+                });
+
+                const registeredCoinType =
+                    '0x' +
+                    bcs.String.parse(
+                        new Uint8Array((await queryTypeBuilder.devInspect(deployer.toSuiAddress())).results[1].returnValues[0][0]),
+                    );
+
+                expect(registeredCoinType).to.equal(coinType);
+            });
+
+            it('should register a custom mint/burn token successfully', async () => {
+                const { coinType, tokenId } = await registerCustomCoin(true);
+
+                const queryTypeBuilder = new TxBuilder(client);
+
+                const tokenIdObject = await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+                    arguments: [tokenId],
+                });
+                await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::registered_coin_type`,
+                    arguments: [objectIds.its, tokenIdObject],
+                });
+
+                const registeredCoinType =
+                    '0x' +
+                    bcs.String.parse(
+                        new Uint8Array((await queryTypeBuilder.devInspect(deployer.toSuiAddress())).results[1].returnValues[0][0]),
+                    );
+
+                expect(registeredCoinType).to.equal(coinType);
+            });
+
+            it('should register a send a mint/burn coin', async () => {
+                const destinationAddress = '0x1234';
+                const metadata = '0x';
+                const { coinType, tokenId, coinObject, channel } = await registerCustomCoin(true, 10);
+
+                const txBuilder = new TxBuilder(client);
+
+                const tokenIdObject = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+                    arguments: [tokenId],
+                });
+
+                const interchainTransferTicket = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::prepare_interchain_transfer`,
+                    arguments: [tokenIdObject, coinObject, otherChain, destinationAddress, metadata, channel],
+                    typeArguments: [coinType],
+                });
+
+                const messageTicket = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::send_interchain_transfer`,
+                    arguments: [objectIds.its, interchainTransferTicket, SUI_CLOCK_OBJECT_ID],
+                    typeArguments: [coinType],
+                });
+
+                await txBuilder.moveCall({
+                    target: `${deployments.axelar_gateway.packageId}::gateway::send_message`,
+                    arguments: [objectIds.gateway, messageTicket],
+                });
+
+                await txBuilder.signAndExecute(deployer);
+            });
+
+            it('should register a custom mint/burn token and reclaim the TreasuryCap', async () => {
+                const { coinType, tokenId, treasuryCapReclaimer } = await registerCustomCoin(true);
+                const txBuilder = new TxBuilder(client);
+
+                const tokenIdObject = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+                    arguments: [tokenId],
+                });
+
+                const treasuryCap = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::remove_treasury_cap`,
+                    arguments: [objectIds.its, treasuryCapReclaimer],
+                    typeArguments: [coinType],
+                });
+
+                const restoredTreasuryCapReclaimer = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::restore_treasury_cap`,
+                    arguments: [objectIds.its, treasuryCap, tokenIdObject],
+                    typeArguments: [coinType],
+                });
+
+                await txBuilder.moveCall({
+                    target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+                    arguments: [restoredTreasuryCapReclaimer, deployer.toSuiAddress()],
+                    typeArguments: [
+                        `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
+                    ],
+                });
+
+                await txBuilder.signAndExecute(deployer);
+            });
+        });
+
+        describe('Custom Token Reception', () => {
+            it('should register a mint/burn coin remotely', async () => {
+                const { tokenId, coinType } = await giveUnlinkedCoin(true);
+
+                // Approve ITS transfer message
+                const messageType = ITSMessageType.LinkToken;
+                const tokenManagerType = ITSTokenManagerType.MintBurn;
+                const sourceTokenAddress = '0x1234';
+                const linkParams = '0x';
+
+                // ITS transfer payload from Ethereum to Sui
+                let payload = defaultAbiCoder.encode(
+                    ['uint256', 'uint256', 'uint256', 'bytes', 'string', 'bytes'],
+                    [messageType, tokenId, tokenManagerType, sourceTokenAddress, coinType.slice(2), linkParams],
+                );
+                payload = defaultAbiCoder.encode(['uint256', 'string', 'bytes'], [ITSMessageType.ReceiveFromItsHub, otherChain, payload]);
+
+                const message = {
+                    source_chain: trustedSourceChain,
+                    message_id: hexlify(randomBytes(32)),
+                    source_address: trustedSourceAddress,
+                    destination_id: objectIds.itsChannel,
+                    payload,
+                    payload_hash: keccak256(payload),
+                };
+
+                await approveAndExecute(client, keypair, gatewayInfo, discoveryInfo, message);
+
+                const queryTypeBuilder = new TxBuilder(client);
+
+                const tokenIdObject = await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::token_id::from_address`,
+                    arguments: [tokenId],
+                });
+                await queryTypeBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::registered_coin_type`,
+                    arguments: [objectIds.its, tokenIdObject],
+                });
+
+                const registeredCoinType =
+                    '0x' +
+                    bcs.String.parse(
+                        new Uint8Array((await queryTypeBuilder.devInspect(deployer.toSuiAddress())).results[1].returnValues[0][0]),
+                    );
+
+                expect(registeredCoinType).to.equal(coinType);
+            });
+
+            it('should remove an unlinked coin treasury cap', async () => {
+                const { coinType, treasuryCapReclaimer } = await giveUnlinkedCoin(true);
+
+                const txBuilder = new TxBuilder(client);
+
+                const treasuryCap = await txBuilder.moveCall({
+                    target: `${deployments.interchain_token_service.packageId}::interchain_token_service::remove_unlinked_coin`,
+                    arguments: [objectIds.its, treasuryCapReclaimer],
+                    typeArguments: [coinType],
+                });
+
+                await txBuilder.moveCall({
+                    target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+                    arguments: [treasuryCap, deployer.toSuiAddress()],
+                    typeArguments: [`${SUI_PACKAGE_ID}::coin::TreasuryCap<${coinType}>`],
+                });
+
+                await txBuilder.signAndExecute(deployer);
             });
         });
     });
