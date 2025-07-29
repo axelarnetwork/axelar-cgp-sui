@@ -206,8 +206,9 @@ describe('ITS', () => {
             typeArguments: [coinType],
         });
 
+        let treasuryCapReclaimer;
         if (mintBurn) {
-            const treasutyCapReclaimer = await txBuilder.moveCall({
+            treasuryCapReclaimer = await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_some`,
                 arguments: [reclaimerOption],
                 typeArguments: [
@@ -217,7 +218,7 @@ describe('ITS', () => {
 
             await txBuilder.moveCall({
                 target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
-                arguments: [treasutyCapReclaimer, deployer.toSuiAddress()],
+                arguments: [treasuryCapReclaimer, deployer.toSuiAddress()],
                 typeArguments: [
                     `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
                 ],
@@ -233,7 +234,7 @@ describe('ITS', () => {
         }
 
         const receipt = await txBuilder.signAndExecute(deployer);
-        let coinObject, treasuryCapReclaimer;
+        let coinObject;
 
         if (mintAmount > 0) {
             coinObject = await findObjectId(receipt, `${SUI_PACKAGE_ID}::coin::Coin<${coinType}>`);
@@ -326,8 +327,9 @@ describe('ITS', () => {
             typeArguments: [coinType],
         });
 
+        let treasuryCapReclaimer;
         if (mintBurn) {
-            const treasutyCapReclaimer = await txBuilder.moveCall({
+            treasuryCapReclaimer = await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_some`,
                 arguments: [reclaimerOption],
                 typeArguments: [
@@ -337,7 +339,7 @@ describe('ITS', () => {
 
             await txBuilder.moveCall({
                 target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
-                arguments: [treasutyCapReclaimer, deployer.toSuiAddress()],
+                arguments: [treasuryCapReclaimer, deployer.toSuiAddress()],
                 typeArguments: [
                     `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
                 ],
@@ -353,7 +355,7 @@ describe('ITS', () => {
         }
 
         const receipt = await txBuilder.signAndExecute(deployer);
-        let coinObject, treasuryCapReclaimer;
+        let coinObject;
 
         if (mintAmount > 0) {
             coinObject = await findObjectId(receipt, `${SUI_PACKAGE_ID}::coin::Coin<${coinType}>`);
