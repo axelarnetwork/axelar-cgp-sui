@@ -1655,4 +1655,28 @@ module interchain_token_service::interchain_token_service {
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
     }
+
+    #[test]
+    fun test_migrate_coin_metadata() {
+        let ctx = &mut tx_context::dummy();
+        let operator_cap = operator_cap::create(ctx);
+        let mut its = create_for_testing(ctx);
+
+        let symbol = b"COIN";
+        let decimals = 9;
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
+
+        // migrate_coin_metadata doesn't fail given a CoinInfo with metadata None
+        its.migrate_coin_metadata<COIN>(&operator_cap, token_id.to_address());
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(operator_cap);
+    }
 }
