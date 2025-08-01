@@ -456,6 +456,7 @@ module interchain_token_service::interchain_token_service {
         self.package_value().channel_address()
     }
 
+    //here
     public fun registered_coin_data<T>(self: &InterchainTokenService, token_id: TokenId): &CoinData<T> {
         self.package_value().coin_data<T>(token_id)
     }
@@ -1482,6 +1483,22 @@ module interchain_token_service::interchain_token_service {
         let its = create_for_testing(ctx);
 
         its.channel_address();
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_registered_coin_data() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
+
+        let token_id = its.register_coin_from_info(name, symbol, decimals, coin_management);
+        its.registered_coin_data<COIN>(token_id);
 
         sui::test_utils::destroy(its);
     }
