@@ -1457,6 +1457,8 @@ module interchain_token_service::interchain_token_service {
 
         its.transfer_distributorship<COIN>(&channel, token_id, option::some(new_distributor.to_address()));
 
+        utils::assert_event<interchain_token_service::events::DistributorshipTransfered<COIN>>();
+
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(channel);
         sui::test_utils::destroy(new_distributor);
