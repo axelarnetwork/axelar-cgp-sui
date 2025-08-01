@@ -1705,7 +1705,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
         let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
 
-        its.coin_data<COIN>(token_id);
+        its.coin_data_mut<COIN>(token_id);
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
