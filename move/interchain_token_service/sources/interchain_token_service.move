@@ -1446,7 +1446,7 @@ module interchain_token_service::interchain_token_service {
         let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
 
         let channel = channel::new(ctx);
-        
+
         coin_management.add_distributor(channel.to_address());
 
         let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
@@ -1454,7 +1454,7 @@ module interchain_token_service::interchain_token_service {
         let new_distributor = channel::new(ctx);
 
         its.transfer_distributorship<COIN>(&channel, token_id, option::some(new_distributor.to_address()));
-        
+
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(channel);
         sui::test_utils::destroy(new_distributor);
