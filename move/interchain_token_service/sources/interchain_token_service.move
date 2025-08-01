@@ -1433,6 +1433,7 @@ module interchain_token_service::interchain_token_service {
     #[test]
     fun test_transfer_distributorship() {
         let ctx = &mut tx_context::dummy();
+        let distributor_ctx = &mut tx_context::dummy();
         let mut its = create_for_testing(ctx);
         let symbol = b"COIN";
         let decimals = 9;
@@ -1451,13 +1452,45 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
 
-        let new_distributor = channel::new(ctx);
+        let new_distributor = channel::new(distributor_ctx);
 
         its.transfer_distributorship<COIN>(&channel, token_id, option::some(new_distributor.to_address()));
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(channel);
         sui::test_utils::destroy(new_distributor);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_transfer_operatorship() {
+        let ctx = &mut tx_context::dummy();
+        let operator_ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+        let symbol = b"COIN";
+        let decimals = 9;
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+
+        let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let channel = channel::new(ctx);
+
+        coin_management.add_operator(channel.to_address());
+
+        let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
+
+        let new_operator = channel::new(operator_ctx);
+
+        its.transfer_operatorship<COIN>(&channel, token_id, option::some(new_operator.to_address()));
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(channel);
+        sui::test_utils::destroy(new_operator);
         sui::test_utils::destroy(its);
     }
 
