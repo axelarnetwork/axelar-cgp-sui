@@ -1449,6 +1449,7 @@ module interchain_token_service::interchain_token_service {
         let channel = channel::new(ctx);
 
         coin_management.add_distributor(channel.to_address());
+        assert!(coin_management.distributor() == option::some(channel.to_address()));
 
         let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
 
