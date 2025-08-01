@@ -1690,6 +1690,28 @@ module interchain_token_service::interchain_token_service_v0 {
         channel.destroy();
     }
 
+    //here
+    #[test]
+    fun test_coin_data_mut() {
+        let ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+        let symbol = b"COIN";
+        let decimals = 9;
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+        let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
+
+        its.coin_data<COIN>(token_id);
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+    }
+
     #[test]
     #[expected_failure(abort_code = EUnregisteredCoin)]
     fun test_coin_data_not_registered() {
