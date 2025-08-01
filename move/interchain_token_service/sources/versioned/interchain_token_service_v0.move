@@ -1690,7 +1690,6 @@ module interchain_token_service::interchain_token_service_v0 {
         channel.destroy();
     }
 
-    //here
     #[test]
     fun test_coin_data_mut() {
         let ctx = &mut tx_context::dummy();
