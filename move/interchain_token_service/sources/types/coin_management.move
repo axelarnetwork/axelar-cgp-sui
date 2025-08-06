@@ -317,4 +317,15 @@ module interchain_token_service::coin_management {
 
         sui::test_utils::destroy(coin_management);
     }
+
+    #[test]
+    fun test_treasury_cap() {
+        let (treasury_cap, metadata) = create_currency();
+        let coin_management = new_with_cap<COIN_MANAGEMENT>(treasury_cap);
+
+        treasury_cap<COIN_MANAGEMENT>(&coin_management);
+
+        sui::test_utils::destroy(metadata);
+        sui::test_utils::destroy(coin_management);
+    }
 }

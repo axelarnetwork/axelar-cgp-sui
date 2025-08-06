@@ -1431,6 +1431,75 @@ module interchain_token_service::interchain_token_service {
     }
 
     #[test]
+    fun test_transfer_distributorship() {
+        let ctx = &mut tx_context::dummy();
+        let distributor_ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+        let symbol = b"COIN";
+        let decimals = 9;
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+
+        let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let channel = channel::new(ctx);
+
+        coin_management.add_distributor(channel.to_address());
+        assert!(coin_management.distributor() == option::some(channel.to_address()));
+
+        let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
+
+        let new_distributor = channel::new(distributor_ctx);
+
+        its.transfer_distributorship<COIN>(&channel, token_id, option::some(new_distributor.to_address()));
+
+        utils::assert_event<interchain_token_service::events::DistributorshipTransfered<COIN>>();
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(channel);
+        sui::test_utils::destroy(new_distributor);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_transfer_operatorship() {
+        let ctx = &mut tx_context::dummy();
+        let operator_ctx = &mut tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+        let symbol = b"COIN";
+        let decimals = 9;
+
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+
+        let mut coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+
+        let channel = channel::new(ctx);
+
+        coin_management.add_operator(channel.to_address());
+
+        let token_id = its.register_coin_from_metadata(&coin_metadata, coin_management);
+
+        let new_operator = channel::new(operator_ctx);
+
+        its.transfer_operatorship<COIN>(&channel, token_id, option::some(new_operator.to_address()));
+
+        utils::assert_event<interchain_token_service::events::OperatorshipTransfered<COIN>>();
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(channel);
+        sui::test_utils::destroy(new_operator);
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
     fun test_init() {
         let mut ts = sui::test_scenario::begin(@0x0);
 
@@ -1482,6 +1551,22 @@ module interchain_token_service::interchain_token_service {
         let its = create_for_testing(ctx);
 
         its.channel_address();
+
+        sui::test_utils::destroy(its);
+    }
+
+    #[test]
+    fun test_registered_coin_data() {
+        let ctx = &mut sui::tx_context::dummy();
+        let mut its = create_for_testing(ctx);
+
+        let name = string::utf8(b"Name");
+        let symbol = ascii::string(b"Symbol");
+        let decimals = 10u8;
+        let coin_management = interchain_token_service::coin_management::new_locked<COIN>();
+
+        let token_id = its.register_coin_from_info(name, symbol, decimals, coin_management);
+        its.registered_coin_data<COIN>(token_id);
 
         sui::test_utils::destroy(its);
     }
@@ -1607,5 +1692,29 @@ module interchain_token_service::interchain_token_service {
 
         sui::test_utils::destroy(self);
         sui::test_utils::destroy(owner_cap);
+    }
+
+    #[test]
+    fun test_migrate_coin_metadata() {
+        let ctx = &mut tx_context::dummy();
+        let operator_cap = operator_cap::create(ctx);
+        let mut its = create_for_testing(ctx);
+
+        let symbol = b"COIN";
+        let decimals = 9;
+        let (treasury_cap, coin_metadata) = interchain_token_service::coin::create_treasury_and_metadata(
+            symbol,
+            decimals,
+            ctx,
+        );
+        let coin_management = interchain_token_service::coin_management::new_with_cap(treasury_cap);
+        let token_id = register_coin_from_metadata(&mut its, &coin_metadata, coin_management);
+
+        // migrate_coin_metadata doesn't fail given a CoinInfo with metadata None
+        its.migrate_coin_metadata<COIN>(&operator_cap, token_id.to_address());
+
+        sui::test_utils::destroy(coin_metadata);
+        sui::test_utils::destroy(its);
+        sui::test_utils::destroy(operator_cap);
     }
 }

@@ -108,6 +108,11 @@ module interchain_token_service::token_id {
     #[test_only]
     use interchain_token_service::coin::COIN;
 
+    #[test_only]
+    public fun to_address(token_id: TokenId): address {
+        token_id.id
+    }
+
     // === Tests ===
     #[test]
     fun test_prefixes() {
