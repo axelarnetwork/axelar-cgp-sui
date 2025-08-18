@@ -249,7 +249,7 @@ export class TxBuilderBase {
             },
         });
 
-        if (!result.confirmedLocalExecution) {
+        if (!result.confirmedLocalExecution || !result.objectChanges) {
             while (true) {
                 try {
                     result = await this.client.getTransactionBlock({
