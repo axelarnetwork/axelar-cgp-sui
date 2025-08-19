@@ -260,7 +260,7 @@ export class TxBuilderBase {
             while (true) {
 
                 retries++;
-                console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${result.objectChanges}`);
+                console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${JSON.stringify(result.objectChanges)}`);
 
                 try {
                     result = await this.client.getTransactionBlock({
@@ -278,6 +278,7 @@ export class TxBuilderBase {
                 }
 
                 if (expectObjChanges && !result.objectChanges) {
+                    console.log("still no obj changes");
                     continue;
                 }
 
