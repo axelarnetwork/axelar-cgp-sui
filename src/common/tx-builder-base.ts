@@ -257,6 +257,9 @@ export class TxBuilderBase {
         let retries = 0;
 
         while (true) {
+
+            console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${result.objectChanges}`);
+
             if (result.confirmedLocalExecution && (!expectObjChanges || result.objectChanges)) {
                 break;
             }
