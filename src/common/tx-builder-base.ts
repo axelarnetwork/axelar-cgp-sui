@@ -257,7 +257,7 @@ export class TxBuilderBase {
         let retries = 0;
 
         if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
-            while (retries < maxRetries) {
+            for (retries = 0; retries < maxRetries; retries++) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
