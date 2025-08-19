@@ -256,32 +256,35 @@ export class TxBuilderBase {
         const maxRetries = 10; // 10 seconds with 1-second delay
         let retries = 0;
 
-        while (true) {
+        if (!result.confirmedLocalExecution) {
+            while (true) {
 
-            console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${result.objectChanges}`);
+                retries++;
+                console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${result.objectChanges}`);
 
-            if (result.confirmedLocalExecution && (!expectObjChanges || result.objectChanges)) {
-                break;
-            }
+                try {
+                    result = await this.client.getTransactionBlock({
+                        digest: result.digest,
+                        options: {
+                            showEffects: true,
+                            showObjectChanges: true,
+                            ...options,
+                        },
+                    });
+                } catch (e) {
+                    console.log(e);
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    continue;
+                }
 
-            try {
-                result = await this.client.getTransactionBlock({
-                    digest: result.digest,
-                    options: {
-                        showEffects: true,
-                        showObjectChanges: true,
-                        ...options,
-                    },
-                });
-            } catch (e) {
-                console.log(e);
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
+                if (expectObjChanges && !result.objectChanges) {
+                    continue;
+                }
 
-            retries++;
+                if (retries > maxRetries) {
+                    throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
+                }
 
-            if (retries >= maxRetries) {
-                throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
             }
         }
 
