@@ -254,10 +254,9 @@ export class TxBuilderBase {
         });
 
         const maxRetries = 10; // 10 seconds with 1-second delay
-        let retries = 0;
 
         if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
-            for (retries = 0; retries < maxRetries; retries++) {
+            for (let retries = 0; retries < maxRetries; retries++) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
