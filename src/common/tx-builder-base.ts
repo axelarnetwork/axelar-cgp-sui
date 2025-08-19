@@ -257,25 +257,24 @@ export class TxBuilderBase {
         let retries = 0;
 
         while (true) {
-            if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
-                try {
-                    result = await this.client.getTransactionBlock({
-                        digest: result.digest,
-                        options: {
-                            showEffects: true,
-                            showObjectChanges: true,
-                            ...options,
-                        },
-                    });
-                    break;
-                } catch (e) {
-                    console.log(e);
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-                }
-            }
-            else {
+            if (result.confirmedLocalExecution && (!expectObjChanges || result.objectChanges)) {
                 break;
-            };
+            }
+            
+            try {
+                result = await this.client.getTransactionBlock({
+                    digest: result.digest,
+                    options: {
+                        showEffects: true,
+                        showObjectChanges: true,
+                        ...options,
+                    },
+                });
+                break;
+            } catch (e) {
+                console.log(e);
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
 
             retries++;
 
