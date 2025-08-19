@@ -18,6 +18,10 @@ const { arrayify, hexlify } = ethersUtils;
 const objectCache = {} as { [id in string]: SuiObjectChange };
 
 function updateCache(objectChanges: SuiObjectChange[]) {
+    if (objectChanges == undefined) {
+        return;
+    }
+
     for (const change of objectChanges) {
         if (change.type === 'published') {
             continue;
@@ -229,7 +233,7 @@ export class TxBuilderBase {
         });
     }
 
-    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions): Promise<SuiTransactionBlockResponse> {
+    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions, expectObjChanges: boolean = true): Promise<SuiTransactionBlockResponse> {
         let result = await this.client.signAndExecuteTransaction({
             transaction: this.tx,
             signer: keypair,
@@ -249,8 +253,11 @@ export class TxBuilderBase {
             },
         });
 
-        if (!result.confirmedLocalExecution || !result.objectChanges) {
-            while (true) {
+        const maxRetries = 10; // 10 seconds with 1-second delay
+        let retries = 0;
+
+        if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
+            while (retries < maxRetries) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
