@@ -229,7 +229,11 @@ export class TxBuilderBase {
         });
     }
 
-    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions, expectObjChanges: boolean = true): Promise<SuiTransactionBlockResponse> {
+    async signAndExecute(
+        keypair: Keypair,
+        options: SuiTransactionBlockResponseOptions,
+        expectObjChanges: boolean = true,
+    ): Promise<SuiTransactionBlockResponse> {
         let result = await this.client.signAndExecuteTransaction({
             transaction: this.tx,
             signer: keypair,
@@ -281,7 +285,7 @@ export class TxBuilderBase {
         if (result.objectChanges) {
             updateCache(result.objectChanges as SuiObjectChange[]);
         }
-        
+
         return result;
     }
 
