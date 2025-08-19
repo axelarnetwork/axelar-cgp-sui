@@ -254,9 +254,10 @@ export class TxBuilderBase {
         });
 
         const maxRetries = 10; // 10 seconds with 1-second delay
+        let retries = 0;
 
-        if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
-            for (let retries = 0; retries < maxRetries; retries++) {
+        while (true) {
+            if (!result.confirmedLocalExecution || (expectObjChanges && result.objectChanges == undefined)) {
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
@@ -271,6 +272,15 @@ export class TxBuilderBase {
                     console.log(e);
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
+            }
+            else {
+                break;
+            };
+
+            retries++;
+
+            if (retries >= maxRetries) {
+                throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
             }
         }
 
