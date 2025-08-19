@@ -260,7 +260,7 @@ export class TxBuilderBase {
             if (result.confirmedLocalExecution && (!expectObjChanges || result.objectChanges)) {
                 break;
             }
-            
+
             try {
                 result = await this.client.getTransactionBlock({
                     digest: result.digest,
@@ -270,7 +270,6 @@ export class TxBuilderBase {
                         ...options,
                     },
                 });
-                break;
             } catch (e) {
                 console.log(e);
                 await new Promise((resolve) => setTimeout(resolve, 1000));
