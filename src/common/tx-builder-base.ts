@@ -18,10 +18,6 @@ const { arrayify, hexlify } = ethersUtils;
 const objectCache = {} as { [id in string]: SuiObjectChange };
 
 function updateCache(objectChanges: SuiObjectChange[]) {
-    if (objectChanges == undefined) {
-        return;
-    }
-
     for (const change of objectChanges) {
         if (change.type === 'published') {
             continue;
@@ -282,7 +278,10 @@ export class TxBuilderBase {
             }
         }
 
-        updateCache(result.objectChanges as SuiObjectChange[]);
+        if (result.objectChanges) {
+            updateCache(result.objectChanges as SuiObjectChange[]);
+        }
+        
         return result;
     }
 
