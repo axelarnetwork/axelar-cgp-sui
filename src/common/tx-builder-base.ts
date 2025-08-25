@@ -258,7 +258,6 @@ export class TxBuilderBase {
 
         if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
             while (true) {
-
                 retries++;
                 console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${JSON.stringify(result.objectChanges)}`);
 
@@ -282,7 +281,7 @@ export class TxBuilderBase {
                 }
 
                 if (expectObjChanges && !result.objectChanges) {
-                    console.log("still no obj changes");
+                    console.log('still no obj changes');
                     continue;
                 }
 
