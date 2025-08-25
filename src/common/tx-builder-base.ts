@@ -262,6 +262,10 @@ export class TxBuilderBase {
                 retries++;
                 console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${JSON.stringify(result.objectChanges)}`);
 
+                if (retries > maxRetries) {
+                    throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
+                }
+
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
@@ -282,10 +286,7 @@ export class TxBuilderBase {
                     continue;
                 }
 
-                if (retries > maxRetries) {
-                    throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
-                }
-
+                break;
             }
         }
 
