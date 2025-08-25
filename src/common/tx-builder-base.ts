@@ -259,7 +259,6 @@ export class TxBuilderBase {
         if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
             while (true) {
                 retries++;
-                console.log(`${result.confirmedLocalExecution} ${expectObjChanges} ${JSON.stringify(result.objectChanges)}`);
 
                 if (retries > maxRetries) {
                     throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
