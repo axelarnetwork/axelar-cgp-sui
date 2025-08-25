@@ -253,7 +253,8 @@ export class TxBuilderBase {
             },
         });
 
-        const maxRetries = 10; // 10 seconds with 1-second delay
+        const maxRetries = 10;
+        const delay = 1000;  // 1 second
         let retries = 0;
 
         if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
@@ -275,7 +276,7 @@ export class TxBuilderBase {
                     });
                 } catch (e) {
                     console.log(e);
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, delay));
                     continue;
                 }
 
