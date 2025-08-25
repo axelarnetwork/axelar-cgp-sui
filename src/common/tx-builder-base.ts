@@ -254,7 +254,7 @@ export class TxBuilderBase {
         });
 
         const maxRetries = 10;
-        const delay = 1000;  // 1 second
+        const delay = 1000; // 1 second
         let retries = 0;
 
         if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
