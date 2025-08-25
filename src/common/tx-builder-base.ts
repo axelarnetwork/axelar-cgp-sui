@@ -256,7 +256,7 @@ export class TxBuilderBase {
         const maxRetries = 10; // 10 seconds with 1-second delay
         let retries = 0;
 
-        if (!result.confirmedLocalExecution) {
+        if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
             while (true) {
 
                 retries++;
