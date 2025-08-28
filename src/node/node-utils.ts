@@ -104,7 +104,7 @@ export function updateMoveToml(
     // Update the package address under the addresses section e.g. gas_service = "0x1"
     // Use v0 address if package was upgraded
     (moveJson as Record<string, Record<string, string>>).addresses[packageName] =
-        baseVersionPackageId == '0x0' ? baseVersionPackageId : packageId;
+        baseVersionPackageId !== '0x0' ? baseVersionPackageId : packageId;
 
     if (prepToml) {
         moveJson = prepToml(moveJson);
