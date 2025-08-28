@@ -81,7 +81,7 @@ export function updateMoveToml(
     packageId: string,
     moveDir: string = `${__dirname}/../../move`,
     prepToml: undefined | ((moveJson: Record<string, TomlPrimitive>) => Record<string, TomlPrimitive>) = undefined,
-    isUpgraded: boolean = false,
+    baseVersionPackageId: string = '0x0', // v0 address is required if package was upgraded
 ) {
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}/Move.toml`;
@@ -103,9 +103,8 @@ export function updateMoveToml(
 
     // Update the package address under the addresses section e.g. gas_service = "0x1"
     // Only update addresses if this is not an upgrade
-    if (!isUpgraded) {
-        (moveJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
-    }
+    (moveJson as Record<string, Record<string, string>>).addresses[packageName] =
+        baseVersionPackageId == '0x0' ? baseVersionPackageId : packageId;
 
     if (prepToml) {
         moveJson = prepToml(moveJson);
