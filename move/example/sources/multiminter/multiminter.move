@@ -119,33 +119,15 @@ module example::operators {
     use interchain_token_service::{
         interchain_token_service,
         coin_management,
+        coin,
     };
     #[test_only]
-    use sui::{
-        test_utils,
-        coin::{Self, TreasuryCap, CoinMetadata},
-    };
+    use sui::test_utils;
     #[test_only]
     use axelar_gateway::{
         channel,
         bytes32,
     };
-
-    #[test_only]
-    public struct TOKEN has drop {}
-
-    #[test_only]
-    fun create_test_coin(ctx: &mut TxContext): (TreasuryCap<TOKEN>, CoinMetadata<TOKEN>) {
-        coin::create_currency(
-            TOKEN {},
-            9,
-            b"TOKEN",
-            b"Example Token",
-            b"",
-            option::none(),
-            ctx,
-        )
-    }
 
     #[test_only]
     fun create_for_testing(ctx: &mut TxContext): (MultiMinter, OwnerCap) {
@@ -161,7 +143,7 @@ module example::operators {
 
     // Tests
     #[test]
-    fun test_mint() {
+    fun test_mint_as_operator() {
         let ctx = &mut tx_context::dummy();
         let mut operators = operators::new_operators(ctx);
         let owner_cap = operators::new_owner_cap(ctx);
@@ -175,7 +157,7 @@ module example::operators {
         let amount = 12345;
 
         // Create and register coin
-        let (treasury_cap, coin_metadata) = create_test_coin(ctx);
+        let (treasury_cap, coin_metadata) = coin::create_treasury_and_metadata(b"TOKEN", 9, ctx);
         let mut coin_management = coin_management::new_with_cap(treasury_cap);
         coin_management.add_distributor(distributor_id.to_address());
 
@@ -193,7 +175,7 @@ module example::operators {
 
         multiminter.add_operator_cap(&owner, operator_cap, distributor_id);
 
-        let coin = multiminter.mint_as_operator<TOKEN>(
+        let coin = multiminter.mint_as_operator<coin::COIN>(
             &mut its,
             &mut operators,
             token_id,
