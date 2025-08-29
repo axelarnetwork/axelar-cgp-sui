@@ -801,7 +801,7 @@ module interchain_token_service::interchain_token_service_v0 {
                 token_id,
                 coin_data,
             );
-        
+
         distributor
     }
 

@@ -1260,7 +1260,13 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        let (treasury_cap_reclaimer, distributor) = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        let (treasury_cap_reclaimer, distributor) = give_unlinked_coin<COIN>(
+            &mut its,
+            token_id,
+            &coin_metadata,
+            option::some(treasury_cap),
+            ctx,
+        );
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
         let distributor = distributor.destroy_some();
 

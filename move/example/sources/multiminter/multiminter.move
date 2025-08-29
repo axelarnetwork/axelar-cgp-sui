@@ -1,12 +1,8 @@
 module example::operators {
     use axelar_gateway::channel::Channel;
-    use interchain_token_service::{
-        interchain_token_service::InterchainTokenService,
-        token_id::TokenId,
-    };
+    use interchain_token_service::{interchain_token_service::InterchainTokenService, token_id::TokenId};
     use operators::operators::{OperatorCap, Operators};
     use sui::coin::Coin;
-
 
     // -------
     // Structs
@@ -54,13 +50,7 @@ module example::operators {
     /// This should be stored in this package's object by calling the `add_distributor_cap`._owner_cap
     ///
     /// `mint_as_distributor` can be called by this package to mint the coin.
-    public fun mint<T>(
-        self: &MultiMinter,
-        its: &mut InterchainTokenService,
-        token_id: TokenId,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<T> {
+    public fun mint<T>(self: &MultiMinter, its: &mut InterchainTokenService, token_id: TokenId, amount: u64, ctx: &mut TxContext): Coin<T> {
         let coin = its.mint_as_distributor<T>(self.distributor_cap.borrow(), token_id, amount, ctx);
         coin
     }
@@ -116,18 +106,11 @@ module example::operators {
     #[test_only]
     use operators::operators;
     #[test_only]
-    use interchain_token_service::{
-        interchain_token_service,
-        coin_management,
-        coin,
-    };
+    use interchain_token_service::{interchain_token_service, coin_management, coin};
     #[test_only]
     use sui::test_utils;
     #[test_only]
-    use axelar_gateway::{
-        channel,
-        bytes32,
-    };
+    use axelar_gateway::{channel, bytes32};
 
     #[test_only]
     fun create_for_testing(ctx: &mut TxContext): (MultiMinter, OwnerCap) {
