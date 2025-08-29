@@ -143,6 +143,53 @@ module example::operators {
 
     // Tests
     #[test]
+    fun test_mint() {
+        let ctx = &mut tx_context::dummy();
+        let mut its = interchain_token_service::create_for_testing(ctx);
+        let amount = 12345;
+
+        // Create and register coin
+        let (treasury_cap, coin_metadata) = coin::create_treasury_and_metadata(b"TOKEN", 9, ctx);
+        let mut coin_management = coin_management::new_with_cap(treasury_cap);
+
+        let distributor = channel::new(ctx);
+        coin_management.add_distributor(distributor.id().to_address());
+
+        let deployer = channel::new(ctx);
+        let salt = bytes32::from_address(@0x1234);
+        let (token_id, treasury_cap_reclaimer) = its.register_custom_coin(
+            &deployer,
+            salt,
+            &coin_metadata,
+            coin_management,
+            ctx,
+        );
+
+        let (mut multiminter, owner) = create_for_testing(ctx);
+
+        // Add distributor cap directly to the multiminter
+        multiminter.add_distributor_cap(&owner, distributor);
+
+        let coin = multiminter.mint<coin::COIN>(
+            &mut its,
+            token_id,
+            amount,
+            ctx,
+        );
+
+        assert!(coin.value() == amount);
+
+        test_utils::destroy(its);
+        test_utils::destroy(deployer);
+        test_utils::destroy(coin_metadata);
+        test_utils::destroy(multiminter.remove_distributor_cap(&owner));
+        test_utils::destroy(coin);
+        test_utils::destroy(treasury_cap_reclaimer);
+        test_utils::destroy(owner);
+        test_utils::destroy(multiminter);
+    }
+
+    #[test]
     fun test_mint_as_operator() {
         let ctx = &mut tx_context::dummy();
         let mut operators = operators::new_operators(ctx);
