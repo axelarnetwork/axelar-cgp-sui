@@ -229,7 +229,11 @@ export class TxBuilderBase {
         });
     }
 
-    async signAndExecute(keypair: Keypair, options: SuiTransactionBlockResponseOptions): Promise<SuiTransactionBlockResponse> {
+    async signAndExecute(
+        keypair: Keypair,
+        options: SuiTransactionBlockResponseOptions,
+        expectObjChanges: boolean = true,
+    ): Promise<SuiTransactionBlockResponse> {
         let result = await this.client.signAndExecuteTransaction({
             transaction: this.tx,
             signer: keypair,
@@ -249,8 +253,18 @@ export class TxBuilderBase {
             },
         });
 
-        if (!result.confirmedLocalExecution) {
+        const maxRetries = 10;
+        const delay = 1000; // 1 second
+        let retries = 0;
+
+        if (!result.confirmedLocalExecution || (expectObjChanges && !result.objectChanges)) {
             while (true) {
+                retries++;
+
+                if (retries > maxRetries) {
+                    throw new Error(`failed to wait for tx ${result.digest} to complete after ${maxRetries} atempts`);
+                }
+
                 try {
                     result = await this.client.getTransactionBlock({
                         digest: result.digest,
@@ -260,15 +274,25 @@ export class TxBuilderBase {
                             ...options,
                         },
                     });
-                    break;
                 } catch (e) {
                     console.log(e);
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                    continue;
                 }
+
+                if (expectObjChanges && !result.objectChanges) {
+                    console.log('still no obj changes');
+                    continue;
+                }
+
+                break;
             }
         }
 
-        updateCache(result.objectChanges as SuiObjectChange[]);
+        if (result.objectChanges) {
+            updateCache(result.objectChanges as SuiObjectChange[]);
+        }
+
         return result;
     }
 
