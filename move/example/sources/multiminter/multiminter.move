@@ -136,7 +136,7 @@ module example::operators {
         let mut coin_management = coin_management::new_with_cap(treasury_cap);
 
         let distributor = channel::new(ctx);
-        coin_management.add_distributor(distributor.id().to_address());
+        coin_management.add_distributor(distributor.to_address());
 
         let deployer = channel::new(ctx);
         let salt = bytes32::from_address(@0x1234);
@@ -180,6 +180,7 @@ module example::operators {
         let operator_cap = operators.new_operator_cap(ctx);
 
         let distributor = channel::new(ctx);
+        let distributor_address = distributor.to_address();
         let distributor_id = distributor.id();
         operators.store_cap(&owner_cap, distributor);
 
@@ -189,7 +190,7 @@ module example::operators {
         // Create and register coin
         let (treasury_cap, coin_metadata) = coin::create_treasury_and_metadata(b"TOKEN", 9, ctx);
         let mut coin_management = coin_management::new_with_cap(treasury_cap);
-        coin_management.add_distributor(distributor_id.to_address());
+        coin_management.add_distributor(distributor_address);
 
         let deployer = channel::new(ctx);
         let salt = bytes32::from_address(@0x1234);
