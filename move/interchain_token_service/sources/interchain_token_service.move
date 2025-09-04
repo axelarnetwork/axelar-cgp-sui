@@ -1146,8 +1146,8 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().is_none());
 
+        option::destroy_none<Channel>(distributor);
         sui::test_utils::destroy(its);
-        sui::test_utils::destroy(distributor);
     }
 
     #[test]
