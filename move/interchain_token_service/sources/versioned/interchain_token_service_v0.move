@@ -781,7 +781,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let coin_info = coin_info::from_info<T>(coin_metadata.get_name(), coin_metadata.get_symbol(), coin_metadata.get_decimals());
 
         let (coin_management, distributor) = if (treasury_cap.is_some()) {
-            let distributor = channel::new(ctx);
+            let distributor = axelar_gateway::channel::new(ctx);
             let mut coin_management = coin_management::new_with_cap(treasury_cap.destroy_some());
             coin_management.add_distributor(distributor.to_address());
             (coin_management, option::some(distributor))
