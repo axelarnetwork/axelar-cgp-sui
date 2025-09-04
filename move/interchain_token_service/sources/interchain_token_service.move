@@ -1196,8 +1196,9 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().contains(&operator));
 
-        sui::test_utils::destroy(its);
+        let distributor = option::destroy_some<Channel>(distributor);
         sui::test_utils::destroy(distributor);
+        sui::test_utils::destroy(its);
     }
 
     #[test]
