@@ -141,7 +141,7 @@
         "treasury_cap#0#0": "Option<TreasuryCap<T>>",
         "ctx#0#0": "&mut TxContext"
       },
-      "returnType": "Option<TreasuryCapReclaimer<T>>"
+      "returnType": "Option<TreasuryCapReclaimer<T>> * Option<Channel>"
     },
     "remove_unlinked_coin<T>": {
       "name": "remove_unlinked_coin<T>",
