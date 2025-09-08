@@ -288,7 +288,7 @@ module interchain_token_service::interchain_token_service {
         coin_metadata: &CoinMetadata<T>,
         treasury_cap: Option<TreasuryCap<T>>,
         ctx: &mut TxContext,
-    ): Option<TreasuryCapReclaimer<T>> {
+    ): (Option<TreasuryCapReclaimer<T>>, Option<Channel>) {
         let value = self.value_mut!(b"give_unlinked_coin");
 
         value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
@@ -1115,7 +1115,7 @@ module interchain_token_service::interchain_token_service {
         let has_treasury_cap = false;
         let token_manager_type = token_manager_type::lock_unlock();
 
-        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+        let distributor = its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
         let mut writer = abi::new_writer(6);
         writer
@@ -1145,6 +1145,7 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().is_none());
 
+        option::destroy_none<Channel>(distributor);
         sui::test_utils::destroy(its);
     }
 
@@ -1165,7 +1166,7 @@ module interchain_token_service::interchain_token_service {
         let has_treasury_cap = true;
         let token_manager_type = token_manager_type::mint_burn();
 
-        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+        let distributor = its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
         let mut writer = abi::new_writer(6);
         writer
@@ -1194,6 +1195,8 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().contains(&operator));
 
+        let distributor = option::destroy_some<Channel>(distributor);
+        sui::test_utils::destroy(distributor);
         sui::test_utils::destroy(its);
     }
 
@@ -1230,10 +1233,13 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        let empty_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
-        empty_option.destroy_none();
-        let full_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
-        full_option.destroy_some().destroy();
+        let (empty_option_1, empty_option_2) = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
+        empty_option_1.destroy_none();
+        empty_option_2.destroy_none();
+
+        let (full_option_1, full_option_2) = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        full_option_1.destroy_some().destroy();
+        full_option_2.destroy_some().destroy();
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
@@ -1254,13 +1260,21 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        let treasury_cap_reclaimer = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        let (treasury_cap_reclaimer, distributor) = give_unlinked_coin<COIN>(
+            &mut its,
+            token_id,
+            &coin_metadata,
+            option::some(treasury_cap),
+            ctx,
+        );
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+        let distributor = distributor.destroy_some();
 
         let treasury_cap: TreasuryCap<COIN> = remove_unlinked_coin(&mut its, treasury_cap_reclaimer);
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(distributor);
         sui::test_utils::destroy(its);
     }
 

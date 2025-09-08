@@ -2,12 +2,13 @@
 
 [move]
 version = 3
-manifest_digest = "6E409CB0B3F15B23391917092D8F2248A021590784FD45AD8D5EB44200E0B5FC"
-deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
+manifest_digest = "BA9F813BAF5CFE54ED46A63F5E09A6ED7794D197C447E7EB1D25C6B2FD91035D"
+deps_digest = "04732BFEF428F74DE262001DC455D76B909EBC394B034A9A15CC095E4BDD9CEF"
 dependencies = [
   { id = "AxelarGateway", name = "AxelarGateway" },
   { id = "GasService", name = "GasService" },
   { id = "InterchainTokenService", name = "InterchainTokenService" },
+  { id = "Operators", name = "Operators" },
   { id = "RelayerDiscovery", name = "RelayerDiscovery" },
   { id = "Sui", name = "Sui" },
   { id = "Utils", name = "Utils" },
@@ -59,6 +60,14 @@ dependencies = [
 [[move.package]]
 id = "MoveStdlib"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "mainnet-v1.38.3", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "Operators"
+source = { local = "../operators" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
 
 [[move.package]]
 id = "RelayerDiscovery"
