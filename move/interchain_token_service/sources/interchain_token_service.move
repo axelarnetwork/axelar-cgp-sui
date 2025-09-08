@@ -502,7 +502,6 @@ module interchain_token_service::interchain_token_service {
                 b"burn_as_distributor",
                 b"add_trusted_chains",
                 b"remove_trusted_chains",
-                b"register_transaction",
                 b"set_flow_limit",
                 b"set_flow_limit_as_token_operator",
                 b"transfer_distributorship",
