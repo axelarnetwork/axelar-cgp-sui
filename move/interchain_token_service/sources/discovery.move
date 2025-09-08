@@ -1,6 +1,10 @@
 module interchain_token_service::discovery {
     use abi::abi::{Self, AbiReader};
-    use interchain_token_service::{interchain_token_service::InterchainTokenService, token_id::{Self, TokenId}};
+    use interchain_token_service::{
+        interchain_token_service::InterchainTokenService,
+        token_id::{Self, TokenId},
+        token_manager_type::TokenManagerType
+    };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::{Self, Transaction, package_id}};
     use std::{ascii, type_name};
     use sui::address;
@@ -38,6 +42,7 @@ module interchain_token_service::discovery {
         (token_id, destination, amount, data)
     }
 
+    // Note: This needs to be updated each time with a new type replacing the type argument of `package_id`
     public fun register_transaction(its: &mut InterchainTokenService, discovery: &mut RelayerDiscovery) {
         let mut arg = vector[0];
         arg.append(object::id(its).to_bytes());
@@ -45,7 +50,7 @@ module interchain_token_service::discovery {
         let arguments = vector[arg, vector[3]];
 
         let function = transaction::new_function(
-            package_id<InterchainTokenService>(),
+            package_id<TokenManagerType>(),
             ascii::string(b"discovery"),
             ascii::string(b"call_info"),
         );
