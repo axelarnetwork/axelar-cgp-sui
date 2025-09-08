@@ -350,17 +350,13 @@ describe('ITS', () => {
             distributor = await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_some`,
                 arguments: [distributorOption],
-                typeArguments: [
-                    `${deployments.axelar_gateway.packageId}::channel::Channel`,
-                ],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
             });
 
             await txBuilder.moveCall({
                 target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
                 arguments: [distributor, deployer.toSuiAddress()],
-                typeArguments: [
-                    `${deployments.axelar_gateway.packageId}::channel::Channel`,
-                ],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
             });
         } else {
             await txBuilder.moveCall({
@@ -374,9 +370,7 @@ describe('ITS', () => {
             await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_none`,
                 arguments: [distributorOption],
-                typeArguments: [
-                    `${deployments.axelar_gateway.packageId}::channel::Channel`,
-                ],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
             });
         }
 
