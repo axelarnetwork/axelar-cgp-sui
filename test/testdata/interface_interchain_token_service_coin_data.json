@@ -1,5 +1,23 @@
 {
-  "structs": {},
+  "structs": {
+    "CoinData": {
+      "name": "CoinData",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "store"
+      ],
+      "fields": [
+        {
+          "name": "coin_management",
+          "type": "CoinManagement<T>"
+        },
+        {
+          "name": "coin_info",
+          "type": "CoinInfo<T>"
+        }
+      ]
+    }
+  },
   "publicFunctions": {
     "coin_info<T>": {
       "name": "coin_info<T>",

@@ -1,0 +1,23 @@
+{
+  "structs": {
+    "TreasuryCapReclaimer": {
+      "name": "TreasuryCapReclaimer",
+      "typeParams": "<phantom T>",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        },
+        {
+          "name": "token_id",
+          "type": "TokenId"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {}
+}

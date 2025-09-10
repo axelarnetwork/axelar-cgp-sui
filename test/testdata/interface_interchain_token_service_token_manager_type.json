@@ -1,0 +1,31 @@
+{
+  "structs": {
+    "TokenManagerType": {
+      "name": "TokenManagerType",
+      "abilities": [
+        "copy",
+        "drop"
+      ],
+      "fields": [
+        {
+          "name": "token_manager_type",
+          "type": "u256"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "lock_unlock": {
+      "name": "lock_unlock",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    },
+    "mint_burn": {
+      "name": "mint_burn",
+      "visibility": "public",
+      "params": {},
+      "returnType": "TokenManagerType"
+    }
+  }
+}

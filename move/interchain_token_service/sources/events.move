@@ -1,6 +1,6 @@
 module interchain_token_service::events {
-    use axelar_gateway::bytes32::{Self, Bytes32};
-    use interchain_token_service::token_id::{TokenId, UnregisteredTokenId};
+    use axelar_gateway::{bytes32::{Self, Bytes32}, channel::Channel};
+    use interchain_token_service::{token_id::{TokenId, UnregisteredTokenId, UnlinkedTokenId}, token_manager_type::TokenManagerType};
     use std::{ascii::String, string};
     use sui::{address, event, hash::keccak256};
 
@@ -44,6 +44,18 @@ module interchain_token_service::events {
         decimals: u8,
     }
 
+    public struct UnlinkedCoinReceived<phantom T> has copy, drop {
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    }
+
+    public struct UnlinkedCoinRemoved<phantom T> has copy, drop {
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    }
+
     public struct TrustedChainAdded has copy, drop {
         chain_name: String,
     }
@@ -65,6 +77,33 @@ module interchain_token_service::events {
     public struct OperatorshipTransfered<phantom T> has copy, drop {
         token_id: TokenId,
         new_operator: Option<address>,
+    }
+
+    public struct InterchainTokenIdClaimed<phantom T> has copy, drop {
+        token_id: TokenId,
+        deployer: ID,
+        salt: Bytes32,
+    }
+
+    public struct LinkTokenStarted has copy, drop {
+        token_id: TokenId,
+        destination_chain: String,
+        source_token_address: vector<u8>,
+        destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    }
+
+    public struct LinkTokenReceived<phantom T> has copy, drop {
+        token_id: TokenId,
+        source_chain: String,
+        source_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    }
+
+    public struct CoinMetadataRegistered<phantom T> has copy, drop {
+        decimals: u8,
     }
 
     // -----------------
@@ -144,6 +183,30 @@ module interchain_token_service::events {
         });
     }
 
+    public(package) fun unlinked_coin_received<T>(
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    ) {
+        event::emit(UnlinkedCoinReceived<T> {
+            unlinked_token_id,
+            token_id,
+            token_manager_type,
+        });
+    }
+
+    public(package) fun unlinked_coin_removed<T>(
+        unlinked_token_id: UnlinkedTokenId,
+        token_id: TokenId,
+        token_manager_type: TokenManagerType,
+    ) {
+        event::emit(UnlinkedCoinRemoved<T> {
+            unlinked_token_id,
+            token_id,
+            token_manager_type,
+        });
+    }
+
     public(package) fun trusted_chain_added(chain_name: String) {
         event::emit(TrustedChainAdded {
             chain_name,
@@ -174,6 +237,54 @@ module interchain_token_service::events {
         event::emit(OperatorshipTransfered<T> {
             token_id,
             new_operator,
+        });
+    }
+
+    public(package) fun interchain_token_id_claimed<T>(token_id: TokenId, deployer: &Channel, salt: Bytes32) {
+        event::emit(InterchainTokenIdClaimed<T> {
+            token_id,
+            deployer: deployer.id(),
+            salt,
+        });
+    }
+
+    public(package) fun link_token_started(
+        token_id: TokenId,
+        destination_chain: String,
+        source_token_address: vector<u8>,
+        destination_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    ) {
+        event::emit(LinkTokenStarted {
+            token_id,
+            destination_chain,
+            source_token_address,
+            destination_token_address,
+            token_manager_type,
+            link_params,
+        });
+    }
+
+    public(package) fun coin_metadata_registered<T>(decimals: u8) {
+        event::emit(CoinMetadataRegistered<T> {
+            decimals,
+        });
+    }
+
+    public(package) fun link_token_received<T>(
+        token_id: TokenId,
+        source_chain: String,
+        source_token_address: vector<u8>,
+        token_manager_type: TokenManagerType,
+        link_params: vector<u8>,
+    ) {
+        event::emit(LinkTokenReceived<T> {
+            token_id,
+            source_chain,
+            source_token_address,
+            token_manager_type,
+            link_params,
         });
     }
 

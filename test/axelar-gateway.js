@@ -275,6 +275,7 @@ describe('Axelar Gateway', () => {
             await publishPackage(client, keypair, 'abi');
             await publishPackage(client, keypair, 'governance');
             await publishPackage(client, keypair, 'interchain_token_service');
+            await publishPackage(client, keypair, 'operators');
             const result = await publishPackage(client, keypair, 'example');
 
             const testId = result.packageId;

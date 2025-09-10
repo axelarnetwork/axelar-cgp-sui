@@ -104,7 +104,7 @@ module gas_service::gas_service_v0 {
     }
 
     public(package) fun balance<T>(self: &GasService_v0): &Balance<T> {
-        self.balances.borrow<TypeName, Balance<T>>(type_name::get<T>())
+        self.balances.borrow<TypeName, Balance<T>>(type_name::with_defining_ids<T>())
     }
 
     // -----------------
@@ -119,7 +119,7 @@ module gas_service::gas_service_v0 {
     }
 
     fun balance_mut<T>(self: &mut GasService_v0): &mut Balance<T> {
-        let key = type_name::get<T>();
+        let key = type_name::with_defining_ids<T>();
 
         if (!self.balances.contains(key)) {
             self.balances.add(key, balance::zero<T>());

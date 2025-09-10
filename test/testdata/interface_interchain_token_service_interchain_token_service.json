@@ -22,11 +22,69 @@
       "name": "register_coin<T>",
       "visibility": "public",
       "params": {
+        "_#0#0": "&mut InterchainTokenService",
+        "_#1#0": "CoinInfo<T>",
+        "_#2#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
+    "register_coin_from_info<T>": {
+      "name": "register_coin_from_info<T>",
+      "visibility": "public",
+      "params": {
         "self#0#0": "&mut InterchainTokenService",
-        "coin_info#0#0": "CoinInfo<T>",
+        "name#0#0": "String",
+        "symbol#0#0": "String",
+        "decimals#0#0": "u8",
         "coin_management#0#0": "CoinManagement<T>"
       },
       "returnType": "TokenId"
+    },
+    "register_coin_from_metadata<T>": {
+      "name": "register_coin_from_metadata<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "metadata#0#0": "&CoinMetadata<T>",
+        "coin_management#0#0": "CoinManagement<T>"
+      },
+      "returnType": "TokenId"
+    },
+    "register_custom_coin<T>": {
+      "name": "register_custom_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "Bytes32",
+        "coin_metadata#0#0": "&CoinMetadata<T>",
+        "coin_management#0#0": "CoinManagement<T>",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "TokenId * Option<TreasuryCapReclaimer<T>>"
+    },
+    "link_coin": {
+      "name": "link_coin",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&InterchainTokenService",
+        "deployer#0#0": "&Channel",
+        "salt#0#0": "Bytes32",
+        "destination_chain#0#0": "String",
+        "destination_token_address#0#0": "vector<u8>",
+        "token_manager_type#0#0": "TokenManagerType",
+        "link_params#0#0": "vector<u8>"
+      },
+      "returnType": "MessageTicket"
+    },
+    "register_coin_metadata<T>": {
+      "name": "register_coin_metadata<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&InterchainTokenService",
+        "coin_metadata#0#0": "&CoinMetadata<T>"
+      },
+      "returnType": "MessageTicket"
     },
     "deploy_remote_interchain_token<T>": {
       "name": "deploy_remote_interchain_token<T>",
@@ -73,6 +131,27 @@
       },
       "returnType": "String * vector<u8> * vector<u8> * Coin<T>"
     },
+    "give_unlinked_coin<T>": {
+      "name": "give_unlinked_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "token_id#0#0": "TokenId",
+        "coin_metadata#0#0": "&CoinMetadata<T>",
+        "treasury_cap#0#0": "Option<TreasuryCap<T>>",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "Option<TreasuryCapReclaimer<T>> * Option<Channel>"
+    },
+    "remove_unlinked_coin<T>": {
+      "name": "remove_unlinked_coin<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "treasury_cap_reclaimer#0#0": "TreasuryCapReclaimer<T>"
+      },
+      "returnType": "TreasuryCap<T>"
+    },
     "mint_as_distributor<T>": {
       "name": "mint_as_distributor<T>",
       "visibility": "public",
@@ -84,6 +163,26 @@
         "ctx#0#0": "&mut TxContext"
       },
       "returnType": "Coin<T>"
+    },
+    "remove_treasury_cap<T>": {
+      "name": "remove_treasury_cap<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "treasury_cap_reclaimer#0#0": "TreasuryCapReclaimer<T>"
+      },
+      "returnType": "TreasuryCap<T>"
+    },
+    "restore_treasury_cap<T>": {
+      "name": "restore_treasury_cap<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut InterchainTokenService",
+        "treasury_cap#0#0": "TreasuryCap<T>",
+        "token_id#0#0": "TokenId",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "TreasuryCapReclaimer<T>"
     },
     "registered_coin_type": {
       "name": "registered_coin_type",

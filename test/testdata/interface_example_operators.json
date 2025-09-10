@@ -1,0 +1,86 @@
+{
+  "structs": {
+    "MultiMinter": {
+      "name": "MultiMinter",
+      "abilities": [
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        },
+        {
+          "name": "distributor_cap",
+          "type": "Option<Channel>"
+        },
+        {
+          "name": "operator_cap",
+          "type": "Option<OperatorCap>"
+        },
+        {
+          "name": "distributor_cap_id",
+          "type": "Option<ID>"
+        }
+      ]
+    },
+    "OwnerCap": {
+      "name": "OwnerCap",
+      "abilities": [
+        "store",
+        "key"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "UID"
+        }
+      ]
+    }
+  },
+  "publicFunctions": {
+    "mint<T>": {
+      "name": "mint<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&MultiMinter",
+        "its#0#0": "&mut InterchainTokenService",
+        "token_id#0#0": "TokenId",
+        "amount#0#0": "u64",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "Coin<T>"
+    },
+    "remove_distributor_cap": {
+      "name": "remove_distributor_cap",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut MultiMinter",
+        "_owner_cap#0#0": "&OwnerCap"
+      },
+      "returnType": "Channel"
+    },
+    "mint_as_operator<T>": {
+      "name": "mint_as_operator<T>",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut MultiMinter",
+        "its#0#0": "&mut InterchainTokenService",
+        "operators#0#0": "&mut Operators",
+        "token_id#0#0": "TokenId",
+        "amount#0#0": "u64",
+        "ctx#0#0": "&mut TxContext"
+      },
+      "returnType": "Coin<T>"
+    },
+    "remove_operator_cap": {
+      "name": "remove_operator_cap",
+      "visibility": "public",
+      "params": {
+        "self#0#0": "&mut MultiMinter",
+        "_owner_cap#0#0": "&OwnerCap"
+      },
+      "returnType": "OperatorCap"
+    }
+  }
+}

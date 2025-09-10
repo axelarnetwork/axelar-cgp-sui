@@ -62,8 +62,8 @@ module example::its {
                         address::from_bytes(
                             hex::decode(
                                 *ascii::as_bytes(
-                                    &type_name::get_address(
-                                        &type_name::get<Singleton>(),
+                                    &type_name::address_string(
+                                        &type_name::with_defining_ids<Singleton>(),
                                     ),
                                 ),
                             ),
@@ -102,8 +102,8 @@ module example::its {
                         address::from_bytes(
                             hex::decode(
                                 *ascii::as_bytes(
-                                    &type_name::get_address(
-                                        &type_name::get<Singleton>(),
+                                    &type_name::address_string(
+                                        &type_name::with_defining_ids<Singleton>(),
                                     ),
                                 ),
                             ),
@@ -123,15 +123,10 @@ module example::its {
     /// This function needs to be called first to register the coin for either of
     /// the other two functions to work.
     public fun register_coin<TOKEN>(its: &mut InterchainTokenService, coin_metadata: &CoinMetadata<TOKEN>): TokenId {
-        let coin_info = coin_info::from_info<TOKEN>(
-            coin_metadata.get_name(),
-            coin_metadata.get_symbol(),
-            coin_metadata.get_decimals(),
-        );
         let coin_management = coin_management::new_locked();
 
-        its.register_coin(
-            coin_info,
+        its.register_coin_from_metadata(
+            coin_metadata,
             coin_management,
         )
     }
@@ -181,7 +176,7 @@ module example::its {
         );
     }
 
-    /// This should trigger an interchain trasnfer.
+    /// This should trigger an interchain transfer.
     public fun send_interchain_transfer_call<TOKEN>(
         singleton: &Singleton,
         its: &mut InterchainTokenService,
