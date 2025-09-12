@@ -3,7 +3,6 @@ module example::its {
     use example::utils::concat;
     use gas_service::gas_service::GasService;
     use interchain_token_service::{
-        coin_info,
         coin_management,
         discovery as its_discovery,
         interchain_token_service::{Self, InterchainTokenService},
@@ -138,15 +137,10 @@ module example::its {
         coin_metadata: &CoinMetadata<TOKEN>,
         treasury_cap: TreasuryCap<TOKEN>,
     ): TokenId {
-        let coin_info = coin_info::from_info<TOKEN>(
-            coin_metadata.get_name(),
-            coin_metadata.get_symbol(),
-            coin_metadata.get_decimals(),
-        );
         let coin_management = coin_management::new_with_cap(treasury_cap);
 
-        its.register_coin(
-            coin_info,
+        its.register_coin_from_metadata(
+            coin_metadata,
             coin_management,
         )
     }
