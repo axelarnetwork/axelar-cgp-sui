@@ -304,7 +304,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let mut writer = abi::new_writer(3);
         writer
             .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
-            .write_bytes(type_name::get<T>().into_string().into_bytes())
+            .write_bytes(type_name::with_defining_ids<T>().into_string().into_bytes())
             .write_u8(decimals);
         let payload = writer.into_bytes();
 
@@ -511,7 +511,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let destination_token_address = reader.read_bytes();
         let link_params = reader.read_bytes();
 
-        assert!(destination_token_address == type_name::get<T>().into_string().into_bytes(), ECoinTypeMissmatch);
+        assert!(destination_token_address == type_name::with_defining_ids<T>().into_string().into_bytes(), ECoinTypeMissmatch);
 
         let token_manager_type = token_manager_type::from_u256(token_manager_type);
 
@@ -543,7 +543,7 @@ module interchain_token_service::interchain_token_service_v0 {
         let decimals = coin_metadata.get_decimals();
         let symbol = coin_metadata.get_symbol();
 
-        let module_name = type_name::get_module(&type_name::get<T>());
+        let module_name = type_name::module_string(&type_name::with_defining_ids<T>());
         assert!(&module_name == &its_utils::module_from_symbol(&symbol), EModuleNameDoesNotMatchSymbol);
 
         let token_id = token_id::unregistered_token_id(&symbol, decimals);
@@ -767,7 +767,7 @@ module interchain_token_service::interchain_token_service_v0 {
                 ),
             );
 
-        let type_name = type_name::get<T>();
+        let type_name = type_name::with_defining_ids<T>();
         add_unregistered_coin_type(self, token_id, type_name);
     }
 
@@ -841,7 +841,7 @@ module interchain_token_service::interchain_token_service_v0 {
                 coin_data,
             );
 
-        let type_name = type_name::get<T>();
+        let type_name = type_name::with_defining_ids<T>();
         add_registered_coin_type(self, token_id, type_name);
 
         events::coin_registered<T>(

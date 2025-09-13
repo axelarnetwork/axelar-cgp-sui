@@ -268,7 +268,7 @@ module interchain_token_service::discovery {
             .write_bytes(data);
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
             type_arg,
@@ -328,7 +328,7 @@ module interchain_token_service::discovery {
 
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
-            std::type_name::get<RelayerDiscovery>(),
+            std::type_name::with_defining_ids<RelayerDiscovery>(),
         );
 
         let mut reader = abi::new_reader(payload);
@@ -363,7 +363,7 @@ module interchain_token_service::discovery {
             .write_bytes(distributor.to_bytes());
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_unregistered_coin_type_for_testing(
             interchain_token_service::token_id::unregistered_token_id(
                 &ascii::string(symbol),
@@ -407,7 +407,7 @@ module interchain_token_service::discovery {
         let token_id = @0x1234;
         let token_manager_type = interchain_token_service::token_manager_type::lock_unlock();
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<interchain_token_service::coin::COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<interchain_token_service::coin::COIN>().into_string().into_bytes();
         let link_params = b"";
         let mut writer = abi::new_writer(6);
         writer
@@ -520,7 +520,7 @@ module interchain_token_service::discovery {
         writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(b"source_chain").write_bytes(inner);
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
             type_arg,

@@ -36,7 +36,7 @@ module governance::governance {
         ctx: &mut TxContext,
     ) {
         let package_id = object::id_from_bytes(
-            hex::decode(type_name::get<Governance>().get_address().into_bytes()),
+            hex::decode(type_name::with_defining_ids<Governance>().address_string().into_bytes()),
         );
         assert!(upgrade_cap.upgrade_package() == package_id, ENotSelfUpgradeCap);
         is_cap_new(&upgrade_cap);
@@ -140,7 +140,7 @@ module governance::governance {
         let message_type = 2;
         let mut ctx = tx_context::dummy();
         let package_id = object::id_from_bytes(
-            hex::decode(type_name::get<Governance>().get_address().into_bytes()),
+            hex::decode(type_name::with_defining_ids<Governance>().address_string().into_bytes()),
         );
         let upgrade_cap = package::test_publish(package_id, &mut ctx);
         let initial_owner = @0x1;
@@ -173,7 +173,7 @@ module governance::governance {
         let message_type = 2;
         let mut ctx = tx_context::dummy();
         let package_id = object::id_from_bytes(
-            hex::decode(type_name::get<Governance>().get_address().into_bytes()),
+            hex::decode(type_name::with_defining_ids<Governance>().address_string().into_bytes()),
         );
         let upgrade_cap = package::test_publish(package_id, &mut ctx);
         let initial_owner = @0x1;
@@ -308,7 +308,7 @@ module governance::governance {
         let message_type = 2;
         let mut ctx = tx_context::dummy();
         let package_id = object::id_from_bytes(
-            hex::decode(type_name::get<Governance>().get_address().into_bytes()),
+            hex::decode(type_name::with_defining_ids<Governance>().address_string().into_bytes()),
         );
         let upgrade_cap = package::test_publish(package_id, &mut ctx);
         let initial_owner = @0x1;

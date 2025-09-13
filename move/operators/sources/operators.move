@@ -125,7 +125,7 @@ module operators::operators {
 
         event::emit(CapabilityStored {
             cap_id,
-            cap_name: type_name::get<T>().into_string(),
+            cap_name: type_name::with_defining_ids<T>().into_string(),
         });
     }
 
@@ -168,7 +168,7 @@ module operators::operators {
     public fun remove_cap<T: key + store>(self: &mut Operators, _: &OwnerCap, cap_id: ID): T {
         event::emit(CapabilityRemoved {
             cap_id,
-            cap_name: type_name::get<T>().into_string(),
+            cap_name: type_name::with_defining_ids<T>().into_string(),
         });
 
         self.caps.remove<ID, T>(cap_id)
@@ -249,7 +249,7 @@ module operators::operators {
 
         let new_operator = @0x1;
         add_operator(&mut operators, &owner_cap, new_operator, ctx);
-        assert!(operators.operators.size() == 1);
+        assert!(operators.operators.length() == 1);
 
         let operator_id = operators.operators.keys()[0];
         remove_operator(&mut operators, &owner_cap, operator_id);
