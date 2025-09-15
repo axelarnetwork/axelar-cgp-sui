@@ -793,7 +793,7 @@ module interchain_token_service::interchain_token_service {
 
         let value = its.value_mut!(b"");
         let token_id = interchain_token_service::token_id::custom_token_id(&value.chain_name_hash(), &deployer, &salt);
-        let source_token_type = type_name::get<COIN>();
+        let source_token_type = type_name::with_defining_ids<COIN>();
         its.add_registered_coin_type_for_testing(token_id, source_token_type);
 
         let destination_chain = ascii::string(b"Chain Name");
@@ -1107,7 +1107,7 @@ module interchain_token_service::interchain_token_service {
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<COIN>().into_string().into_bytes();
         let link_params = b"";
         let symbol = b"Symbol";
         let decimals = 9;
@@ -1157,7 +1157,7 @@ module interchain_token_service::interchain_token_service {
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<COIN>().into_string().into_bytes();
         let operator = sui::address::from_u256(5678);
         let link_params = (copy operator).to_bytes();
         let symbol = b"Symbol";
@@ -1551,7 +1551,7 @@ module interchain_token_service::interchain_token_service {
         let token_id = interchain_token_service::token_id::from_address(@0x1);
         its.add_registered_coin_type_for_testing(
             token_id,
-            std::type_name::get<COIN>(),
+            std::type_name::with_defining_ids<COIN>(),
         );
         its.registered_coin_type(token_id);
 
@@ -1664,7 +1664,7 @@ module interchain_token_service::interchain_token_service {
 
         writer
             .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
-            .write_bytes(type_name::get<COIN>().into_string().into_bytes())
+            .write_bytes(type_name::with_defining_ids<COIN>().into_string().into_bytes())
             .write_u8(decimals);
 
         let payload = writer.into_bytes();
