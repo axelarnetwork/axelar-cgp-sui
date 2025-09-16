@@ -50,7 +50,7 @@ module interchain_token_service::token_id {
     ): TokenId {
         let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));
-        vec.append(bcs::to_bytes(&type_name::get<T>()));
+        vec.append(bcs::to_bytes(&type_name::with_defining_ids<T>()));
         vec.append(bcs::to_bytes(name));
         vec.append(bcs::to_bytes(symbol));
         vec.append(bcs::to_bytes(decimals));
@@ -96,7 +96,7 @@ module interchain_token_service::token_id {
         let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
         let mut v = bcs::to_bytes(&prefix);
         v.append(bcs::to_bytes(&token_id));
-        v.append(bcs::to_bytes(&type_name::get<T>()));
+        v.append(bcs::to_bytes(&type_name::with_defining_ids<T>()));
         v.append(bcs::to_bytes(&token_manager_type.to_u256()));
         let id = address::from_bytes(keccak256(&v));
         UnlinkedTokenId { id }
@@ -144,7 +144,7 @@ module interchain_token_service::token_id {
 
         let mut vec = address::from_u256(PREFIX_SUI_TOKEN_ID).to_bytes();
         vec.append(bcs::to_bytes(chain_name_hash));
-        vec.append(bcs::to_bytes(&type_name::get<COIN>()));
+        vec.append(bcs::to_bytes(&type_name::with_defining_ids<COIN>()));
         vec.append(bcs::to_bytes(name));
         vec.append(bcs::to_bytes(symbol));
         vec.append(bcs::to_bytes(decimals));
@@ -204,7 +204,7 @@ module interchain_token_service::token_id {
         let prefix = PREFIX_UNLINKED_INTERCHAIN_TOKEN_ID;
         let mut v = bcs::to_bytes(&prefix);
         v.append(bcs::to_bytes(&token_id));
-        v.append(bcs::to_bytes(&type_name::get<COIN>()));
+        v.append(bcs::to_bytes(&type_name::with_defining_ids<COIN>()));
         v.append(bcs::to_bytes(&token_manager_type.to_u256()));
         let id = address::from_bytes(keccak256(&v));
 

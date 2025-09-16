@@ -288,7 +288,7 @@ module interchain_token_service::interchain_token_service {
         coin_metadata: &CoinMetadata<T>,
         treasury_cap: Option<TreasuryCap<T>>,
         ctx: &mut TxContext,
-    ): Option<TreasuryCapReclaimer<T>> {
+    ): (Option<TreasuryCapReclaimer<T>>, Option<Channel>) {
         let value = self.value_mut!(b"give_unlinked_coin");
 
         value.give_unlinked_coin(token_id, coin_metadata, treasury_cap, ctx)
@@ -502,7 +502,6 @@ module interchain_token_service::interchain_token_service {
                 b"burn_as_distributor",
                 b"add_trusted_chains",
                 b"remove_trusted_chains",
-                b"register_transaction",
                 b"set_flow_limit",
                 b"set_flow_limit_as_token_operator",
                 b"transfer_distributorship",
@@ -794,7 +793,7 @@ module interchain_token_service::interchain_token_service {
 
         let value = its.value_mut!(b"");
         let token_id = interchain_token_service::token_id::custom_token_id(&value.chain_name_hash(), &deployer, &salt);
-        let source_token_type = type_name::get<COIN>();
+        let source_token_type = type_name::with_defining_ids<COIN>();
         its.add_registered_coin_type_for_testing(token_id, source_token_type);
 
         let destination_chain = ascii::string(b"Chain Name");
@@ -1108,7 +1107,7 @@ module interchain_token_service::interchain_token_service {
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<COIN>().into_string().into_bytes();
         let link_params = b"";
         let symbol = b"Symbol";
         let decimals = 9;
@@ -1116,7 +1115,7 @@ module interchain_token_service::interchain_token_service {
         let has_treasury_cap = false;
         let token_manager_type = token_manager_type::lock_unlock();
 
-        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+        let distributor = its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
         let mut writer = abi::new_writer(6);
         writer
@@ -1146,6 +1145,7 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().is_none());
 
+        option::destroy_none<Channel>(distributor);
         sui::test_utils::destroy(its);
     }
 
@@ -1157,7 +1157,7 @@ module interchain_token_service::interchain_token_service {
         let source_chain = ascii::string(b"Chain Name");
         let message_id = ascii::string(b"Message Id");
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<COIN>().into_string().into_bytes();
         let operator = sui::address::from_u256(5678);
         let link_params = (copy operator).to_bytes();
         let symbol = b"Symbol";
@@ -1166,7 +1166,7 @@ module interchain_token_service::interchain_token_service {
         let has_treasury_cap = true;
         let token_manager_type = token_manager_type::mint_burn();
 
-        its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
+        let distributor = its.value_mut!(b"").create_unlinked_coin(token_id, symbol, decimals, has_treasury_cap, ctx);
 
         let mut writer = abi::new_writer(6);
         writer
@@ -1195,6 +1195,8 @@ module interchain_token_service::interchain_token_service {
 
         assert!(its.value!(b"").coin_data<COIN>(token_id).coin_management().operator().contains(&operator));
 
+        let distributor = option::destroy_some<Channel>(distributor);
+        sui::test_utils::destroy(distributor);
         sui::test_utils::destroy(its);
     }
 
@@ -1231,10 +1233,13 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        let empty_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
-        empty_option.destroy_none();
-        let full_option = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
-        full_option.destroy_some().destroy();
+        let (empty_option_1, empty_option_2) = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::none(), ctx);
+        empty_option_1.destroy_none();
+        empty_option_2.destroy_none();
+
+        let (full_option_1, full_option_2) = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        full_option_1.destroy_some().destroy();
+        full_option_2.destroy_some().destroy();
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(its);
@@ -1255,13 +1260,21 @@ module interchain_token_service::interchain_token_service {
 
         let token_id = interchain_token_service::token_id::from_u256(1234);
 
-        let treasury_cap_reclaimer = give_unlinked_coin<COIN>(&mut its, token_id, &coin_metadata, option::some(treasury_cap), ctx);
+        let (treasury_cap_reclaimer, distributor) = give_unlinked_coin<COIN>(
+            &mut its,
+            token_id,
+            &coin_metadata,
+            option::some(treasury_cap),
+            ctx,
+        );
         let treasury_cap_reclaimer = treasury_cap_reclaimer.destroy_some();
+        let distributor = distributor.destroy_some();
 
         let treasury_cap: TreasuryCap<COIN> = remove_unlinked_coin(&mut its, treasury_cap_reclaimer);
 
         sui::test_utils::destroy(coin_metadata);
         sui::test_utils::destroy(treasury_cap);
+        sui::test_utils::destroy(distributor);
         sui::test_utils::destroy(its);
     }
 
@@ -1538,7 +1551,7 @@ module interchain_token_service::interchain_token_service {
         let token_id = interchain_token_service::token_id::from_address(@0x1);
         its.add_registered_coin_type_for_testing(
             token_id,
-            std::type_name::get<COIN>(),
+            std::type_name::with_defining_ids<COIN>(),
         );
         its.registered_coin_type(token_id);
 
@@ -1651,7 +1664,7 @@ module interchain_token_service::interchain_token_service {
 
         writer
             .write_u256(MESSAGE_TYPE_REGISTER_TOKEN_METADATA)
-            .write_bytes(type_name::get<COIN>().into_string().into_bytes())
+            .write_bytes(type_name::with_defining_ids<COIN>().into_string().into_bytes())
             .write_u8(decimals);
 
         let payload = writer.into_bytes();

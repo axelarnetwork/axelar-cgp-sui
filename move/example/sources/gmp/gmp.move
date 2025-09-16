@@ -35,8 +35,8 @@ module example::gmp {
                         address::from_bytes(
                             hex::decode(
                                 *ascii::as_bytes(
-                                    &type_name::get_address(
-                                        &type_name::get<Singleton>(),
+                                    &type_name::address_string(
+                                        &type_name::with_defining_ids<Singleton>(),
                                     ),
                                 ),
                             ),

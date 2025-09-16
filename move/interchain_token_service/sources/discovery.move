@@ -1,6 +1,10 @@
 module interchain_token_service::discovery {
     use abi::abi::{Self, AbiReader};
-    use interchain_token_service::{interchain_token_service::InterchainTokenService, token_id::{Self, TokenId}};
+    use interchain_token_service::{
+        interchain_token_service::InterchainTokenService,
+        token_id::{Self, TokenId},
+        token_manager_type::TokenManagerType
+    };
     use relayer_discovery::{discovery::RelayerDiscovery, transaction::{Self, Transaction, package_id}};
     use std::{ascii, type_name};
     use sui::address;
@@ -38,6 +42,7 @@ module interchain_token_service::discovery {
         (token_id, destination, amount, data)
     }
 
+    // Note: This needs to be updated each time with a new type replacing the type argument of `package_id`
     public fun register_transaction(its: &mut InterchainTokenService, discovery: &mut RelayerDiscovery) {
         let mut arg = vector[0];
         arg.append(object::id(its).to_bytes());
@@ -45,7 +50,7 @@ module interchain_token_service::discovery {
         let arguments = vector[arg, vector[3]];
 
         let function = transaction::new_function(
-            package_id<InterchainTokenService>(),
+            package_id<TokenManagerType>(),
             ascii::string(b"discovery"),
             ascii::string(b"call_info"),
         );
@@ -263,7 +268,7 @@ module interchain_token_service::discovery {
             .write_bytes(data);
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
             type_arg,
@@ -323,7 +328,7 @@ module interchain_token_service::discovery {
 
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
-            std::type_name::get<RelayerDiscovery>(),
+            std::type_name::with_defining_ids<RelayerDiscovery>(),
         );
 
         let mut reader = abi::new_reader(payload);
@@ -358,7 +363,7 @@ module interchain_token_service::discovery {
             .write_bytes(distributor.to_bytes());
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_unregistered_coin_type_for_testing(
             interchain_token_service::token_id::unregistered_token_id(
                 &ascii::string(symbol),
@@ -402,7 +407,7 @@ module interchain_token_service::discovery {
         let token_id = @0x1234;
         let token_manager_type = interchain_token_service::token_manager_type::lock_unlock();
         let source_token_address = b"source_token_address";
-        let destination_token_address = type_name::get<interchain_token_service::coin::COIN>().into_string().into_bytes();
+        let destination_token_address = type_name::with_defining_ids<interchain_token_service::coin::COIN>().into_string().into_bytes();
         let link_params = b"";
         let mut writer = abi::new_writer(6);
         writer
@@ -515,7 +520,7 @@ module interchain_token_service::discovery {
         writer.write_u256(MESSAGE_TYPE_RECEIVE_FROM_HUB).write_bytes(b"source_chain").write_bytes(inner);
         let payload = writer.into_bytes();
 
-        let type_arg = std::type_name::get<RelayerDiscovery>();
+        let type_arg = std::type_name::with_defining_ids<RelayerDiscovery>();
         its.add_registered_coin_type_for_testing(
             interchain_token_service::token_id::from_address(token_id),
             type_arg,

@@ -322,13 +322,13 @@ describe('ITS', () => {
             arguments: [tokenId],
         });
 
-        const reclaimerOption = await txBuilder.moveCall({
+        const [reclaimerOption, distributorOption] = await txBuilder.moveCall({
             target: `${deployments.interchain_token_service.packageId}::interchain_token_service::give_unlinked_coin`,
             arguments: [objectIds.its, tokenIdObject, coinMetadata, treasuryCapOption],
             typeArguments: [coinType],
         });
 
-        let treasuryCapReclaimer;
+        let treasuryCapReclaimer, distributor;
 
         if (mintBurn) {
             treasuryCapReclaimer = await txBuilder.moveCall({
@@ -346,6 +346,18 @@ describe('ITS', () => {
                     `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
                 ],
             });
+
+            distributor = await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_some`,
+                arguments: [distributorOption],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
+            });
+
+            await txBuilder.moveCall({
+                target: `${SUI_PACKAGE_ID}::transfer::public_transfer`,
+                arguments: [distributor, deployer.toSuiAddress()],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
+            });
         } else {
             await txBuilder.moveCall({
                 target: `${STD_PACKAGE_ID}::option::destroy_none`,
@@ -353,6 +365,12 @@ describe('ITS', () => {
                 typeArguments: [
                     `${deployments.interchain_token_service.packageId}::treasury_cap_reclaimer::TreasuryCapReclaimer<${coinType}>`,
                 ],
+            });
+
+            await txBuilder.moveCall({
+                target: `${STD_PACKAGE_ID}::option::destroy_none`,
+                arguments: [distributorOption],
+                typeArguments: [`${deployments.axelar_gateway.packageId}::channel::Channel`],
             });
         }
 
