@@ -112,7 +112,7 @@ module interchain_token_service::discovery {
                 vector[
                     transaction::new_move_call(
                         transaction::new_function(
-                            package_id<InterchainTokenService>(),
+                            package_id<TokenManagerType>(),
                             ascii::string(b"interchain_token_service"),
                             ascii::string(b"receive_interchain_transfer"),
                         ),
@@ -162,7 +162,7 @@ module interchain_token_service::discovery {
 
         let move_call = transaction::new_move_call(
             transaction::new_function(
-                package_id<InterchainTokenService>(),
+                package_id<TokenManagerType>(),
                 ascii::string(b"interchain_token_service"),
                 ascii::string(b"receive_deploy_interchain_token"),
             ),
@@ -189,7 +189,7 @@ module interchain_token_service::discovery {
 
         let move_call = transaction::new_move_call(
             transaction::new_function(
-                package_id<InterchainTokenService>(),
+                package_id<TokenManagerType>(),
                 ascii::string(b"interchain_token_service"),
                 ascii::string(b"receive_link_coin"),
             ),
@@ -212,7 +212,7 @@ module interchain_token_service::discovery {
         let arguments = vector[arg, vector[3]];
 
         let function = transaction::new_function(
-            package_id<InterchainTokenService>(),
+            package_id<TokenManagerType>(),
             ascii::string(b"discovery"),
             ascii::string(b"call_info"),
         );
@@ -283,7 +283,7 @@ module interchain_token_service::discovery {
 
         let call_info = tx_block.move_calls().pop_back();
 
-        assert!(call_info.function().package_id_from_function() == package_id<InterchainTokenService>());
+        assert!(call_info.function().package_id_from_function() == package_id<TokenManagerType>());
         assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
         assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"));
         let mut arg = vector[0];
@@ -382,7 +382,7 @@ module interchain_token_service::discovery {
         let mut move_calls = tx_block.move_calls();
         assert!(move_calls.length() == 1);
         let call_info = move_calls.pop_back();
-        assert!(call_info.function().package_id_from_function() == package_id<InterchainTokenService>());
+        assert!(call_info.function().package_id_from_function() == package_id<TokenManagerType>());
         assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
         assert!(call_info.function().name() == ascii::string(b"receive_deploy_interchain_token"));
         let mut arg = vector[0];
@@ -430,7 +430,7 @@ module interchain_token_service::discovery {
         let mut move_calls = tx_block.move_calls();
         assert!(move_calls.length() == 1);
         let call_info = move_calls.pop_back();
-        assert!(call_info.function().package_id_from_function() == package_id<InterchainTokenService>());
+        assert!(call_info.function().package_id_from_function() == package_id<TokenManagerType>());
         assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
         assert!(call_info.function().name() == ascii::string(b"receive_link_coin"));
         let mut arg = vector[0];
@@ -532,7 +532,7 @@ module interchain_token_service::discovery {
 
         let call_info = tx_block.move_calls().pop_back();
 
-        assert!(call_info.function().package_id_from_function() == package_id<InterchainTokenService>());
+        assert!(call_info.function().package_id_from_function() == package_id<TokenManagerType>());
         assert!(call_info.function().module_name() == ascii::string(b"interchain_token_service"));
         assert!(call_info.function().name() == ascii::string(b"receive_interchain_transfer"));
         let mut arg = vector[0];
