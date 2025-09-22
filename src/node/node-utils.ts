@@ -44,7 +44,7 @@ const parseVersion = (version: string) => {
 };
 
 export function getContractBuild(packageName: string, moveDir: string): { modules: string[]; dependencies: string[]; digest: Bytes } {
-    updateMoveToml(packageName, emptyPackageId, moveDir, undefined, undefined, undefined);
+    updateMoveToml(packageName, emptyPackageId, moveDir);
 
     const { tmpdir, rmTmpDir } = prepareMoveBuild(path.dirname(moveDir));
 
@@ -87,8 +87,8 @@ export function updateMoveToml(
     moveDir: string = `${__dirname}/../../move`,
     prepToml: undefined | ((tomlJson: Record<string, TomlValue>) => Record<string, TomlValue>) = undefined,
     // Version should be the 0 indexed variant (as per )
-    version: undefined | number,
-    network: undefined | string,
+    version?: undefined | number,
+    network?: undefined | string,
 ) {
     if (typeof version !== 'number') version = 0;
     if (typeof network !== 'string') network = 'testnet';
