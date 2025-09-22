@@ -7,8 +7,8 @@ import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/ty
 
 const emptyPackageId = '0x0';
 const chainIds = {
-    testnet: "4c78adac",
-    mainnet: "35834a8a"
+    testnet: '4c78adac',
+    mainnet: '35834a8a',
 };
 
 /**
@@ -90,13 +90,13 @@ export function updateMoveToml(
     version: undefined | number,
     network: undefined | string,
 ) {
-    if (typeof version !== "number") version = 0;
-    if (typeof network !== "string") network = "testnet";
+    if (typeof version !== 'number') version = 0;
+    if (typeof network !== 'string') network = 'testnet';
 
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}`;
     const tomlPath = `${movePath}/Move.toml`;
-    const lockPath = `${movePath}/Move.lock`
+    const lockPath = `${movePath}/Move.lock`;
 
     // Check if the Move.toml and Move.lock file exists
     if (!fs.existsSync(tomlPath)) {
@@ -119,13 +119,14 @@ export function updateMoveToml(
 
         // Update the package address under the addresses section e.g. gas_service = "0x1"
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
-    // Version >= 1
     } else {
+        // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
         if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-            if (!legacyPackageId) throw new Error(`Upgrade parameter missing, no original published id was found for given path: ${tomlPath}`);
+            if (!legacyPackageId)
+                throw new Error(`Upgrade parameter missing, no original published id was found for given path: ${tomlPath}`);
             delete (tomlJson as Record<string, Record<string, string>>).package['published-at'];
         }
 
@@ -143,16 +144,15 @@ export function updateMoveToml(
 
             // Add the required sections for building versioned dependencies
             // [env]
-            if (!lockJson.hasOwnProperty("env")) lockJson.env = {};
+            if (!lockJson.hasOwnProperty('env')) lockJson.env = {};
             // [env.testnet] / [env.mainnet]
             lockJson[`env.${network}`] = {
-                "chain-id": (network == "mainnet")? chainIds.mainnet : chainIds.testnet,
-                "original-published-id": legacyPackageId,
-                "latest-published-id": packageId,
-                "published-version": String(version + 1)
+                'chain-id': network == 'mainnet' ? chainIds.mainnet : chainIds.testnet,
+                'original-published-id': legacyPackageId,
+                'latest-published-id': packageId,
+                'published-version': String(version + 1),
             };
-        } else 
-            throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
+        } else throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
     }
 
     if (prepToml) {
