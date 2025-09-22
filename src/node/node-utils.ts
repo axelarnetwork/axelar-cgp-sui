@@ -102,6 +102,7 @@ export function updateMoveToml(
     if (!fs.existsSync(tomlPath)) {
         throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
+
     const wasBuilt = fs.existsSync(lockPath);
 
     // Read the Move.toml file
@@ -123,6 +124,7 @@ export function updateMoveToml(
         // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
+
         if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
             if (!legacyPackageId)
@@ -144,10 +146,10 @@ export function updateMoveToml(
 
             // Add the required sections for building versioned dependencies
             // [env]
-            if (!lockJson.hasOwnProperty('env')) lockJson.env = {};
+            if (!lockJson.env) lockJson.env = {};
             // [env.testnet] / [env.mainnet]
             lockJson[`env.${network}`] = {
-                'chain-id': network == 'mainnet' ? chainIds.mainnet : chainIds.testnet,
+                'chain-id': network === 'mainnet' ? chainIds.mainnet : chainIds.testnet,
                 'original-published-id': legacyPackageId,
                 'latest-published-id': packageId,
                 'published-version': String(version + 1),
