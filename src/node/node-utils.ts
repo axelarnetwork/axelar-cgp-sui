@@ -127,12 +127,12 @@ export function updateMoveToml(
         // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
-        const noPublishedId = `Upgrade parameter missing, no original published id was found for given path: ${tomlPath}`;
         if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-            if (!legacyPackageId) throw new Error(noPublishedId);
+            if (!legacyPackageId) 
+                throw new Error(`Upgrade parameter missing, no published-at id was found for given path: ${tomlPath}`);
             delete (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-        } else throw new Error(noPublishedId);
+        }
 
         // Reset the package address in the addresses field to "0x0"
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
@@ -143,6 +143,17 @@ export function updateMoveToml(
             const lockRaw = fs.readFileSync(lockPath, 'utf8');
             // Parse the Move.lock file as JSON
             lockJson = toml.parse(lockRaw);
+
+            // If syncing an already published upgrade, use 'original-published-id' in place of 'published-at'
+            // for deriving the legacy package id
+            if (!legacyPackageId) {
+                try {
+                    legacyPackageId = (lockJson as Record<string, Record<string, string>>)[`env.${network}`]['original-published-id'];
+                } catch(e) {
+                    console.log(e);
+                    throw new Error(`Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`);
+                }
+            }
 
             // Add the required sections for building versioned dependencies
             // [env]
