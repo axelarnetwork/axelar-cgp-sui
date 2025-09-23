@@ -141,7 +141,7 @@ export function updateMoveToml(
         // Update the lock file (lock file must exist)
         if (wasBuilt) {
             // Read the Move.lock file
-            const lockRaw = fs.readFileSync(tomlPath, 'utf8');
+            const lockRaw = fs.readFileSync(lockPath, 'utf8');
             // Parse the Move.lock file as JSON
             lockJson = toml.parse(lockRaw);
 
