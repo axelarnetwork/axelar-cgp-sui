@@ -110,7 +110,10 @@ export function updateMoveToml(
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let tomlJson = toml.parse(tomlRaw);
+    let tomlJson: any = toml.parse(tomlRaw);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lockJson: any;
 
     // Version < 1
     if (!version) {
@@ -136,8 +139,6 @@ export function updateMoveToml(
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
         // Update the lock file (lock file must exist)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let lockJson: any;
         if (wasBuilt) {
             // Read the Move.lock file
             const lockRaw = fs.readFileSync(tomlPath, 'utf8');
@@ -161,7 +162,8 @@ export function updateMoveToml(
         tomlJson = prepToml(tomlJson);
     }
 
-    fs.writeFileSync(movePath, toml.stringify(tomlJson));
+    fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
+    if (lockJson) fs.writeFileSync(lockPath, toml.stringify(lockJson));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
