@@ -86,7 +86,7 @@ export function updateMoveToml(
     packageId: string,
     moveDir: string = `${__dirname}/../../move`,
     prepToml: undefined | ((tomlJson: Record<string, TomlValue>) => Record<string, TomlValue>) = undefined,
-    // Version should be the 0 indexed variant (as per )
+    // Version should be the 0 indexed variant (as per axelar-contract-deployments chain config)
     version?: undefined | number,
     network?: undefined | string,
 ) {
@@ -158,12 +158,10 @@ export function updateMoveToml(
         } else throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
     }
 
-    if (prepToml) {
-        tomlJson = prepToml(tomlJson);
-    }
+    if (prepToml) tomlJson = prepToml(tomlJson);
+    if (lockJson) fs.writeFileSync(lockPath, toml.stringify(lockJson));
 
     fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
-    if (lockJson) fs.writeFileSync(lockPath, toml.stringify(lockJson));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
