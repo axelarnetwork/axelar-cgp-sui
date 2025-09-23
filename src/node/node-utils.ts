@@ -127,13 +127,12 @@ export function updateMoveToml(
         // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
-
+        const noPublishedId = `Upgrade parameter missing, no original published id was found for given path: ${tomlPath}`
         if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-            if (!legacyPackageId)
-                throw new Error(`Upgrade parameter missing, no original published id was found for given path: ${tomlPath}`);
+            if (!legacyPackageId) throw new Error(noPublishedId);
             delete (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-        }
+        } else throw new Error(noPublishedId);
 
         // Reset the package address in the addresses field to "0x0"
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
