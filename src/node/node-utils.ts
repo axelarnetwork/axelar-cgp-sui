@@ -185,8 +185,8 @@ export function updateMoveToml(
             );
         }
 
-        // [env.testnet] / [env.mainnet]
-        lockJson[`env.${network}`] = {
+        // [env.devnet], [env.testnet], [env.mainnet]
+        lockJson.env[network] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
             'original-published-id': legacyPackageId,
             'latest-published-id': packageId,
