@@ -107,6 +107,14 @@ export function updateMoveToml(
         network = 'testnet';
     }
 
+    if (version) {
+        if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
+            throw new Error(
+                `Unrecognized chain-id for contract upgrade for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`,
+            );
+        }
+    }
+
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}`;
     const tomlPath = `${movePath}/Move.toml`;
@@ -150,7 +158,11 @@ export function updateMoveToml(
             legacyPackageId = originalPackageId;
         } else if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
-            if (!legacyPackageId) throw new Error(`Upgrade parameter missing, no published-at id was found for given path: ${tomlPath}`);
+
+            if (!legacyPackageId) {
+                throw new Error(`Upgrade parameter missing, no published-at id was found for given path: ${tomlPath}`);
+            }
+
             delete (tomlJson as Record<string, Record<string, string>>).package['published-at'];
         }
 
@@ -177,12 +189,6 @@ export function updateMoveToml(
         // [env]
         if (!lockJson.env) {
             lockJson.env = {};
-        }
-
-        if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
-            throw new Error(
-                `Unrecognized chain-id for contract upgrade for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`,
-            );
         }
 
         // [env.devnet], [env.testnet], [env.mainnet]
