@@ -180,7 +180,9 @@ export function updateMoveToml(
         }
 
         if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
-            throw new Error(`Unrecognized chain-id for contract upgrade for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`);
+            throw new Error(
+                `Unrecognized chain-id for contract upgrade for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`,
+            );
         }
 
         // [env.testnet] / [env.mainnet]
