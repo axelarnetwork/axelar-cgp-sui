@@ -17,6 +17,10 @@ export const fundAccountsFromFaucet = async (addresses: string[]) => {
                 });
             }
 
+            case 'mainnet': {
+                throw new Error(`Faucet request failed, invalid network: ${network}`);
+            }
+
             default: {
                 return requestSuiFromFaucetV2({
                     host: getFaucetHost(network as 'devnet' | 'testnet'),

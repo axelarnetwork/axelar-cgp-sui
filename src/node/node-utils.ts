@@ -179,6 +179,10 @@ export function updateMoveToml(
             lockJson.env = {};
         }
 
+        if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
+            throw new Error(`Unrecognized chain-id for contract upgrade for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`);
+        }
+
         // [env.testnet] / [env.mainnet]
         lockJson[`env.${network}`] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
