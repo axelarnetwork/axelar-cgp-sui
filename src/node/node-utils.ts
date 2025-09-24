@@ -5,8 +5,16 @@ import { Bytes } from 'ethers';
 import toml, { TomlValue } from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/types';
 
+type ChainType = {
+    devnet: string,
+    testnet: string,
+    mainnet: string,
+};
+
 const emptyPackageId = '0x0';
-const chainIds = {
+
+const chainIds: ChainType = {
+    devnet: 'aba3e445',
     testnet: '4c78adac',
     mainnet: '35834a8a',
 };
@@ -89,9 +97,14 @@ export function updateMoveToml(
     // Version should be the 0 indexed variant (as per axelar-contract-deployments chain config)
     version?: undefined | number,
     network?: undefined | string,
+    originalPackageId?: undefined | string,
 ) {
-    if (typeof version !== 'number') version = 0;
-    if (typeof network !== 'string') network = 'testnet';
+    if (typeof version !== 'number') {
+        version = 0;
+    }
+    if (typeof network !== 'string') {
+        network = 'testnet';
+    }
 
     // Path to the Move.toml file for the package
     const movePath = `${moveDir}/${packageName}`;
@@ -102,7 +115,6 @@ export function updateMoveToml(
     if (!fs.existsSync(tomlPath)) {
         throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
-
     const wasBuilt = fs.existsSync(lockPath);
 
     // Read the Move.toml file
@@ -115,7 +127,7 @@ export function updateMoveToml(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lockJson: any;
 
-    // Version < 1
+    // Version < 1 (non-upgrade)
     if (!version) {
         // Update the published-at field under the package section e.g. published-at = "0x01"
         // (only applied to non-upgraded versions)
@@ -124,11 +136,15 @@ export function updateMoveToml(
         // Update the package address under the addresses section e.g. gas_service = "0x1"
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
     } else {
+        if (!wasBuilt) {
+            throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
+        }
         // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
-
-        if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
+        if (originalPackageId) {
+            legacyPackageId = originalPackageId;
+        } else if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
             legacyPackageId = (tomlJson as Record<string, Record<string, string>>).package['published-at'];
             if (!legacyPackageId) throw new Error(`Upgrade parameter missing, no published-at id was found for given path: ${tomlPath}`);
             delete (tomlJson as Record<string, Record<string, string>>).package['published-at'];
@@ -138,37 +154,41 @@ export function updateMoveToml(
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
         // Update the lock file (lock file must exist)
-        if (wasBuilt) {
-            // Read the Move.lock file
-            const lockRaw = fs.readFileSync(lockPath, 'utf8');
-            // Parse the Move.lock file as JSON
-            lockJson = toml.parse(lockRaw);
+        // Read the Move.lock file
+        const lockRaw = fs.readFileSync(lockPath, 'utf8');
+        // Parse the Move.lock file as JSON
+        lockJson = toml.parse(lockRaw);
 
-            // If syncing an already published upgrade, use 'original-published-id' in place of 'published-at'
-            // for deriving the legacy package id
-            if (!legacyPackageId) {
-                try {
-                    legacyPackageId = (lockJson as Record<string, Record<string, string>>)[`env.${network}`]['original-published-id'];
-                } catch {
-                    throw new Error(`Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`);
-                }
+        // If syncing an already published upgrade, use 'original-published-id' in place of 'published-at'
+        // for deriving the legacy package id
+        if (!legacyPackageId) {
+            try {
+                legacyPackageId = (lockJson as Record<string, Record<string, string>>)[`env.${network}`]['original-published-id'];
+            } catch {
+                throw new Error(`Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`);
             }
+        }
 
-            // Add the required sections for building versioned dependencies
-            // [env]
-            if (!lockJson.env) lockJson.env = {};
-            // [env.testnet] / [env.mainnet]
-            lockJson[`env.${network}`] = {
-                'chain-id': network === 'mainnet' ? chainIds.mainnet : chainIds.testnet,
-                'original-published-id': legacyPackageId,
-                'latest-published-id': packageId,
-                'published-version': String(version + 1),
-            };
-        } else throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
+        // Add the required sections for building versioned dependencies
+        // [env]
+        if (!lockJson.env) {
+            lockJson.env = {};
+        }
+        // [env.testnet] / [env.mainnet]
+        lockJson[`env.${network}`] = {
+            'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
+            'original-published-id': legacyPackageId,
+            'latest-published-id': packageId,
+            'published-version': String(version + 1),
+        };
     }
 
-    if (prepToml) tomlJson = prepToml(tomlJson);
-    if (lockJson) fs.writeFileSync(lockPath, toml.stringify(lockJson));
+    if (prepToml) {
+        tomlJson = prepToml(tomlJson);
+    }
+    if (lockJson) {
+        fs.writeFileSync(lockPath, toml.stringify(lockJson));
+    }
 
     fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
 }
