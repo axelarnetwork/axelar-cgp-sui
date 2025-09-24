@@ -6,9 +6,9 @@ import toml, { TomlValue } from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/types';
 
 type ChainType = {
-    devnet: string,
-    testnet: string,
-    mainnet: string,
+    devnet: string;
+    testnet: string;
+    mainnet: string;
 };
 
 const emptyPackageId = '0x0';
@@ -102,6 +102,7 @@ export function updateMoveToml(
     if (typeof version !== 'number') {
         version = 0;
     }
+
     if (typeof network !== 'string') {
         network = 'testnet';
     }
@@ -115,6 +116,7 @@ export function updateMoveToml(
     if (!fs.existsSync(tomlPath)) {
         throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
+
     const wasBuilt = fs.existsSync(lockPath);
 
     // Read the Move.toml file
@@ -139,9 +141,11 @@ export function updateMoveToml(
         if (!wasBuilt) {
             throw new Error(`Upgrade parameter missing, no lock file was found for given path: ${lockPath}`);
         }
+
         // Version >= 1
         // Remove the 'published-at' field (if required)
         let legacyPackageId;
+
         if (originalPackageId) {
             legacyPackageId = originalPackageId;
         } else if ((tomlJson as Record<string, Record<string, string>>).package['published-at']) {
@@ -174,6 +178,7 @@ export function updateMoveToml(
         if (!lockJson.env) {
             lockJson.env = {};
         }
+
         // [env.testnet] / [env.mainnet]
         lockJson[`env.${network}`] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
@@ -186,6 +191,7 @@ export function updateMoveToml(
     if (prepToml) {
         tomlJson = prepToml(tomlJson);
     }
+
     if (lockJson) {
         fs.writeFileSync(lockPath, toml.stringify(lockJson));
     }

@@ -16,6 +16,7 @@ export const fundAccountsFromFaucet = async (addresses: string[]) => {
                     recipient: address,
                 });
             }
+
             default: {
                 return requestSuiFromFaucetV2({
                     host: getFaucetHost(network as 'devnet' | 'testnet'),
