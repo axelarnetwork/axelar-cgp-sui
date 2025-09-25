@@ -5,12 +5,11 @@ const path = require('path');
 const { updateMoveToml, getLocalDependencies, copyMovePackage } = require('../dist/cjs');
 
 describe('Utils', () => {
+    // TODO: make contract building work for tests to test lock files
     describe('updateMoveToml', () => {
         const moveTestDir = `${__dirname}/../move-test`;
 
-        it('should update toml and lock files correctly', () => {
-            // const chainId = '4c78adac';
-            const emptyPackageId = '0x0';
+        it('should update addresses in Move.toml correctly', () => {
             const testPackageId = '0x01';
             const testPackageName = 'governance';
 
@@ -21,13 +20,10 @@ describe('Utils', () => {
             updateMoveToml(testPackageName, testPackageId, moveTestDir);
 
             const moveToml = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.toml`, 'utf8'));
-            // const moveLock = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.lock`, 'utf8'));
 
-            expect(moveToml.addresses[testPackageName]).to.equal(emptyPackageId);
-            // expect(moveLock.env.testnet['chain-id']).to.equal(chainId);
-            // expect(moveLock.env.testnet['original-published-id']).to.equal(testPackageId);
-            // expect(moveLock.env.testnet['latest-published-id']).to.equal(testPackageId);
-            // expect(moveLock.env.testnet['published-version']).to.equal(String(1));
+            // Unpublished builds use package id (this avoids dependency collisions)
+            // published builds reset addresses to '0x0'
+            expect(moveToml.addresses[testPackageName]).to.equal(testPackageId);
         });
 
         after(async () => {
