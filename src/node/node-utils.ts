@@ -127,7 +127,7 @@ export function updateMoveToml(
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let tomlJson: any = toml.parse(tomlRaw);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lockJson: any;
 
@@ -146,6 +146,7 @@ export function updateMoveToml(
 
         // Determine original-published-id
         let originalPublishedId = version > 0 ? originalPackageId : packageId;
+
         // Or, derive existing original-published-id from the lock file
         if (!originalPublishedId && lockJson.env) {
             // Fail if no sub-table exists for current network
@@ -165,7 +166,7 @@ export function updateMoveToml(
         // [env.devnet], [env.testnet], [env.mainnet]
         lockJson.env[network] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
-            'original-published-id': originalPublishedId ? originalPublishedId : packageId,
+            'original-published-id': originalPublishedId || packageId,
             'latest-published-id': packageId,
             'published-version': String(version + 1),
         };
