@@ -11,15 +11,12 @@ describe('Utils', () => {
         it('should update toml and lock files correctly', () => {
             // const chainId = '4c78adac';
             const emptyPackageId = '0x0';
-            const testPackageId = '0x0000000000000000000000000000000000000000000000000000000000000001';
+            const testPackageId = '0x01';
             const testPackageName = 'governance';
 
             // Create a new directory for the test package
             copyMovePackage(testPackageName, undefined, moveTestDir);
-
-            // Build package
-            // getContractBuild(testPackageName, moveTestDir);
-
+            
             // Update the Move.toml file for the test package
             updateMoveToml(testPackageName, testPackageId, moveTestDir);
 

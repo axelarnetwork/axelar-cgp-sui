@@ -171,7 +171,6 @@ export function updateMoveToml(
             'published-version': String(version + 1),
         };
 
-        console.log(lockJson.env.testnet);
     } else {
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
     }
