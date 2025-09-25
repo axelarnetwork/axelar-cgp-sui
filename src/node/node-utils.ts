@@ -13,6 +13,8 @@ type ChainType = {
 
 const emptyPackageId = '0x0';
 
+const defaultPackageIdLength = 66;
+
 const chainIds: ChainType = {
     devnet: 'aba3e445',
     testnet: '4c78adac',
@@ -119,14 +121,15 @@ export function updateMoveToml(
         throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
 
-    const wasBuilt = fs.existsSync(lockPath);
-
     // Read the Move.toml file
     const tomlRaw = fs.readFileSync(tomlPath, 'utf8');
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let tomlJson: any = toml.parse(tomlRaw);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lockJson: any;
 
     // Retire legacy 'published-at' if required
     if (tomlJson.package['published-at']) {
@@ -136,13 +139,7 @@ export function updateMoveToml(
     // Reset the package address in the addresses field to '0x0'
     (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
-    // If this function was called before publishing on-chain, exit gracefully without updating Move.lock
-    // as it would add '0x0' to original-published-id and latest-published-id breaking dependency compilation
-    // @see: getContractBuild
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let lockJson: any;
-
-    if (wasBuilt) {
+    if (fs.existsSync(lockPath) && packageId.length == defaultPackageIdLength) {
         // Read and parse the Move.lock file
         const lockRaw = fs.readFileSync(lockPath, 'utf8');
         lockJson = toml.parse(lockRaw);
@@ -150,17 +147,13 @@ export function updateMoveToml(
         // Determine original-published-id
         let originalPublishedId = version > 0 ? originalPackageId : packageId;
         // Or, derive existing original-published-id from the lock file
-        const noLegacyPkgIdMsg = `Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`;
-
         if (!originalPublishedId && lockJson.env) {
             // Fail if no sub-table exists for current network
             try {
                 originalPublishedId = lockJson.env[network]['original-published-id'];
             } catch {
-                throw new Error(noLegacyPkgIdMsg);
+                throw new Error(`Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`);
             }
-        } else {
-            throw new Error(noLegacyPkgIdMsg);
         }
 
         // Add the required sections for building versioned dependencies
@@ -172,7 +165,7 @@ export function updateMoveToml(
         // [env.devnet], [env.testnet], [env.mainnet]
         lockJson.env[network] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
-            'original-published-id': originalPublishedId,
+            'original-published-id': originalPublishedId ? originalPublishedId : packageId,
             'latest-published-id': packageId,
             'published-version': String(version + 1),
         };
