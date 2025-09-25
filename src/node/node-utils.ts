@@ -106,9 +106,7 @@ export function updateMoveToml(
     if (typeof network !== 'string') {
         network = 'testnet';
     } else if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
-        throw new Error(
-            `Unsupported chain-id for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`,
-        );
+        throw new Error(`Unsupported chain-id for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`);
     }
 
     // Path to the Move.toml and Move.lock files for the package
@@ -120,6 +118,7 @@ export function updateMoveToml(
     if (!fs.existsSync(tomlPath)) {
         throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
+
     const wasBuilt = fs.existsSync(lockPath);
 
     // Read the Move.toml file
@@ -133,23 +132,26 @@ export function updateMoveToml(
     if (tomlJson.package['published-at']) {
         delete tomlJson.package['published-at'];
     }
+
     // Reset the package address in the addresses field to '0x0'
     (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
-    // If this function was called before publishing on-chain, exit gracefully without updating Move.lock 
+    // If this function was called before publishing on-chain, exit gracefully without updating Move.lock
     // as it would add '0x0' to original-published-id and latest-published-id breaking dependency compilation
     // @see: getContractBuild
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lockJson: any;
+
     if (wasBuilt) {
         // Read and parse the Move.lock file
         const lockRaw = fs.readFileSync(lockPath, 'utf8');
         lockJson = toml.parse(lockRaw);
 
         // Determine original-published-id
-        let originalPublishedId = (version > 0) ? originalPackageId : packageId;
+        let originalPublishedId = version > 0 ? originalPackageId : packageId;
         // Or, derive existing original-published-id from the lock file
         const noLegacyPkgIdMsg = `Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`;
+
         if (!originalPublishedId && lockJson.env) {
             // Fail if no sub-table exists for current network
             try {
