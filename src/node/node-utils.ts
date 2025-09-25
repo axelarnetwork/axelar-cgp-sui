@@ -139,7 +139,7 @@ export function updateMoveToml(
     // Reset the package address in the addresses field to '0x0'
     (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
-    if (fs.existsSync(lockPath) && packageId.length == defaultPackageIdLength) {
+    if (fs.existsSync(lockPath) && packageId.length === defaultPackageIdLength) {
         // Read and parse the Move.lock file
         const lockRaw = fs.readFileSync(lockPath, 'utf8');
         lockJson = toml.parse(lockRaw);
