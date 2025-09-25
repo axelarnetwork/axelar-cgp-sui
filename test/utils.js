@@ -16,7 +16,7 @@ describe('Utils', () => {
 
             // Create a new directory for the test package
             copyMovePackage(testPackageName, undefined, moveTestDir);
-            
+
             // Update the Move.toml file for the test package
             updateMoveToml(testPackageName, testPackageId, moveTestDir);
 

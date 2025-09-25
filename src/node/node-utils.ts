@@ -170,7 +170,6 @@ export function updateMoveToml(
             'latest-published-id': packageId,
             'published-version': String(version + 1),
         };
-
     } else {
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
     }
