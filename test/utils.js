@@ -8,20 +8,26 @@ describe('Utils', () => {
     describe('updateMoveToml', () => {
         const moveTestDir = `${__dirname}/../move-test`;
 
-        it('should insert published-at and address fields correctly', () => {
+        it('should update toml and lock files correctly', () => {
+            const chainId = '4c78adac';
+            const emptyPackageId = '0x0';
+            const testPackageId = '0x0000000000000000000000000000000000000000000000000000000000000001';
             const testPackageName = 'governance';
-            const testPackageId = '0x01';
 
             // Create a new directory for the test package
             copyMovePackage(testPackageName, undefined, moveTestDir);
 
             // Update the Move.toml file for the test package
-            updateMoveToml(testPackageName, testPackageId, moveTestDir);
+            updateMoveToml(testPackageName, testPackageId, moveTestDir, undefined, 0, 'testnet', testPackageId, true);
 
             const moveToml = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.toml`, 'utf8'));
+            const moveLock = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.lock`, 'utf8'));
 
-            expect(moveToml.package['published-at']).to.equal(testPackageId);
-            expect(moveToml.addresses[testPackageName]).to.equal(testPackageId);
+            expect(moveToml.addresses[testPackageName]).to.equal(emptyPackageId);
+            expect(moveLock.env.testnet['chain-id']).to.equal(chainId);
+            expect(moveLock.env.testnet['original-published-id']).to.equal(testPackageId);
+            expect(moveLock.env.testnet['latest-published-id']).to.equal(testPackageId);
+            expect(moveLock.env.testnet['published-version']).to.equal(String(1));
         });
 
         after(async () => {
