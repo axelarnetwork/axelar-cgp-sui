@@ -146,11 +146,12 @@ export function updateMoveToml(
 
         // Determine original-published-id
         let originalPublishedId = version > 0 ? originalPackageId : packageId;
+
         if (!originalPublishedId) {
             try {
                 originalPublishedId = lockJson.env[network]['original-published-id'];
             } catch {
-                originalPublishedId = packageId;    
+                originalPublishedId = packageId;
             }
         }
 
