@@ -13,8 +13,6 @@ type ChainType = {
 
 const emptyPackageId = '0x0';
 
-const suiPackageIdLength = 66;
-
 const chainIds: ChainType = {
     devnet: 'aba3e445',
     testnet: '4c78adac',
@@ -100,6 +98,7 @@ export function updateMoveToml(
     version?: undefined | number,
     network?: undefined | string,
     originalPackageId?: undefined | string,
+    published?: boolean,
 ) {
     if (typeof version !== 'number') {
         version = 0;
@@ -136,7 +135,7 @@ export function updateMoveToml(
         delete tomlJson.package['published-at'];
     }
 
-    if (version || packageId.length === suiPackageIdLength) {
+    if (version || published) {
         // Reset the package address in the addresses field to '0x0'
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 

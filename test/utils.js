@@ -18,7 +18,7 @@ describe('Utils', () => {
             copyMovePackage(testPackageName, undefined, moveTestDir);
 
             // Update the Move.toml file for the test package
-            updateMoveToml(testPackageName, testPackageId, moveTestDir);
+            updateMoveToml(testPackageName, testPackageId, moveTestDir, undefined, 0, 'testnet', testPackageId, true);
 
             const moveToml = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.toml`, 'utf8'));
             const moveLock = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.lock`, 'utf8'));
