@@ -132,9 +132,9 @@ export function updateMoveToml(
     let lockJson: any;
 
     // Retire legacy 'published-at' if required
-    // if (tomlJson.package['published-at']) {
-    //     delete tomlJson.package['published-at'];
-    // }
+    if (tomlJson.package['published-at']) {
+        delete tomlJson.package['published-at'];
+    }
 
     if (fs.existsSync(lockPath) && packageId.length === suiPackageIdLength) {
         // Reset the package address in the addresses field to '0x0'
@@ -183,7 +183,7 @@ export function updateMoveToml(
 
     fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
 
-    console.log({ tomlJson, lockJson });
+    console.log(JSON.stringify({ tomlJson, lockJson }));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
