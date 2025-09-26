@@ -136,7 +136,7 @@ export function updateMoveToml(
         delete tomlJson.package['published-at'];
     }
 
-    if (version && fs.existsSync(lockPath) && packageId.length === suiPackageIdLength) {
+    if (version || packageId.length === suiPackageIdLength) {
         // Reset the package address in the addresses field to '0x0'
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
@@ -169,7 +169,6 @@ export function updateMoveToml(
             'published-version': String(version + 1),
         };
 
-        console.log(lockJson.env[network]);
     } else {
         (tomlJson as Record<string, Record<string, string>>).package['published-at'] = packageId;
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
