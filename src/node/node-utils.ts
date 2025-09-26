@@ -13,7 +13,7 @@ type ChainType = {
 
 const emptyPackageId = '0x0';
 
-const defaultPackageIdLength = 66;
+const suiPackageIdLength = 66;
 
 const chainIds: ChainType = {
     devnet: 'aba3e445',
@@ -136,7 +136,7 @@ export function updateMoveToml(
         delete tomlJson.package['published-at'];
     }
 
-    if (fs.existsSync(lockPath) && packageId.length === defaultPackageIdLength) {
+    if (fs.existsSync(lockPath) && packageId.length === suiPackageIdLength) {
         // Reset the package address in the addresses field to '0x0'
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
@@ -146,14 +146,11 @@ export function updateMoveToml(
 
         // Determine original-published-id
         let originalPublishedId = version > 0 ? originalPackageId : packageId;
-
-        // Or, derive existing original-published-id from the lock file
-        if (!originalPublishedId && lockJson.env) {
-            // Fail if no sub-table exists for current network
+        if (!originalPublishedId) {
             try {
                 originalPublishedId = lockJson.env[network]['original-published-id'];
             } catch {
-                throw new Error(`Upgrade parameter missing, no original-published-id was found for given path: ${lockPath}`);
+                originalPublishedId = packageId;    
             }
         }
 
@@ -166,7 +163,7 @@ export function updateMoveToml(
         // [env.devnet], [env.testnet], [env.mainnet]
         lockJson.env[network] = {
             'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
-            'original-published-id': originalPublishedId || packageId,
+            'original-published-id': originalPublishedId,
             'latest-published-id': packageId,
             'published-version': String(version + 1),
         };
