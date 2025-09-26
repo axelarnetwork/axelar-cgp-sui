@@ -2,8 +2,22 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { Bytes } from 'ethers';
-import toml, { TomlPrimitive } from 'smol-toml';
+import toml, { TomlValue } from 'smol-toml';
 import { Dependency, DependencyNode, InterchainTokenOptions } from '../common/types';
+
+type ChainType = {
+    devnet: string;
+    testnet: string;
+    mainnet: string;
+};
+
+const emptyPackageId = '0x0';
+
+const chainIds: ChainType = {
+    devnet: 'aba3e445',
+    testnet: '4c78adac',
+    mainnet: '35834a8a',
+};
 
 /**
  * Prepare a move build by creating a temporary directory to store the compiled move code
@@ -38,7 +52,6 @@ const parseVersion = (version: string) => {
 };
 
 export function getContractBuild(packageName: string, moveDir: string): { modules: string[]; dependencies: string[]; digest: Bytes } {
-    const emptyPackageId = '0x0';
     updateMoveToml(packageName, emptyPackageId, moveDir);
 
     const { tmpdir, rmTmpDir } = prepareMoveBuild(path.dirname(moveDir));
@@ -80,34 +93,94 @@ export function updateMoveToml(
     packageName: string,
     packageId: string,
     moveDir: string = `${__dirname}/../../move`,
-    prepToml: undefined | ((moveJson: Record<string, TomlPrimitive>) => Record<string, TomlPrimitive>) = undefined,
+    prepToml: undefined | ((tomlJson: Record<string, TomlValue>) => Record<string, TomlValue>) = undefined,
+    // Version should be the 0 indexed variant (as per axelar-contract-deployments chain config)
+    version?: undefined | number,
+    network?: undefined | string,
+    originalPackageId?: undefined | string,
+    published?: boolean,
 ) {
-    // Path to the Move.toml file for the package
-    const movePath = `${moveDir}/${packageName}/Move.toml`;
+    if (typeof version !== 'number') {
+        version = 0;
+    }
 
-    // Check if the Move.toml file exists
-    if (!fs.existsSync(movePath)) {
-        throw new Error(`Move.toml file not found for given path: ${movePath}`);
+    if (typeof network !== 'string') {
+        network = 'testnet';
+    } else if (network !== 'devnet' && network !== 'testnet' && network !== 'mainnet') {
+        throw new Error(`Unsupported chain-id for given network ${network}. Must be one of ${JSON.stringify(chainIds)}`);
+    }
+
+    // Path to the Move.toml and Move.lock files for the package
+    const movePath = `${moveDir}/${packageName}`;
+    const tomlPath = `${movePath}/Move.toml`;
+    const lockPath = `${movePath}/Move.lock`;
+
+    // Check if the Move.toml and Move.lock file exists
+    if (!fs.existsSync(tomlPath)) {
+        throw new Error(`Move.toml file not found for given path: ${tomlPath}`);
     }
 
     // Read the Move.toml file
-    const moveRaw = fs.readFileSync(movePath, 'utf8');
+    const tomlRaw = fs.readFileSync(tomlPath, 'utf8');
 
     // Parse the Move.toml file as JSON
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let moveJson = toml.parse(moveRaw);
+    let tomlJson: any = toml.parse(tomlRaw);
 
-    // Update the published-at field under the package section e.g. published-at = "0x01"
-    (moveJson as Record<string, Record<string, string>>).package['published-at'] = packageId;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lockJson: any;
 
-    // Update the package address under the addresses section e.g. gas_service = "0x1"
-    (moveJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
-
-    if (prepToml) {
-        moveJson = prepToml(moveJson);
+    // Retire legacy 'published-at' if required
+    if (tomlJson.package['published-at']) {
+        delete tomlJson.package['published-at'];
     }
 
-    fs.writeFileSync(movePath, toml.stringify(moveJson));
+    if (version || published) {
+        // Reset the package address in the addresses field to '0x0'
+        (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
+
+        // Read and parse the Move.lock file
+        const lockRaw = fs.readFileSync(lockPath, 'utf8');
+        lockJson = toml.parse(lockRaw);
+
+        // Determine original-published-id
+        let originalPublishedId = version > 0 ? originalPackageId : packageId;
+
+        if (!originalPublishedId) {
+            try {
+                originalPublishedId = lockJson.env[network]['original-published-id'];
+            } catch {
+                originalPublishedId = packageId;
+            }
+        }
+
+        // Add the required sections for building versioned dependencies
+        // [env]
+        if (!lockJson.env) {
+            lockJson.env = {};
+        }
+
+        // [env.devnet], [env.testnet], [env.mainnet]
+        lockJson.env[network] = {
+            'chain-id': chainIds[network as 'devnet' | 'testnet' | 'mainnet'],
+            'original-published-id': originalPublishedId,
+            'latest-published-id': packageId,
+            'published-version': String(version + 1),
+        };
+    } else {
+        (tomlJson as Record<string, Record<string, string>>).package['published-at'] = packageId;
+        (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
+    }
+
+    if (prepToml) {
+        tomlJson = prepToml(tomlJson);
+    }
+
+    if (lockJson) {
+        fs.writeFileSync(lockPath, toml.stringify(lockJson));
+    }
+
+    fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {

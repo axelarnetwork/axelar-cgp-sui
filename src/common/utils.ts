@@ -1,5 +1,5 @@
 import { getFullnodeUrl, SuiMoveNormalizedType } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
+import { getFaucetHost, requestSuiFromFaucetV0, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { arrayify, keccak256 } from 'ethers/lib/utils';
 import secp256k1 from 'secp256k1';
 import { STD_PACKAGE_ID } from './types';
@@ -8,10 +8,26 @@ export const fundAccountsFromFaucet = async (addresses: string[]) => {
     const promises = addresses.map(async (address) => {
         const network = process.env.NETWORK || 'localnet';
 
-        return requestSuiFromFaucetV0({
-            host: getFaucetHost(network as 'localnet' | 'devnet' | 'testnet'),
-            recipient: address,
-        });
+        switch (network) {
+            case 'localnet': {
+                /// @deprecated: requestSuiFromFaucetV0
+                return requestSuiFromFaucetV0({
+                    host: getFaucetHost('localnet'),
+                    recipient: address,
+                });
+            }
+
+            case 'mainnet': {
+                throw new Error(`Faucet request failed, invalid network: ${network}`);
+            }
+
+            default: {
+                return requestSuiFromFaucetV2({
+                    host: getFaucetHost(network as 'devnet' | 'testnet'),
+                    recipient: address,
+                });
+            }
+        }
     });
 
     return Promise.all(promises);
