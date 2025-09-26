@@ -131,12 +131,12 @@ export function updateMoveToml(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lockJson: any;
 
-    if (fs.existsSync(lockPath) && packageId.length === suiPackageIdLength) {
-        // Retire legacy 'published-at' if required
-        if (tomlJson.package['published-at']) {
-            delete tomlJson.package['published-at'];
-        }
+    // Retire legacy 'published-at' if required
+    // if (tomlJson.package['published-at']) {
+    //     delete tomlJson.package['published-at'];
+    // }
 
+    if (fs.existsSync(lockPath) && packageId.length === suiPackageIdLength) {
         // Reset the package address in the addresses field to '0x0'
         (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = emptyPackageId;
 
@@ -169,8 +169,8 @@ export function updateMoveToml(
             'published-version': String(version + 1),
         };
     } else {
-        (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
         (tomlJson as Record<string, Record<string, string>>).package['published-at'] = packageId;
+        (tomlJson as Record<string, Record<string, string>>).addresses[packageName] = packageId;
     }
 
     if (prepToml) {
