@@ -182,6 +182,8 @@ export function updateMoveToml(
     }
 
     fs.writeFileSync(tomlPath, toml.stringify(tomlJson));
+
+    console.log({ tomlJson, lockJson });
 }
 
 export function copyMovePackage(packageName: string, fromDir: null | string, toDir: string) {
