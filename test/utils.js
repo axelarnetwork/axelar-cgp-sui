@@ -2,15 +2,16 @@ const { expect } = require('chai');
 const toml = require('smol-toml');
 const fs = require('fs');
 const path = require('path');
-const { updateMoveToml, getLocalDependencies, copyMovePackage } = require('../dist/cjs');
+const { updateMoveToml, getLocalDependencies, copyMovePackage, getContractBuild } = require('../dist/cjs');
 
 describe('Utils', () => {
-    // TODO: make contract building work for tests to test lock files
     describe('updateMoveToml', () => {
         const moveTestDir = `${__dirname}/../move-test`;
 
-        it('should update addresses in Move.toml correctly', () => {
-            const testPackageId = '0x01';
+        it('should update toml and lock files correctly', () => {
+            const chainId = '4c78adac';
+            const emptyPackageId = '0x0';
+            const testPackageId = '0x0000000000000000000000000000000000000000000000000000000000000001';
             const testPackageName = 'governance';
 
             // Create a new directory for the test package
@@ -20,10 +21,13 @@ describe('Utils', () => {
             updateMoveToml(testPackageName, testPackageId, moveTestDir);
 
             const moveToml = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.toml`, 'utf8'));
+            const moveLock = toml.parse(fs.readFileSync(`${moveTestDir}/${testPackageName}/Move.lock`, 'utf8'));
 
-            // Unpublished builds use package id (this avoids dependency collisions)
-            // published builds reset addresses to '0x0'
-            expect(moveToml.addresses[testPackageName]).to.equal(testPackageId);
+            expect(moveToml.addresses[testPackageName]).to.equal(emptyPackageId);
+            expect(moveLock.env.testnet['chain-id']).to.equal(chainId);
+            expect(moveLock.env.testnet['original-published-id']).to.equal(testPackageId);
+            expect(moveLock.env.testnet['latest-published-id']).to.equal(testPackageId);
+            expect(moveLock.env.testnet['published-version']).to.equal(String(1));
         });
 
         after(async () => {
