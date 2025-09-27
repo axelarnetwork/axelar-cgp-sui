@@ -1,5 +1,34 @@
 # @axelar-network/axelar-cgp-sui
 
+## 1.2.0
+
+### Minor Changes
+
+- 6fe375a: Added ITS version control managed upgrade v0 -> v1
+- 61decda: Add ability to reclaim treasury caps for custom tokens out of the ITS
+- 7733c47: Added custom token linking
+- 0137059: add ability to remove unlinked coins that hold a coin's treasury cap
+- c066e41: Add discovery for receive_link_token
+- 8443a18: Added types and management functions for linked and unlinked tokens
+- 8443a18: Add receive_link_token to interchain_token_service
+- 7733c47: add ability to send LinkToken to other chains in ITS
+- 78b347f: Add register_token_metadata to interchain_token_service
+- 0137059: Added support for coin deployers to manage and reclaim their coin's `TreasuryCap`
+- fdb0106: Added the ability to register custom tokens
+- 6721872: Retired ITS `register_coin` and replaced it with new functions `register_coin_from_info` and `register_coin_from_metadata`
+
+### Patch Changes
+
+- 4b859fe: removes the requirement for a strict (legacy) version of the Sui client and compiler, and sets the compiler version in ./version.json to the latest stable version (v1.55.0)
+- ca11570: Removes Squid move contracts, tests and testdata as it no longer maintained
+- 4760132: updateMoveToml now updates move toml and lock files correctly for upgraded contracts
+- a5e9888: only allow canonical tokens to be deployed remotely
+- 6007ce9: `CoinInfo` field `metadata` is deprecated and will always be `Option::none`
+- 6007ce9: Added function to migrate coin metadata saved in ITS to a publicly shared object (e.g. to display correctly in wallets)
+- 29f0a06: Add a proper error when trying to use a mint_burn coin that had its treasury_cap removed
+- 2a2855c: improved retry mechanism in signAndExecute function, to account for missing objectChanges field upon receiving a transaction result
+- e616511: include structs with generics in golden files
+
 ## 1.1.3
 
 ### Patch Changes
