@@ -157,3 +157,4 @@ This is the module that anyone would directly interract with. It needs to be abl
 - `register_coin_from_metadata<T>`: This function takes the `InterchainTokenService` object and mutates it by adding a coin with the specified `CoinMetadata<T>` and `CoinManagement<T>`.
 - `register_coin_metadata`: This function takes the `CoinMetadata<T>` for a token, and prepares a message for Axelar Hub to register the coin's decimal precision and Sui coin type. The returned `MessageTicket` can be broadcast to the `Gateway` contract to enable linking the coin as an interchain token.
 - `link_coin`: This function takes the token linking parameters (`Channel`, salt, destination token, chain and `TokenManagerType`) for a registered coin type, and prepares a `Gateway` message for Axelar Hub. The returned `MessageTicket` can be broadcast to the `Gateway` contract to link the coin to the destination token via Axelar Hub.
+
