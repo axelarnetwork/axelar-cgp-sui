@@ -37,7 +37,7 @@
   },
   "overrides": {
     "elliptic": "^6.6.1"
-  },  
+  },
   "scripts": {
     "build-move": "./scripts/run.sh build",
     "build-ts": "npm run build-ts:cjs && npm run build-ts:esm && npm run build-ts:web",
