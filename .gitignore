@@ -79,4 +79,4 @@ move_compile/
 sui-binaries/
 
 # move test folder
-test/move
+test/move*.nexus.backup
